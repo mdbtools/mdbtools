@@ -1,3 +1,11 @@
+Wed Aug  4 21:22:46 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* HACKING:
+	* include/mdbtools.h:
+	* src/libmdb/write.c:
+	* src/libmdb/table.c: A fix for bug #669739 that became a mdb_crack_row4
+		rewrite.  Thanks to Luciano Miguel Wolf and Alexandre Horst for
+		the bug analysis and the initial patch.
+
 Sat Jul 17 23:09:40 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/catalog.c: Clean out some stale code
 	* src/libmdb/data.c: Use mdb_unicode2ascii in mdb_col_to_string

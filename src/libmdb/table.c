@@ -79,6 +79,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	len = mdb_pg_get_int16(mdb,8);
 
 	table->num_rows = mdb_pg_get_int32(mdb, fmt->tab_num_rows_offset);
+	table->num_var_cols = mdb_pg_get_int16(mdb, fmt->tab_num_cols_offset-2);
 	table->num_cols = mdb_pg_get_int16(mdb, fmt->tab_num_cols_offset);
 	table->num_idxs = mdb_pg_get_int32(mdb, fmt->tab_num_idxs_offset); 
 	table->num_real_idxs = mdb_pg_get_int32(mdb, fmt->tab_num_ridxs_offset); 

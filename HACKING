@@ -147,7 +147,7 @@ The Jet3 row format is:
 | ???? | 1 byte  | eod        | length of data from begining of record     |
 | ???? | n bytes | var_table[]| offset from start of row for each var_col  |
 | ???? | 1 byte  | var_len    | number of variable length columns          |
-| ???? | n bytes | jump_table | number of variable length columns          |
+| ???? | n bytes | jump_table | Jump table (see description below)         |
 | ???? | n bytes | null_mask  | Null indicator. size is 1 byte per 8 cols  |
 |      |         |            | 0 indicates a null value.  Also used to    |
 |      |         |            | represent value of boolean type columns    |
@@ -163,9 +163,9 @@ Notes:
 . The size of the null table is computed by (num_cols - 1)/8 + 1
 . Fixed columns can be null (unlike some other databases).
 . The var_len field indicates the size of the var_table[].
-. The eod field points at the last byte of the var_cols field.  It is used to
-  determine where the last var_col ends.
-. For boolean fixed columns, the values are in null_table[]: 0 indicates a false  
+. The eod field points at the first byte after the var_cols field.  It is used
+  to determine where the last var_col ends.
+. For boolean fixed columns, the values are in null_table[]: 0 indicates a false
   value, 1 indicates a true value
 . An 0xFF stored in the var_table indicates that this column has been deleted.
 
@@ -199,6 +199,8 @@ Notes:
 
 . All offsets are stored as 2 byte fields including the var_table entries.
 . the jump table was (thankfully) ditched in Jet4.
+. If the number of variable columns, as given in the TDEF, is 0, then the
+  only items in the row are num_cols, fixed_cols, and null_mask.
 
 Each memo column (or other long binary data) in a row
 

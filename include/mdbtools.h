@@ -345,6 +345,7 @@ typedef struct {
 	MdbHandle *mdbidx;
 	MdbIndexChain *chain;
 	MdbProperties	*props;
+	unsigned int num_var_cols;  /* to know if row has variable columns */
 } MdbTableDef;
 
 struct mdbindex {
