@@ -50,17 +50,17 @@ mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_
 MdbTableDef *
 mdb_create_temp_table(MdbHandle *mdb, char *name)
 {
-	MdbCatalogEntry entry;
+	MdbCatalogEntry *entry;
 	MdbTableDef *table;
 
 	/* dummy up a catalog entry */
-	memset(&entry, 0, sizeof(MdbCatalogEntry));
-	entry.mdb = mdb;
-	entry.object_type = MDB_TABLE;
-	entry.table_pg = 0;
-	strcpy(entry.object_name, name);
+	entry = (MdbCatalogEntry *) g_malloc0(sizeof(MdbCatalogEntry));
+	entry->mdb = mdb;
+	entry->object_type = MDB_TABLE;
+	entry->table_pg = 0;
+	strcpy(entry->object_name, name);
 
-	table = mdb_alloc_tabledef(g_memdup(&entry, sizeof(MdbCatalogEntry)));
+	table = mdb_alloc_tabledef(entry);
 	table->columns = g_ptr_array_new();
 
 	return table;
@@ -69,6 +69,6 @@ void
 mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col)
 {
 	col->col_num = table->num_cols;
-	mdb_append_column(table->columns, col);
+	g_ptr_array_add(table->columns, g_memdup(col, sizeof(MdbColumn)));
 	table->num_cols++;
 }
