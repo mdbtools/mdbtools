@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.6 2002/04/09 01:19:26 brianb Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.7 2005/01/15 05:02:09 calvinrsmith Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 

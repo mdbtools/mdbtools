@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 static char  rcsid_sql_h [ ] =
-         "$Id: mdbodbc.h,v 1.4 2004/10/16 14:21:15 whydoubt Exp $";
+         "$Id: mdbodbc.h,v 1.5 2005/01/15 05:02:13 calvinrsmith Exp $";
 static void *no_unused_sql_h_warn[]={rcsid_sql_h, no_unused_sql_h_warn};
 
 struct _henv {

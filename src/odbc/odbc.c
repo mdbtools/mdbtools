@@ -27,7 +27,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.28 2004/12/31 01:26:50 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.29 2005/01/15 05:02:09 calvinrsmith Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 

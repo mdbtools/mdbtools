@@ -2,8 +2,8 @@
 ]>
 <book>
 	<bookinfo>
-		<date>$Date: 2004/09/24 05:08:12 $</date>
-		<releaseinfo>$Revision: 1.5 $</releaseinfo>
+		<date>$Date: 2005/01/15 05:02:10 $</date>
+		<releaseinfo>$Revision: 1.6 $</releaseinfo>
 		<title><productname>MDB Tools</productname> Installation Guide</title>
 		<subtitle>A Guide to Installing and  Configuring <productname>MDB Tools</productname></subtitle>
 		<author>
@@ -34,9 +34,9 @@ This guide is intended to provide help with installing and configuring the <prod
 			<para>
 A few technical notes.  This guide is written in SGML DocBook format, specifications for which are found in the <ulink url="http://www.docbook.org/tdg/en/html/docbook.html">DocBook book</ulink>.  It was converted to HTML with <ulink url="http://openjade.sourceforge.net">OpenJade</ulink>.  
 The document you are reading is version 
-$Revision: 1.5 $
+$Revision: 1.6 $
 , dated 
-$Date: 2004/09/24 05:08:12 $ (CVS control number $Id: install.sgml,v 1.5 2004/09/24 05:08:12 whydoubt Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
+$Date: 2005/01/15 05:02:10 $ (CVS control number $Id: install.sgml,v 1.6 2005/01/15 05:02:10 calvinrsmith Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
 <ulink url="http://mdbtools.sourceforge.net/userguide/">web site</ulink>.
 			</para>
 	</preface>

@@ -17,123 +17,130 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifdef JAVA
+#include "javadefines.h"
+#define MdbBackendType_STRUCT_ELEMENT(a,b,c,d) new MdbBackendType(a,b,c,d)
+#else
+#define MdbBackendType_STRUCT_ELEMENT(a,b,c,d) {a,b,c,d}
 /*
 ** functions to deal with different backend database engines
 */
-
+#
 #include "mdbtools.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
 
+#endif   /* JAVA */
+
 static int is_init;
 static GHashTable *mdb_backends;
 
    /*    Access data types */
 static MdbBackendType mdb_access_types[] = {
-		{"Unknown 0x00", 0,0,0 },
-		{"Boolean", 0,0,0},
-		{"Byte", 0,0,0},
-		{"Integer", 0,0,0},
-		{"Long Integer", 0,0,0},
-		{"Currency", 0,0,0},
-		{"Single", 0,0,0},
-		{"Double", 0,0,0},
-		{"DateTime (Short)", 0,0,1},
-		{"Unknown 0x09", 0,0,0},
-		{"Text", 1,0,1},
-		{"OLE", 1,0,1},
-		{"Memo/Hyperlink",1,0,1},
-		{"Unknown 0x0d",0,0,0},
-		{"Unknown 0x0e",0,0,0},
-		{"Replication ID",0,0,0},
-		{"Numeric",1,1,0}
+		MdbBackendType_STRUCT_ELEMENT("Unknown 0x00", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Boolean", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Byte", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Integer", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Long Integer", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Currency", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Single", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Double", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("DateTime (Short)", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("Unknown 0x09", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Text", 1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("OLE", 1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("Memo/Hyperlink",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("Unknown 0x0d",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Unknown 0x0e",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Replication ID",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Numeric",1,1,0)
 };
 
 /*    Oracle data types */
 static MdbBackendType mdb_oracle_types[] = {
-		{"Oracle_Unknown 0x00",0,0,0},
-		{"NUMBER",1,0,0},
-		{"NUMBER",1,0,0},
-		{"NUMBER",1,0,0},
-		{"NUMBER",1,0,0},
-		{"NUMBER",1,0,0},
-		{"FLOAT",0,0,0},
-		{"FLOAT",0,0,0},
-		{"DATE",0,0,0},
-		{"Oracle_Unknown 0x09",0,0,0},
-		{"VARCHAR2",1,0,1},
-		{"BLOB",1,0,1},
-		{"CLOB",1,0,1},
-		{"Oracle_Unknown 0x0d",0,0,0},
-		{"Oracle_Unknown 0x0e",0,0,0},
-		{"NUMBER",1,0,0},
-		{"NUMBER",1,0,0},
+		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x00",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("FLOAT",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("FLOAT",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x09",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("VARCHAR2",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("CLOB",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x0d",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x0e",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
 };
 
 /*    Sybase/MSSQL data types */
 static MdbBackendType mdb_sybase_types[] = {
-		{"Sybase_Unknown 0x00",0,0,0},
-		{"bit",0,0,0},
-		{"char",1,0,1},
-		{"smallint",0,0,0},
-		{"int",0,0,0},
-		{"money",0,0,0},
-		{"real",0,0,0},
-		{"float",0,0,0},
-		{"smalldatetime",0,0,0},
-		{"Sybase_Unknown 0x09",0,0,0},
-		{"varchar",1,0,1},
-		{"varbinary",1,0,1},
-		{"text",1,0,1},
-		{"Sybase_Unknown 0x0d",0,0,0},
-		{"Sybase_Unknown 0x0e",0,0,0},
-		{"Sybase_Replication ID",0,0,0},
-		{"numeric",1,1,0},
+		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x00",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("bit",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("char",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("smallint",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("money",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("real",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("smalldatetime",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x09",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("varbinary",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x0d",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x0e",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Sybase_Replication ID",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
 };
 
 /*    Postgres data types */
 static MdbBackendType mdb_postgres_types[] = {
-		{"Postgres_Unknown 0x00",0,0,0},
-		{"Bool",0,0,0},
-		{"Int2",0,0,0},
-		{"Int4",0,0,0},
-		{"Int8",0,0,0},
-		{"Money",0,0,0},
-		{"Float4",0,0,0},
-		{"Float8",0,0,0},
-		{"Timestamp",0,0,0},
-		{"Postgres_Unknown 0x09",0,0,0},
-		{"Char",1,0,1},
-		{"Postgres_Unknown 0x0b",0,0,0},
-		{"Postgres_Unknown 0x0c",0,0,0},
-		{"Postgres_Unknown 0x0d",0,0,0},
-		{"Postgres_Unknown 0x0e",0,0,0},
-		{"Serial",0,0,0},
-		{"Postgres_Unknown 0x10",0,0,0},
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x00",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Bool",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Int2",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Int4",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Int8",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Money",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Float4",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Float8",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Timestamp",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x09",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Char",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0b",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0c",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0d",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0e",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Serial",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x10",0,0,0),
 };
 /*    MySQL data types */
 static MdbBackendType mdb_mysql_types[] = {
-		{"Text",1,0,1},
-		{"char",0,0,0},
-		{"int",0,0,0},
-		{"int",0,0,0},
-		{"int",0,0,0},
-		{"float",0,0,0},
-		{"float",0,0,0},
-		{"float",0,0,0},
-		{"date",0,0,1},
-		{"varchar",1,0,1},
-		{"varchar",1,0,1},
-		{"varchar",1,0,1},
-		{"text",1,0,1},
-		{"blob",0,0,0},
-		{"text",1,0,1},
-		{"numeric",1,1,0},
-		{"numeric",1,1,0},
+		MdbBackendType_STRUCT_ELEMENT("Text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("char",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("date",0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("blob",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
+		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
 };
-
+#ifndef JAVA
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
@@ -298,4 +305,4 @@ char *mdb_get_relationships(MdbHandle *mdb)
 
 	return (char *)text;
 }
-
+#endif

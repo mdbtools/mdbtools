@@ -16,14 +16,16 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
+#ifdef JAVA
+#include "javadefines.h"
+#else
 #include "mdbtools.h"
 #include <locale.h>
 
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
-
+#endif  /* JAVA */
 /**
  * mdb_init:
  *
@@ -31,7 +33,7 @@
  * by calling program and prior to any other function.
  *
  **/
-void mdb_init()
+METHOD void mdb_init()
 {
 	mdb_init_backends();
 }
@@ -44,7 +46,7 @@ void mdb_init()
  * functions).
  *
  **/
-void mdb_exit()
+METHOD void mdb_exit()
 {
 	mdb_remove_backends();
 }
