@@ -80,7 +80,7 @@ LDADD = ../libmdb/libmdb.la
 LIBS = `glib-config --libs` $(READLINE_LIBS) -lfl
 mdb_sql_SOURCES = mdbsql.c main.c parser.y lexer.l 
 YACC = yacc -d
-mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
 

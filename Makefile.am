@@ -1,4 +1,4 @@
-SUBDIRS	=	src
+SUBDIRS	=	src include
 
 DEFDIR	=	$(prefix)
 

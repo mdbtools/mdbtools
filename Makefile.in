@@ -75,7 +75,7 @@ READLINE_LIBS = @READLINE_LIBS@
 VERSION = @VERSION@
 YACC = @YACC@
 
-SUBDIRS = src
+SUBDIRS = src include
 
 DEFDIR = $(prefix)
 

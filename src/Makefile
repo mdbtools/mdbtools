@@ -78,7 +78,7 @@ YACC = bison -y
 SUBDIRS = libmdb util extras sql
 
 DEFDIR = $(prefix)
-mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 DIST_COMMON =  Makefile.am Makefile.in
 
