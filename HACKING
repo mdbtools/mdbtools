@@ -93,7 +93,7 @@ The header of a Jet3 data page looks like this:
 | 0x01 | 1 byte  | unknown    |                                            |
 | ???? | 2 bytes | free_space | Free space in this page                    |
 | ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
-| ???? | 4 bytes | num_rows   | number of records on this page             |
+| ???? | 2 bytes | num_rows   | number of records on this page             |
 +------+---------+---------------------------------------------------------+
 | Iterate for the number of records                                        |
 +--------------------------------------------------------------------------+
@@ -113,7 +113,7 @@ unknown.
 | ???? | 2 bytes | free_space | Free space in this page                    |
 | ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
 | ???? | 4 bytes | unknown    | Unknown                                    |
-| ???? | 4 bytes | num_rows   | number of records on this page             |
+| ???? | 2 bytes | num_rows   | number of records on this page             |
 +------+---------+---------------------------------------------------------+
 | Iterate for the number of records                                        |
 +--------------------------------------------------------------------------+

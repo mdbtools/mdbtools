@@ -1,3 +1,6 @@
+Wed Sep  8 22:24:29 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* HACKING: Small format documention correction
+
 Wed Sep  8 07:37:08 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/data.c:
