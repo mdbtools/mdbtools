@@ -160,18 +160,59 @@ int delflag, lookupflag;
 
 	row_end = row_start-1;
 }
+int mdb_rewind_table(MdbTableDef *table)
+{
+	table->cur_pg=0;
+	table->cur_row=0;
+}
+int mdb_fetch_row(MdbTableDef *table)
+{
+MdbHandle *mdb = table->entry->mdb;
+int rows;
 
+	if (table->cur_pg > table->num_pgs) {
+		return 0;
+	}
+
+	if (!table->cur_pg) {
+		table->cur_pg=1;
+		table->cur_row=0;
+		mdb_read_pg(mdb,table->first_data_pg + table->cur_pg);
+	}
+
+	rows = mdb_get_int16(mdb,8);
+	mdb_read_row(table, 
+		table->first_data_pg + table->cur_pg, 
+		table->cur_row);
+
+	table->cur_row++;
+	if (table->cur_row >= rows) {
+		table->cur_row=0;
+		table->cur_pg++;
+		if (table->cur_pg <= table->num_pgs) {
+			mdb_read_pg(mdb,table->first_data_pg + table->cur_pg);
+		}
+	}
+	return 1;
+}
 void mdb_data_dump(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
 int i, j, pg_num;
 int rows;
-char *bound_values[256]; /* warning doesn't handle table > 256 columns.  Can that happen? */
+char *bound_values[256]; /* warning doesn't handle tables > 256 columns.  Can that happen? */
 
 	for (i=0;i<table->num_cols;i++) {
 		bound_values[i] = (char *) malloc(256);
 		mdb_bind_column(table, i+1, bound_values[i]);
 	}
+	mdb_rewind_table(table);
+	while (mdb_fetch_row(table)) {
+		for (j=0;j<table->num_cols;j++) {
+			fprintf(stdout, "column %d is %s\n", j+1, bound_values[j]);
+		}
+	}
+#if 0
 	for (pg_num=1;pg_num<=table->num_pgs;pg_num++) {
 		mdb_read_pg(mdb,table->first_data_pg + pg_num);
 		rows = mdb_get_int16(mdb,8);
@@ -185,6 +226,7 @@ char *bound_values[256]; /* warning doesn't handle table > 256 columns.  Can tha
 			}
 		}
 	}
+#endif
 	for (i=0;i<table->num_cols;i++) {
 		free(bound_values[i]);
 	}
