@@ -28,26 +28,26 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int l
 {
         unsigned int i, ret;
         int len_in, len_out;
-        char *in_ptr, *out_ptr;
+        unsigned char *in_ptr, *out_ptr;
 
         in_ptr = &buf[offset];
         out_ptr = dest;
         len_in = len;
         len_out = dest_sz;
 
-	if (buf[offset]==0xff && buf[offset+1]==0xfe) {
+	if (in_ptr[0]==0xff && in_ptr[1]==0xfe) {
 		len_in -= 2;
-        	in_ptr = &buf[offset+2];
-                ret = iconv(mdb->iconv_compress, &in_ptr, &len_in, &out_ptr, &len_out);
+        	in_ptr += 2;
+                ret = iconv(mdb->iconv_compress, (char **)&in_ptr, &len_in, (char **)&out_ptr, &len_out);
                 dest[dest_sz - len_out]='\0';
                 return dest_sz - len_out;
-		//strncpy(dest, &buf[offset+2], len-2);
+		//strncpy(dest, in_ptr+2, len-2);
 		//dest[len-2]='\0';
 	} else {
 #ifdef HAVE_ICONV
         if (mdb->iconv_in) {
                 //printf("1 len_in %d len_out %d\n",len_in, len_out);
-                ret = iconv(mdb->iconv_in, &in_ptr, &len_in, &out_ptr, &len_out);
+                ret = iconv(mdb->iconv_in, (char **)&in_ptr, &len_in, (char **)&out_ptr, &len_out);
                 //printf("2 len_in %d len_out %d\n",len_in, len_out);
                 dest[dest_sz - len_out]='\0';
                 //printf("dest %s\n",dest);
@@ -57,7 +57,7 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int l
 
 		/* convert unicode to ascii, rather sloppily */
 		for (i=0;i<len;i+=2)
-			dest[i/2] = buf[offset + i];
+			dest[i/2] = in_ptr[i];
 		dest[len/2]='\0';
 	}
 	return len;
@@ -89,13 +89,13 @@ mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int l
 #endif
 
 	if (IS_JET3(mdb)) {
-		strncpy(dest, &buf[offset], len);
+		strncpy(dest, in_ptr, len);
 		dest[len]='\0';
 		return strlen(dest);
 	}
 
-	while (i<strlen(&buf[offset]) && (i*2+2)<len) {
-		dest[i*2] = buf[offset+i];
+	while (i<strlen(in_ptr) && (i*2+2)<len) {
+		dest[i*2] = in_ptr[i];
 		dest[i*2+1] = 0;
 		i++;
 	}
@@ -120,13 +120,15 @@ void mdb_iconv_init(MdbHandle *mdb)
                 /* XXX - need to determine character set from file */
                 mdb->iconv_out = iconv_open("ISO8859-1", iconv_code);
                 mdb->iconv_in = iconv_open(iconv_code, "ISO8859-1");
+                mdb->iconv_compress = (iconv_t)-1;
         }
 #endif
 }
 void mdb_iconv_close(MdbHandle *mdb)
 {
 #ifdef HAVE_ICONV
-        if (mdb->iconv_out != -1) iconv_close(mdb->iconv_out);
-        if (mdb->iconv_in != -1) iconv_close(mdb->iconv_in);
+        if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
+        if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
+        if (mdb->iconv_compress != (iconv_t)-1) iconv_close(mdb->iconv_compress);
 #endif
 }

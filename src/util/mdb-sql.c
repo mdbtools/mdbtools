@@ -42,6 +42,7 @@ char *cmdline = NULL;
 extern void add_history ();
 extern int write_history ();
 extern int read_history ();
+extern void clear_history ();
 #  endif
 #endif /* HAVE_READLINE_HISTORY */
 
@@ -353,9 +354,9 @@ dump_results_pp(MdbSQL *sql)
 int
 main(int argc, char **argv)
 {
-char *s;
+char *s = NULL;
 char prompt[20];
-int line;
+int line = 0;
 char *mybuf;
 unsigned int bufsz;
 MdbSQL *sql;
@@ -419,10 +420,11 @@ char *delimiter = NULL;
 	bufsz = 4096;
 	mybuf = (char *) g_malloc(bufsz);
 	mybuf[0]='\0';
-	line = 0;
 
 	while (1) {
 		line ++;
+		if (s) free(s);
+
 		if (in) {
 			s=malloc(256);
 			if ((!s) || (!fgets(s, 256, in))) {
@@ -482,6 +484,7 @@ char *delimiter = NULL;
 		histpath = (char *) g_strconcat(home, "/", HISTFILE, NULL);
 		write_history(histpath);
 		g_free(histpath);
+		clear_history();
 	}
 #endif
 
