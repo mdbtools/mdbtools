@@ -24,7 +24,7 @@
 #include "dmalloc.h"
 #endif
 
-#define MAXPRECISION 20
+#define MAXPRECISION 19
 /* 
 ** these routines are copied from the freetds project which does something
 ** very similiar
@@ -38,11 +38,10 @@ static char *array_to_string(unsigned char *array, int unsigned scale, char *s);
  * mdb_money_to_string
  * @mdb: Handle to open MDB database file
  * @start: Offset of the field within the current page
- * @s: String that will receieve the value
  *
- * Returns: the string that has received the value.
+ * Returns: the allocated string that has received the value.
  */
-char *mdb_money_to_string(MdbHandle *mdb, int start, char *s)
+char *mdb_money_to_string(MdbHandle *mdb, int start)
 {
 	int num_bytes = 8;
 	int i;
@@ -77,13 +76,7 @@ char *mdb_money_to_string(MdbHandle *mdb, int start, char *s)
 		memset(multiplier,0,MAXPRECISION);
 		multiply_byte(multiplier, 256, temp);
 	}
-	if (neg) {
-		s[0]='-';
-		array_to_string(product, 4, &s[1]);
-	} else {
-		array_to_string(product, 4, s);
-	}
-	return s;
+	return array_to_string(product, 4, neg);
 }
 static int multiply_byte(unsigned char *product, int num, unsigned char *multiplier)
 {
@@ -119,17 +112,23 @@ static int do_carry(unsigned char *product)
 	}
 	return 0;
 }
-static char *array_to_string(unsigned char *array, unsigned int scale, char *s)
+static char *array_to_string(unsigned char *array, unsigned int scale, int neg)
 {
+	char *s;
 	unsigned int top, i, j=0;
 	
 	for (top=MAXPRECISION;(top>0) && (top-1>scale) && !array[top-1];top--);
+
+	s = (char *) g_malloc(22);
+
+	if (neg)
+		s[j++] = '-';
 
 	if (top == 0) {
 		s[j++] = '0';
 	} else {
 		for (i=top; i>0; i--) {
-			if (j == top-scale) s[j++]='.';
+			if (i == scale) s[j++]='.';
 			s[j++]=array[i-1]+'0';
 		}
 	}

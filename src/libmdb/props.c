@@ -115,9 +115,11 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 #endif
 		if (dtype == MDB_MEMO) dtype = MDB_TEXT;
 		if (dtype == MDB_BOOL) {
-			g_hash_table_insert(props->hash, g_strdup(name), g_strdup(kkd[pos + 8] ? "yes" : "no"));
+			g_hash_table_insert(props->hash, g_strdup(name),
+				g_strdup(kkd[pos + 8] ? "yes" : "no"));
 		} else {
-			g_hash_table_insert(props->hash, g_strdup(name), g_strdup(mdb_col_to_string(mdb, kkd, pos + 8, dtype, dsize)));
+			g_hash_table_insert(props->hash, g_strdup(name),
+			  mdb_col_to_string(mdb, kkd, pos + 8, dtype, dsize));
 		}
 		g_free(value);
 		pos += record_len;

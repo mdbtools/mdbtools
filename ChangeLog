@@ -1,3 +1,9 @@
+Thu Feb 24 21:13:02 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/data.c:
+	* src/libmdb/money.c:
+	* src/libmdb/props.c:
+	* src/odbc/odbc.c: Pass malloc'd strings with mdb_col_to_string, et al
+
 Fri Feb 11 10:41:55 EST 2005	Brian Bruns <brian@bruns.com>
 	* src/libmdb/index.c: Fix off by one bug in mdb_index_swap_n()
 	* src/libmdb/write.c: Fix bug in key hash

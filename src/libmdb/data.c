@@ -27,10 +27,11 @@
 
 #define OFFSET_MASK 0x1fff
 
-char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
+char *mdb_money_to_string(MdbHandle *mdb, int start);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
 static char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
+static char *mdb_date_to_string(MdbHandle *mdb, int start);
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
 
 static char date_fmt[64] = "%x %X";
@@ -196,18 +197,19 @@ int ret;
 	if (col->bind_ptr) {
 		if (!len) {
 			strcpy(col->bind_ptr, "");
-		} else if (col->col_type == MDB_NUMERIC) {
-			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
-			char *str = mdb_num_to_string(mdb, start, col->col_type,
-				col->col_prec, col->col_scale);
-			strcpy(col->bind_ptr, str);
-			g_free(str);
 		} else {
 			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
-			char *str = mdb_col_to_string(mdb, mdb->pg_buf, start,
-				col->col_type, len);
+			char *str;
+			if (col->col_type == MDB_NUMERIC) {
+				str = mdb_num_to_string(mdb, start,
+					col->col_type, col->col_prec,
+					col->col_scale);
+			} else {
+				str = mdb_col_to_string(mdb, mdb->pg_buf, start,
+					col->col_type, len);
+			}
 			strcpy(col->bind_ptr, str);
-			
+			g_free(str);
 		}
 		ret = strlen(col->bind_ptr);
 		if (col->len_ptr) {
@@ -595,18 +597,19 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
 	guint16 memo_len;
-	static char text[MDB_BIND_SIZE];
 	guint16 memo_flags;
 	guint32 row_start, pg_row;
 	guint32 len;
 	char *buf;
+	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
 	if (size<MDB_MEMO_OVERHEAD) {
-		return "";
+		strcpy(text, "");
+		return text;
 	} 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, start, start + 12);
+	buffer_dump(mdb->pg_buf, start, start + MDB_MEMO_OVERHEAD);
 #endif
 
 	/* The 16 bit integer at offset 0 is the length of the memo field.
@@ -626,7 +629,8 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		printf("Reading LVAL page %06x\n", pg_row >> 8);
 #endif
 		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
-			return "";
+			strcpy(text, "");
+			return text;
 		}
 #if MDB_DEBUG
 		printf("row num %d start %d len %d\n",
@@ -645,7 +649,8 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		tmp[0] = '\0';
 		do {
 			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
-				return "";
+				strcpy(text, "");
+				return text;
 			}
 #if MDB_DEBUG
 			printf("row num %d start %d len %d\n",
@@ -685,10 +690,12 @@ mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
 	return text;
 }
 
-static int trim_trailing_zeros(char * buff, int n)
+static int trim_trailing_zeros(char * buff)
 {
-	char * p = buff + n - 1;
+	char *p;
+	int n = strlen(buff);
 
+	p = buff + n - 1;
 	while (p >= buff && *p == '0')
 		*p-- = '\0';
 
@@ -697,15 +704,13 @@ static int trim_trailing_zeros(char * buff, int n)
 
 	return 0;
 }
-				
-char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
-{
-	/* FIX ME -- not thread safe */
-	static char text[MDB_BIND_SIZE];
-	int n;
-	float tf;
-	double td;
 
+/* Date/Time is stored as a double, where the whole
+   part is the days from 12/30/1899 and the fractional
+   part is the fractional part of one day. */
+static char *
+mdb_date_to_string(MdbHandle *mdb, int start)
+{
 	struct tm t;
 	long int day, time;
 	int yr, q;
@@ -713,103 +718,110 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
 	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
+	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	double td = mdb_get_double(mdb->pg_buf, start);
+
+	day = (long int)(td);
+	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
+	t.tm_hour = time / 3600;
+	t.tm_min = (time / 60) % 60;
+	t.tm_sec = time % 60; 
+	t.tm_year = 1 - 1900;
+
+	day += 693593; /* Days from 1/1/1 to 12/31/1899 */
+	t.tm_wday = (day+1) % 7;
+
+	q = day / 146097;  /* 146097 days in 400 years */
+	t.tm_year += 400 * q;
+	day -= q * 146097;
+
+	q = day / 36524;  /* 36524 days in 100 years */
+	if (q > 3) q = 3;
+	t.tm_year += 100 * q;
+	day -= q * 36524;
+
+	q = day / 1461;  /* 1461 days in 4 years */
+	t.tm_year += 4 * q;
+	day -= q * 1461;
+
+	q = day / 365;  /* 365 days in 1 year */
+	if (q > 3) q = 3;
+	t.tm_year += q;
+	day -= q * 365;
+
+	yr = t.tm_year + 1900;
+	cal = ((yr)%4==0 && ((yr)%100!=0 || (yr)%400==0)) ?
+		leap_cal : noleap_cal;
+	for (t.tm_mon=0; t.tm_mon<12; t.tm_mon++) {
+		if (day < cal[t.tm_mon+1]) break;
+	}
+	t.tm_mday = day - cal[t.tm_mon] + 1;
+	t.tm_yday = day;
+	t.tm_isdst = -1;
+
+	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
+
+	return text;
+}
+				
+char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
+{
+	char *text;
+	float tf;
+	double td;
+
 	switch (datatype) {
 		case MDB_BOOL:
 			/* shouldn't happen.  bools are handled specially
 			** by mdb_xfer_bound_bool() */
 		break;
 		case MDB_BYTE:
-			sprintf(text,"%d",mdb_get_byte(buf, start));
-			return text;
+			text = g_strdup_printf("%d", mdb_get_byte(buf, start));
 		break;
 		case MDB_INT:
-			sprintf(text,"%ld",(long)mdb_get_int16(buf, start));
-			return text;
+			text = g_strdup_printf("%ld",
+				(long)mdb_get_int16(buf, start));
 		break;
 		case MDB_LONGINT:
-			sprintf(text,"%ld",mdb_get_int32(buf, start));
-			return text;
+			text = g_strdup_printf("%ld",
+				mdb_get_int32(buf, start));
 		break;
 		case MDB_FLOAT:
 			tf = mdb_get_single(mdb->pg_buf, start);
-			n = sprintf(text,"%.*f",FLT_DIG - (int)ceil(log10(tf)), tf);
-			trim_trailing_zeros(text, n);
-			return text;
+			text = g_strdup_printf("%.*f",
+				FLT_DIG - (int)ceil(log10(tf)), tf);
+			trim_trailing_zeros(text);
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(mdb->pg_buf, start);
-			n = sprintf(text,"%.*f",DBL_DIG - (int)ceil(log10(td)), td);
-			trim_trailing_zeros(text, n);
-			return text;
+			text = g_strdup_printf("%.*f",
+				DBL_DIG - (int)ceil(log10(td)), td);
+			trim_trailing_zeros(text);
 		break;
 		case MDB_TEXT:
 			if (size<0) {
-				return "";
+				text = g_strdup("");
+			} else {
+				text = (char *) g_malloc(MDB_BIND_SIZE);
+				mdb_unicode2ascii(mdb, mdb->pg_buf + start,
+					size, text, MDB_BIND_SIZE);
 			}
-			mdb_unicode2ascii(mdb, mdb->pg_buf + start, size, text, MDB_BIND_SIZE);
-			return text;
 		break;
 		case MDB_SDATETIME:
-			/* Date/Time is stored as a double, where the whole
-			   part is the days from 12/30/1899 and the fractional
-			   part is the fractional part of one day. */
-			td = mdb_get_double(mdb->pg_buf, start);
-
-			day = (long int)(td);
-			time = (long int)(fabs(td - day) * 86400.0 + 0.5);
-			t.tm_hour = time / 3600;
-			t.tm_min = (time / 60) % 60;
-			t.tm_sec = time % 60; 
-			t.tm_year = 1 - 1900;
-
-			day += 693593; /* Days from 1/1/1 to 12/31/1899 */
-			t.tm_wday = (day+1) % 7;
-
-			q = day / 146097;  /* 146097 days in 400 years */
-			t.tm_year += 400 * q;
-			day -= q * 146097;
-
-			q = day / 36524;  /* 36524 days in 100 years */
-			if (q > 3) q = 3;
-			t.tm_year += 100 * q;
-			day -= q * 36524;
-
-			q = day / 1461;  /* 1461 days in 4 years */
-			t.tm_year += 4 * q;
-			day -= q * 1461;
-
-			q = day / 365;  /* 365 days in 1 year */
-			if (q > 3) q = 3;
-			t.tm_year += q;
-			day -= q * 365;
-
-			yr = t.tm_year + 1900;
-			cal = ((yr)%4==0 && ((yr)%100!=0 || (yr)%400==0)) ?
-				leap_cal : noleap_cal;
-			for (t.tm_mon=0; t.tm_mon<12; t.tm_mon++) {
-				if (day < cal[t.tm_mon+1]) break;
-			}
-			t.tm_mday = day - cal[t.tm_mon] + 1;
-			t.tm_yday = day;
-			t.tm_isdst = -1;
-
-			strftime(text, MDB_BIND_SIZE, date_fmt, &t);
-			return text;
-
+			text = mdb_date_to_string(mdb, start);
 		break;
 		case MDB_MEMO:
-			return mdb_memo_to_string(mdb, start, size);
+			text = mdb_memo_to_string(mdb, start, size);
 		break;
 		case MDB_MONEY:
-			mdb_money_to_string(mdb, start, text);
-			return text;
+			text = mdb_money_to_string(mdb, start);
 		case MDB_NUMERIC:
 		break;
 		default:
-			return "";
+			text = g_strdup("");
 		break;
 	}
-	return NULL;
+	return text;
 }
 int mdb_col_disp_size(MdbColumn *col)
 {
@@ -839,7 +851,7 @@ int mdb_col_disp_size(MdbColumn *col)
 			return 20;
 		break;
 		case MDB_MEMO:
-			return 255; 
+			return 64000; 
 		break;
 		case MDB_MONEY:
 			return 21;

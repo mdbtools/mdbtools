@@ -27,7 +27,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.29 2005/01/15 05:02:09 calvinrsmith Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.30 2005/02/25 03:27:45 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -1166,6 +1166,7 @@ SQLRETURN SQL_API SQLGetData(
 		char *str = mdb_col_to_string(mdb,mdb->pg_buf,
 			col->cur_value_start,col->col_type,col->cur_value_len);
 		strcpy(rgbValue, str);
+		g_free(str);
 		if (pcbValue)
 			*pcbValue = col->cur_value_len;
 	} else {
