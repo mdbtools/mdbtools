@@ -123,8 +123,10 @@ int bit_num = (col_num - 1) % 8;
 }
 /* bool has to be handled specially because it uses the null bit to store its 
 ** value*/
-static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
+static int 
+mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 {
+	
 	col->cur_value_len = value;
 	if (col->bind_ptr) {
 		strcpy(col->bind_ptr,  value ? "0" : "1");
