@@ -178,6 +178,7 @@ mdb_close(MdbHandle *mdb)
 			mdb->f = NULL;
 		}
 	}
+	mdb_free_handle(mdb);
 }
 /**
  * mdb_clone_handle:
