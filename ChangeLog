@@ -8,6 +8,7 @@ Sat Nov 13 20:33:42 EST 2004	Brian Bruns <brian@bruns.com>
 	* src/gmdb2/table_export.c: patch #1038578 from Filip Van Raemdonck
 	* src/sql/mdbsql.c:
 	* include/mdbsql.h: patch #1034566 from Filip Van Raemdonck
+	* src/odbc/Makefile.am: patch #1030353 from Filip Van Raemdonck
 
 Wed Oct 27 22:32:33 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-sql.c: Various mdb-sql improvements
