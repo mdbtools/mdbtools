@@ -54,6 +54,17 @@ MdbFormatConstants MdbJet3Constants = {
 
 static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
 
+/**
+ * mdb_find_file:
+ * @filename: path to MDB (database) file
+ *
+ * Finds and returns the absolute path to an MDB file.  Function will first try                                                                                
+ * to fstat file as passed, then search through the $MDBPATH if not found.
+ *
+ * Return value: gchar pointer to absolute path. Caller is responsible for
+ * freeing.
+ **/
+
 static gchar *mdb_find_file(char *file_name)
 {
 	struct stat status;

@@ -398,9 +398,9 @@ next_pg field.
 +-------------------------------------------------------------------------+
 | ???? | 1 byte  | col_type    | Column Type (see table below)            |
 | ???? | 4 bytes | unknown     | matches first unknown definition block   |
-| ???? | 2 bytes | col_num     | Column Number                            |
-| ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
+| ???? | 2 bytes | offset_V    | Offset for variable length columns       |
+| ???? | 2 bytes | col_num     | Column Number                            |
 | ???? | 4 bytes | ???         | prec/scale? verify                       |
 | ???? | 1 byte  | bitmask     | low order bit indicates variable columns |
 | ???? | 1 byte  | ???         | seems to be 1 when variable len          |

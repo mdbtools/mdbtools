@@ -302,7 +302,7 @@ Click on the <guibutton>Data</guibutton> button from the right hand side of the 
 	 </sect2>	 		 	 	 
 	<sect2 id="gmdb-table-export">
 	 <title>Data Export</title>
-	 <para>The <guilabel>Export</guilabel> button creates a text file containing the data from a single data.</para>
+	 <para>The <guilabel>Export</guilabel> button creates a text file containing the data from a single table.</para>
 	 <para>To export the table data, perform the following steps</para>
 		<orderedlist> 
 		  <listitem><para>

@@ -20,6 +20,8 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 AC_C_BIGENDIAN
 
+AM_ICONV
+
 dnl no optional stuff by default
 OPTDIRS=""
 

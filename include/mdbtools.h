@@ -31,6 +31,10 @@
 #include <string.h>
 #include <glib.h>
 
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
+
 #define MDB_DEBUG 0
 
 #define MDB_PGSIZE 4096
@@ -221,6 +225,9 @@ typedef struct {
 	char		*backend_name;
 	MdbFormatConstants *fmt;
 	MdbStatistics *stats;
+#ifdef HAVE_ICONV
+	iconv_t	iconv_out;
+#endif
 } MdbHandle; 
 
 typedef struct {

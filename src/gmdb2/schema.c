@@ -137,6 +137,7 @@ GtkWidget *schemawin, *combo, *checkbox, *entry;
 	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"Sybase")) strcpy(backend,"sybase");
 	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"MS SQL Server")) strcpy(backend,"sybase");
 	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"PostgreSQL")) strcpy(backend,"postgres");
+	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"MySQL")) strcpy(backend,"mysql");
 	else strcpy(backend,"access");
 	checkbox = glade_xml_get_widget (schemawin_xml, "rel_checkbox");
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox)))

@@ -1,7 +1,7 @@
 This is mdbtools version 0.6pre1
 
 Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
-program to help you use Microsoft Access file in various settings.  The major
+programs to help you use Microsoft Access file in various settings.  The major
 pieces are:
 
 . libmdb    - the core library that allows access to MDB files programatically.

@@ -1,7 +1,16 @@
 Sun Jun 20 09:37:58 EDT 2004	Brian Bruns <brian@bruns.com.
-	* configure.in:
-	* acinclude.m4: use READLINE macro from Ville Laurikari. Remove full macroset to work around broken BSD autoconf.
+	* configure.in: 
+	* acinclude.m4: use READLINE macro from Ville Laurikari. Remove full macroset to work around broken BSD autoconf.  Add macro for iconv detection.
 	* src/util/mdb-sql.c: add stubs for read_history/write_history if no readline.  update to use new readline defines.
+	* HACKING: reverse order of total column count with current column count.
+	* README: fix typo
+	* include: add iconv handle to MdbHandle
+	* src/libmdb/file.c: add gtkdoc to mdb_find_file()
+	* src/libmdb/Makefile.am: 
+	* src/sql/Makefile.am: add libtool versioning
+	* src/gmdb2/gladefiles/gmdb-schema.glade:
+	* src/gmdb2/schema.c: Add MySQL to export
+	* src/gmdb2/help/C/gmdb.xml: fix typo
 
 Fri Jun 18 00:08:24 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING:
