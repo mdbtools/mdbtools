@@ -1,5 +1,6 @@
 Fri Feb 25 23:02:42 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/money.c: Fix bad declaration
+	* src/libmdb/write.c: Rework of mdb_crack_row
 
 Thu Feb 24 21:13:02 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c:
