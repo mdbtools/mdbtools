@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.22 2004/09/16 04:00:45 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.23 2004/09/22 03:08:46 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -276,7 +276,7 @@ SQLRETURN SQL_API SQLMoreResults(
     SQLHSTMT           hstmt)
 {
 	TRACE("SQLMoreResults");
-	return SQL_SUCCESS;
+	return SQL_NO_DATA;
 }
 
 SQLRETURN SQL_API SQLNativeSql(
