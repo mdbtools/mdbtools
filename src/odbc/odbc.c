@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.15 2004/03/13 15:07:19 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.16 2004/03/25 10:34:07 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -920,9 +920,13 @@ static SQLRETURN SQL_API _SQLFreeStmt(
     SQLUSMALLINT       fOption)
 {
 	struct _hstmt *stmt=(struct _hstmt *)hstmt;
+	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+	struct _henv *env = (struct _henv *) dbc->henv;
+	MdbSQL *sql = env->sql;
 
 	TRACE("_SQLFreeStmt");
 	if (fOption==SQL_DROP) {
+		mdb_sql_reset(sql);
 		g_free(stmt);
 	} else if (fOption==SQL_CLOSE) {
 	} else {
