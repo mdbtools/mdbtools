@@ -281,7 +281,7 @@ next_pg field.
 | ???? | 4 bytes | num_rows    | Number of records in this table          |
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
-| 0x4e | 1 byte  | table_type  | 0x53: user table, 0x4e: system table     |
+| 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
@@ -358,7 +358,7 @@ next_pg field.
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
 | ???? |16 bytes | unknown     | unknown                                  |
-| 0x4e | 1 byte  | table_type  | 0x53: user table, 0x4e: system table     |
+| 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
