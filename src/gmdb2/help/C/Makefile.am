@@ -1,5 +1,5 @@
 figs = \
-	figures/gmdb2_window.png
+	figures/gmdb2_window.png \
 	figures/gmdb2_sql_window.png
 docname = gmdb
 lang = C

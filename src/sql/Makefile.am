@@ -1,6 +1,8 @@
 lib_LTLIBRARIES	=	libmdbsql.la
 libmdbsql_la_SOURCES=	mdbsql.c parser.y lexer.l 
-INCLUDES	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
+EXTRA_DIST = main.c
+DISTCLEANFILES = parser.c parser.h lexer.c
+AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LIBS	=	$(GLIB_LIBS)
 LDADD	=	../libmdb/libmdb.la 
 YACC = @YACC@ -d
