@@ -26,7 +26,7 @@ int   i, j, k;
 MdbHandle *mdb;
 MdbCatalogEntry entry;
 MdbTableDef *table;
-MdbColumn col;
+MdbColumn *col;
 
  if (argc < 2) {
    fprintf (stderr, "Usage: schema <file>\n");
@@ -75,13 +75,13 @@ MdbColumn col;
 
 	       for (k = 0; k < table->num_cols; k++)
 		 {
-		   col = g_array_index (table->columns, MdbColumn, k);
+		   col = g_ptr_array_index (table->columns, k);
 		   
-		   fprintf (stdout, "\t%s\t\t\t%s", col.name, 
-			    mdb_get_coltype_string (col.col_type));
+		   fprintf (stdout, "\t%s\t\t\t%s", col->name, 
+			    mdb_get_coltype_string (col->col_type));
 		   
-		   if (col.col_size != 0)
-		     fprintf (stdout, " (%d)", col.col_size);
+		   if (col->col_size != 0)
+		     fprintf (stdout, " (%d)", col->col_size);
 		   
 		   if (k < table->num_cols - 1)
 		     fprintf (stdout, ", \n");

@@ -76,7 +76,7 @@ typedef struct {
 	unsigned int   kkd_rowid;
 	int		num_props;
 	GArray		*props;
-	GArray		*columns;
+	GPtrArray	*columns;
 } MdbCatalogEntry;
 
 typedef struct {
@@ -86,7 +86,7 @@ typedef struct {
 	int	num_rows;
 	int	num_pgs;
 	int	first_data_pg;
-	GArray	*columns;
+	GPtrArray	*columns;
 } MdbTableDef;
 
 typedef struct {

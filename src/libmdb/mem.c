@@ -57,3 +57,14 @@ void mdb_free_tabledef(MdbTableDef *table)
 {
 	if (table) free(table);
 }
+mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
+{
+MdbColumn *col;
+		
+ 	col = g_memdup(in_col,sizeof(MdbCatalogEntry));
+	g_ptr_array_add(columns, col);
+}
+mdb_free_columns(GPtrArray *columns)
+{
+	g_ptr_array_free(columns, TRUE);
+}

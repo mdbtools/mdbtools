@@ -19,12 +19,18 @@
 
 #include "mdbtools.h"
 
-#define MDB_DEBUG 1
+#define MDB_DEBUG 0
 
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size);
 
-void mdb_bind_col(MdbColumn *col, void *bind_ptr)
+void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
 {
+MdbColumn *col;
+
+	/* 
+	** the column arrary is 0 based, so decrement to get 1 based parameter 
+	*/
+	col=g_ptr_array_index(table->columns, col_num - 1);
 	col->bind_ptr = bind_ptr;
 }
 int mdb_find_end_of_row(MdbHandle *mdb, int row)
@@ -42,7 +48,7 @@ int rows, row_end;
 int mdb_read_row(MdbTableDef *table, int pg_num, int row)
 {
 MdbHandle *mdb = table->entry->mdb;
-MdbColumn col;
+MdbColumn *col;
 int j;
 int num_cols, var_cols, fixed_cols;
 int row_start, row_end;
@@ -90,33 +96,33 @@ int delflag, lookupflag;
 
 	/* fixed columns */
 	for (j=0;j<table->num_cols;j++) {
-		col = g_array_index(table->columns,MdbColumn,j);
-		if (mdb_is_fixed_col(&col) &&
+		col = g_ptr_array_index(table->columns,j);
+		if (mdb_is_fixed_col(col) &&
 		    ++fixed_cols_found <= fixed_cols) {
-			if (col.bind_ptr) {
-				strcpy(col.bind_ptr, 
+			if (col->bind_ptr) {
+				strcpy(col->bind_ptr, 
 					mdb_col_to_string(mdb, 
 						row_start + col_start,
-						col.col_type,
+						col->col_type,
 						0)
 					);
 			}
 #if MDB_DEBUG
 			fprintf(stdout,"fixed col %s = %s\n",
-				col.name,
+				col->name,
 				mdb_col_to_string(mdb, 
 					row_start + col_start,
-					col.col_type,
+					col->col_type,
 					0));
-			col_start += col.col_size;
 #endif
+			col_start += col->col_size;
 		}
 	}
 
 	/* variable columns */
 	for (j=0;j<table->num_cols;j++) {
-		col = g_array_index(table->columns,MdbColumn,j);
-		if (!mdb_is_fixed_col(&col) &&
+		col = g_ptr_array_index(table->columns,j);
+		if (!mdb_is_fixed_col(col) &&
 		    ++var_cols_found <= var_cols) {
 			col_start = mdb->pg_buf[row_end-1-var_cols_found];
 
@@ -127,24 +133,24 @@ int delflag, lookupflag;
 
 #if MDB_DEBUG
 			fprintf(stdout,"coltype %d colstart %d len %d\n",
-				col.col_type,
+				col->col_type,
 				col_start, 
 				len);
 #endif
-			if (col.bind_ptr) {
-				strcpy(col.bind_ptr, 
+			if (col->bind_ptr) {
+				strcpy(col->bind_ptr, 
 					mdb_col_to_string(mdb, 
 						row_start + col_start,
-						col.col_type,
+						col->col_type,
 						len)
 					);
 			}
 #if MDB_DEBUG
 			fprintf(stdout,"var col %s = %s\n", 
-				col.name, 
+				col->name, 
 				mdb_col_to_string(mdb,
 					row_start + col_start,
-					col.col_type,
+					col->col_type,
 					len));
 #endif
 
@@ -158,9 +164,14 @@ int delflag, lookupflag;
 void mdb_data_dump(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
-int i, pg_num;
+int i, j, pg_num;
 int rows;
+char *bound_values[256]; /* warning doesn't handle table > 256 columns.  Can that happen? */
 
+	for (i=0;i<table->num_cols;i++) {
+		bound_values[i] = (char *) malloc(256);
+		mdb_bind_column(table, i+1, bound_values[i]);
+	}
 	for (pg_num=1;pg_num<=table->num_pgs;pg_num++) {
 		mdb_read_pg(mdb,table->first_data_pg + pg_num);
 		rows = mdb_get_int16(mdb,8);
@@ -169,7 +180,13 @@ int rows;
 			rows);
 		for (i=0;i<rows;i++) {
 			mdb_read_row(table, table->first_data_pg + pg_num, i);
+			for (j=0;j<table->num_cols;j++) {
+				fprintf(stdout, "column %d is %s\n", j+1, bound_values[j]);
+			}
 		}
+	}
+	for (i=0;i<table->num_cols;i++) {
+		free(bound_values[i]);
 	}
 }
 

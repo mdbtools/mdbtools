@@ -77,11 +77,10 @@ int len, i;
 	return table;
 }
 
-GArray *mdb_read_columns(MdbTableDef *table)
+GPtrArray *mdb_read_columns(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
 MdbColumn col;
-GArray *columns;
 int len, i;
 int cur_col, cur_name;
 int col_type, col_size;
@@ -89,7 +88,7 @@ int col_start, name_start;
 char name[MDB_MAX_OBJ_NAME+1];
 int name_sz;
 	
-	table->columns = g_array_new(FALSE,FALSE,sizeof(MdbColumn));
+	table->columns = g_ptr_array_new();
 
 	col_start = 43 + (table->num_pgs * 8);
 	name_start = col_start + (table->num_cols * 18);
@@ -109,7 +108,7 @@ int name_sz;
 
 		cur_col += 18;
 		cur_name += name_sz + 1;
-		g_array_append_val(table->columns, col);
+		mdb_append_column(table->columns, &col);
 	}
 
 	return table->columns;
@@ -118,7 +117,7 @@ int name_sz;
 void mdb_table_dump(MdbCatalogEntry *entry)
 {
 MdbTableDef *table;
-MdbColumn col;
+MdbColumn *col;
 MdbHandle *mdb = entry->mdb;
 int i;
 
@@ -130,11 +129,11 @@ int i;
 
 	mdb_read_columns(table);
 	for (i=0;i<table->num_cols;i++) {
-		col = g_array_index(table->columns,MdbColumn,i);
+		col = g_ptr_array_index(table->columns,i);
 	
 		fprintf(stdout,"column %d Name: %-20s Type: %s(%d)\n",
-			i, col.name,
-			mdb_get_coltype_string(col.col_type),
-			col.col_size);
+			i, col->name,
+			mdb_get_coltype_string(col->col_type),
+			col->col_size);
 	}
 }
