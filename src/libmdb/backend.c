@@ -134,6 +134,7 @@ static MdbBackendType mdb_mysql_types[] = {
 		{"numeric",1,1,0},
 };
 
+static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
@@ -153,10 +154,12 @@ int mdb_coltype_takes_length(MdbBackend *backend, int col_type)
 	return backend->types_table[col_type].needs_length;
 }
 
-/*
-** mdb_init_backends() initializes the mdb_backends hash and loads the builtin
-** backends
-*/
+/**
+ * mdb_init_backends
+ *
+ * Initializes the mdb_backends hash and loads the builtin backends.
+ * Use mdb_remove_backends() to destroy this hash when done.
+ */
 void mdb_init_backends()
 {
 	MdbBackend *backend;
@@ -176,17 +179,32 @@ void mdb_register_backend(MdbBackendType *backend_type, char *backend_name)
 	g_hash_table_insert(mdb_backends, backend_name, backend);
 }
 
+/**
+ * mdb_remove_backends
+ *
+ * Removes all entries from and destroys the mdb_backends hash.
+ */
+void mdb_remove_backends()
+{
+	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
+	g_hash_table_destroy(mdb_backends);
+}
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
 {
 	MdbBackend *backend = (MdbBackend *)value;
 	g_free (backend);
 	return TRUE;
 }
-void mdb_remove_backends()
-{
-	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
-	g_hash_table_destroy(mdb_backends);
-}
+
+/**
+ * mdb_set_default_backend
+ * @mdb: Handle to open MDB database file
+ * @backend_name: Name of the backend to set as default
+ *
+ * Sets the default backend of the handle @mdb to @backend_name.
+ *
+ * Returns: 1 if successful, 0 if unsuccessful.
+ */
 int mdb_set_default_backend(MdbHandle *mdb, char *backend_name)
 {
 	MdbBackend *backend;
@@ -202,12 +220,20 @@ int mdb_set_default_backend(MdbHandle *mdb, char *backend_name)
 	}
 }
 
-/*
- * generate relationships by reading the MSysRelationships table
- *   szColumn contains the column name of the child table
- *   szObject contains the table name of the child table
- *   szReferencedColumn contains the column name of the parent table
- *   szReferencedObject contains the table name of the parent table
+/**
+ * mdb_get_relationships
+ * @mdb: Handle to open MDB database file
+ *
+ * Generates relationships by reading the MSysRelationships table.
+ *   'szColumn' contains the column name of the child table.
+ *   'szObject' contains the table name of the child table.
+ *   'szReferencedColumn' contains the column name of the parent table.
+ *   'szReferencedObject' contains the table name of the parent table.
+ *
+ * Returns: a string stating that relationships are not supported for the
+ *   selected backend, or a string containing SQL commands for setting up
+ *   the relationship, tailored for the selected backend.  The caller is
+ *   responsible for freeing this string.
  */
 char *mdb_get_relationships(MdbHandle *mdb)
 {

@@ -58,7 +58,7 @@ static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long 
  * mdb_find_file:
  * @filename: path to MDB (database) file
  *
- * Finds and returns the absolute path to an MDB file.  Function will first try                                                                                
+ * Finds and returns the absolute path to an MDB file.  Function will first try
  * to fstat file as passed, then search through the $MDBPATH if not found.
  *
  * Return value: gchar pointer to absolute path. Caller is responsible for

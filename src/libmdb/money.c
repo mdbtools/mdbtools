@@ -34,6 +34,14 @@ static int multiply_byte(unsigned char *product, int num, unsigned char *multipl
 static int do_carry(unsigned char *product);
 static char *array_to_string(unsigned char *array, int scale, char *s);
 
+/**
+ * mdb_money_to_string
+ * @mdb: Handle to open MDB database file
+ * @start: Offset of the field within the current page
+ * @s: String that will receieve the value
+ *
+ * Returns: the string that has received the value.
+ */
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s)
 {
 unsigned char multiplier[MAXPRECISION], temp[MAXPRECISION];

@@ -1,3 +1,9 @@
+Mon Jun 21 23:18:18 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/backend.c:
+	* src/libmdb/file.c:
+	* src/libmdb/like.c:
+	* src/libmdb/money.c: Add gtkdoc to various functions
+
 Sun Jun 20 09:37:58 EDT 2004	Brian Bruns <brian@bruns.com.
 	* configure.in: 
 	* acinclude.m4: use READLINE macro from Ville Laurikari. Remove full macroset to work around broken BSD autoconf.  Add macro for iconv detection.
