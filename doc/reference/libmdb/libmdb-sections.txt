@@ -48,7 +48,6 @@ mdb_table_dump
 mdb_free_tabledef
 <SUBSECTION>
 mdb_read_columns
-mdb_append_index
 mdb_get_objtype_string
 mdb_bind_column_by_name
 mdb_data_dump

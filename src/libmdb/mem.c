@@ -117,22 +117,3 @@ mdb_free_columns(GPtrArray *columns)
 		g_free (g_ptr_array_index(columns, i));
 	g_ptr_array_free(columns, TRUE);
 }
-
-void 
-mdb_append_index(GPtrArray *indices, MdbIndex *in_idx)
-{
-	MdbIndex *idx;
-
- 	idx = g_memdup(in_idx,sizeof(MdbIndex));
-	g_ptr_array_add(indices, idx);
-}
-void
-mdb_free_indices(GPtrArray *indices)
-{
-	unsigned int i;
-
-	if (!indices) return;
-	for (i=0; i<indices->len; i++)
-		g_free (g_ptr_array_index(indices, i));
-	g_ptr_array_free(indices, TRUE);
-}

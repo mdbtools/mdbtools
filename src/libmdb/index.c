@@ -65,63 +65,63 @@ char idx_to_text[] = {
 GPtrArray *
 mdb_read_indices(MdbTableDef *table)
 {
-MdbCatalogEntry *entry = table->entry;
-MdbHandle *mdb = entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
-MdbIndex idx, *pidx;
-int i, j;
-int idx_num, key_num, col_num;
-int cur_pos;
-int name_sz, idx2_sz;
-gchar *tmpbuf;
-
-/* FIX ME -- doesn't handle multipage table headers */
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
+	MdbIndex *pidx;
+	int i, j;
+	int idx_num, key_num, col_num;
+	int cur_pos, name_sz, idx2_sz, type_offset;
+	int index_start_pg = mdb->cur_pg;
+	gchar *tmpbuf;
 
         table->indices = g_ptr_array_new();
 
         if (IS_JET4(mdb)) {
 		cur_pos = table->index_start + 52 * table->num_real_idxs;
-		idx2_sz = 27;
-		
+		idx2_sz = 28;
+		type_offset = 23;
 	} else {
 		cur_pos = table->index_start + 39 * table->num_real_idxs;
-		idx2_sz = 19;
+		idx2_sz = 20;
+		type_offset = 19;
 	}
 
+	tmpbuf = (gchar *) g_malloc(idx2_sz);
 	for (i=0;i<table->num_idxs;i++) {
-		memset(&idx, '\0', sizeof(MdbIndex));
-		idx.table = table;
-		cur_pos +=4;
-		idx.index_num = read_pg_if_16(mdb, &cur_pos);
-		read_pg_if(mdb, &cur_pos, idx2_sz - 4);
-		cur_pos += idx2_sz - 4;
-		idx.index_type = mdb->pg_buf[cur_pos++]; 
-		mdb_append_index(table->indices, &idx);
+		read_pg_if_n(mdb, tmpbuf, &cur_pos, idx2_sz);
+		cur_pos += idx2_sz;
+		pidx = (MdbIndex *) g_malloc0(sizeof(MdbIndex));
+		pidx->table = table;
+		pidx->index_num = mdb_get_int16(tmpbuf, 4);
+		pidx->index_type = tmpbuf[type_offset]; 
+		g_ptr_array_add(table->indices, pidx);
 	}
+	g_free(tmpbuf);
 
 	for (i=0;i<table->num_idxs;i++) {
 		pidx = g_ptr_array_index (table->indices, i);
-		read_pg_if(mdb, &cur_pos, 0);
 		if (IS_JET4(mdb)) {
 			name_sz=read_pg_if_16(mdb, &cur_pos);
 			cur_pos += 2;
-			tmpbuf = g_malloc((name_sz + 1)*2);
-			read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz*2);
+			tmpbuf = g_malloc(name_sz);
+			read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
+			cur_pos += name_sz;
 			mdb_unicode2ascii(mdb, tmpbuf, 0, name_sz, pidx->name); 
 			g_free(tmpbuf);
-			cur_pos += name_sz;
 		} else {
+			read_pg_if(mdb, &cur_pos, 0);
 			name_sz=mdb->pg_buf[cur_pos++];
 			read_pg_if_n(mdb, pidx->name, &cur_pos, name_sz);
-			pidx->name[name_sz]='\0';		
 			cur_pos += name_sz;
+			pidx->name[name_sz]='\0';		
 		}
 		//fprintf(stderr, "index name %s\n", pidx->name);
 	}
 
-	cur_pos = table->index_start;
 	mdb_read_alt_pg(mdb, entry->table_pg);
-	mdb_read_pg(mdb, entry->table_pg);
+	mdb_read_pg(mdb, index_start_pg);
+	cur_pos = table->index_start;
 	idx_num=0;
 	for (i=0;i<table->num_real_idxs;i++) {
 		if (IS_JET4(mdb)) cur_pos += 4;
@@ -146,23 +146,22 @@ gchar *tmpbuf;
 		for (j=0;j<MDB_MAX_IDX_COLS;j++) {
 			col_num=read_pg_if_16(mdb,&cur_pos);
 			cur_pos += 2;
-			if (col_num != 0xFFFF) {
-				/* set column number to a 1 based column number and store */
-				pidx->key_col_num[key_num]=col_num + 1;
-				if (mdb->pg_buf[cur_pos]) {
-					pidx->key_col_order[key_num]=MDB_ASC;
-				} else {
-					pidx->key_col_order[key_num]=MDB_DESC;
-				}
-				key_num++;
-			}
+			read_pg_if(mdb, &cur_pos, 0);
 			cur_pos++;
+			if (col_num == 0xFFFF)
+				continue;
+			/* set column number to a 1 based column number and store */
+			pidx->key_col_num[key_num] = col_num + 1;
+			pidx->key_col_order[key_num] =
+				(mdb->pg_buf[cur_pos-1]) ? MDB_ASC : MDB_DESC;
+			key_num++;
 		}
 		pidx->num_keys = key_num;
+
 		cur_pos += 4;
 		pidx->first_pg = read_pg_if_32(mdb, &cur_pos);
 		cur_pos += 4;
-		read_pg_if(mdb, &cur_pos, 1);
+		read_pg_if(mdb, &cur_pos, 0);
 		pidx->flags = mdb->pg_buf[cur_pos++];
 		if (IS_JET4(mdb)) cur_pos += 9;
 	}
@@ -888,4 +887,14 @@ mdb_index_scan_free(MdbTableDef *table)
 		mdb_close(table->mdbidx);
 		table->mdbidx = NULL;
 	}
+}
+
+void mdb_free_indices(GPtrArray *indices)
+{
+	unsigned int i;
+
+	if (!indices) return;
+	for (i=0; i<indices->len; i++)
+		g_free (g_ptr_array_index(indices, i));
+	g_ptr_array_free(indices, TRUE);
 }

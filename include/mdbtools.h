@@ -383,8 +383,6 @@ extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
 extern void mdb_free_tabledef(MdbTableDef *table);
 extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
 extern void mdb_free_columns(GPtrArray *columns);
-extern void mdb_append_index(GPtrArray *indices, MdbIndex *in_idx);
-extern void mdb_free_indices(GPtrArray *indices);
 
 /* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -475,6 +473,7 @@ extern void mdb_index_hash_text(guchar *text, guchar *hash);
 extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
 extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
+extern void mdb_free_indices(GPtrArray *indices);
 
 
 /* stats.c */
