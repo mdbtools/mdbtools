@@ -1,12 +1,16 @@
 Things to Do
 ------------
 
+general:
+
+. compile with -Wall and fix warnings
+
 file format:
 
 . how does global allocation map work? (done)
 . export VBA script
 . re-examine KKD records for form design (OLE streams?)
-. write support
+. write support (understood, not coded)
 
 libmdb:
 
@@ -24,15 +28,18 @@ utils:
 
 . need program to unpack VBA script to file (see prole)
 . Access forms to glade converter ?
+. need --version flag
+. -o on mdb-sql not working
 
 SQL Engine:
 
-. SQL Engine does not handle uppercase keywords
+. SQL Engine does not handle uppercase keywords (done)
 . Joins
 . OR clauses using sarg trees from above
 . insert/updates
 . bogus column name in where clause not caught
 . const = const type operations not working (e.g. WHERE 0=1)
+. list tables/describe table shouldn't directly write to stdout
 
 ODBC:
 
@@ -48,3 +55,5 @@ GMDB:
 . Printing not implemented
 . Export needs finishing (done)
 . Fix bitmask size bug in debugger
+. sql window section in manual
+. debugger section in manual
