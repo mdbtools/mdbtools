@@ -1,6 +1,10 @@
 Wed Jan 22 14:54:11 EST 2003	Brian Bruns <camber@ais.org>
 
 	* src/util/mdb-sql.c: typo fix
+	* src/gmdb2/gladefiles/gmdb-debug.glade:
+	* src/gmdb2/gladefiles/gmdb-sql.glade:
+	* src/gmdb2/gladefiles/gmdb.glade:
+	toolbar separator fix (glade/libglade buglet)
 
 Tue Jan 21 18:10:46 EST 2003	Brian Bruns <camber@ais.org>
 	
