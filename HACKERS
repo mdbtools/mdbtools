@@ -134,10 +134,12 @@ one for each column present.  It's format is as follows:
 +------+---------+--------------------------------------------------------+
 | ???? | 1 byte  | Column Type (see table below)                          |
 | ???? | 2 bytes | Column Number, ascending sequential number, starts at 0|
-| ???? | 1 byte  | appears to denote whether a text field is required     |
+| ???? | 1 byte  | unknown. 1 is sometimes seen in text types             |
 | ???? | 1 byte  | unknown                                                |
 | ???? | 4 bytes | Column Number (again)                                  |
-| ???? | 7 bytes | ??? (timestamp?)                                       |
+| ???? | 6 bytes | ??? (timestamp?)                                       |
+| ???? | 1 bytes | bitmask of some sort. low order bit indicates variable |
+|      |         | length column                                          |
 | ???? | 2 bytes | length of column                                       |
 +-------------------------------------------------------------------------+
 
@@ -179,7 +181,8 @@ Each data row looks like this:
 | ???? | 1 byte  | length of data from beginning of record                |
 | ???? | n bytes | offset from start of row for each variable length col  |
 | ???? | 1 byte  | number of variable length columns                      |
-| ???? | 1 byte  | Unknown                                                |
+| ???? | n bytes | Null indicator.  size is 1 byte per 8 columns.         |
+|      |         | 0 indicates a null value.                              |
 +------+---------+--------------------------------------------------------+
 
 Note: it is possible for the offset to the beginning of a variable length 
