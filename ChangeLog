@@ -1,6 +1,8 @@
 Sat Aug 28 14:21:41 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix mdb_read_next_dpg
 	                     Correct long int display length
+	* src/libmdb/data.c:
+	* src/libmdb/map.c: Fix a bug in reading usage maps
 
 Sat Aug 28 00:20:44 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Jump table packing/cracking improvements

@@ -33,7 +33,8 @@ mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guin
 	usage_bitmap = map + 5;
 	usage_bitlen = (map_sz - 5) * 8;
 
-	for (i=start_pg-pgnum+1; i<usage_bitlen; i++) {
+	i = (start_pg >= pgnum) ? start_pg-pgnum+1 : 0;
+	for (; i<usage_bitlen; i++) {
 		if (usage_bitmap[i/8] & (1 << (i%8))) {
 			return pgnum + i;
 		}
@@ -85,17 +86,14 @@ mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guin
 guint32 
 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
-	int map_type;
-
-	map_type = map[0];
-	if (map_type==0) {
+	if (map[0] == 0) {
 		return mdb_map_find_next0(mdb, map, map_sz, start_pg);
-	} else if (map_type==1) {
+	} else if (map[0] == 1) {
 		return mdb_map_find_next1(mdb, map, map_sz, start_pg);
-	} else {
-		fprintf(stderr,"Warning: unrecognized usage map type: %d, defaulting to brute force read\n",map[0]);
 	}
-	return 0;
+
+	fprintf(stderr, "Warning: unrecognized usage map type: %d\n", map[0]);
+	return -1;
 }
 guint32
 mdb_alloc_page(MdbTableDef *table)
