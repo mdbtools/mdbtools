@@ -332,9 +332,10 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 
 float mdb_get_single(unsigned char *buf, int offset)
 {
-	guint32 f;
+	union {guint32 g; float f;} f;
 	memcpy(&f, &buf[offset], 4);
-	return (float)GINT32_FROM_LE(f);
+	f.g = GUINT32_FROM_LE(f.g);
+	return f.f;
 }
 float mdb_pg_get_single(MdbHandle *mdb, int offset)
 {
@@ -345,9 +346,10 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
 
 double mdb_get_double(unsigned char *buf, int offset)
 {
-	guint64 d;
+	union {guint64 g; double d;} d;
 	memcpy(&d, &buf[offset], 8);
-	return (double)GINT64_FROM_LE(d);
+	d.g = GUINT64_FROM_LE(d.g);
+	return d.d;
 }
 double mdb_pg_get_double(MdbHandle *mdb, int offset)
 {
