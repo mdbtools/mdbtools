@@ -24,7 +24,7 @@
 #include "dmalloc.h"
 #endif
 
-#define MAXPRECISION 9
+#define MAXPRECISION 20
 /* 
 ** these routines are copied from the freetds project which does something
 ** very similiar
