@@ -1,0 +1,16 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+# Ideally we should have a versioned library eg. -lmdb-1
+# and also a versioned include path eg. -I${includedir}/libmdb-1.0
+# for parallel installability.
+
+Name: libmdbsql
+Description: libmdb based SQL engine
+Requires: libmdb
+Version: @VERSION@
+Libs: -L${libdir} -lmdbsql
+Cflags:
+
