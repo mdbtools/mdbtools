@@ -43,11 +43,35 @@ int rows, row_end;
 
 	return row_end;
 }
-int mdb_read_row(MdbTableDef *table, int pg_num, int row)
+static int mdb_is_null(unsigned char *null_mask, int col_num)
+{
+int byte_num = (col_num - 1) / 8;
+int bit_num = (col_num - 1) % 8;
+
+	if ((1 << bit_num) & null_mask[byte_num]) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
+{
+	if (col->bind_ptr) {
+		if (len) {
+			strcpy(col->bind_ptr, 
+				mdb_col_to_string(mdb, start, col->col_type, len));
+			return col->col_size;
+		} else {
+			strcpy(col->bind_ptr,  "");
+		}
+	}
+	return 0;
+}
+int mdb_read_row(MdbTableDef *table, int row)
 {
 MdbHandle *mdb = table->entry->mdb;
 MdbColumn *col;
-int j;
+int i, j;
 int num_cols, var_cols, fixed_cols;
 int row_start, row_end;
 int fixed_cols_found, var_cols_found;
@@ -55,6 +79,7 @@ int col_start, len;
 int eod; /* end of data */
 int delflag, lookupflag;
 int bitmask_sz;
+unsigned char null_mask[8]; /* 256 columns max / 8 bits per byte */
 
 	row_start = mdb_get_int16(mdb, 10+(row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
@@ -64,8 +89,8 @@ int bitmask_sz;
 	if (row_start & 0x4000) lookupflag++;
 	row_start &= 0x0FFF; /* remove flags */
 #if DEBUG
-	fprintf(stdout,"Pg %d Row %d bytes %d to %d %s %s\n", 
-		pg_num, row, row_start, row_end,
+	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
+		row, row_start, row_end,
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
 #endif	
@@ -91,6 +116,9 @@ int bitmask_sz;
 	}
 	bitmask_sz = (num_cols - 1) / 8 + 1;
 	eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
+	for (i=0;i<bitmask_sz;i++) {
+		null_mask[i]=mdb->pg_buf[row_end - bitmask_sz + i + 1];
+	}
 
 #if MDB_DEBUG
 	fprintf(stdout,"#cols: %-3d #varcols %-3d EOD %-3d\n", 
@@ -107,22 +135,11 @@ int bitmask_sz;
 		col = g_ptr_array_index(table->columns,j);
 		if (mdb_is_fixed_col(col) &&
 		    ++fixed_cols_found <= fixed_cols) {
-			if (col->bind_ptr) {
-				strcpy(col->bind_ptr, 
-					mdb_col_to_string(mdb, 
-						row_start + col_start,
-						col->col_type,
-						col->col_size)
-					);
+			if (mdb_is_null(null_mask, j+1)) {
+				mdb_xfer_bound_data(mdb, 0, col, 0);
+			} else {
+				mdb_xfer_bound_data(mdb,row_start + col_start, col, col->col_size);
 			}
-#if MDB_DEBUG
-			fprintf(stdout,"fixed col %s = %s\n",
-				col->name,
-				mdb_col_to_string(mdb, 
-					row_start + col_start,
-					col->col_type,
-					0));
-#endif
 			col_start += col->col_size;
 		}
 	}
@@ -142,29 +159,11 @@ int bitmask_sz;
 					- var_cols_found 
 					- 1 ] - col_start;
 
-#if MDB_DEBUG
-			fprintf(stdout,"coltype %d colstart %d len %d\n",
-				col->col_type,
-				col_start, 
-				len);
-#endif
-			if (col->bind_ptr) {
-				strcpy(col->bind_ptr, 
-					mdb_col_to_string(mdb, 
-						row_start + col_start,
-						col->col_type,
-						len)
-					);
+			if (mdb_is_null(null_mask, j+1)) {
+				mdb_xfer_bound_data(mdb, 0, col, 0);
+			} else {
+				mdb_xfer_bound_data(mdb,row_start + col_start, col, len);
 			}
-#if MDB_DEBUG
-			fprintf(stdout,"var col %s = %s\n", 
-				col->name, 
-				mdb_col_to_string(mdb,
-					row_start + col_start,
-					col->col_type,
-					len));
-#endif
-
 			col_start += len;
 		}
 	}
@@ -201,7 +200,6 @@ int rows;
 
 	rows = mdb_get_int16(mdb,8);
 	mdb_read_row(table, 
-		table->cur_pg_num, 
 		table->cur_row);
 
 	table->cur_row++;
@@ -236,7 +234,7 @@ char *bound_values[256]; /* warning doesn't handle tables > 256 columns.  Can th
 			pg_num + table->first_data_pg, 
 			rows);
 		for (i=0;i<rows;i++) {
-			mdb_read_row(table, table->first_data_pg + pg_num, i);
+			mdb_read_row(table, i);
 			for (j=0;j<table->num_cols;j++) {
 				fprintf(stdout, "column %d is %s\n", j+1, bound_values[j]);
 			}

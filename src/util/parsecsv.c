@@ -77,7 +77,7 @@ main (int argc, char **argv)
   fprintf (cfile, "\n");
   fprintf (cfile, "#include <stdio.h>\n");
   fprintf (cfile, "#include \"types.h\"\n");
-  fprintf (cfile, "#include \"dump.h\"\n");
+  fprintf (cfile, "#include \"mdbsupport.h\"\n");
   fprintf (cfile, "\n");
 
   fprintf (cfile, "const %s %s_array [] = {\n", argv [1], argv [1]);

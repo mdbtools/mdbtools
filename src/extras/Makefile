@@ -19,7 +19,7 @@ LIBS =
 INSTALL= @INSTALL@
 
 PROGS = mdb-dump
-OBJS = dump.o 
+OBJS = dump.o
 
 all: $(PROGS)
 
