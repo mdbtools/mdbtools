@@ -84,7 +84,6 @@ mdb_free_file(MdbFile *f)
 	if (f->fd) close(f->fd);
 	if (f->filename) free(f->filename);
 	free(f);
-	f = NULL;
 }
 
 MdbHandle *mdb_alloc_handle()
@@ -106,7 +105,6 @@ void mdb_free_handle(MdbHandle *mdb)
 	mdb_free_file(mdb->f);
 	if (mdb->backend_name) free(mdb->backend_name);
 	free(mdb);
-	mdb = NULL;
 }
 
 void mdb_alloc_catalog(MdbHandle *mdb)
@@ -146,7 +144,6 @@ mdb_free_tabledef(MdbTableDef *table)
 	if (table->usage_map) free(table->usage_map);
 	if (table->free_usage_map) free(table->free_usage_map);
 	free(table);
-	table = NULL;
 }
 
 void
@@ -161,7 +158,6 @@ void
 mdb_free_columns(GPtrArray *columns)
 {
 	g_ptr_array_free(columns, TRUE);
-	columns = NULL;
 }
 
 void 
@@ -176,5 +172,4 @@ void
 mdb_free_indices(GPtrArray *indices)
 {
 	g_ptr_array_free(indices, TRUE);
-	indices = NULL;
 }
