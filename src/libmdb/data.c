@@ -49,6 +49,7 @@ one.
                         break;
                 }
         }
+        row_start &= 0x0FFF;
 
         if (i == -1) {
                 row_end = mdb->pg_size - 1;
@@ -119,7 +120,7 @@ unsigned char isnull;
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
 #endif	
-	if (delflag || lookupflag) {
+	if (!table->noskip_del && (delflag || lookupflag)) {
 		row_end = row_start-1;
 		return 0;
 	}

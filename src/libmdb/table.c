@@ -168,7 +168,6 @@ int i;
 
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
-		mdb_index_dump(idx);
+		mdb_index_dump(table, idx);
 	}
-
 }

@@ -32,6 +32,7 @@
 #define MDB_PGSIZE 2048
 #define MDB_MAX_OBJ_NAME 30
 #define MDB_MAX_COLS 256
+#define MDB_MAX_IDX_COLS 10
 #define MDB_CATALOG_PG 18
 #define MDB_MEMO_OVERHEAD 12
 #define MDB_BIND_SIZE 2048
@@ -139,14 +140,16 @@ typedef struct {
 	int	cur_pg_num;
 	int	cur_phys_pg;
 	int	cur_row;
+	int  noskip_del;  /* don't skip deleted rows */
 } MdbTableDef;
 
 typedef struct {
 	int		index_num;
 	char		name[MDB_MAX_OBJ_NAME+1];
-	unsigned char	primary_key;
+	unsigned char	index_type;
 	int		first_pg;
-	unsigned char	sort_order;
+	short	key_col_num[MDB_MAX_IDX_COLS];
+	unsigned char	key_col_order[MDB_MAX_IDX_COLS];
 } MdbIndex;
 
 typedef struct {
