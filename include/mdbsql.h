@@ -20,6 +20,7 @@ typedef struct {
 	GList *sarg_stack;
 	/* FIX ME */
 	char *bound_values[256];
+	unsigned char *kludge_ttable_pg;
 } MdbSQL;
 
 typedef struct {

@@ -23,6 +23,9 @@
 #include "dmalloc.h"
 #endif
 
+MdbIndexPage *mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain);
+MdbIndexPage *mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg);
+
 char idx_to_text[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0-7     0x00-0x07 */
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 8-15    0x09-0x0f */
@@ -334,20 +337,19 @@ void mdb_index_page_init(MdbIndexPage *ipg)
  * pages at the end of the chain have been peeled off before the call.
  */
 MdbIndexPage *
-mdb_find_next_leaf(MdbHandle *mdb, MdbIndexChain *chain)
+mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 {
 	MdbIndexPage *ipg, *newipg;
 	guint32 pg;
 	guint passed = 0;
 
-	ipg = &(chain->pages[chain->cur_depth - 1]);
+	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
 
 	/*
 	 * If we are at the first page deep and it's not an index page then
 	 * we are simply done. (there is no page to find
 	 */
 
-	mdb_read_pg(mdb, ipg->pg);
 	if (mdb->pg_buf[0]==MDB_PAGE_LEAF) 
 		return ipg;
 
@@ -367,21 +369,54 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndexChain *chain)
 		 * add to the chain and call this function
 		 * recursively.
 		 */
-		chain->cur_depth++;
-		if (chain->cur_depth > MDB_MAX_INDEX_DEPTH) {
-			fprintf(stderr,"Error! maximum index depth of %d exceeded.  This is probably due to a programming bug, If you are confident that your indexes really are this deep, adjust MDB_MAX_INDEX_DEPTH in mdbtools.h and recompile.\n", MDB_MAX_INDEX_DEPTH);
-			exit(1);
-		}
-		newipg = &(chain->pages[chain->cur_depth - 1]);
-		mdb_index_page_init(newipg);
-		newipg->pg = pg;
-		newipg = mdb_find_next_leaf(mdb, chain);
+		newipg = mdb_chain_add_page(mdb, chain, pg);
+		newipg = mdb_find_next_leaf(mdb, idx, chain);
 		//printf("returning pg %lu\n",newipg->pg);
 		return newipg;
 	} while (!passed);
 	/* no more pages */
 	return NULL;
 
+}
+MdbIndexPage *
+mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg)
+{
+	MdbIndexPage *ipg;
+
+	chain->cur_depth++;
+	if (chain->cur_depth > MDB_MAX_INDEX_DEPTH) {
+		fprintf(stderr,"Error! maximum index depth of %d exceeded.  This is probably due to a programming bug, If you are confident that your indexes really are this deep, adjust MDB_MAX_INDEX_DEPTH in mdbtools.h and recompile.\n", MDB_MAX_INDEX_DEPTH);
+		exit(1);
+	}
+	ipg = &(chain->pages[chain->cur_depth - 1]);
+	mdb_index_page_init(ipg);
+	ipg->pg = pg;
+
+	return ipg;
+}
+MdbIndexPage *
+mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
+{
+	MdbIndexPage *ipg;
+
+	/*
+	 * if it's new use the root index page (idx->first_pg)
+	 */
+	if (!chain->cur_depth) {
+		ipg = &(chain->pages[0]);
+		mdb_index_page_init(ipg);
+		chain->cur_depth = 1;
+		ipg->pg = idx->first_pg;
+		if (!(ipg = mdb_find_next_leaf(mdb, idx, chain)))
+			return 0;
+	} else {
+		ipg = &(chain->pages[chain->cur_depth - 1]);
+		ipg->len = 0; 
+	}
+
+	mdb_read_pg(mdb, ipg->pg);
+
+	return ipg;
 }
 /*
  * the main index function.
@@ -401,22 +436,8 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	MdbIndexPage *ipg;
 	int passed = 0;
 
-	/*
-	 * if it's new use the root index page (idx->first_pg)
-	 */
-	if (!chain->cur_depth) {
-		ipg = &(chain->pages[0]);
-		mdb_index_page_init(ipg);
-		chain->cur_depth = 1;
-		ipg->pg = idx->first_pg;
-		if (!(ipg = mdb_find_next_leaf(mdb, chain)))
-			return 0;
-	} else {
-		ipg = &(chain->pages[chain->cur_depth - 1]);
-		ipg->len = 0; 
-	}
 
-	mdb_read_pg(mdb, ipg->pg);
+	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
 
 	/*
 	 * loop while the sargs don't match
@@ -436,7 +457,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 			 */
 			while (chain->cur_depth>1) {
 				chain->cur_depth--;
-				if (!(ipg = mdb_find_next_leaf(mdb, chain)))
+				if (!(ipg = mdb_find_next_leaf(mdb, idx, chain)))
 					return 0;
 				mdb_index_find_next_on_page(mdb, ipg);
 			}

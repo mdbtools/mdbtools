@@ -246,7 +246,7 @@ int i;
 		/* column is null is bit is clear (0) */
 		if (!fields[i].is_null) {
 			byte |= 1 << bit;
-			printf("%d %d %d %d\n", i, bit, 1 << bit, byte);
+			//printf("%d %d %d %d\n", i, bit, 1 << bit, byte);
 		}
 		bit++;
 		if (bit==8) {
@@ -302,7 +302,46 @@ mdb_update_indexes(MdbTableDef *table, int num_fields, MdbField *fields)
 #if MDB_DEBUG_WRITE
 		fprintf(stderr,"Updating %s (%d).\n", idx->name, idx->index_type);
 #endif
+		if (idx->index_type==1) {
+			mdb_update_index(table, idx, num_fields, fields);
+		}
 	}
+}
+
+mdb_init_index_chain(MdbTableDef *table, MdbIndex *idx)
+{
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
+
+	table->scan_idx = idx;
+	table->chain = g_malloc0(sizeof(MdbIndexChain));
+	table->mdbidx = mdb_clone_handle(mdb);
+	mdb_read_pg(table->mdbidx, table->scan_idx->first_pg);
+}
+int
+mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fields)
+{
+	int idx_xref[16];
+	int i, j;
+
+	for (i = 0; i < idx->num_keys; i++) {
+		for (j = 0; j < num_fields; j++) {
+			// key_col_num is 1 based, can't remember why though
+			if (fields[j].colnum == idx->key_col_num[i]-1)
+				idx_xref[i] = j;
+		}
+	}
+	for (i = 0; i < idx->num_keys; i++) {
+		fprintf(stdout, "key col %d (%d) is mapped to field %d (%d %d)\n",
+			i, idx->key_col_num[i], idx_xref[i], fields[idx_xref[i]].colnum, 
+			fields[idx_xref[i]].siz);
+	}
+	for (i = 0; i < num_fields; i++) {
+		fprintf(stdout, "%d (%d %d)\n",
+			i, fields[i].colnum, 
+			fields[i].siz);
+	}
+	//mdb_find_leaf_pg();
 }
 
 int
@@ -330,11 +369,39 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 		return 0;
 	}
 
+	mdb_add_row_to_pg(table, row_buffer, new_row_size);
+
+#if MDB_DEBUG_WRITE
+	buffer_dump(mdb->pg_buf, 0, 39);
+	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+	fprintf(stdout, "writing page %d\n", pgnum);
+#endif
+	if (!mdb_write_pg(mdb, pgnum)) {
+		fprintf(stderr, "write failed! exiting...\n");
+		exit(1);
+	}
+
+	mdb_update_indexes(table, num_fields, fields);
+}
+/*
+ * Assumes caller has verfied space is available on page and adds the new 
+ * row to the current pg_buf.
+ */
+void
+mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size)
+{
+	unsigned char *new_pg;
+	int num_rows, i, pos, row_start, row_end, row_size;
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
 
 	new_pg = mdb_new_data_pg(entry);
+
 	num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
 	pos = mdb->fmt->pg_size;
 
+	/* copy existing rows */
 	for (i=0;i<num_rows;i++) {
 		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
 		row_end = mdb_find_end_of_row(mdb, i);
@@ -347,19 +414,19 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	/* add our new row */
 	pos -= new_row_size;
 	memcpy(&new_pg[pos], row_buffer, new_row_size);
+	/* add row to the row offset table */
 	_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (num_rows*2), pos);
 
+	/* update number rows on this page */
 	num_rows++;
 	_mdb_put_int16(new_pg, fmt->row_count_offset, num_rows);
 
+	/* copy new page over old */
 	memcpy(mdb->pg_buf, new_pg, fmt->pg_size);
 	g_free(new_pg);
-#if MDB_DEBUG_WRITE
-	buffer_dump(mdb->pg_buf, 0, 39);
-	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
-#endif
 
-	mdb_update_indexes(table, num_fields, fields);
+	/* update the freespace */
+	_mdb_put_int16(mdb->pg_buf, 2, mdb_pg_get_freespace(mdb));
 }
 int 
 mdb_update_row(MdbTableDef *table)

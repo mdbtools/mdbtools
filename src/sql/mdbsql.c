@@ -418,6 +418,10 @@ MdbSQLSarg *sql_sarg;
 		mdb_free_tabledef(sql->cur_table);
 		sql->cur_table = NULL;
 	}
+	if (sql->kludge_ttable_pg) {
+		g_free(sql->kludge_ttable_pg);
+		sql->kludge_ttable_pg = NULL;
+	}
 	for (i=0;i<sql->num_columns;i++) {
 		c = g_ptr_array_index(sql->columns,i);
 		mdb_sql_free_column(c);
@@ -476,9 +480,18 @@ int vlen;
 }
 void mdb_sql_listtables(MdbSQL *sql)
 {
-int i;
-MdbCatalogEntry *entry;
-MdbHandle *mdb = sql->mdb;
+	int i;
+	MdbCatalogEntry *entry;
+	MdbHandle *mdb = sql->mdb;
+	MdbField fields[4];
+	int num_fields = 0;
+	char tmpstr[256];
+	unsigned char row_buffer[4096];
+	unsigned char *new_pg;
+	int row_size;
+	MdbTableDef *ttable, *table = NULL;
+	MdbColumn *col, tcol;
+	MdbSQLColumn *sqlcol;
 
 	if (!mdb) {
 		mdb_sql_error("You must connect to a database first");
@@ -486,36 +499,63 @@ MdbHandle *mdb = sql->mdb;
 	}
 	mdb_read_catalog (mdb, MDB_TABLE);
 
+	ttable = mdb_create_temp_table(mdb, "#listtables");
 
-	print_break (30,1);
-	fprintf(stdout,"\n");
-	print_value ("Tables",30,1);
-	fprintf(stdout,"\n");
-	print_break (30,1);
-	fprintf(stdout,"\n");
+	memset(&tcol,0,sizeof(MdbColumn));
+	strcpy(tcol.name, "Tables");
+	tcol.col_size = 30;
+	tcol.col_type = MDB_TEXT;
+	tcol.is_fixed = 0;
+	mdb_temp_table_add_col(ttable, &tcol);
+	mdb_sql_add_column(sql, "Tables");
+	sqlcol = g_ptr_array_index(sql->columns,0);
+	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+
+	/* blank out the pg_buf */
+	new_pg = mdb_new_data_pg(ttable->entry);
+	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
+	g_free(new_pg);
+
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {
-     	entry = g_ptr_array_index (mdb->catalog, i);
-     	/* if it's a table */
-     	if (entry->object_type == MDB_TABLE) {
-       		if (strncmp (entry->object_name, "MSys", 4)) {
-				print_value (entry->object_name,30,1);
-				fprintf(stdout,"\n");
+     		entry = g_ptr_array_index (mdb->catalog, i);
+     		/* if it's a table */
+     		if (entry->object_type == MDB_TABLE) {
+       			if (strncmp (entry->object_name, "MSys", 4)) {
+          			col = g_ptr_array_index(table->columns,0);
+   				fields[0].value = entry->object_name;
+   				fields[0].siz = strlen(entry->object_name); 
+   				fields[0].is_fixed = 0;
+   				fields[0].is_null = 0;
+   				fields[0].start = 0;
+   				fields[0].colnum = 0;
+
+				row_size = mdb_pack_row(ttable, row_buffer, 1, &fields);
+				mdb_add_row_to_pg(ttable,row_buffer, row_size);
+				ttable->num_rows++;
 			}
 		}
 	}
-	print_break (30,1);
-	fprintf(stdout,"\n");
+	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
+	sql->cur_table = ttable;
+
 }
 void mdb_sql_describe_table(MdbSQL *sql)
 {
-MdbTableDef *table = NULL;
-MdbSQLTable *sql_tab;
-MdbCatalogEntry *entry;
-MdbHandle *mdb = sql->mdb;
-MdbColumn *col;
-int i;
-char colsize[11];
+	MdbTableDef *ttable, *table = NULL;
+	MdbSQLTable *sql_tab;
+	MdbCatalogEntry *entry;
+	MdbHandle *mdb = sql->mdb;
+	MdbColumn *col, tcol;
+	MdbSQLColumn *sqlcol;
+	int i;
+	char colsize[11];
+	MdbField fields[4];
+	int num_fields = 0;
+	char tmpstr[256];
+	unsigned char row_buffer[4096];
+	unsigned char *new_pg;
+	int row_size;
 
 	if (!mdb) {
 		mdb_sql_error("You must connect to a database first");
@@ -543,35 +583,78 @@ char colsize[11];
 
 	mdb_read_columns(table);
 
-	print_break (30,1);
-	print_break (20,0);
-	print_break (10,0);
-	fprintf(stdout,"\n");
-	print_value ("Column Name",30,1);
-	print_value ("Type",20,0);
-	print_value ("Size",10,0);
-	fprintf(stdout,"\n");
-	print_break (30,1);
-	print_break (20,0);
-	print_break (10,0);
-	fprintf(stdout,"\n");
+	ttable = mdb_create_temp_table(mdb, "#describe");
+
+	memset(&tcol,0,sizeof(MdbColumn));
+	strcpy(tcol.name, "Column Name");
+	tcol.col_size = 30;
+	tcol.col_type = MDB_TEXT;
+	tcol.is_fixed = 0;
+	mdb_temp_table_add_col(ttable, &tcol);
+	mdb_sql_add_column(sql, "Column Name");
+	sqlcol = g_ptr_array_index(sql->columns,0);
+	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+
+	memset(&tcol,0,sizeof(MdbColumn));
+	strcpy(tcol.name, "Type");
+	tcol.col_size = 20;
+	tcol.col_type = MDB_TEXT;
+	tcol.is_fixed = 0;
+	mdb_temp_table_add_col(ttable, &tcol);
+	mdb_sql_add_column(sql, "Type");
+	sqlcol = g_ptr_array_index(sql->columns,1);
+	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+
+	memset(&tcol,0,sizeof(MdbColumn));
+	strcpy(tcol.name, "Size");
+	tcol.col_size = 10;
+	tcol.col_type = MDB_TEXT;
+	tcol.is_fixed = 0;
+	mdb_temp_table_add_col(ttable, &tcol);
+	mdb_sql_add_column(sql, "Size");
+	sqlcol = g_ptr_array_index(sql->columns,2);
+	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+
+	/* blank out the pg_buf */
+	new_pg = mdb_new_data_pg(ttable->entry);
+	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
+	g_free(new_pg);
 
      for (i=0;i<table->num_cols;i++) {
+
           col = g_ptr_array_index(table->columns,i);
-    
-		print_value (col->name,30,1);
-		print_value (mdb_get_coltype_string(mdb->default_backend, col->col_type),20,0);
+   		fields[0].value = col->name; 
+   		fields[0].siz = strlen(col->name); 
+   		fields[0].is_fixed = 0;
+   		fields[0].is_null = 0;
+   		fields[0].start = 0;
+   		fields[0].colnum = 0;
+
+		strcpy(tmpstr, mdb_get_coltype_string(mdb->default_backend, col->col_type));
+   		fields[1].value = tmpstr; 
+   		fields[1].siz = strlen(tmpstr); 
+   		fields[1].is_fixed = 0;
+   		fields[1].is_null = 0;
+   		fields[1].start = 0;
+   		fields[1].colnum = 1;
+
 		sprintf(colsize,"%d",col->col_size);
-		print_value (colsize,10,0);
-		fprintf(stdout,"\n");
+   		fields[2].value = colsize; 
+   		fields[2].siz = strlen(colsize); 
+   		fields[2].is_fixed = 0;
+   		fields[2].is_null = 0;
+   		fields[2].start = 0;
+   		fields[2].colnum = 2;
+
+		row_size = mdb_pack_row(ttable, row_buffer, 3, &fields);
+		mdb_add_row_to_pg(ttable,row_buffer, row_size);
+		ttable->num_rows++;
      }
-	print_break (30,1);
-	print_break (20,0);
-	print_break (10,0);
-	fprintf(stdout,"\n");
 
 	/* the column and table names are no good now */
-	mdb_sql_reset(sql);
+	//mdb_sql_reset(sql);
+	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
+	sql->cur_table = ttable;
 }
 
 int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)

@@ -221,23 +221,42 @@ int mdb_read_row(MdbTableDef *table, int row)
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
 #endif	
-	num_fields = mdb_crack_row(table, row_start, row_end, &fields);
-	if (!mdb_test_sargs(table, &fields, num_fields)) return 0;
-	for (i=0; i < num_fields; i++) {
-		//col = g_ptr_array_index (table->columns, fields[i].colnum - 1);
-		//rc = _mdb_attempt_bind(mdb, col, fields[i].is_null,
-			//row_start + col_start, col->col_size);
-	}
-	//if (!table->noskip_del && (delflag || lookupflag)) {
+
 	if (!table->noskip_del && delflag) {
 		row_end = row_start-1;
 		return 0;
 	}
 
+	num_fields = mdb_crack_row(table, row_start, row_end, &fields);
+	if (!mdb_test_sargs(table, &fields, num_fields)) return 0;
+	
+#if MDB_DEBUG
+	fprintf(stdout,"sarg test passed row %d \n", row);
+#endif 
+
 #if MDB_DEBUG
 	buffer_dump(mdb->pg_buf, row_start, row_end);
 #endif
 
+#if 1
+	/* take advantage of mdb_crack_row() to clean up binding */
+	for (i = 0; i < num_fields; i++) {
+		col = g_ptr_array_index(table->columns,fields[i].colnum);
+		if (fields[i].is_fixed) {
+			rc = _mdb_attempt_bind(mdb, col, 
+				fields[i].is_null,
+				fields[i].start, 
+				col->col_size);
+		} else {
+			rc = _mdb_attempt_bind(mdb, col, 
+				fields[i].is_null,
+				fields[i].start, 
+				fields[i].siz);
+		}
+	}
+#endif
+
+#if 0
 	/* find out all the important stuff about the row */
 	if (IS_JET4(mdb)) {
 		num_cols = mdb_pg_get_int16(mdb, row_start);
@@ -386,6 +405,7 @@ int mdb_read_row(MdbTableDef *table, int row)
 		}
 	}
 
+#endif
 	return 1;
 }
 static int _mdb_attempt_bind(MdbHandle *mdb, 

@@ -82,8 +82,8 @@ int rownum, row_start, row_end;
 
 
 	/* now grab the free space page map */
-#if 0
-	mdb_swap_pgbuf(mdb);
+#if 1
+	//mdb_swap_pgbuf(mdb);
 	rownum = mdb->pg_buf[fmt->tab_free_map_offset];
 	mdb_read_alt_pg(mdb, mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1));
 	mdb_swap_pgbuf(mdb);
@@ -92,6 +92,7 @@ int rownum, row_start, row_end;
 	table->freemap_sz = row_end - row_start + 1;
 	table->free_usage_map = malloc(table->freemap_sz);
 	memcpy(table->free_usage_map, &mdb->pg_buf[row_start], table->freemap_sz);
+	mdb_swap_pgbuf(mdb);
 #endif
 
 	table->first_data_pg = mdb_pg_get_int16(mdb, fmt->tab_first_dpg_offset);

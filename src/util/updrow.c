@@ -95,18 +95,30 @@ MdbColumn *col;
 }
 void read_to_row(MdbTableDef *table, char *sargname)
 {
-MdbSarg sarg;
-char *sargcol, *sargop, *sargval;
+	static MdbSargNode sarg;
+	char *sargcol, *sargop, *sargval;
+	int i;
+	MdbColumn *col;
 
 
 	if (sargname) {
 		sargcol = strtok(sargname," ");
+		for (i=0;i<table->num_cols;i++) {
+			col=g_ptr_array_index(table->columns,i);
+			if (!strcasecmp(col->name, (char *)sargcol)) {
+				sarg.col = col;
+				break;
+			}
+		}
+
 		sargop = strtok(NULL," ");
 		sargval = strtok(NULL," ");
 		printf("col %s op %s val %s\n",sargcol,sargop,sargval);
         	sarg.op = MDB_EQUAL; /* only support = for now, sorry */
 		sarg.value.i = atoi(sargval);
-		mdb_add_sarg_by_name(table, sargcol, &sarg);
+		table->sarg_tree = &sarg;
+
+		// mdb_add_sarg_by_name(table, sargcol, &sarg);
 	}
 
         mdb_rewind_table(table);

@@ -1,3 +1,19 @@
+Wed Jan 9 15:22:11 EST 2004	Brian Bruns <camber@ais.org>
+
+	* include/mdbtools.h:
+	* src/libmdb/index.c:
+	* src/libmdb/write.c: modularize this a bit more to allow reuse
+	* src/libmdb/worktable.c: preliminary worktable/temp table support
+	* src/libmdb/table.c: fix reading of free page map and enable
+	* src/data/data.c: use mdb_crack_row() from write.c for cleaner row
+	handling.  Fix delflag bug.
+	* src/util/updrow.c: fix sarg handling
+	* src/util/mdb-import.c: check for valid table
+	* src/sql/mdbsql.c: 
+	* src/util/mdb-sql.c: Fix H and F flags.  Change "list tables" and 
+	"describe table" to write to worktable so client can pull results (almost)
+	like a normal query.
+
 Wed Jan 22 14:54:11 EST 2003	Brian Bruns <camber@ais.org>
 
 	* src/util/mdb-sql.c: typo fix

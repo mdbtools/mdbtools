@@ -444,5 +444,6 @@ extern int mdb_like_cmp(char *s, char *r);
 
 /* write.c */
 extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
+extern void mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
 
 #endif /* _mdbtools_h_ */
