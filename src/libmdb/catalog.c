@@ -44,17 +44,16 @@ static char *type_name[] = {"Form",
 
 /* new method */
 #if 1
-GArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
+GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 {
 int   i, j, k;
-MdbCatalogEntry entry, msysobj;
+MdbCatalogEntry entry, msysobj, *data;
 MdbTableDef *table;
 MdbColumn *col;
 char parentid[256];
 char objname[256];
 char tobjtype[256];
 int type;
-gpointer data;
 
  mdb_free_catalog(mdb);
  mdb_alloc_catalog(mdb);
@@ -89,8 +88,8 @@ gpointer data;
 		entry.object_type = type;
 		entry.table_pg = atol(parentid) & 0x00FFFFFF;
 		mdb->num_catalog++;
-		//data = g_memdup(&entry,sizeof(MdbCatalogEntry));
-		mdb->catalog = g_array_append_val(mdb->catalog, entry); 
+		data = g_memdup(&entry,sizeof(MdbCatalogEntry));
+		g_ptr_array_add(mdb->catalog, data); 
 	}
  }
  //mdb_dump_catalog(mdb, MDB_TABLE);
@@ -217,18 +216,18 @@ int next_pg, next_pg_off;
 void mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
 int rows, i;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 
 	mdb_read_catalog(mdb, obj_type);
 	for (i=0;i<mdb->num_catalog;i++) {
-                entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
-		if (obj_type==-1 || entry.object_type==obj_type) {
+                entry = g_ptr_array_index(mdb->catalog,i);
+		if (obj_type==-1 || entry->object_type==obj_type) {
 			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x KKD pg: %04x row: %2d\n",
-			mdb_get_objtype_string(entry.object_type),
-			entry.object_name,
-			entry.table_pg,
-			entry.kkd_pg,
-			entry.kkd_rowid);
+			mdb_get_objtype_string(entry->object_type),
+			entry->object_name,
+			entry->table_pg,
+			entry->kkd_pg,
+			entry->kkd_rowid);
 		}
         }
 	return;

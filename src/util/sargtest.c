@@ -32,7 +32,7 @@ int rows;
 int i;
 unsigned char buf[2048];
 MdbHandle *mdb;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbTableDef *table;
 
 	mdb_init();
@@ -44,10 +44,10 @@ MdbTableDef *table;
 	mdb_read_catalog(mdb, MDB_TABLE);
 
 	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
-		if (entry.object_type == MDB_TABLE &&
-			!strcmp(entry.object_name,TABLE_NAME)) {
-				table = mdb_read_table(&entry);
+		entry = g_ptr_array_index(mdb->catalog,i);
+		if (entry->object_type == MDB_TABLE &&
+			!strcmp(entry->object_name,TABLE_NAME)) {
+				table = mdb_read_table(entry);
 				print_table(table);
 		}
 	}

@@ -116,7 +116,7 @@ unittest_OBJECTS =  unittest.o
 unittest_DEPENDENCIES =  libmdbodbc.la ../libmdb/libmdb.la \
 ../sql/libmdbsql.la
 unittest_LDFLAGS = 
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

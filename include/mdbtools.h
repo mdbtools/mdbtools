@@ -103,7 +103,7 @@ typedef struct {
 	unsigned char pg_buf[MDB_PGSIZE];
 	unsigned char alt_pg_buf[MDB_PGSIZE];
 	int		num_catalog;
-	GArray		*catalog;
+	GPtrArray		*catalog;
 	int		pg_size;
 	guint32		jet_version;
 	guint32		db_key;

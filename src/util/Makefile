@@ -82,7 +82,7 @@ bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-heade
 LIBS = `glib-config --libs` $(READLINE_LIBS) -lfl 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LDADD = ../libmdb/libmdb.la 
-#mdb_sql_LDADD = #../libmdb/libmdb.la ../sql/libmdbsql.la
+mdb_sql_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
@@ -123,8 +123,8 @@ mdb_header_DEPENDENCIES =  ../libmdb/libmdb.la
 mdb_header_LDFLAGS = 
 mdb_sql_SOURCES = mdb-sql.c
 mdb_sql_OBJECTS =  mdb-sql.o
-#mdb_sql_DEPENDENCIES =  ../libmdb/libmdb.la \
-#../sql/libmdbsql.la
+mdb_sql_DEPENDENCIES =  ../libmdb/libmdb.la \
+../sql/libmdbsql.la
 mdb_sql_LDFLAGS = 
 mdb_ver_SOURCES = mdb-ver.c
 mdb_ver_OBJECTS =  mdb-ver.o
@@ -156,7 +156,7 @@ prdump_OBJECTS =  prdump.o
 prdump_LDADD = $(LDADD)
 prdump_DEPENDENCIES =  ../libmdb/libmdb.la
 prdump_LDFLAGS = 
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

@@ -24,7 +24,7 @@ main (int argc, char **argv)
 {
 int   i, j, k;
 MdbHandle *mdb;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbTableDef *table;
 MdbColumn *col;
 char		*the_relation;
@@ -55,28 +55,28 @@ char		*the_relation;
 
  for (i=0; i < mdb->num_catalog; i++) 
    {
-     entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
+     entry = g_ptr_array_index (mdb->catalog, i);
 
      /* if it's a table */
 
-     if (entry.object_type == MDB_TABLE)
+     if (entry->object_type == MDB_TABLE)
        {
 	 /* skip the MSys tables */
-       if (strncmp (entry.object_name, "MSys", 4))
+       if (strncmp (entry->object_name, "MSys", 4))
 	 {
 	   
 	   /* make sure it's a table (may be redundant) */
 
-	   if (!strcmp (mdb_get_objtype_string (entry.object_type), "Table"))
+	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
 	     {
 	       /* drop the table if it exists */
-	       fprintf (stdout, "DROP TABLE %s;\n", entry.object_name);
+	       fprintf (stdout, "DROP TABLE %s;\n", entry->object_name);
 
 	       /* create the table */
-	       fprintf (stdout, "CREATE TABLE %s\n", entry.object_name);
+	       fprintf (stdout, "CREATE TABLE %s\n", entry->object_name);
 	       fprintf (stdout, " (\n");
 	       	       
-	       table = mdb_read_table (&entry);
+	       table = mdb_read_table (entry);
 
 	       /* get the columns */
 	       mdb_read_columns (table);

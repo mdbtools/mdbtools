@@ -2,17 +2,11 @@ Things to Do
 ------------
 
 . Complete the list of datatypes
-. Figure out how to properly determine fixed or variable length columns
-. Figure out what happens for varchar columns starting at > 256
-. Modify mdb-schema utility support different backend databases
-. Modify mdb-export to handle different delimiters/options
-. Get automake working
-. Check out text file unixODBC driver to see if it can be adapted to use
-  libmdb (it already has a SQL parser).
 . Straighten out which functions in libmdb are meant to be used and which   
   ones should be static.
 . Create an API reference for libmdb (maybe some man pages).
 . Sargs need to support all datatypes
 . Need a way to express logical relationships between sargs (tree)
 . Add support for index scanning when using sargs
-. Convert code to use MSysObjects table for reading catalog.
+. Use allocation maps to read tables, should be more efficient
+. Figure out why we get unresolved symbols when ODBC driver load by DM

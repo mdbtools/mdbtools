@@ -52,13 +52,15 @@ void mdb_free_handle(MdbHandle *mdb)
 }
 void mdb_alloc_catalog(MdbHandle *mdb)
 {
-	mdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
+	mdb->catalog = g_ptr_array_new();
 }
 void mdb_free_catalog(MdbHandle *mdb)
 {
 GList *l;
 MdbCatalogEntry entry;
 
+	//g_ptr_array_free(mdb->catalog, FALSE);
+	mdb->catalog = NULL;
 }
 MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 {

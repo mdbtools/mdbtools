@@ -28,7 +28,7 @@ main (int argc, char **argv)
 int rows;
 int i,  j;
 MdbHandle *mdb;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbTableDef *table;
 MdbColumn *col;
 /* doesn't handle tables > 256 columns.  Can that happen? */
@@ -51,11 +51,11 @@ int started;
  
  for  (i = 0; i < mdb->num_catalog; i++) 
    {
-     entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
-     if  (entry.object_type == MDB_TABLE &&
-		!strcmp (entry.object_name, argv [2])) 
+     entry = g_ptr_array_index (mdb->catalog, i);
+     if  (entry->object_type == MDB_TABLE &&
+		!strcmp (entry->object_name, argv [2])) 
        {
-	 table = mdb_read_table (&entry);
+	 table = mdb_read_table (entry);
 	 mdb_read_columns (table);
 	 mdb_rewind_table (table);
 	 

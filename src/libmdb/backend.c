@@ -102,7 +102,7 @@ char *mdb_postgres_types[] =
 char *bound_values[MDB_MAX_COLS];
 char *relationships[4];
 MdbColumn *col;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbTableDef *table;
 int did_first;
 
@@ -168,11 +168,11 @@ static char text[255];
 
     /* loop over each entry in the catalog */
     for (i=0; i < mdb->num_catalog; i++) {
-      entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
-      if ((entry.object_type == MDB_TABLE) &&
-            (strncmp (entry.object_name, "MSysRelationships", 17) == 0))
+      entry = g_ptr_array_index (mdb->catalog, i);
+      if ((entry->object_type == MDB_TABLE) &&
+            (strncmp (entry->object_name, "MSysRelationships", 17) == 0))
 		{
-    		table = mdb_read_table (&entry);
+    		table = mdb_read_table (entry);
 			if ( table->num_rows > 0 ) {
 				mdb_read_columns(table);
 				mdb_rewind_table(table);

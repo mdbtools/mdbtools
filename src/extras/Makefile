@@ -95,7 +95,7 @@ mdb_dump_OBJECTS =  mdb-dump.o mdbsupport.o
 mdb_dump_LDADD = $(LDADD)
 mdb_dump_DEPENDENCIES =  ../libmdb/libmdb.la
 mdb_dump_LDFLAGS = 
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

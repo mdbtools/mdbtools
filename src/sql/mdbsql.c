@@ -286,7 +286,7 @@ int vlen;
 void mdb_sql_listtables(MdbSQL *sql)
 {
 int i;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbHandle *mdb = sql->mdb;
 
 	if (!mdb) {
@@ -304,11 +304,11 @@ MdbHandle *mdb = sql->mdb;
 	fprintf(stdout,"\n");
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {
-     	entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
+     	entry = g_ptr_array_index (mdb->catalog, i);
      	/* if it's a table */
-     	if (entry.object_type == MDB_TABLE) {
-       		if (strncmp (entry.object_name, "MSys", 4)) {
-				print_value (entry.object_name,30,1);
+     	if (entry->object_type == MDB_TABLE) {
+       		if (strncmp (entry->object_name, "MSys", 4)) {
+				print_value (entry->object_name,30,1);
 				fprintf(stdout,"\n");
 			}
 		}
@@ -320,7 +320,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 {
 MdbTableDef *table = NULL;
 MdbSQLTable *sql_tab;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbHandle *mdb = sql->mdb;
 MdbColumn *col;
 int i;
@@ -336,10 +336,10 @@ char colsize[11];
 	mdb_read_catalog(mdb, MDB_TABLE);
 
 	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
-		if (entry.object_type == MDB_TABLE &&
-			!strcasecmp(entry.object_name,sql_tab->name)) {
-				table = mdb_read_table(&entry);
+		entry = g_ptr_array_index(mdb->catalog,i);
+		if (entry->object_type == MDB_TABLE &&
+			!strcasecmp(entry->object_name,sql_tab->name)) {
+				table = mdb_read_table(entry);
 				break;
 		}
 	}
@@ -385,7 +385,7 @@ char colsize[11];
 void mdb_sql_select(MdbSQL *sql)
 {
 int i,j;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbHandle *mdb = sql->mdb;
 MdbTableDef *table = NULL;
 MdbSQLTable *sql_tab;
@@ -404,10 +404,10 @@ int found = 0;
 	mdb_read_catalog(mdb, MDB_TABLE);
 
 	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
-		if (entry.object_type == MDB_TABLE &&
-			!strcasecmp(entry.object_name,sql_tab->name)) {
-				table = mdb_read_table(&entry);
+		entry = g_ptr_array_index(mdb->catalog,i);
+		if (entry->object_type == MDB_TABLE &&
+			!strcasecmp(entry->object_name,sql_tab->name)) {
+				table = mdb_read_table(entry);
 				break;
 		}
 	}

@@ -6,6 +6,7 @@ Basic Installation
 
 This will build some useful utilities:
 
+mdb-ver    -- prints the version (JET 3 or 4) of an mdb file
 mdb-dump   -- simple hex dump utility that I've been using to look at mdb files
 mdb-schema -- prints DDL for the specified table
 mdb-export -- export table to CSV format

@@ -3,6 +3,9 @@
 #include <glib.h>
 #include <mdbtools.h>
 
+#ifndef _mdbsql_h_
+#define _mdbsql_h_
+
 typedef struct {
 	MdbHandle *mdb;
 	int all_columns;
@@ -55,3 +58,5 @@ void mdb_sql_exit(MdbSQL *sql);
 void mdb_sql_reset(MdbSQL *sql);
 void mdb_sql_listtables(MdbSQL *sql);
 void mdb_sql_select(MdbSQL *sql);
+
+#endif

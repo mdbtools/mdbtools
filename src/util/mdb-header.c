@@ -33,7 +33,7 @@ main (int argc, char **argv)
 {
 int   i, j, k;
 MdbHandle *mdb;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
 MdbTableDef *table;
 MdbColumn *col;
 FILE *typesfile;
@@ -74,30 +74,30 @@ FILE *cfile;
 
  for (i=0; i < mdb->num_catalog; i++) 
    {
-     entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
+     entry = g_ptr_array_index (mdb->catalog, i);
 
      /* if it's a table */
 
-     if (entry.object_type == MDB_TABLE)
+     if (entry->object_type == MDB_TABLE)
        {
 	 /* skip the MSys tables */
-       if (strncmp (entry.object_name, "MSys", 4))
+       if (strncmp (entry->object_name, "MSys", 4))
 	 {
 	   
 	   /* make sure it's a table (may be redundant) */
 
-	   if (!strcmp (mdb_get_objtype_string (entry.object_type), "Table"))
+	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
 	     {
 
-	       fprintf (typesfile, "typedef struct _%s\n", entry.object_name);
+	       fprintf (typesfile, "typedef struct _%s\n", entry->object_name);
 	       fprintf (typesfile, "{\n");
 
 	       fprintf (headerfile, "void dump_%s (%s x);\n",
-			entry.object_name, entry.object_name);
+			entry->object_name, entry->object_name);
 	       fprintf (cfile, "void dump_%s (%s x)\n{\n",
-			entry.object_name, entry.object_name);
-	       fprintf (cfile, "\tfprintf (stdout, \"**************** %s ****************\\n\");\n", entry.object_name);
-	       table = mdb_read_table (&entry);
+			entry->object_name, entry->object_name);
+	       fprintf (cfile, "\tfprintf (stdout, \"**************** %s ****************\\n\");\n", entry->object_name);
+	       table = mdb_read_table (entry);
 
 	       /* get the columns */
 	       mdb_read_columns (table);
@@ -138,7 +138,7 @@ FILE *cfile;
 		   fprintf (cfile, ");\n");
 		 }
 
-	       fprintf (typesfile, "\n} %s ;\n", entry.object_name);
+	       fprintf (typesfile, "\n} %s ;\n", entry->object_name);
 	       fprintf (typesfile, "\n");
 	       fprintf (cfile, "}\n\n");
 	     }

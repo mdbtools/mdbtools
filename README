@@ -1,8 +1,6 @@
-This is mdbtools version 0.3
+This is mdbtools version 0.4
 
-This software is beta so don't expect too much unless you know C and 
-probably a little something about databases and reverse engineering file 
-formats, you're welcome to try it out but don't expect miracles.
+This software is still beta so don't expect too much.
 
 For the rest of you, read the HACKING file for a description of where the code 
 stands and what has been gleened of the file format.
