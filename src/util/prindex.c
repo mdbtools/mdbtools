@@ -26,13 +26,10 @@ void walk_index(MdbHandle *mdb, MdbIndex *idx);
 int
 main(int argc, char **argv)
 {
-int i, j;
-MdbHandle *mdb;
-MdbCatalogEntry *entry;
-MdbTableDef *table;
-MdbIndex *idx;
-int found = 0;
-
+	int j;
+	MdbHandle *mdb;
+	MdbTableDef *table;
+	MdbIndex *idx;
 
 	if (argc<4) {
 		fprintf(stderr,"Usage: %s <file> <table> <index>\n",argv[0]);
@@ -45,31 +42,22 @@ int found = 0;
 		exit(1);
 	}
 
-	mdb_read_catalog(mdb, MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcmp(entry->object_name,argv[2])) {
-			        table = mdb_read_table(entry);
-			        mdb_read_columns(table);
-				mdb_read_indices(table);
-				for (j=0;j<table->num_idxs;j++) {
-					idx = g_ptr_array_index (table->indices, j);
-					if (!strcmp(idx->name, argv[3])) {
-						walk_index(mdb, idx);
-					}
-				}
-				mdb_free_tabledef(table);
-
-				//mdb_table_dump(entry);
-				found++;
+	if (table) {
+		mdb_read_columns(table);
+		mdb_read_indices(table);
+		for (j=0;j<table->num_idxs;j++) {
+			idx = g_ptr_array_index (table->indices, j);
+			if (!strcmp(idx->name, argv[3])) {
+				walk_index(mdb, idx);
+			}
 		}
-	}
-
-	if (!found) {
+		mdb_free_tabledef(table);
+	} else {
 		fprintf(stderr,"No table named %s found.\n", argv[2]);
 	}
+
 	mdb_close(mdb);
 	mdb_exit();
 

@@ -258,22 +258,7 @@ char *mdb_get_relationships(MdbHandle *mdb)
 	}
 
 	if (is_init == 0) {
-		MdbCatalogEntry *entry;
-
-		mdb_read_catalog (mdb, MDB_TABLE);
-
-		/* loop over each entry in the catalog */
-		for (i=0; i < mdb->num_catalog; i++) {
-			entry = g_ptr_array_index (mdb->catalog, i);
-			if ((entry->object_type == MDB_TABLE) &&
-			    (strncmp (entry->object_name, "MSysRelationships", 17) == 0))
-				break;
-		}
-		if (i == mdb->num_catalog) {
-			return NULL;
-		}
-
-		table = mdb_read_table (entry);
+		table = mdb_read_table_by_name(mdb, "MSysRelationships", MDB_TABLE);
 		if ((!table) || (table->num_rows == 0)) {
 			return NULL;
 		}

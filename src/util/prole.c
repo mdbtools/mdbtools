@@ -25,12 +25,10 @@ void dump_ole(MdbTableDef *table, char *colname, char *sargname);
 int
 main(int argc, char **argv)
 {
-int i;
-MdbHandle *mdb;
-MdbCatalogEntry *entry;
-MdbTableDef *table;
-char *dot, *colname, *tabname;
-char *sargname = NULL;
+	MdbHandle *mdb;
+	MdbTableDef *table;
+	char *dot, *colname, *tabname;
+	char *sargname = NULL;
 
 
 	if (argc<2) {
@@ -51,17 +49,12 @@ char *sargname = NULL;
 	*dot='\0';
 	colname = ++dot;
 
-	mdb_read_catalog(mdb, MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, tabname, MDB_TABLE);
 
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcmp(entry->object_name,tabname)) {
-				table = mdb_read_table(entry);
-				mdb_read_columns(table);
-				dump_ole(table, colname, sargname);
-				mdb_free_tabledef(table);
-		}
+	if (table) {
+		mdb_read_columns(table);
+		dump_ole(table, colname, sargname);
+		mdb_free_tabledef(table);
 	}
 
 	mdb_close(mdb);

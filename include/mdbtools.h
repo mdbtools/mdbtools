@@ -416,6 +416,7 @@ extern char *mdb_get_objtype_string(int obj_type);
 extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
 extern void mdb_free_tabledef(MdbTableDef *table);
 extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
+extern MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_type);
 extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
 extern void mdb_free_columns(GPtrArray *columns);
 extern GPtrArray *mdb_read_columns(MdbTableDef *table);

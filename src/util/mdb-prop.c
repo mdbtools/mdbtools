@@ -33,10 +33,9 @@ MdbHandle *mdb;
 int
 main(int argc, char **argv)
 {
-	int i, len, pos, col_num;
+	int len, pos, col_num;
 	MdbColumn *col;
 	MdbTableDef *table;
-	MdbCatalogEntry *entry;
 	gchar name[256];
 	gchar buf[MDB_BIND_SIZE];
 	gchar kkd_pg[200000];
@@ -57,15 +56,7 @@ main(int argc, char **argv)
 	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		exit(1);
 	}
-	mdb_read_catalog(mdb, MDB_ANY);
-	
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (!strcmp(entry->object_name,MSYSOBJECTS)) {
-			break;
-		}
-	} 
-	table = mdb_read_table(entry);
+	table = mdb_read_table_by_name(mdb, MSYSOBJECTS, MDB_ANY);
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 

@@ -1,3 +1,18 @@
+Fri Jul  2 07:27:32 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/backend.c:
+	* src/libmdb/table.c:
+	* src/sql/mdbsql.c:
+	* src/util/mdb-array.c:
+	* src/util/mdb-export.c:
+	* src/util/mdb-import.c:
+	* src/util/mdb-prop.c:
+	* src/util/prdata.c:
+	* src/util/prindex.c:
+	* src/util/prole.c:
+	* src/util/sargtest.c:
+	* src/util/updrow.c:
+	* include/mdbtools.h: Add function mdb_read_table_by_name
+
 Wed Jun 23 23:19:43 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c:
 	* src/util/mdb-array.c:

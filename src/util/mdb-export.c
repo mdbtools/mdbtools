@@ -49,9 +49,8 @@ print_col(gchar *col_val, int quote_text, int col_type)
 int
 main(int argc, char **argv)
 {
-	int i, j;
+	int j;
 	MdbHandle *mdb;
-	MdbCatalogEntry *entry;
 	MdbTableDef *table;
 	MdbColumn *col;
 	/* doesn't handle tables > 256 columns.  Can that happen? */
@@ -120,86 +119,74 @@ main(int argc, char **argv)
 	mdb_init();
 
 	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
+		g_free (delimiter);
+		g_free (row_delimiter);
+		mdb_exit();
 		exit(1);
 	}
+
+	table = mdb_read_table_by_name(mdb, argv[argc-1], MDB_TABLE);
+	if (!table) {
+		g_free (delimiter);
+		g_free (row_delimiter);
+		mdb_close(mdb);
+		mdb_exit();
+		exit(0);
+	}
+
+	mdb_read_columns(table);
+	mdb_rewind_table(table);
 	
- 	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
-		fprintf(stderr,"File does not appear to be an Access database\n");
-		exit(1);
+	for (j=0;j<table->num_cols;j++) {
+		bound_values[j] = (char *) g_malloc0(MDB_BIND_SIZE);
+		mdb_bind_column(table, j+1, bound_values[j]);
+		mdb_bind_len(table, j+1, &bound_lens[j]);
 	}
-
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcmp(entry->object_name,argv[argc-1])) {
-			table = mdb_read_table(entry);
-			mdb_read_columns(table);
-			mdb_rewind_table(table);
-			
-        		for (j=0;j<table->num_cols;j++) {
-                	bound_values[j] = (char *) g_malloc(MDB_BIND_SIZE);
-				bound_values[j][0] = '\0';
-                		mdb_bind_column(table, j+1, bound_values[j]);
-                		mdb_bind_len(table, j+1, &bound_lens[j]);
-        		}
-			if (header_row) {
-				col=g_ptr_array_index(table->columns,0);
-				fprintf(stdout,"%s",col->name);
-        			for (j=1;j<table->num_cols;j++) {
-					col=g_ptr_array_index(table->columns,j);
-					fprintf(stdout,"%s%s",delimiter,col->name);
-				}
-				fprintf(stdout,"\n");
-			}
-
-			while(mdb_fetch_row(table)) {
-
-				if (insert_statements) {
-					fprintf(stdout, "INSERT INTO %s (",
-						sanitize_name(argv[optind + 1],sanitize));
-        			for (j=0;j<table->num_cols;j++) {
-						if (j>0) fprintf(stdout, ", ");
-						col=g_ptr_array_index(table->columns,j);
-						fprintf(stdout,"%s", sanitize_name(col->name,sanitize));
-					} 
-					fprintf(stdout, ") VALUES (");
-				}
-
-				col=g_ptr_array_index(table->columns,0);
-				if (col->col_type == MDB_OLE) {
-					mdb_ole_read(mdb, col, bound_values[0], MDB_BIND_SIZE);	
-				}
-
-				if (insert_statements && !bound_lens[0]) 
-					print_col("NULL",0,col->col_type);
-				else 	
-					print_col(bound_values[0], 
-					quote_text, 
-					col->col_type);
-
-        			for (j=1;j<table->num_cols;j++) {
-					col=g_ptr_array_index(table->columns,j);
-					if (col->col_type == MDB_OLE) {
-						if (col->cur_value_len)
-						mdb_ole_read(mdb, col, bound_values[j], MDB_BIND_SIZE);	
-					}
-					fprintf(stdout,"%s",delimiter);
-					if (insert_statements && !bound_lens[j]) 
-						print_col("NULL",0,col->col_type);
-					else 
-						print_col(bound_values[j], 
-						quote_text, 
-						col->col_type);
-				}
-				if (insert_statements) fprintf(stdout,")");
-				fprintf(stdout,"%s", row_delimiter);
-			}
-        		for (j=0;j<table->num_cols;j++) {
-				g_free(bound_values[j]);
-			}
-			mdb_free_tabledef(table);
+	if (header_row) {
+		col=g_ptr_array_index(table->columns,0);
+		fprintf(stdout,"%s",col->name);
+		for (j=1;j<table->num_cols;j++) {
+			col=g_ptr_array_index(table->columns,j);
+			fprintf(stdout,"%s%s",delimiter,col->name);
 		}
+		fprintf(stdout,"\n");
 	}
+
+	while(mdb_fetch_row(table)) {
+
+		if (insert_statements) {
+			fprintf(stdout, "INSERT INTO %s (",
+				sanitize_name(argv[optind + 1],sanitize));
+			for (j=0;j<table->num_cols;j++) {
+				if (j>0) fprintf(stdout, ", ");
+				col=g_ptr_array_index(table->columns,j);
+				fprintf(stdout,"%s", sanitize_name(col->name,sanitize));
+			} 
+			fprintf(stdout, ") VALUES (");
+		}
+
+		for (j=0;j<table->num_cols;j++) {
+			col=g_ptr_array_index(table->columns,j);
+			if ((col->col_type == MDB_OLE)
+			 && ((j==0) || (col->cur_value_len))) {
+				mdb_ole_read(mdb, col, bound_values[j], MDB_BIND_SIZE);
+			}
+			if (j>0) {
+				fprintf(stdout,"%s",delimiter);
+			}
+			if (insert_statements && !bound_lens[j]) {
+				print_col("NULL",0,col->col_type);
+			} else {
+				print_col(bound_values[j], quote_text, col->col_type);
+			}
+		}
+		if (insert_statements) fprintf(stdout,")");
+		fprintf(stdout,"%s", row_delimiter);
+	}
+	for (j=0;j<table->num_cols;j++) {
+		g_free(bound_values[j]);
+	}
+	mdb_free_tabledef(table);
 
 	g_free (delimiter);
 	g_free (row_delimiter);

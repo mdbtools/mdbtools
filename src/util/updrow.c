@@ -26,9 +26,7 @@ void read_to_row(MdbTableDef *table, char *sargname);
 int
 main(int argc, char **argv)
 {
-int i;
 MdbHandle *mdb;
-MdbCatalogEntry *entry;
 MdbTableDef *table;
 char *colname, *tabname;
 char *colval;
@@ -49,26 +47,21 @@ int len;
 	sargname = argv[3];
 	updstr = strdup(argv[4]);
 
-	mdb_read_catalog(mdb, MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, tabname, MDB_TABLE);
 
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcmp(entry->object_name,tabname)) {
-				table = mdb_read_table(entry);
-				mdb_read_columns(table);
-				mdb_read_indices(table);
-				printf("updstr %s\n",updstr);
-				colname = strtok(updstr,"=");
-				colval = strtok(NULL,"=");
-				bind_column(table, colname, data, &len);
-				read_to_row(table, sargname);
-				printf("current value of %s is %s, changing to %s\n", colname, data, colval);
-				len = strlen(colval);
-				strcpy(data,colval);
-				mdb_update_row(table);
-				mdb_free_tabledef(table);
-		}
+	if (table) {
+		mdb_read_columns(table);
+		mdb_read_indices(table);
+		printf("updstr %s\n",updstr);
+		colname = strtok(updstr,"=");
+		colval = strtok(NULL,"=");
+		bind_column(table, colname, data, &len);
+		read_to_row(table, sargname);
+		printf("current value of %s is %s, changing to %s\n", colname, data, colval);
+		len = strlen(colval);
+		strcpy(data,colval);
+		mdb_update_row(table);
+		mdb_free_tabledef(table);
 	}
 
 	mdb_close(mdb);

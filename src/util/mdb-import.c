@@ -150,7 +150,6 @@ main(int argc, char **argv)
 {
 	int i, row;
 	MdbHandle *mdb;
-	MdbCatalogEntry *entry;
 	MdbTableDef *table;
 	MdbField fields[256];
 	unsigned char line[MAX_ROW_SIZE];
@@ -196,23 +195,15 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	
-	mdb_read_catalog(mdb, MDB_TABLE);
-
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcmp(entry->object_name,argv[argc-2])) {
-			table = mdb_read_table(entry);
-			mdb_read_columns(table);
-			mdb_read_indices(table);
-			mdb_rewind_table(table);
-			break;
-		}
-	}
+	table = mdb_read_table_by_name(mdb, argv[argc-2], MDB_TABLE);
 	if (!table) {
 		fprintf(stderr,"Table %s not found in database\n", argv[argc-2]);
 		exit(1);
 	}
+	mdb_read_columns(table);
+	mdb_read_indices(table);
+	mdb_rewind_table(table);
+
 	/*
 	 * open the CSV file and read any header rows
 	 */

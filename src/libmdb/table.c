@@ -117,6 +117,21 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	return table;
 }
+MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_type)
+{
+	unsigned int i;
+	MdbCatalogEntry *entry;
+
+	mdb_read_catalog(mdb, obj_type);
+
+	for (i=0; i<mdb->num_catalog; i++) {
+		entry = g_ptr_array_index(mdb->catalog, i);
+		if (!strcasecmp(entry->object_name, table_name))
+			return mdb_read_table(entry);
+	}
+
+	return NULL;
+}
 
 /*
 ** read the next page if offset is > pg_size

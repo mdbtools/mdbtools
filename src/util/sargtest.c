@@ -28,12 +28,8 @@ void print_table(MdbTableDef *table);
 
 main(int argc, char **argv)
 {
-int rows;
-int i;
-unsigned char buf[2048];
-MdbHandle *mdb;
-MdbCatalogEntry *entry;
-MdbTableDef *table;
+	MdbHandle *mdb;
+	MdbTableDef *table;
 
 	mdb_init();
 
@@ -41,16 +37,11 @@ MdbTableDef *table;
 		exit(1);
 	}
 	
-	mdb_read_catalog(mdb, MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, TABLE_NAME, MDB_TABLE);
 
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcmp(entry->object_name,TABLE_NAME)) {
-				table = mdb_read_table(entry);
-				print_table(table);
-				mdb_free_tabledef(table);
-		}
+	if (table) {
+		print_table(table);
+		mdb_free_tabledef(table);
 	}
 
 	mdb_close(mdb);

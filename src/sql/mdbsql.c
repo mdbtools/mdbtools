@@ -574,7 +574,6 @@ void mdb_sql_describe_table(MdbSQL *sql)
 {
 	MdbTableDef *ttable, *table = NULL;
 	MdbSQLTable *sql_tab;
-	MdbCatalogEntry *entry;
 	MdbHandle *mdb = sql->mdb;
 	MdbColumn *col;
 	int i;
@@ -593,16 +592,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
 	sql_tab = g_ptr_array_index(sql->tables,0);
 
-	mdb_read_catalog(mdb, MDB_TABLE);
-
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcasecmp(entry->object_name,sql_tab->name)) {
-				table = mdb_read_table(entry);
-				break;
-		}
-	}
+	table = mdb_read_table_by_name(mdb, sql_tab->name, MDB_TABLE);
 	if (!table) {
 		mdb_sql_error("%s is not a table in this database", sql_tab->name);
 		/* the column and table names are no good now */
@@ -670,7 +660,6 @@ void
 mdb_sql_select(MdbSQL *sql)
 {
 int i,j;
-MdbCatalogEntry *entry;
 MdbHandle *mdb = sql->mdb;
 MdbTableDef *table = NULL;
 MdbSQLTable *sql_tab;
@@ -685,16 +674,7 @@ int found = 0;
 
 	sql_tab = g_ptr_array_index(sql->tables,0);
 
-	mdb_read_catalog(mdb, MDB_TABLE);
-
-	for (i=0;i<mdb->num_catalog;i++) {
-		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type == MDB_TABLE &&
-			!strcasecmp(entry->object_name,sql_tab->name)) {
-				table = mdb_read_table(entry);
-				break;
-		}
-	}
+	table = mdb_read_table_by_name(mdb, sql_tab->name, MDB_TABLE);
 	if (!table) {
 		mdb_sql_error("%s is not a table in this database", sql_tab->name);
 		/* the column and table names are no good now */
