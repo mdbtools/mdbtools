@@ -42,7 +42,8 @@ int len, i;
 
 	table->num_rows = mdb_get_int32(mdb,12);
 	table->num_cols = mdb_get_int16(mdb,25);
-	table->num_pgs = mdb_get_int32(mdb,31);
+	table->num_idxs = mdb_get_int32(mdb,27); 
+	table->num_real_idxs = mdb_get_int32(mdb,31); 
 	table->first_data_pg = mdb_get_int16(mdb,36);
 
 	return table;
@@ -75,7 +76,7 @@ int name_sz;
 	
 	table->columns = g_ptr_array_new();
 
-	cur_col = 43 + (table->num_pgs * 8);
+	cur_col = 43 + (table->num_real_idxs * 8);
 
 	/* new code based on patch submitted by Tim Nelson 2000.09.27 */
 
@@ -134,6 +135,7 @@ int name_sz;
 
 		cur_name += name_sz + 1;
 	}
+	table->index_start = cur_name;
 	return table->columns;
 }
 
@@ -141,16 +143,20 @@ void mdb_table_dump(MdbCatalogEntry *entry)
 {
 MdbTableDef *table;
 MdbColumn *col;
+MdbIndex *idx;
 MdbHandle *mdb = entry->mdb;
 int i;
 
 	table = mdb_read_table(entry);
+	fprintf(stdout,"definition page     = %d\n",entry->table_pg);
 	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
 	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
-	fprintf(stdout,"number of datapages = %d\n",table->num_pgs);
+	fprintf(stdout,"number of indices   = %d\n",table->num_real_idxs);
 	fprintf(stdout,"first data page     = %d\n",table->first_data_pg);
 
 	mdb_read_columns(table);
+	mdb_read_indices(table);
+
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
 	
@@ -159,4 +165,10 @@ int i;
 			mdb_get_coltype_string(mdb->default_backend, col->col_type),
 			col->col_size);
 	}
+
+	for (i=0;i<table->num_idxs;i++) {
+		idx = g_ptr_array_index (table->indices, i);
+		mdb_index_dump(idx);
+	}
+
 }

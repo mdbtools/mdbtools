@@ -80,6 +80,11 @@ enum {
 	MDB_NOTNULL
 };
 
+enum {
+	MDB_ASC,
+	MDB_DESC
+};
+
 /* hash to store registered backends */
 GHashTable	*mdb_backends;
 
@@ -121,14 +126,25 @@ typedef struct {
 	MdbCatalogEntry *entry;
 	char	name[MDB_MAX_OBJ_NAME+1];
 	int	num_cols;
-	int	num_rows;
-	int	num_pgs;
-	int	first_data_pg;
 	GPtrArray	*columns;
+	int	num_rows;
+	int	index_start;
+	int	num_real_idxs;
+	int	num_idxs;
+	GPtrArray	*indices;
+	int	first_data_pg;
 	int	cur_pg_num;
 	int	cur_phys_pg;
 	int	cur_row;
 } MdbTableDef;
+
+typedef struct {
+	int		index_num;
+	char		name[MDB_MAX_OBJ_NAME+1];
+	unsigned char	primary_key;
+	int		first_pg;
+	unsigned char	sort_order;
+} MdbIndex;
 
 typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];

@@ -106,7 +106,7 @@ The header to table definition pages start look something like this:
 | 0x02 | 1 byte  | Page type                                              |
 | 0x01 | 1 byte  | Unknown                                                |
 | 'VC' | 2 bytes | ???                                                    |
-| 0x00 | 4 bytes | Unknown                                                |
+| 0x00 | 4 bytes | Pointer to continuation page (if multipage table def)  |
 | ???? | 4 bytes | appears to be a length of the data                     |
 | ???? | 4 bytes | number of rows of data in this table                   |
 | 0x00 | 4 bytes | ???                                                    |
@@ -115,14 +115,14 @@ The header to table definition pages start look something like this:
 | ???? | 2 bytes | ???                                                    |
 | ???? | 2 bytes | number of columns in table                             |
 | ???? | 4 bytes | number of indexes for this table                       |
-| ???? | 4 bytes | number of indexes for this table (repeat)              |
+| ???? | 4 bytes | number of index entries for this table                 |
 | 0x00 | 1 byte  | ???                                                    |
 | ???? | 2 bytes | page number of first datapage for table                |
 | ???? | 2 bytes | ???                                                    |
 | ???? | 2 bytes | page number of first datapage for table                |
 | 0x00 | 1 byte  | ???                                                    |
 +-------------------------------------------------------------------------+
-| Iterate for the 2 x number of indexes                                   |
+| Iterate for 2 x number of indexes                                       |
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | number of rows in table                                |
 | ???? | 4 bytes | number of rows in the index                            |
@@ -154,10 +154,11 @@ Column Type may be one of the following (not complete).
 Following the 18 byte column records begins the column names, listed in order
 with a 1 byte size prefix preceding each name.
 
-After a number of bytes (generally 0x3a) the names of the indexes are listed.
+After this are a series of 39 byte fields for each index.  At offset 34 is a 4 byte page number where the index lives.
 
-It is currently unknown how indexes are mapped to columns and how they point at
-index pages or the format of the index pages.
+Beyond this are a series of 20 byte fields for each 'index entry'.  There may be more entrys than indexes and byte 20 represents its type (0x00 for normal index, 0x01 for Primary Key, and 0x02 otherwise).
+
+It is currently unknown how indexes are mapped to columns or the format of the index pages.
 
 Data Rows
 ---------

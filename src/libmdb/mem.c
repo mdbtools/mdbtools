@@ -75,10 +75,21 @@ mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 {
 MdbColumn *col;
 		
- 	col = g_memdup(in_col,sizeof(MdbCatalogEntry));
+ 	col = g_memdup(in_col,sizeof(MdbColumn));
 	g_ptr_array_add(columns, col);
 }
 mdb_free_columns(GPtrArray *columns)
 {
 	g_ptr_array_free(columns, TRUE);
+}
+mdb_append_index(GPtrArray *indices, MdbIndex *in_idx)
+{
+MdbIndex *idx;
+		
+ 	idx = g_memdup(in_idx,sizeof(MdbIndex));
+	g_ptr_array_add(indices, idx);
+}
+mdb_free_indices(GPtrArray *indices)
+{
+	g_ptr_array_free(indices, TRUE);
 }

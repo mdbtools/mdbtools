@@ -46,6 +46,9 @@ int mdb_test_int(MdbSarg *sarg, gint32 i)
 int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSarg *sarg, int offset, int len)
 {
 	switch (col->col_type) {
+		case MDB_BYTE:
+			return mdb_test_int(sarg, mdb_get_byte(mdb, offset));
+			break;
 		case MDB_INT:
 			return mdb_test_int(sarg, mdb_get_int16(mdb, offset));
 			break;

@@ -15,7 +15,7 @@ MDB files and a ODBC/SQL frontend.
 Files in libmdb are licensed under LGPL and the utilities under the GPL, see 
 COPYING.LIB and COPYING files respectively.
 
-To install type see the INSTALL file
+To install see the INSTALL file
 
 Check out http://mdbtools.sourceforge.net for CVS, mailing list and similar.
 
