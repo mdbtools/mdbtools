@@ -314,10 +314,48 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, unsigned char *buf, int len)
 	return 1;
 }
 /*
+ * pack the pages bitmap
+ */
+int
+mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
+{
+	int mask_bit = 0;
+	int mask_pos = 0x16;
+	int mask_byte;
+	int elem = 0;
+	int len, start, i;
+
+	start = ipg->idx_starts[elem++];
+
+	while (start) {
+		len = ipg->idx_starts[elem] - start;
+		fprintf(stdout, "len is %d\n", len);
+		for (i=0; i < len; i++) {
+			mask_bit++;
+			if (mask_bit==8) {
+				mask_bit=0;
+				mdb->pg_buf[mask_pos++] = mask_byte;
+				mask_byte = 0;
+			}
+			/* upon reaching the len, set the bit */
+		}
+		mask_byte = (1 << mask_bit) | mask_byte;
+		fprintf(stdout, "mask byte is %02x at %d\n", mask_byte, mask_pos);
+		start = ipg->idx_starts[elem++];
+	}
+	/* flush the last byte if any */
+	mdb->pg_buf[mask_pos++] = mask_byte;
+	/* remember to zero the rest of the bitmap */
+	for (i = mask_pos; i < 0xf8; i++) {
+		mdb->pg_buf[mask_pos++] = 0;
+	}
+	return 0;
+}
+/*
  * unpack the pages bitmap
  */
 int
-mdb_index_unpack_page(MdbHandle *mdb, MdbIndexPage *ipg)
+mdb_index_unpack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 {
 	int mask_bit = 0;
 	int mask_pos = 0x16;
@@ -364,7 +402,7 @@ mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 	/* if this page has not been unpacked to it */
 	if (!ipg->idx_starts[0]){
 		//fprintf(stdout, "Unpacking page %d\n", ipg->pg);
-		mdb_index_unpack_page(mdb, ipg);
+		mdb_index_unpack_bitmap(mdb, ipg);
 	}
 
 	
@@ -377,8 +415,6 @@ mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 }
 void mdb_index_page_reset(MdbIndexPage *ipg)
 {
-	int i;
-
 	ipg->offset = 0xf8; /* start byte of the index entries */
 	ipg->start_pos=0;
 	ipg->len = 0; 

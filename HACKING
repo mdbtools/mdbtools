@@ -467,7 +467,17 @@ Column Type may be one of the following (not complete):
     UNKNOWN_0D      = 0x0D
     REPID           = 0x0F /* GUID */
 
+Notes on deleted columns:
 
+If a fixed length column is deleted the offset_F field will contain the values 
+of the original row definition.  Thus is the number of columns on the row does 
+not match the number in the tdef, the offset_F field could be used to return 
+the proper data.  No idea how multiple column deletions are handled, my instinct
+is that Access can only handle a single column deletion event (which may involve
+more than one column if new rows have not been added) without touching all the 
+rows.
+
+Don't know if variable columns work by the same mechanism yet.  Stay tuned.
 
 Page Usage Maps
 ---------------

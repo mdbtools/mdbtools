@@ -167,7 +167,7 @@ int eod, len; /* end of data */
 				next_col = mdb_pg_get_int16(mdb, var_entry_pos);
 				len = next_col - col_start;
 			} /* if found==var_cols */
-			if (len<0) len+=256;
+			while (len<0) len+=256;
 			fields[totcols].start = row_start + col_start;
 			fields[totcols].value = &mdb->pg_buf[row_start +col_start];
 			fields[totcols++].siz = len;
@@ -302,7 +302,7 @@ int eod, len; /* end of data */
 					var_cols_found - 1;
 				len=mdb->pg_buf[var_entry_pos] - mdb->pg_buf[var_entry_pos+1];
 			} /* if found==var_cols */
-			if (len<0) len+=256;
+			while (len<0) len+=256;
 			fields[totcols].start = row_start + col_start;
 			fields[totcols].value = &mdb->pg_buf[row_start +col_start];
 			fields[totcols++].siz = len;

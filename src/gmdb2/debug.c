@@ -688,6 +688,22 @@ GtkTreeIter *node, *container;
 
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Used Pages Pointer", offset+55);
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Pages Freespace Pointer", offset+59);
+
+	container = gmdb_debug_add_item(store, NULL, "Index Entries", -1, -1);
+	for (i=0;i<num_idx;i++) {
+		snprintf(str, 100, "Index %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, offset+63+(12*i), offset+63+(12*i)+11);
+		//gmdb_debug_dissect_index1(store, node, fbuf, offset+63+(12*i));
+	}
+	newbase = offset + 63 + (12*i);
+
+	container = gmdb_debug_add_item(store, NULL, "Column Data", -1, -1);
+	for (i=0;i<num_cols;i++) {
+		snprintf(str, 100, "Column %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase + (25*i), newbase + (25*i) + 24);
+		//gmdb_debug_dissect_column(store, node, fbuf, newbase + (25*i));
+	}
+	newbase += 25*num_cols;
 }
 void 
 gmdb_debug_dissect_tabledef_pg3(GtkTreeStore *store, char *fbuf, int offset, int len)
