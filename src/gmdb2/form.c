@@ -26,8 +26,8 @@ gmdb_form_add_icon(gchar *text)
 {
 GnomeIconList *gil;
 
-        gil = glade_xml_get_widget(mainwin_xml, "form_iconlist");
-        gnome_icon_list_append(gil, "form_big.xpm", text);
+        gil = (GnomeIconList *) glade_xml_get_widget(mainwin_xml, "form_iconlist");
+        gnome_icon_list_append(gil, GMDB_ICONDIR "form_big.xpm", text);
 }
 
 void gmdb_form_populate(MdbHandle *mdb)

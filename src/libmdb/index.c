@@ -53,7 +53,8 @@ char idx_to_text[] = {
 0x81, 0x00, 0x00, 0x00, 'x',  0x00, 0x00, 0x00, /* 0xf8-0xff */
 };
 
-GPtrArray *mdb_read_indices(MdbTableDef *table)
+GPtrArray *
+mdb_read_indices(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
 MdbIndex idx, *pidx;
@@ -170,7 +171,7 @@ void mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		//cache_int = sarg->value.i * -1;
 		c = &(idx_sarg->value.i);
 		c[0] |= 0x80;
-		printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
+		//printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
 		break;	
 
 		case MDB_INT:
@@ -200,7 +201,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 			c_len = strlen(&mdb->pg_buf[offset + c_offset]);
 		} else {
 			c_len = col->col_size;
-			fprintf(stderr,"Only text types currently supported.  How did we get here?\n");
+			//fprintf(stderr,"Only text types currently supported.  How did we get here?\n");
 		}
 		/*
 		 * If we have no cached index values for this column, 
@@ -211,7 +212,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 			for (j=0;j<col->num_sargs;j++) {
 				sarg = g_ptr_array_index (col->sargs, j);
 				idx_sarg = g_memdup(sarg,sizeof(MdbSarg));
-				printf("calling mdb_index_cache_sarg\n");
+				//printf("calling mdb_index_cache_sarg\n");
 				mdb_index_cache_sarg(col, sarg, idx_sarg);
 				g_ptr_array_add(col->idx_sarg_cache, idx_sarg);
 			}
@@ -227,6 +228,10 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 	}
 	return 1;
 }
+/*
+ * find the next entry on a page (either index or leaf). Uses state information
+ * stored in the MdbIndexPage across calls.
+ */
 int
 mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 {
@@ -249,45 +254,93 @@ mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 }
 void mdb_index_page_init(MdbIndexPage *ipg)
 {
+	memset(ipg, 0, sizeof(MdbIndexPage));
 	ipg->offset = 0xf8; /* start byte of the index entries */
 	ipg->mask_pos = 0x16; 
 	ipg->mask_bit=0;
 	ipg->len = 0; 
 }
-int
+/*
+ * find the next leaf page if any given a chain. Assumes any exhausted leaf 
+ * pages at the end of the chain have been peeled off before the call.
+ */
+MdbIndexPage *
 mdb_find_next_leaf(MdbHandle *mdb, MdbIndexChain *chain)
 {
-	MdbIndexPage *ipg;
+	MdbIndexPage *ipg, *newipg;
+	guint32 pg;
+	guint passed = 0;
+
+	ipg = &(chain->pages[chain->cur_depth - 1]);
+
 	/*
 	 * If we are at the first page deep and it's not an index page then
 	 * we are simply done. (there is no page to find
 	 */
-	if (chain->cur_depth==1) {
-		ipg = &(chain->pages[0]);
-		if (mdb->pg_buf[0]==MDB_PAGE_LEAF || 
-				mdb->pg_buf[0]==MDB_PAGE_DATA)  {
-			return ipg->pg;
+
+	mdb_read_pg(mdb, ipg->pg);
+	if (mdb->pg_buf[0]==MDB_PAGE_LEAF) 
+		return ipg;
+
+	/*
+	 * apply sargs here, currently we don't
+	 */
+	do {
+		ipg->len = 0;
+		//printf("finding next on pg %lu\n", ipg->pg);
+		if (!mdb_index_find_next_on_page(mdb, ipg))
+			return 0;
+		pg = mdb_get_int24_msb(mdb, ipg->offset + ipg->len - 3);
+		//printf("Looking at pg %lu at %lu %d\n", pg, ipg->offset, ipg->len);
+		ipg->offset += ipg->len;
+
+		/*
+		 * add to the chain and call this function
+		 * recursively.
+		 */
+		chain->cur_depth++;
+		if (chain->cur_depth > MDB_MAX_INDEX_DEPTH) {
+			fprintf(stderr,"Error! maximum index depth of %d exceeded.  This is probably due to a programming bug, If you are confident that your indexes really are this deep, adjust MDB_MAX_INDEX_DEPTH in mdbtools.h and recompile.\n");
+			exit(1);
 		}
-	}
-
-	ipg = &(chain->pages[chain->cur_depth - 1]);
-
+		newipg = &(chain->pages[chain->cur_depth - 1]);
+		mdb_index_page_init(newipg);
+		newipg->pg = pg;
+		newipg = mdb_find_next_leaf(mdb, chain);
+		//printf("returning pg %lu\n",newipg->pg);
+		return newipg;
+	} while (!passed);
 	/* no more pages */
-	return 0;
+	return NULL;
 
 }
+/*
+ * the main index function.
+ * caller provides an index chain which is the current traversal of index
+ * pages from the root page to the leaf.  Initially passed as blank, 
+ * mdb_index_find_next will store it's state information here. Each invocation
+ * then picks up where the last one left off, allowing us to scroll through
+ * the index one by one.
+ *
+ * Sargs are applied here but also need to be applied on the whole row b/c
+ * text columns may return false positives due to hashing and non-index
+ * columns with sarg values can't be tested here.
+ */
 int
 mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row)
 {
 	MdbIndexPage *ipg;
 	int passed = 0;
 
+	/*
+	 * if it's new use the root index page (idx->first_pg)
+	 */
 	if (!chain->cur_depth) {
 		ipg = &(chain->pages[0]);
 		mdb_index_page_init(ipg);
 		chain->cur_depth = 1;
 		ipg->pg = idx->first_pg;
-		if (!mdb_find_next_leaf(mdb, chain))
+		if (!(ipg = mdb_find_next_leaf(mdb, chain)))
 			return 0;
 	} else {
 		ipg = &(chain->pages[chain->cur_depth - 1]);
@@ -296,10 +349,31 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 
 	mdb_read_pg(mdb, ipg->pg);
 
+	/*
+	 * loop while the sargs don't match
+	 */
 	do {
 		ipg->len = 0;
-		if (!mdb_index_find_next_on_page(mdb, ipg))
-			return 0;
+		/*
+		 * if no more rows on this leaf, try to find a new leaf
+		 */
+		if (!mdb_index_find_next_on_page(mdb, ipg)) {
+			//printf("page %lu finished\n",ipg->pg);
+			if (chain->cur_depth==1)
+				return 0;
+			/* 
+			 * unwind the stack until we find something or reach 
+			 * the top.
+			 */
+			while (chain->cur_depth>1) {
+				chain->cur_depth--;
+				if (!(ipg = mdb_find_next_leaf(mdb, chain)))
+					return 0;
+				mdb_index_find_next_on_page(mdb, ipg);
+			}
+			if (chain->cur_depth==1)
+				return 0;
+		}
 		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
 		*pg = mdb_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 
@@ -332,10 +406,11 @@ int i;
 		printf("column %d coltype %d col_size %d (%d)\n",i,col->col_type, mdb_col_fixed_size(col), col->col_size);
 	}
 }
-void mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
+void 
+mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
 {
-int i;
-MdbColumn *col;
+	int i;
+	MdbColumn *col;
 
 	fprintf(stdout,"index number     %d\n", idx->index_num);
 	fprintf(stdout,"index name       %s\n", idx->name);

@@ -26,8 +26,8 @@ gmdb_report_add_icon(gchar *text)
 {
 GnomeIconList *gil;
 
-        gil = glade_xml_get_widget (mainwin_xml, "report_iconlist");
-        gnome_icon_list_append(gil, "report_big.xpm", text);
+        gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "report_iconlist");
+        gnome_icon_list_append(gil, GMDB_ICONDIR "report_big.xpm", text);
 }
 
 void gmdb_report_populate(MdbHandle *mdb)

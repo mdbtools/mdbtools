@@ -27,7 +27,7 @@ gmdb_module_add_icon(gchar *text)
 GnomeIconList *gil;
 
         gil = glade_xml_get_widget (mainwin_xml, "module_iconlist");
-        gnome_icon_list_append(gil, "module_big.xpm", text);
+        gnome_icon_list_append(gil, GMDB_ICONDIR "module_big.xpm", text);
 }
 
 void gmdb_module_populate(MdbHandle *mdb)

@@ -46,10 +46,11 @@ MdbColumn *col;
 	col=g_ptr_array_index(table->columns, col_num - 1);
 	col->len_ptr = len_ptr;
 }
-int mdb_find_end_of_row(MdbHandle *mdb, int row)
+int 
+mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
-MdbFormatConstants *fmt = mdb->fmt;
-int row_end;
+	MdbFormatConstants *fmt = mdb->fmt;
+	int row_end;
 
 	/* Search the previous "row start" values for the first non-deleted one.
 	* If we don't find one, then the end of the page is the correct value.

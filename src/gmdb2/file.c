@@ -21,6 +21,7 @@
 GtkWidget *file_selector;
 MdbHandle *mdb;
 extern int main_show_debug;
+extern GladeXML *mainwin_xml;
 
 void gmdb_file_open_recent_1() { gmdb_file_open_recent("menu_recent1"); }
 void gmdb_file_open_recent_2() { gmdb_file_open_recent("menu_recent2"); }
@@ -100,6 +101,11 @@ gmdb_file_add_recent(gchar *file_path)
 void
 gmdb_file_open(gchar *file_path)
 {
+	GtkWidget *win;
+	gchar *file_name;
+	gchar title[100];
+	int i;
+
 	gmdb_reset_widgets();
 	mdb = mdb_open(file_path);
 	if (!mdb) {
@@ -118,13 +124,22 @@ gmdb_file_open(gchar *file_path)
 	gmdb_macro_populate(mdb);
 	gmdb_module_populate(mdb);
 	//if (main_show_debug) gmdb_debug_init(mdb);
+	
+	for (i=strlen(file_path);i>0 && file_path[i-1]!='/';i--);
+	file_name=&file_path[i];
+
+	win = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "gmdb");
+	g_snprintf(title, 100, "%s - MDB File Viewer",file_name);
+	gtk_window_set_title(GTK_WINDOW(win), title);
+
+	gmdb_set_sensitive(TRUE);
 }
 
 void
 gmdb_file_open_cb(GtkWidget *selector, gpointer data)
 {
 gchar *file_path;
-	file_path = gtk_file_selection_get_filename (GTK_FILE_SELECTION(file_selector));
+	file_path = (gchar *) gtk_file_selection_get_filename (GTK_FILE_SELECTION(file_selector));
 	gmdb_file_open(file_path);
 	gmdb_load_recent_files();
 }

@@ -35,20 +35,24 @@ MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)
 	mdb->stats = g_malloc0(sizeof(MdbStatistics));
 	return mdb->stats;
 }
-void mdb_free_stats(MdbHandle *mdb)
+void 
+mdb_free_stats(MdbHandle *mdb)
 {
 	g_free(mdb->stats);
 	mdb->stats = NULL;
 }
-MdbFile *mdb_alloc_file()
+MdbFile *
+mdb_alloc_file()
 {
-MdbHandle *f;
+	MdbFile *f;
+
 	f = (MdbFile *) malloc(sizeof(MdbFile));
 	memset(f, '\0', sizeof(MdbFile));
 
 	return f;	
 }
-void mdb_free_file(MdbFile *f)
+void 
+mdb_free_file(MdbFile *f)
 {
 	if (!f) return;	
 	if (f->fd) close(f->fd);
@@ -82,9 +86,6 @@ void mdb_alloc_catalog(MdbHandle *mdb)
 }
 void mdb_free_catalog(MdbHandle *mdb)
 {
-GList *l;
-MdbCatalogEntry entry;
-
 	//g_ptr_array_free(mdb->catalog, FALSE);
 	mdb->catalog = NULL;
 }
@@ -99,11 +100,13 @@ MdbTableDef *table;
 
 	return table;	
 }
-void mdb_free_tabledef(MdbTableDef *table)
+void 
+mdb_free_tabledef(MdbTableDef *table)
 {
 	if (table->usage_map) free(table->usage_map);
 	if (table) free(table);
 }
+void
 mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 {
 MdbColumn *col;
@@ -111,10 +114,12 @@ MdbColumn *col;
  	col = g_memdup(in_col,sizeof(MdbColumn));
 	g_ptr_array_add(columns, col);
 }
+void
 mdb_free_columns(GPtrArray *columns)
 {
 	g_ptr_array_free(columns, TRUE);
 }
+void 
 mdb_append_index(GPtrArray *indices, MdbIndex *in_idx)
 {
 MdbIndex *idx;
@@ -122,6 +127,7 @@ MdbIndex *idx;
  	idx = g_memdup(in_idx,sizeof(MdbIndex));
 	g_ptr_array_add(indices, idx);
 }
+void
 mdb_free_indices(GPtrArray *indices)
 {
 	g_ptr_array_free(indices, TRUE);

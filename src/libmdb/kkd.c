@@ -27,10 +27,9 @@
 
 GArray *mdb_get_column_props(MdbCatalogEntry *entry, int start)
 {
-int i, j=0, pos, cnt=0;
+int pos, cnt=0;
 int len, tmp, cplen;
 MdbColumnProp prop;
-char name[MDB_MAX_OBJ_NAME+1];
 MdbHandle *mdb = entry->mdb;
 
 	entry->props = g_array_new(FALSE,FALSE,sizeof(MdbColumnProp));
@@ -100,13 +99,8 @@ void mdb_kkd_dump(MdbCatalogEntry *entry)
 {
 int rows;
 int kkd_start, kkd_end;
-int i, j, tmp, pos, row_type, hdrpos=0, datapos=0;
-int len;
-int col_type, col_num, val_len;
-int start;
-unsigned char c;
+int i, tmp, pos, row_type, datapos=0;
 MdbColumnProp prop;
-char name[MDB_MAX_OBJ_NAME+1];
 MdbHandle *mdb = entry->mdb;
 int rowid = entry->kkd_rowid;
 

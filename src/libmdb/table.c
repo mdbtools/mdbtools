@@ -45,7 +45,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 MdbTableDef *table;
 MdbHandle *mdb = entry->mdb;
 MdbFormatConstants *fmt = mdb->fmt;
-int len, i;
+int len;
 int rownum, row_start, row_end;
 
 	table = mdb_alloc_tabledef(entry);
@@ -104,9 +104,7 @@ MdbColumn col, *pcol;
 int len, i,j;
 unsigned char low_byte, high_byte;
 int cur_col, cur_name;
-int col_type, col_size;
-char name[MDB_MAX_OBJ_NAME+1];
-int name_sz, col_num;
+int name_sz;
 GSList	*slist = NULL;
 	
 	table->columns = g_ptr_array_new();
@@ -238,11 +236,11 @@ int i,bitn;
 int pgnum;
 
 	table = mdb_read_table(entry);
-	fprintf(stdout,"definition page     = %d\n",entry->table_pg);
+	fprintf(stdout,"definition page     = %lu\n",entry->table_pg);
 	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
 	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
 	fprintf(stdout,"number of indices   = %d\n",table->num_real_idxs);
-	fprintf(stdout,"first data page     = %d\n",table->first_data_pg);
+	fprintf(stdout,"first data page     = %lu\n",table->first_data_pg);
 
 	mdb_read_columns(table);
 	mdb_read_indices(table);

@@ -2,4 +2,4 @@ SUBDIRS	=	src include doc
 
 DEFDIR	=	$(prefix)
 
-EXTRA_DIST	=	HACKING
+EXTRA_DIST	=	HACKING 

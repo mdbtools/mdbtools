@@ -53,6 +53,42 @@ gmdb_sql_close_all()
 
 /* callbacks */
 void
+gmdb_sql_copy_cb(GtkWidget *w, GladeXML *xml)
+{
+	GtkTextBuffer *txtbuffer;
+	GtkClipboard *clipboard;
+	GtkWidget *textview;
+
+	textview = glade_xml_get_widget(xml, "sql_textview");
+	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+	gtk_text_buffer_copy_clipboard(txtbuffer, clipboard);
+}
+void
+gmdb_sql_cut_cb(GtkWidget *w, GladeXML *xml)
+{
+	GtkTextBuffer *txtbuffer;
+	GtkClipboard *clipboard;
+	GtkWidget *textview;
+
+	textview = glade_xml_get_widget(xml, "sql_textview");
+	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+	gtk_text_buffer_cut_clipboard(txtbuffer, clipboard, TRUE);
+}
+void
+gmdb_sql_paste_cb(GtkWidget *w, GladeXML *xml)
+{
+	GtkTextBuffer *txtbuffer;
+	GtkClipboard *clipboard;
+	GtkWidget *textview;
+
+	textview = glade_xml_get_widget(xml, "sql_textview");
+	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+	gtk_text_buffer_paste_clipboard(txtbuffer, clipboard, NULL, TRUE);
+}
+void
 gmdb_sql_close_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *win;
@@ -73,7 +109,7 @@ gchar *name;
 GtkTreeSelection *select;
 GtkTreeStore *store;
 GtkTreeView *tree;
-GtkTreeIter *iter, iter2;
+GtkTreeIter iter2;
 
 	tree = (GtkTreeView *) glade_xml_get_widget(xml, "sql_treeview");
 	select = gtk_tree_view_get_selection(GTK_TREE_VIEW (tree));
@@ -99,10 +135,9 @@ void gmdb_sql_dnd_datareceived_cb(
         guint info, guint t,
         GladeXML *xml)
 {
-gchar *buf, *lastbuf;
-GtkTextIter iter, start, end;
+gchar *buf;
+GtkTextIter iter;
 GtkTextBuffer *txtbuffer;
-int len;
 GtkWidget *textview;
 
 	textview = glade_xml_get_widget(xml, "sql_textview");
@@ -144,6 +179,7 @@ GList *history;
 GType *gtypes;
 GtkTreeIter iter;
 GtkTreeViewColumn *column;
+long row, maxrow;
 
 	/* stuff this query on the history */
 	textview = glade_xml_get_widget(xml, "sql_textview");
@@ -177,7 +213,7 @@ GtkTreeViewColumn *column;
 	for (i=0;i<sql->num_columns;i++) 
 		gtypes[i]=G_TYPE_STRING;
 
-	store = gtk_tree_view_get_model(treeview);
+	store = (GtkTreeStore *) gtk_tree_view_get_model(treeview);
 	if (store) {
 		i=0;
 		while (column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), i)) {
@@ -202,7 +238,12 @@ GtkTreeViewColumn *column;
 		gtk_tree_view_append_column(GTK_TREE_VIEW (treeview), column); 
 	}
 
-	while(mdb_fetch_row(sql->cur_table)) {
+	maxrow = gmdb_prefs_get_maxrows();
+
+	row = 0;
+	while(mdb_fetch_row(sql->cur_table) &&
+			(!maxrow || (row < maxrow))) {
+		row++;
 		gtk_list_store_append(GTK_LIST_STORE(store), &iter);
 		for (i=0;i<sql->num_columns;i++) { 
 			gtk_list_store_set(GTK_LIST_STORE(store), 
@@ -228,11 +269,23 @@ GtkWidget *mi, *but;
 GladeXML *sqlwin_xml;
 
 	/* load the interface */
-	sqlwin_xml = glade_xml_new("gladefiles/gmdb-sql.glade", NULL, NULL);
+	sqlwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(sqlwin_xml);
 
 	sql_list = g_list_append(sql_list, sqlwin_xml);
+
+	mi = glade_xml_get_widget (sqlwin_xml, "paste_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_sql_paste_cb), sqlwin_xml);
+
+	mi = glade_xml_get_widget (sqlwin_xml, "cut_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_sql_cut_cb), sqlwin_xml);
+
+	mi = glade_xml_get_widget (sqlwin_xml, "copy_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_sql_copy_cb), sqlwin_xml);
 
 	mi = glade_xml_get_widget (sqlwin_xml, "close_menu");
 	g_signal_connect (G_OBJECT (mi), "activate",
@@ -295,7 +348,7 @@ gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml)
 {
 int   i;
 MdbCatalogEntry *entry;
-GtkTreeIter *iter1, *iter2;
+GtkTreeIter *iter2;
 
 	GtkWidget *tree = glade_xml_get_widget(xml, "sql_treeview");
 	GtkTreeStore *store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));

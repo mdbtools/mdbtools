@@ -160,7 +160,8 @@ GtkWidget *exportwin;
 	sprintf(msg,"%d Rows exported successfully.\n", rows);
 	gmdb_info_msg(msg);
 }
-void gmdb_table_export(MdbCatalogEntry *entry) {
+void gmdb_table_export(MdbCatalogEntry *entry) 
+{
 GtkWidget *export_button;
 GtkWidget *close_button;
 GList *glist = NULL;
@@ -169,7 +170,7 @@ GtkWidget *combo;
 	cat_entry = entry;
 
 	/* load the interface */
-	exportwin_xml = glade_xml_new("gladefiles/gmdb-export.glade", NULL, NULL);
+	exportwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-export.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(exportwin_xml);
 	

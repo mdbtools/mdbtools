@@ -28,7 +28,7 @@ gmdb_query_add_icon(gchar *text)
 GnomeIconList *gil;
 
 	gil = glade_xml_get_widget (mainwin_xml, "query_iconlist");
-	gnome_icon_list_append(gil, "query_big.xpm", text);
+	gnome_icon_list_append(gil, GMDB_ICONDIR "query_big.xpm", text);
 
 }
 

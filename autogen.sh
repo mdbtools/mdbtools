@@ -125,7 +125,7 @@ do
       fi
       if grep "^AC_PROG_LIBTOOL" configure.in >/dev/null; then
 	echo "Running libtoolize..."
-	#libtoolize --force --copy
+	libtoolize --force --copy
       fi
       echo "Running aclocal $aclocalinclude ..."
       aclocal $aclocalinclude

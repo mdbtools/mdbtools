@@ -26,12 +26,10 @@ main(int argc, char **argv)
 {
 int rows;
 int i, j;
-unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;
 MdbIndex *idx;
-GList *l;
 int found = 0;
 
 
@@ -92,10 +90,10 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 {
 	MdbField fields[256];
 	MdbFormatConstants *fmt;
-	int num_fields, i, j, k;
+	int num_fields, i, j;
 	int row_start, row_end;
 	MdbColumn *col;
-	guchar buf[256], key[256], mykey[256];
+	guchar buf[256], key[256];
 	int elem, pos;
 	MdbTableDef *table = idx->table; 
 	
@@ -119,25 +117,26 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 		//j = idx->key_col_num[i];
 		strncpy(buf, fields[elem].value, fields[elem].siz);
 		buf[fields[elem].siz]=0;
-		fprintf(stdout, "elem %d %d column %d %s %s\n",elem, fields[elem].colnum, idx->key_col_num[i], col->name, buf);
+		//fprintf(stdout, "elem %d %d column %d %s %s\n",elem, fields[elem].colnum, idx->key_col_num[i], col->name, buf);
 		if (col->col_type == MDB_TEXT) {
-			fprintf(stdout, "%s = %s \n", buf, key);
+			// fprintf(stdout, "%s = %s \n", buf, key);
 		}
 	}
 }
 void
 walk_index(MdbHandle *mdb, MdbIndex *idx)
 {
-	int i, j, start, len;
+	int start, len;
 	unsigned char byte;
 	guint32 pg;
 	guint16 row;
 	MdbHandle *mdbidx;
 	MdbIndexChain chain;
+
+#if 0
 	MdbTableDef *table = idx->table;
 	MdbSarg sarg;
 
-#if 1
 	sarg.op = MDB_EQUAL;
 	//strcpy(sarg.value.s, "SP");
 	sarg.value.i = 2;
@@ -151,33 +150,10 @@ walk_index(MdbHandle *mdb, MdbIndex *idx)
 	 * the data */
 	mdbidx = mdb_clone_handle(mdb);
 	mdb_read_pg(mdbidx, idx->first_pg);
-	printf("page type %02x %s\n", mdbidx->pg_buf[0], page_name(mdbidx->pg_buf[0]));
+	//printf("page type %02x %s\n", mdbidx->pg_buf[0], page_name(mdbidx->pg_buf[0]));
 	while (mdb_index_find_next(mdbidx, idx, &chain, &pg, &row)) {
 		printf("row = %d pg = %lu\n", row, pg);
 		check_row(mdb, idx, pg, row, &mdbidx->pg_buf[start], len - 4);
 	}
-#if 0
-	if (mdbidx->pg_buf[0]!=MDB_PAGE_LEAF) {
-		return;
-	}
-	start = 0xf8; /* start byte of the index entries */
-	len = -1;
-	for (i=0x16;i<0xf8;i++) {
-		byte = mdbidx->pg_buf[i];
-		//printf("%02x ",byte); 
-		for (j=0;j<8;j++) {
-			len++;
-			if ((1 << j) & byte) {
-				// printf("start = %04x len = %d\n", start, len);
-				buffer_dump(mdbidx->pg_buf, start, start+len-1);
-				row = mdbidx->pg_buf[start+len-1];
-				pg = mdb_get_int24_msb(mdbidx, start+len-4);
-				start += len;
-				len = 0;
-				// printf("\nbit %d set\n", j);
-			}
-		}
-	}
-#endif 
 	mdb_close(mdbidx);
 }

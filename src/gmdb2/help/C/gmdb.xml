@@ -1,0 +1,310 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN" 
+"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"
+[
+  <!ENTITY legal SYSTEM "legal.xml">
+  <!ENTITY appversion "0.5">
+  <!ENTITY manrevision "1.0">
+  <!ENTITY date "January 2003">
+  <!ENTITY app "gmdb2">
+]>
+<!-- 
+<!DOCTYPE Book PUBLIC "-//GNOME//DTD DocBook PNG Variant
+V1.1//EN"
+-->
+<!-- 
+      (Do not remove this comment block.)
+  Maintained by the GNOME Documentation Project
+  http://developer.GNOME.org/projects/gdp
+  Template version: 2.0 beta
+  Template last modified Jan 30, 2002
+-->
+<!-- =============Document Header ============================= -->
+<article id="index" lang="en">
+<!-- please do not change the id; for translations, change lang to -->
+<!-- appropriate code -->
+  <articleinfo> 
+	 <title>&app; Manual V&manrevision;</title>
+	 <copyright> 
+		<year>2003</year>
+		<holder>Brian Bruns</holder> </copyright>
+
+<!-- translators: uncomment this:
+
+  <copyright>
+   <year>2002</year>
+   <holder>ME-THE-TRANSLATOR (Latin translation)</holder>
+  </copyright>
+
+   -->
+	 <publisher> 
+		<publishername> MDB Tools Project </publishername>
+	 </publisher>
+	 &legal; 
+	 <authorgroup> 
+		<author> 
+		  <firstname>Brian</firstname>
+		  <surname>Bruns</surname> 
+		  <affiliation> 
+			 <orgname>MDB Tools Project</orgname>
+			 <address> <email>camber@ais.org</email> </address>
+		  </affiliation>
+		</author>
+<!-- This is appropriate place for other contributors: translators,
+      maintainers,  etc. Commented out by default.
+       <othercredit role="translator">
+	<firstname>Latin</firstname> 
+	<surname>Translator 1</surname> 
+	<affiliation> 
+	  <orgname>Latin Translation Team</orgname> 
+	  <address> <email>translator@gnome.org</email> </address> 
+	</affiliation>
+	<contrib>Latin translation</contrib>
+      </othercredit>
+-->
+	 </authorgroup>
+
+
+<!-- According to GNU FDL, revision history is mandatory if you are -->
+<!-- modifying/reusing someone else's document.  If not, you can omit it. -->
+	 <revhistory>
+<!-- Remember to remove the &manrevision; entity from the revision entries other
+   than the current revision. -->
+		<revision> 
+		  <revnumber>gmdb V0.5</revnumber>
+		  <date>2000</date> 
+		  <revdescription> 
+			 <para role="author">Brian Bruns<email>camber@ais.org</email>
+				</para>
+			 <para role="publisher">MDB Tools Project</para>
+		  </revdescription>
+		</revision>
+	 </revhistory>
+	 <releaseinfo> This manual describes version &appversion; of &app;.
+		</releaseinfo>
+	 <legalnotice> 
+		<title>Feedback</title>
+		<para> To report a bug or make a suggestion regarding this application or
+		  this manual, follow the directions in this
+		  <ulink url="ghelp:gnome-feedback" type="help">document</ulink>. </para>
+<!-- Translators may also add here feedback address for translations -->
+	 </legalnotice>
+  </articleinfo>
+  <indexterm><primary>gmdb2</primary></indexterm>
+
+<!-- ============= Document Body ============================= -->
+<!-- ============= Introduction ============================== -->
+  <sect1 id="gmdb-intro"> 
+	 <title>Introduction</title>
+	 <para>The <application>&app;</application> application is the graphical 
+		interface to MDB Tools. You can use <application>&app;</application>
+		to view and export data and schema from MDB databases.
+		</para>
+  </sect1>
+<!-- ============= Getting Started =========================== -->
+  <sect1 id="gmdb-getting-started"> 
+	 <title>Getting Started</title>
+
+<!-- ============= To Start gmdb2 ============================ -->
+	 <sect2 id="gmdb-to-start"> 
+		<title>To Start &app; from the Command Line</title>
+		<para>To start <application>&app;</application> from the command line, type the following command, then press <keycap>Return</keycap>:</para>
+		<para><command>gmdb2 </command></para>
+
+<!-- ==== Figure ==== -->
+		<figure id="gmdb-window"> 
+		  <title>&app; Window</title>
+		  <screenshot> 
+			 <mediaobject> 
+				<imageobject> 
+				  <imagedata fileref="figures/gmdb2_window.png" format="PNG"/>
+					 </imageobject>
+				<textobject> <phrase>Screenshot of the gmdb2 main window.</phrase>
+				</textobject> </mediaobject>
+		  </screenshot>
+		</figure>
+<!-- ==== End of Figure ==== -->
+		<para>The <application>&app;</application> window contains the following
+		  elements: </para>
+		<variablelist> 
+		  <varlistentry> <term>Menubar. </term> 
+			 <listitem> 
+				<para>The menus on the menubar contain all of the commands you need
+				  to work with databases in <application>&app;</application>.</para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Toolbar. </term> 
+			 <listitem> 
+				<para> The toolbar contains a subset of the commands that you can
+				  access from the menubar.</para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Tabbed window. </term> 
+			 <listitem> 
+				<para> 
+The tabbed window contains a tab for each type of object in the database. Within
+these, a listing of those objects will be displayed along with buttons along the
+left hand side for performing common actions specific to that type of object.
+				  </para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Statusbar. </term> 
+			 <listitem> 
+				<para>The statusbar displays information about current
+				  <application>&app; </application> activity and contextual information about the
+				  menu items. </para>
+			 </listitem>
+		  </varlistentry>
+		</variablelist>
+		<para>
+When you right-click on any icon in the <application>&app;</application>
+icon list, the application displays a popup menu. The popup menu contains the
+full list of available actions that may be performed on that object.
+		</para>
+	 </sect2>
+<!-- ============= To Open a File ============================= -->
+	 <sect2 id="gmdb-open-file"> 
+		<title>To Open a File</title>
+		<para>To open a file, choose 
+		  <menuchoice> <guimenu>File</guimenu> <guimenuitem>Open</guimenuitem>
+			 </menuchoice>
+		  to display the <guilabel>Open File</guilabel> dialog. Select the file
+		  that you want to open, then click <guibutton>OK</guibutton>. The file is
+		  displayed in the <application>&app;</application> window. </para>
+		<para>The application also records the paths and file names of the last
+		  four files that you edited and displays them as menu items on the <guimenu>File
+		  </guimenu> menu. To open one of the last four files, choose for example 
+		  <menuchoice> <guimenu>File</guimenu> <guimenuitem>1.
+			 <replaceable>/path/filename</replaceable></guimenuitem> </menuchoice>.</para>
+	 </sect2>
+<!-- ============= To Open Multiple Files from the Command Line ========= -->
+	 <sect2 id="gmdb-run-from-cmd-line"> 
+		<title>To Open Files from a Command Line</title>
+		<para>You can run <application>&app;</application> from a command line
+		  and open a file. To open a file from a command
+		  line, type the following command, then press <keycap>Return</keycap>:</para>
+		<para><command>gmdb2 file1.mdb</command></para>
+		<para>When the application starts, the file that you specified is
+		  displayed in the <application>&app;</application> window.</para>
+		<para><application>&app;</application> uses the environment variable MDBPATH when looking for the specified file.  If set <application>&app;</application>will search each directory component until the file is found.</para>
+	 </sect2>
+  </sect1>
+<!-- ================ Usage ================================ -->
+  <sect1 id="gmdb-usage"> 
+	 <title>Usage</title>
+
+<!-- ============= Get the Properties of a File ======================= -->
+	 <sect2 id="gmdb-props"> 
+		<title>To Display the Properties of a Database</title>
+		<para>To display the properties of a database, perform
+		  the following steps:</para>
+		<orderedlist> 
+		  <listitem><para>Choose 
+				<menuchoice> <guimenu>File</guimenu> <guimenuitem>Properties </guimenuitem> </menuchoice></para></listitem>
+		</orderedlist>
+	 </sect2>	 
+<!-- ============= Exporting Schema ======================= -->
+	 <sect2 id="gmdb-schema"> 
+		<title>To Export the Schema of a Database</title>
+		<para>To export the schema of the current database, 
+		  Choose <menuchoice> <guimenu>Tools</guimenu> <guimenuitem>Export Schema </guimenuitem> </menuchoice> and perform the following steps:</para>
+		<orderedlist> 
+		  <listitem><para>Select the filename to save the schema in.</para></listitem>
+		  <listitem><para>If you want to only export one table, select it.</para></listitem>
+		  <listitem><para>Choose the SQL dialect of the target database backend.</para></listitem>
+		  <listitem><para>Check desired schema options.</para></listitem>
+		  <listitem><para>Click <guibutton>Export</guibutton>.</para></listitem>
+		</orderedlist>
+		<para>Checking the <guilabel>Include Relationships</guilabel> box will generate foreign key relationships if they are supported by the database.</para>
+		<para>Checking the <guilabel>Include Drop Table commands</guilabel> will generate the commands to drop the tables before creating new tables.</para>
+	 </sect2>	 
+<!-- ============= Opening SQL Window ======================= -->
+	 <sect2 id="gmdb-sql"> 
+		<title>To Open a SQL Query Window</title>
+		<para>The <guilabel>SQL Query</guilabel> window allows you enter SQL queries and to execute and view the results.</para>
+		<para>To open the <guilabel>SQL Query</guilabel> window, perform the following steps.</para>
+		<orderedlist> 
+		  <listitem><para>
+Choose <menuchoice> <guimenu>Tools</guimenu> <guimenuitem>SQL Window </guimenuitem> </menuchoice>
+		  </para></listitem>
+		</orderedlist>
+	 </sect2>	 
+<!-- ============= Opening Debug Window ======================= -->
+	 <sect2 id="gmdb-debug"> 
+		<title>To Open a File Debugger Window</title>
+		<para>The <guilabel>File Debugger</guilabel> window allows you enter SQL queries and to execute and view the results.</para>
+		<orderedlist> 
+		  <listitem><para>
+Choose <menuchoice> <guimenu>Tools</guimenu> <guimenuitem>Debug Window </guimenuitem> </menuchoice>
+		  </para></listitem>
+		</orderedlist>
+	 </sect2>	 
+  </sect1>
+<!-- ============= Tables Window ============================= -->
+  <sect1 id="gmdb-tables"> 
+	 <title>Table Actions</title>
+	 <para>To perform actions on a table choose the <guilabel>Tables</guilabel> tab from the main window.</para>
+	 
+	 <sect2 id="gmdb-tables-def">
+	 <title>Table Definition</title>
+	 <para>To view the definition of a table, perform the following actions</para>
+		<orderedlist> 
+		  <listitem><para>
+Locate the desired table in the tables icon list.
+		  </para></listitem>
+		  <listitem><para>
+Select the tables icon.
+		  </para></listitem>
+		  <listitem><para>
+Click on the <guibutton>Definition</guibutton> button from the right hand side of the icon list.
+		  </para></listitem>
+		</orderedlist>
+		<para>
+Columns participating in a Primary Key will have an icon of a gold key and the letters PK at the left side of the column.
+		</para>
+	 </sect2>	 
+	 
+	<sect2 id="gmdb-table-data">
+	 <title>Data View</title>
+	 <para>The <guilabel>Data</guilabel> view displays a grid of the data in a table.</para>
+	 <para>To display the table data, perform the following steps</para>
+		<orderedlist> 
+		  <listitem><para>
+Locate the desired table in the tables icon list.
+		  </para></listitem>
+		  <listitem><para>
+Select the tables icon.
+		  </para></listitem>
+		  <listitem><para>
+Click on the <guibutton>Data</guibutton> button from the right hand side of the icon list.
+		  </para></listitem>
+		</orderedlist>
+	 </sect2>	 		 	 	 
+	<sect2 id="gmdb-table-export">
+	 <title>Data Export</title>
+	 <para>The <guilabel>Export</guilabel> button creates a text file containing the data from a single data.</para>
+	 <para>To export the table data, perform the following steps</para>
+		<orderedlist> 
+		  <listitem><para>
+Locate the desired table in the tables icon list.
+		  </para></listitem>
+		  <listitem><para>
+Select the tables icon.
+		  </para></listitem>
+		  <listitem><para>
+Click on the <guibutton>Export</guibutton> button from the right hand side of the icon list to display the <guilabel>Export Table</guilabel> window.
+		  </para></listitem>
+		  <listitem><para>
+		  Select the filename to save the data in.
+		  </para></listitem>
+		  <listitem><para>
+		  Fill in dialog with desired characteristics of the export file.
+		  </para></listitem>
+		  <listitem><para>
+		  Click <guibutton>Export</guibutton>.
+		  </para></listitem>
+		</orderedlist> 
+	<para>Checking the <guilabel>Include Headers</guilabel> box will write a single row at the top of the file with the names of the columns.</para>
+ 	</sect2>
+ </sect1>
+</article>

@@ -64,7 +64,7 @@ int ret;
 			return 0;
 		}
 		g_free(tmpfname);
-	} while (dir = strtok(NULL, ":"));
+	} while ((dir = strtok(NULL, ":")));
 	return -1;
 }
 MdbHandle *_mdb_open(char *filename, gboolean writable)
@@ -154,10 +154,10 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	newmdb = mdb_alloc_handle();
 	memcpy(newmdb, mdb, sizeof(MdbHandle));
 	newmdb->stats = NULL;
-	newmdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
+	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
-		newmdb->catalog = g_array_append_val(newmdb->catalog, entry);
+		g_ptr_array_add(newmdb->catalog, entry);
 	}
 	mdb->backend_name = NULL;
 	if (mdb->f) {
@@ -227,13 +227,14 @@ unsigned char c;
 	mdb->cur_pos++;
 	return c;
 }
-int _mdb_get_int16(unsigned char *buf, int offset)
+int 
+_mdb_get_int16(unsigned char *buf, int offset)
 {
 	return buf[offset+1]*256+buf[offset];
 }
-int mdb_get_int16(MdbHandle *mdb, int offset)
+int 
+mdb_get_int16(MdbHandle *mdb, int offset)
 {
-unsigned char *c;
 int           i;
 
 	if (offset < 0 || offset+2 > mdb->fmt->pg_size) return -1;
@@ -244,7 +245,8 @@ int           i;
 	return i;
 	
 }
-gint32 mdb_get_int24_msb(MdbHandle *mdb, int offset)
+gint32 
+mdb_get_int24_msb(MdbHandle *mdb, int offset)
 {
 gint32 l;
 unsigned char *c;
@@ -295,11 +297,15 @@ long l;
 	mdb->cur_pos+=4;
 	return l;
 }
-float mdb_get_single(MdbHandle *mdb, int offset)
+float 
+mdb_get_single(MdbHandle *mdb, int offset)
 {
-float f, f2;
-unsigned char *c;
-int i;
+#ifdef WORDS_BIGENDIAN
+	float f2;
+	int i;
+	unsigned char *c;
+#endif
+	float f;
 
        if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
@@ -316,11 +322,15 @@ int i;
        return f;
 }
 
-double mdb_get_double(MdbHandle *mdb, int offset)
+double 
+mdb_get_double(MdbHandle *mdb, int offset)
 {
-double d, d2;
-unsigned char *c;
-int i;
+#ifdef WORDS_BIGENDIAN
+	double d2;
+	int i;
+	unsigned char *c;
+#endif
+	double d;
 
 	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
@@ -337,7 +347,8 @@ int i;
 	return d;
 
 }
-int mdb_set_pos(MdbHandle *mdb, int pos)
+int 
+mdb_set_pos(MdbHandle *mdb, int pos)
 {
 	if (pos<0 || pos >= mdb->fmt->pg_size) return 0;
 

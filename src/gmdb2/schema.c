@@ -163,7 +163,7 @@ MdbCatalogEntry *entry;
 int i;
    
 	/* load the interface */
-	schemawin_xml = glade_xml_new("gladefiles/gmdb-schema.glade", NULL, NULL);
+	schemawin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-schema.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(schemawin_xml);
 	

@@ -27,7 +27,7 @@ gmdb_macro_add_icon(gchar *text)
 GnomeIconList *gil;
 
         gil = glade_xml_get_widget (mainwin_xml, "macro_iconlist");
-        gnome_icon_list_append(gil, "macro_big.xpm", text);
+        gnome_icon_list_append(gil, GMDB_ICONDIR "macro_big.xpm", text);
 }
 
 void gmdb_macro_populate(MdbHandle *mdb)

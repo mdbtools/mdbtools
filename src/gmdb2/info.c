@@ -39,7 +39,7 @@ int i;
 struct stat st;
 
 	/* load the interface */
-	propswin_xml = glade_xml_new("gladefiles/gmdb-props.glade", NULL, NULL);
+	propswin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-props.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(propswin_xml);
 	

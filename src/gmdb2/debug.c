@@ -887,7 +887,7 @@ gchar text[20];
 GladeXML *debugwin_xml;
 
 	/* load the interface */
-	debugwin_xml = glade_xml_new("gladefiles/gmdb-debug.glade", NULL, NULL);
+	debugwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-debug.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(debugwin_xml);
 	
@@ -942,8 +942,8 @@ GladeXML *debugwin_xml;
 		GTK_SIGNAL_FUNC (gmdb_debug_delete_cb), debugwin_xml);
 
 	/* this should be a preference, needs to be fixed width */
-	textview = glade_xml_get_widget (debugwin_xml, "debug_textview");
-	gtk_widget_modify_font(textview, 
+	textview = (GtkTextView *) glade_xml_get_widget (debugwin_xml, "debug_textview");
+	gtk_widget_modify_font(GTK_WIDGET(textview), 
 		pango_font_description_from_string("Courier"));
 			                			                
 	/* set up treeview, libglade only gives us the empty widget */

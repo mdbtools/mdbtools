@@ -290,6 +290,9 @@ extern MdbHandle *mdb_alloc_handle();
 extern void mdb_free_handle(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
 extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
+extern void mdb_alloc_catalog(MdbHandle *mdb);
+extern MdbFile *mdb_alloc_file();
+extern void mdb_free_file(MdbFile *f);
 
 /* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -305,6 +308,7 @@ extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
 
 /* catalog.c */
+GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
 extern void mdb_catalog_dump(MdbHandle *mdb, int obj_type);
 extern int mdb_catalog_rows(MdbHandle *mdb);
 extern MdbCatalogEntry *mdb_get_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry);
@@ -312,6 +316,8 @@ extern char *mdb_get_objtype_string(int obj_type);
 
 /* table.c */
 extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
+extern GPtrArray *mdb_read_columns(MdbTableDef *table);
+
 
 /* data.c */
 extern void mdb_data_dump(MdbTableDef *table);
@@ -320,6 +326,7 @@ extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
 extern int mdb_is_fixed_col(MdbColumn *col);
 extern char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size);
+extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 
 
 /* dump.c */
@@ -333,5 +340,9 @@ extern int  mdb_set_default_backend(MdbHandle *mdb, char *backend_name);
 extern char *mdb_get_relationships(MdbHandle *mdb);
 
 /* sargs.c */
-int mdb_test_sargs(MdbHandle *mdb, MdbColumn *col, int offset, int len);
+extern int mdb_test_sargs(MdbHandle *mdb, MdbColumn *col, int offset, int len);
+
+/* index.c */
+extern GPtrArray *mdb_read_indices(MdbTableDef *table);
+extern void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
 #endif /* _mdbtools_h_ */

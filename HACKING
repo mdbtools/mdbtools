@@ -169,8 +169,7 @@ with the next_pg pointer.
 | ???? | 4 bytes | used_pages  | Points to a record containing the        |
 |      |         |             | usage bitmask for this table.            |
 | ???? | 4 bytes |             | Points to a similar record as above,     |
-|      |         |             | might contain info about partly used     |
-|      |         |             | pages?                                   |
+|      |         |             | listing pages which contain free space.  |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_real_idx (8 bytes per idxs)               |
 +-------------------------------------------------------------------------+

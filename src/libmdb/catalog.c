@@ -19,7 +19,8 @@
 
 #include "mdbtools.h"
 
-char *mdb_get_objtype_string(int obj_type)
+char *
+mdb_get_objtype_string(int obj_type)
 {
 static char *type_name[] = {"Form",
 			"Table",
@@ -43,13 +44,10 @@ static char *type_name[] = {"Form",
 }
 
 /* new method */
-#if 1
 GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 {
-int   i, j, k;
 MdbCatalogEntry entry, msysobj, *data;
 MdbTableDef *table;
-MdbColumn *col;
 char parentid[256];
 char objname[256];
 char tobjtype[256];
@@ -98,7 +96,7 @@ int type;
 
 /* old method */
 
-#else
+#if 0
 
 MdbCatalogEntry *mdb_read_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry)
 {
@@ -146,7 +144,8 @@ int mdb_catalog_rows(MdbHandle *mdb)
 {
 	return mdb_get_int16(mdb, mdb->row_count_offset);
 }
-GArray *mdb_read_catalog(MdbHandle *mdb, int obj_type)
+GPtrArray *
+mdb_read_catalog(MdbHandle *mdb, int obj_type)
 {
 int i;
 int rows;
@@ -192,7 +191,7 @@ int next_pg, next_pg_off;
 	mdb_free_catalog(mdb);
 	mdb->num_catalog = 0;
 
-	mdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
+	mdb->catalog = g_ptr_array_new();
 	next_pg=0;
 	while (mdb_read_pg(mdb,next_pg)) {
 		if (mdb->pg_buf[0]==0x01 && 
@@ -205,7 +204,7 @@ int next_pg, next_pg_off;
 				if (mdb_read_catalog_entry(mdb, i, &entry)) {
 					//printf("page %d\n",next_pg);
 					mdb->num_catalog++;
-					mdb->catalog = g_array_append_val(mdb->catalog, entry);
+					g_ptr_array_add(mdb->catalog, entry);
 				}
 			}
 		}
@@ -213,10 +212,11 @@ int next_pg, next_pg_off;
 	}
 }
 #endif
-void mdb_dump_catalog(MdbHandle *mdb, int obj_type)
+void 
+mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
-int rows, i;
-MdbCatalogEntry *entry;
+	int i;
+	MdbCatalogEntry *entry;
 
 	mdb_read_catalog(mdb, obj_type);
 	for (i=0;i<mdb->num_catalog;i++) {
@@ -225,8 +225,8 @@ MdbCatalogEntry *entry;
 			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x KKD pg: %04x row: %2d\n",
 			mdb_get_objtype_string(entry->object_type),
 			entry->object_name,
-			entry->table_pg,
-			entry->kkd_pg,
+			(unsigned int) entry->table_pg,
+			(unsigned int) entry->kkd_pg,
 			entry->kkd_rowid);
 		}
         }

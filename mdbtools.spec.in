@@ -1,5 +1,5 @@
-%define	name	mdbtools
-%define	version	0.5
+%define	name	@PACKAGE@
+%define	version	@VERSION@
  
 Name: %{name} 
 Version: %{version} 

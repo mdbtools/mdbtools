@@ -52,7 +52,7 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="information1">
+			<widget class="GtkImageMenuItem" id="info_menu">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_PROPERTIES_ITEM</property>
 			  <signal name="activate" handler="gmdb_info_cb" last_modification_time="Sat, 21 Dec 2002 16:17:18 GMT"/>
@@ -149,7 +149,7 @@
 			<widget class="GtkImageMenuItem" id="preferences1">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_PREFERENCES_ITEM</property>
-			  <signal name="activate" handler="a_callback" last_modification_time="Fri, 20 Dec 2002 16:38:48 GMT"/>
+			  <signal name="activate" handler="gmdb_prefs_cb" last_modification_time="Fri, 10 Jan 2003 23:14:44 GMT"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -167,7 +167,7 @@
 		    <widget class="GtkMenu" id="tools1_menu">
 
 		      <child>
-			<widget class="GtkMenuItem" id="sql_window1">
+			<widget class="GtkMenuItem" id="sql_menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">S_QL Window</property>
 			  <property name="use_underline">True</property>
@@ -177,14 +177,14 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="debug_window1">
+			<widget class="GtkImageMenuItem" id="debug_menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Debug Window</property>
 			  <property name="use_underline">True</property>
 			  <signal name="activate" handler="gmdb_debug_new_cb" last_modification_time="Sat, 21 Dec 2002 17:41:42 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image49">
+			    <widget class="GtkImage" id="debug_icon">
 			      <property name="visible">True</property>
 			      <property name="pixbuf">debug.xpm</property>
 			      <property name="xalign">0.5</property>
@@ -197,14 +197,14 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="export_schema1">
+			<widget class="GtkImageMenuItem" id="schema_menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">E_xport Schema</property>
 			  <property name="use_underline">True</property>
 			  <signal name="activate" handler="gmdb_schema_new_cb" last_modification_time="Sun, 29 Dec 2002 20:35:14 GMT"/>
 
 			  <child internal-child="image">
-			    <widget class="GtkImage" id="image50">
+			    <widget class="GtkImage" id="image57">
 			      <property name="visible">True</property>
 			      <property name="stock">gtk-convert</property>
 			      <property name="icon_size">1</property>
@@ -244,11 +244,23 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkMenuItem" id="contents1">
+			<widget class="GtkImageMenuItem" id="contents1">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Contents</property>
 			  <property name="use_underline">True</property>
-			  <signal name="activate" handler="a_callback" last_modification_time="Fri, 20 Dec 2002 16:38:48 GMT"/>
+			  <signal name="activate" handler="gmdb_help_cb" last_modification_time="Sat, 11 Jan 2003 14:22:04 GMT"/>
+
+			  <child internal-child="image">
+			    <widget class="GtkImage" id="image58">
+			      <property name="visible">True</property>
+			      <property name="stock">gtk-help</property>
+			      <property name="icon_size">1</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			  </child>
 			</widget>
 		      </child>
 		    </widget>
@@ -291,7 +303,7 @@
 	      </child>
 
 	      <child>
-		<widget class="button" id="button3">
+		<widget class="button" id="info_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">View database file properties</property>
 		  <property name="label">gtk-properties</property>
@@ -324,7 +336,7 @@
 	      </child>
 
 	      <child>
-		<widget class="button" id="button5">
+		<widget class="button" id="schema_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Export schema definition</property>
 		  <property name="label" translatable="yes">Export Schema</property>
@@ -406,6 +418,7 @@
 				  <property name="text_editable">False</property>
 				  <property name="text_static">True</property>
 				  <signal name="select_icon" handler="gmdb_table_select_cb" after="yes" last_modification_time="Fri, 20 Dec 2002 16:45:49 GMT"/>
+				  <signal name="unselect_icon" handler="gmdb_table_unselect_cb" after="yes" last_modification_time="Sat, 11 Jan 2003 18:27:12 GMT"/>
 				</widget>
 			      </child>
 			    </widget>
@@ -496,7 +509,7 @@
 		  <property name="spacing">2</property>
 
 		  <child>
-		    <widget class="GtkImage" id="Tables">
+		    <widget class="GtkImage" id="table_icon">
 		      <property name="visible">True</property>
 		      <property name="pixbuf">table.xpm</property>
 		      <property name="xalign">0.5</property>
@@ -617,7 +630,7 @@
 		  <property name="spacing">2</property>
 
 		  <child>
-		    <widget class="GtkImage" id="image2">
+		    <widget class="GtkImage" id="query_icon">
 		      <property name="visible">True</property>
 		      <property name="pixbuf">query.xpm</property>
 		      <property name="xalign">0.5</property>
@@ -738,7 +751,7 @@
 		  <property name="spacing">2</property>
 
 		  <child>
-		    <widget class="GtkImage" id="image3">
+		    <widget class="GtkImage" id="form_icon">
 		      <property name="visible">True</property>
 		      <property name="pixbuf">forms.xpm</property>
 		      <property name="xalign">0.5</property>
@@ -859,7 +872,7 @@
 		  <property name="spacing">2</property>
 
 		  <child>
-		    <widget class="GtkImage" id="image4">
+		    <widget class="GtkImage" id="report_icon">
 		      <property name="visible">True</property>
 		      <property name="pixbuf">reports.xpm</property>
 		      <property name="xalign">0.5</property>
@@ -980,7 +993,7 @@
 		  <property name="spacing">2</property>
 
 		  <child>
-		    <widget class="GtkImage" id="image5">
+		    <widget class="GtkImage" id="macro_icon">
 		      <property name="visible">True</property>
 		      <property name="pixbuf">macros.xpm</property>
 		      <property name="xalign">0.5</property>
@@ -1101,7 +1114,7 @@
 		  <property name="spacing">2</property>
 
 		  <child>
-		    <widget class="GtkImage" id="image6">
+		    <widget class="GtkImage" id="module_icon">
 		      <property name="visible">True</property>
 		      <property name="pixbuf">code.xpm</property>
 		      <property name="xalign">0.5</property>
