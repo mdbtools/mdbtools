@@ -113,7 +113,6 @@ mdb_debug
 mdb_unicode2ascii
 mdb_ascii2unicode
 <SUBSECTION Private>
-mdb_alloc_stats
 mdb_test_string
 mdb_test_int
 mdb_add_sarg

@@ -23,20 +23,6 @@
 #include "dmalloc.h"
 #endif
 
-/* private function */
-MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)
-{
-	mdb->stats = g_malloc0(sizeof(MdbStatistics));
-	return mdb->stats;
-}
-/* private function */
-void mdb_free_stats(MdbHandle *mdb)
-{
-	if (!mdb->stats) return;
-	g_free(mdb->stats);
-	mdb->stats = NULL;
-}
-
 /**
  * mdb_stats_on:
  * @mdb: Handle to the (open) MDB file to collect stats on.
@@ -53,7 +39,7 @@ void
 mdb_stats_on(MdbHandle *mdb)
 {
 	if (!mdb->stats) 
-		mdb_alloc_stats(mdb);
+		mdb->stats = g_malloc0(sizeof(MdbStatistics));
 
 	mdb->stats->collect = TRUE;
 }

@@ -168,8 +168,8 @@ void
 mdb_close(MdbHandle *mdb)
 {
 	if (!mdb) return;	
-	mdb_free_stats(mdb);
 	mdb_free_catalog(mdb);
+	g_free(mdb->stats);
 	g_free(mdb->backend_name);
 
 	if (mdb->f) {

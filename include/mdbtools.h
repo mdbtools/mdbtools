@@ -484,8 +484,6 @@ void mdb_index_page_reset(MdbIndexPage *ipg);
 
 
 /* stats.c */
-extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
-extern void mdb_free_stats(MdbHandle *mdb);
 extern void mdb_stats_on(MdbHandle *mdb);
 extern void mdb_stats_off(MdbHandle *mdb);
 extern void mdb_dump_stats(MdbHandle *mdb);
