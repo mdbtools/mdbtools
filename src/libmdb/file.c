@@ -137,7 +137,7 @@ off_t offset = pg * mdb->pg_size;
 		return 0;
 	}
 	else if (len<mdb->pg_size) {
-		/* fprintf(stderr,"EOF reached.\n"); */
+		/* fprintf(stderr,"EOF reached %d bytes returned.\n",len, mdb->pg_size); */
 		return 0;
 	} 
 	return len;

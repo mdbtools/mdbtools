@@ -157,7 +157,7 @@ unsigned char isnull;
 	}
 	bitmask_sz = (num_cols - 1) / 8 + 1;
 	if (mdb->jet_version==MDB_VER_JET4) {
-		eod = mdb->pg_buf[row_end-2-var_cols*2-bitmask_sz];
+		eod = mdb_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
 	} else {
 		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
 	}
@@ -288,7 +288,7 @@ MdbHandle *mdb = entry->mdb;
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
 	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb, 4)!=entry->table_pg);
-	// fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); 
+	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg);  */
 	return table->cur_phys_pg;
 }
 int mdb_rewind_table(MdbTableDef *table)
@@ -319,10 +319,13 @@ int rc;
 		/* if at end of page, find a new page */
 		if (table->cur_row >= rows) {
 			table->cur_row=0;
-			if (!mdb_read_next_dpg(table)) return 0;
+
+			if (!mdb_read_next_dpg(table)) {
+				return 0;
+			}
 		}
 
-		//printf("page %d row %d\n",table->cur_phys_pg, table->cur_row);
+		/* printf("page %d row %d\n",table->cur_phys_pg, table->cur_row); */
 		rc = mdb_read_row(table, table->cur_row);
 		table->cur_row++;
 	} while (!rc);

@@ -29,7 +29,7 @@
 #include <string.h>
 #include <glib.h>
 
-#define MDB_PGSIZE 2048
+#define MDB_PGSIZE 4096
 #define MDB_MAX_OBJ_NAME 30
 #define MDB_MAX_COLS 256
 #define MDB_MAX_IDX_COLS 10
