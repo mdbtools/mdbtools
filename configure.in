@@ -127,4 +127,4 @@ AC_SUBST(READLINE_LIBS)
 localedir=${datadir}/locale
 AC_SUBST(localedir)
 
-AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile doc/Makefile src/gmdb2/Makefile src/gmdb2/gladefiles/Makefile src/gmdb2/pixmaps/Makefile src/gmdb2/help/Makefile src/gmdb2/help/C/Makefile mdbtools.spec)
+AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile doc/Makefile src/gmdb2/Makefile src/gmdb2/gladefiles/Makefile src/gmdb2/pixmaps/Makefile src/gmdb2/help/Makefile src/gmdb2/help/C/Makefile mdbtools.spec)
