@@ -20,6 +20,10 @@ Thu Dec 30 19:26:01 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/prole.c:
 	* src/util/sargtest.c:
 	* src/util/updrow.c: Combine functions that bind a column and its length
+	* src/gmdb/debug.c:
+	* src/gmdb/table_def.c:
+	* src/gmdb2/debug.c:
+	* src/gmdb2/table_def.c: Replace malloc/memset with g_malloc0
 
 Thu Dec 30 06:36:25 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h: Fix MdbSargTreeFunc's typedef

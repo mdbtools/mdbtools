@@ -194,9 +194,8 @@ char field[10];
 	pos = lseek(mdb->fd, 0, SEEK_CUR);
 	lseek(mdb->fd, page * mdb->pg_size, SEEK_SET);
 	
-	fbuf = (unsigned char *) malloc(mdb->pg_size);
-	tbuf = (unsigned char *) malloc( (mdb->pg_size / 16) * 80);
-	memset(tbuf, 0, (mdb->pg_size / 16) * 80);
+	fbuf = (unsigned char *) g_malloc(mdb->pg_size);
+	tbuf = (unsigned char *) g_malloc0( (mdb->pg_size / 16) * 80);
 	length = read(mdb->fd, fbuf, mdb->pg_size);
 	if (length<mdb->pg_size) {
 	}
@@ -225,8 +224,8 @@ char field[10];
 		tbuf, strlen(tbuf));
 	//gtk_editable_select_region(GTK_EDITABLE(dbug->textbox), 9, 15);
 	gmdb_debug_dissect(dbug, fbuf, 0, length);
-	free(fbuf);
-	free(tbuf);
+	g_free(fbuf);
+	g_free(tbuf);
 }
 
 /* functions */

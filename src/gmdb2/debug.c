@@ -374,9 +374,8 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	pos = lseek(mdb->f->fd, 0, SEEK_CUR);
 	lseek(mdb->f->fd, page * mdb->fmt->pg_size, SEEK_SET);
 	
-	fbuf = (unsigned char *) malloc(mdb->fmt->pg_size);
-	tbuf = (unsigned char *) malloc( (mdb->fmt->pg_size / 16) * 80);
-	memset(tbuf, 0, (mdb->fmt->pg_size / 16) * 80);
+	fbuf = (unsigned char *) g_malloc(mdb->fmt->pg_size);
+	tbuf = (unsigned char *) g_malloc0( (mdb->fmt->pg_size / 16) * 80);
 	length = read(mdb->f->fd, fbuf, mdb->fmt->pg_size);
 	if (length<mdb->fmt->pg_size) {
 	}
@@ -410,8 +409,8 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	if (!dissect || *dissect==1)
 		gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
 
-	free(fbuf);
-	free(tbuf);
+	g_free(fbuf);
+	g_free(tbuf);
 }
 /* functions */
 static long

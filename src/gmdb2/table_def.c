@@ -97,18 +97,12 @@ GtkStyle *style;
 	for (i=0;i<table->num_cols;i++) {
 		/* display column titles */
 		col=g_ptr_array_index(table->columns,i);
-		row[0] = (char *) malloc(MDB_BIND_SIZE);
-		memset(row[0],0,MDB_BIND_SIZE);
-		row[1] = (char *) malloc(MDB_BIND_SIZE);
-		memset(row[1],0,MDB_BIND_SIZE);
-		row[2] = (char *) malloc(MDB_BIND_SIZE);
-		memset(row[2],0,MDB_BIND_SIZE);
-		row[3] = (char *) malloc(MDB_BIND_SIZE);
-		memset(row[3],0,MDB_BIND_SIZE);
-		row[4] = (char *) malloc(MDB_BIND_SIZE);
-		memset(row[4],0,MDB_BIND_SIZE);
-		row[5] = (char *) malloc(MDB_BIND_SIZE);
-		memset(row[5],0,MDB_BIND_SIZE);
+		row[0] = (char *) g_malloc0(MDB_BIND_SIZE);
+		row[1] = (char *) g_malloc0(MDB_BIND_SIZE);
+		row[2] = (char *) g_malloc0(MDB_BIND_SIZE);
+		row[3] = (char *) g_malloc0(MDB_BIND_SIZE);
+		row[4] = (char *) g_malloc0(MDB_BIND_SIZE);
+		row[5] = (char *) g_malloc0(MDB_BIND_SIZE);
 		strcpy(row[0],"");
 		sprintf(row[1],"%d", col->col_num+1);
 		strcpy(row[2],col->name);
