@@ -392,37 +392,61 @@ int mdb_is_fixed_col(MdbColumn *col)
 }
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
-short memo_len;
+guint16 memo_len;
 static char text[MDB_BIND_SIZE];
+guint16 memo_flags;
+guint16 row_start, row_stop;
+guint8 memo_row;
+guint32 lval_pg;
+guint16 len;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return "";
-	} else if (size == MDB_MEMO_OVERHEAD) {
-		/* If the only thing here is the field information, the
-		* data is linked.  Go read it from another page.
-		* Question: Do we need to read and evaluate the whole page?
-		* Question: It seems to be the only record on the page.  If
-		*           it weren't, how do we know which record it is?
-		*
-		* WARNING: Assuming the storage area is at least 2048 bytes!
-		*/
+	} 
 
-		/* The 16 bit integer at offset 0 is the length of the memo field.
-		* The 16 bit integer at offset 5 is the page it is stored on.
-		*/
-		memo_len = mdb_get_int16(mdb, start);
+	memo_len = mdb_get_int16(mdb, start);
+	memo_flags = mdb_get_int16(mdb, start+2);
 
-		if(mdb_read_alt_pg(mdb, mdb_get_int16(mdb, start+5)) != mdb->pg_size) {
-			/* Failed to read */
-			return "";
-		}
-		strncpy(text, &mdb->alt_pg_buf[mdb->pg_size - memo_len], memo_len);
-		return text;
-	} else {
+	if (memo_flags == 0x8000) {
+		/* inline memo field */
 		strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
 			size - MDB_MEMO_OVERHEAD);
 		text[size - MDB_MEMO_OVERHEAD]='\0';
 		return text;
+	} else if (memo_flags == 0x4000) {
+		/* The 16 bit integer at offset 0 is the length of the memo field.
+		* The 24 bit integer at offset 5 is the page it is stored on.
+		*/
+		memo_row = mdb->pg_buf[start+4];
+		
+		lval_pg = mdb_get_int24(mdb, start+5);
+#if MDB_DEBUG
+		printf("Reading LVAL page %06x\n", lval_pg);
+#endif
+		if(mdb_read_alt_pg(mdb, lval_pg) != mdb->pg_size) {
+			/* Failed to read */
+			return "";
+		}
+		/* swap the alt and regular page buffers, so we can call get_int16 */
+		mdb_swap_pgbuf(mdb);
+		if (memo_row) {
+			row_stop = mdb_get_int16(mdb, 10 + (memo_row - 1) * 2) & 0x0FFF;
+		} else {
+			row_stop = mdb->pg_size - 1;
+		}
+		row_start = mdb_get_int16(mdb, 10 + memo_row * 2);
+#if MDB_DEBUG
+		printf("row num %d row start %d row stop %d\n", memo_row, row_start, row_stop);
+#endif
+		len = row_stop - row_start;
+		strncpy(text, &mdb->pg_buf[row_start], len);
+		text[len]='\0';
+		/* make sure to swap page back */
+		mdb_swap_pgbuf(mdb);
+		return text;
+	} else {
+		fprintf(stderr,"Unhandled memo field flags = %04x\n", memo_flags);
+		return "";
 	}
 #if 0
 			strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD], 

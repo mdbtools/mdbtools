@@ -142,6 +142,14 @@ off_t offset = pg * mdb->pg_size;
 	} 
 	return len;
 }
+mdb_swap_pgbuf(MdbHandle *mdb)
+{
+char tmpbuf[MDB_PGSIZE];
+
+	memcpy(tmpbuf,mdb->pg_buf, MDB_PGSIZE);
+	memcpy(mdb->pg_buf,mdb->alt_pg_buf, MDB_PGSIZE);
+	memcpy(mdb->alt_pg_buf,tmpbuf,MDB_PGSIZE);
+}
 unsigned char mdb_get_byte(MdbHandle *mdb, int offset)
 {
 unsigned char c;
@@ -162,6 +170,20 @@ int           i;
 	mdb->cur_pos+=2;
 	return i;
 	
+}
+gint32 mdb_get_int24(MdbHandle *mdb, int offset)
+{
+gint32 l;
+unsigned char *c;
+
+	if (offset <0 || offset+3 > mdb->pg_size) return -1;
+	c = &mdb->pg_buf[offset];
+	l =c[2]; l<<=8;
+	l+=c[1]; l<<=8;
+	l+=c[0];
+
+	mdb->cur_pos+=3;
+	return l;
 }
 long mdb_get_int32(MdbHandle *mdb, int offset)
 {
