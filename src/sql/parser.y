@@ -19,7 +19,18 @@
  */
 #include "mdbsql.h"
 
-MdbSQL *g_sql;
+
+MdbSQL *_mdb_sql(MdbSQL *sql)
+{
+static MdbSQL *g_sql;
+
+	if (sql) {
+		g_sql = sql;
+	} else {
+		return g_sql;
+	}
+}
+
 %}
 
 %union {
@@ -43,19 +54,19 @@ MdbSQL *g_sql;
 
 query:
 	SELECT column_list FROM table where_clause {
-			mdb_sql_select(g_sql);	
+			mdb_sql_select(_mdb_sql(NULL));	
 		}
 	|	CONNECT TO database { 
-			mdb_sql_open(g_sql, $3); free($3); 
+			mdb_sql_open(_mdb_sql(NULL), $3); free($3); 
 		}
 	|	DISCONNECT { 
-			mdb_sql_close(g_sql);
+			mdb_sql_close(_mdb_sql(NULL));
 		}
 	|	DESCRIBE TABLE table { 
-			mdb_sql_describe_table(g_sql); 
+			mdb_sql_describe_table(_mdb_sql(NULL)); 
 		}
 	|	LIST TABLES { 
-			mdb_sql_listtables(g_sql); 
+			mdb_sql_listtables(_mdb_sql(NULL)); 
 		}
 	;
 
@@ -71,12 +82,12 @@ sarg_list:
 
 sarg:
 	NAME operator constant	{ 
-				mdb_sql_add_sarg(g_sql, $1, $2, $3);
+				mdb_sql_add_sarg(_mdb_sql(NULL), $1, $2, $3);
 				free($1);
 				free($3);
 				}
 	| constant operator NAME {
-				mdb_sql_add_sarg(g_sql, $3, $2, $1);
+				mdb_sql_add_sarg(_mdb_sql(NULL), $3, $2, $1);
 				free($1);
 				free($3);
 				}
@@ -100,17 +111,17 @@ database:
 	|	NAME 
 
 table:
-	NAME { mdb_sql_add_table(g_sql, $1); free($1); }
+	NAME { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
 	;
 
 column_list:
-	'*'	{ mdb_sql_all_columns(g_sql); }
+	'*'	{ mdb_sql_all_columns(_mdb_sql(NULL)); }
 	|	column  
 	|	column ',' column_list 
 	;
 	 
 column:
-	NAME { mdb_sql_add_column(g_sql, $1); free($1); }
+	NAME { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
 	;
 
 %%

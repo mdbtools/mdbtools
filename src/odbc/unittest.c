@@ -18,12 +18,12 @@
  */
 
 /* #include <windows.h> */
-#include <isql.h>
-#include <isqlext.h>
+#include <sql.h>
+#include <sqlext.h>
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.4 2001/09/29 00:16:16 brianb Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.5 2002/01/24 12:34:13 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -48,7 +48,7 @@ static void printStatementError(HSTMT hstmt, char *msg)
 {
 	UCHAR  szSqlState[6];
 	UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-	SDWORD dwNativeError;
+	SQLINTEGER dwNativeError;
 	SWORD  wErrorMsg;
 
 	SQLError(SQL_NULL_HENV, SQL_NULL_HDBC, hstmt, 
@@ -70,7 +70,7 @@ int i;
 	{
 		UCHAR  szSqlState[6];
 		UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-		SDWORD dwNativeError;
+		SQLINTEGER dwNativeError;
 		SWORD  wErrorMsg;
 
 		SQLError(henv, SQL_NULL_HDBC, SQL_NULL_HSTMT, 
@@ -88,7 +88,7 @@ int i;
 	{
 		UCHAR  szSqlState[6];
 		UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-		SDWORD dwNativeError;
+		SQLINTEGER dwNativeError;
 		SWORD  wErrorMsg;
 
 		SQLError(SQL_NULL_HENV, hdbc, SQL_NULL_HSTMT, 
@@ -105,7 +105,7 @@ int i;
 	{
 		UCHAR  szSqlState[6];
 		UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-		SDWORD dwNativeError;
+		SQLINTEGER dwNativeError;
 		SWORD  wErrorMsg;
 
 		SQLError(SQL_NULL_HENV, hdbc, SQL_NULL_HSTMT, 
@@ -126,7 +126,7 @@ int i;
 	{
 		UCHAR  szSqlState[6];
 		UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-		SDWORD dwNativeError;
+		SQLINTEGER dwNativeError;
 		SWORD  wErrorMsg;
 
 		SQLError(SQL_NULL_HENV, hdbc, SQL_NULL_HSTMT, 
@@ -143,7 +143,7 @@ int i;
 	{
 		UCHAR  szSqlState[6];
 		UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-		SDWORD dwNativeError;
+		SQLINTEGER dwNativeError;
 		SWORD  wErrorMsg;
 
 		SQLError(SQL_NULL_HENV, hdbc, SQL_NULL_HSTMT, 
@@ -174,7 +174,7 @@ int i;
 		if (retcode != SQL_SUCCESS) {
 			UCHAR  szSqlState[6];
 			UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
-			SDWORD dwNativeError;
+			SQLINTEGER dwNativeError;
 			SWORD  wErrorMsg;
 
 			SQLError(SQL_NULL_HENV, SQL_NULL_HDBC, hstmt, 
@@ -185,8 +185,8 @@ int i;
 				szSqlState, szErrorMsg);
 			exit(1);
 		}		
-		//SQLBindCol(hstmt, 2, SQL_CHAR, szCol1, 60, NULL);
-		SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
+		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, 60, NULL);
+		//SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
 	
 		/* Execute statement with first row. */
 

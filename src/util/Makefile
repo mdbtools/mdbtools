@@ -1,7 +1,7 @@
 # Generated automatically from Makefile.in by configure.
-# Makefile.in generated automatically by automake 1.4 from Makefile.am
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
 
-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -70,7 +70,7 @@ MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
 ODBC = 
-ODBC_INC = 
+ODBC_INC = /usrl/local/include
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
@@ -78,7 +78,7 @@ SQL =
 VERSION = 0.3
 YACC = bison -y
 
-bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql prtable prcat prdata prkkd prdump 
+bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql prtable prcat prdata prkkd prdump msysobjects
 LIBS = `glib-config --libs` $(READLINE_LIBS) -lfl 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LDADD = ../libmdb/libmdb.la 
@@ -150,7 +150,12 @@ prdump_OBJECTS =  prdump.o
 prdump_LDADD = $(LDADD)
 prdump_DEPENDENCIES =  ../libmdb/libmdb.la
 prdump_LDFLAGS = 
-CFLAGS = -g -O2 -DSQL
+msysobjects_SOURCES = msysobjects.c
+msysobjects_OBJECTS =  msysobjects.o
+msysobjects_LDADD = $(LDADD)
+msysobjects_DEPENDENCIES =  ../libmdb/libmdb.la
+msysobjects_LDFLAGS = 
+CFLAGS = -g -O2 -DUNIXODBC -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -164,10 +169,10 @@ TAR = gtar
 GZIP_ENV = --best
 DEP_FILES =  .deps/mdb-array.P .deps/mdb-export.P .deps/mdb-header.P \
 .deps/mdb-parsecsv.P .deps/mdb-schema.P .deps/mdb-sql.P \
-.deps/mdb-tables.P .deps/prcat.P .deps/prdata.P .deps/prdump.P \
-.deps/prkkd.P .deps/prtable.P
-SOURCES = mdb-export.c mdb-array.c mdb-schema.c mdb-tables.c mdb-parsecsv.c mdb-header.c mdb-sql.c prtable.c prcat.c prdata.c prkkd.c prdump.c
-OBJECTS = mdb-export.o mdb-array.o mdb-schema.o mdb-tables.o mdb-parsecsv.o mdb-header.o mdb-sql.o prtable.o prcat.o prdata.o prkkd.o prdump.o
+.deps/mdb-tables.P .deps/msysobjects.P .deps/prcat.P .deps/prdata.P \
+.deps/prdump.P .deps/prkkd.P .deps/prtable.P
+SOURCES = mdb-export.c mdb-array.c mdb-schema.c mdb-tables.c mdb-parsecsv.c mdb-header.c mdb-sql.c prtable.c prcat.c prdata.c prkkd.c prdump.c msysobjects.c
+OBJECTS = mdb-export.o mdb-array.o mdb-schema.o mdb-tables.o mdb-parsecsv.o mdb-header.o mdb-sql.o prtable.o prcat.o prdata.o prkkd.o prdump.o msysobjects.o
 
 all: all-redirect
 .SUFFIXES:
@@ -284,6 +289,10 @@ prkkd: $(prkkd_OBJECTS) $(prkkd_DEPENDENCIES)
 prdump: $(prdump_OBJECTS) $(prdump_DEPENDENCIES)
 	@rm -f prdump
 	$(LINK) $(prdump_LDFLAGS) $(prdump_OBJECTS) $(prdump_LDADD) $(LIBS)
+
+msysobjects: $(msysobjects_OBJECTS) $(msysobjects_DEPENDENCIES)
+	@rm -f msysobjects
+	$(LINK) $(msysobjects_LDFLAGS) $(msysobjects_OBJECTS) $(msysobjects_LDADD) $(LIBS)
 
 tags: TAGS
 

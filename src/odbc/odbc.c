@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.3 2001/07/25 01:55:43 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.4 2002/01/24 12:34:13 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -47,10 +47,13 @@ static SQLRETURN SQL_API _SQLFreeConnect(SQLHDBC hdbc);
 static SQLRETURN SQL_API _SQLFreeEnv(SQLHENV henv);
 static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 
+#define MIN(a,b) (a>b ? b : a)
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
 
-extern MdbSQL *g_sql;
+/* The SQL engine is presently non-reenterrant and non-thread safe.  
+   See _SQLExecute for details.
+*/
 
 static void LogError (const char* error)
 {
@@ -467,12 +470,49 @@ SQLRETURN SQL_API SQLDescribeCol(
     SQLSMALLINT        cbColNameMax,
     SQLSMALLINT FAR   *pcbColName,
     SQLSMALLINT FAR   *pfSqlType,
-    SQLUINTEGER FAR   *pcbColDef,
+    SQLUINTEGER FAR   *pcbColDef, /* precision */
     SQLSMALLINT FAR   *pibScale,
     SQLSMALLINT FAR   *pfNullable)
 {
 int cplen, namelen, i;
 struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
+MdbSQL *sql = env->sql;
+MdbSQLColumn *sqlcol;
+MdbColumn *col;
+MdbTableDef *table;
+
+	if (icol<1 || icol>sql->num_columns) {
+		return SQL_ERROR;
+	}
+     sqlcol = g_ptr_array_index(sql->columns,icol - 1);
+	table = sql->cur_table;
+     for (i=0;i<table->num_cols;i++) {
+          col=g_ptr_array_index(table->columns,i);
+          if (!strcasecmp(sqlcol->name, col->name)) {
+			break;
+          }
+     }
+
+	if (szColName) {
+		namelen = MIN(cbColNameMax,strlen(sqlcol->name));
+		strncpy(szColName, sqlcol->name, namelen);
+		szColName[namelen]='\0';
+	}
+	if (pfSqlType) {
+		*pfSqlType = _odbc_get_client_type(col->col_type);
+	}
+	if (pcbColDef) {
+		*pcbColDef = col->col_size;
+	}
+	if (pibScale) {
+		/* FIX ME */
+		*pibScale = 0;
+	}
+	if (pfNullable) {
+		*pfNullable = !col->is_fixed;
+	}
 
 	return SQL_SUCCESS;
 }
@@ -573,11 +613,13 @@ int ret;
    fprintf(stderr,"query = %s\n",stmt->query);
    _odbc_fix_literals(stmt);
 
+   mdb_sql_reset(env->sql);
+
    /* calls to yyparse would need to be serialized for thread safety */
 
    /* begin unsafe */
    g_input_ptr = stmt->query;
-   g_sql = env->sql;
+   _mdb_sql(env->sql);
    if (yyparse()) {
    /* end unsafe */
         LogError("Couldn't parse SQL\n");
@@ -710,9 +752,11 @@ SQLRETURN SQL_API SQLNumResultCols(
     SQLHSTMT           hstmt,
     SQLSMALLINT FAR   *pccol)
 {
-struct _hstmt *stmt;
+struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
 	
-	stmt=(struct _hstmt *)hstmt;
+	*pccol = env->sql->num_columns;
 	return SQL_SUCCESS;
 }
 
@@ -1056,6 +1100,20 @@ static int _odbc_get_server_type(int clt_type)
 static SQLSMALLINT _odbc_get_client_type(int srv_type)
 {
 	switch (srv_type) {
+		MDB_BOOL:
+			return SQL_BIT;
+		MDB_BYTE:
+			return SQL_TINYINT;
+		MDB_INT:
+			return SQL_SMALLINT;
+		MDB_LONGINT:
+			return SQL_INTEGER;
+		MDB_FLOAT:
+			return SQL_FLOAT;
+		MDB_DOUBLE:
+			return SQL_DOUBLE;
+		MDB_TEXT:
+			return SQL_VARCHAR;
 	}
 }
 

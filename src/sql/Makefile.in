@@ -79,7 +79,7 @@ VERSION = @VERSION@
 YACC = @YACC@
 
 lib_LTLIBRARIES = libmdbsql.la
-libmdbsql_la_SOURCES = mdbsql.c parser.y lexer.l
+libmdbsql_la_SOURCES = mdbsql.c parser.y lexer.l 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LIBS = `glib-config --libs`
 LDADD = ../libmdb/libmdb.la 

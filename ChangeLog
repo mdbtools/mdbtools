@@ -1,0 +1,25 @@
+2001-09-29  Brian Bruns <camber@ais.org>
+
+    * src/odbc/odbc.c:
+    Added implementation of SQLNumResultCols()
+
+    * src/sql/lexer.l:
+    Added yywrap function, so ODBC driver may be linked without libfl
+
+    * src/util/mdb-sql.c
+      src/sql/parser.y
+      src/odbc/odbc.c:
+    Added mdb_sql_set() function so mdb-sql and ODBC driver do not need to 
+    set g_sql directly.
+
+2001-09-28  Brian Bruns <camber@ais.org>
+
+    * src/odbc/unittest.c:
+    Changed dwNativeError vars to SQLINTEGER to fix compile warning
+
+    * src/util/mdb-sql.c
+      src/sql/mdbsql.c:
+    Check for cur_table before calling mdb_dump_results()
+    Make mdb_sql_reset() dealloc and clear cur_table
+
+

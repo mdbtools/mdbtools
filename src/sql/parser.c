@@ -45,9 +45,20 @@
  */
 #include "mdbsql.h"
 
-MdbSQL *g_sql;
 
-#line 25 "parser.y"
+MdbSQL *_mdb_sql(MdbSQL *sql)
+{
+static MdbSQL *g_sql;
+
+	if (sql) {
+		g_sql = sql;
+	} else {
+		return g_sql;
+	}
+}
+
+
+#line 36 "parser.y"
 typedef union {
 	char *name;
 	double dval;
@@ -121,9 +132,9 @@ static const short yyrhs[] = {     7,
 
 #if YYDEBUG != 0
 static const short yyrline[] = { 0,
-    44,    48,    51,    54,    57,    62,    64,    67,    69,    72,
-    78,    85,    87,    88,    89,    90,    91,    93,    95,    98,
-   100,   102,   106,   108,   109,   112
+    55,    59,    62,    65,    68,    73,    75,    78,    80,    83,
+    89,    96,    98,    99,   100,   101,   102,   104,   106,   109,
+   111,   113,   117,   119,   120,   123
 };
 #endif
 
@@ -735,94 +746,94 @@ yyreduce:
   switch (yyn) {
 
 case 1:
-#line 45 "parser.y"
+#line 56 "parser.y"
 {
-			mdb_sql_select(g_sql);	
+			mdb_sql_select(_mdb_sql(NULL));	
 		;
     break;}
 case 2:
-#line 48 "parser.y"
+#line 59 "parser.y"
 { 
-			mdb_sql_open(g_sql, yyvsp[0].name); free(yyvsp[0].name); 
+			mdb_sql_open(_mdb_sql(NULL), yyvsp[0].name); free(yyvsp[0].name); 
 		;
     break;}
 case 3:
-#line 51 "parser.y"
+#line 62 "parser.y"
 { 
-			mdb_sql_close(g_sql);
+			mdb_sql_close(_mdb_sql(NULL));
 		;
     break;}
 case 4:
-#line 54 "parser.y"
+#line 65 "parser.y"
 { 
-			mdb_sql_describe_table(g_sql); 
+			mdb_sql_describe_table(_mdb_sql(NULL)); 
 		;
     break;}
 case 5:
-#line 57 "parser.y"
+#line 68 "parser.y"
 { 
-			mdb_sql_listtables(g_sql); 
+			mdb_sql_listtables(_mdb_sql(NULL)); 
 		;
     break;}
 case 10:
-#line 73 "parser.y"
+#line 84 "parser.y"
 { 
-				mdb_sql_add_sarg(g_sql, yyvsp[-2].name, yyvsp[-1].ival, yyvsp[0].name);
+				mdb_sql_add_sarg(_mdb_sql(NULL), yyvsp[-2].name, yyvsp[-1].ival, yyvsp[0].name);
 				free(yyvsp[-2].name);
 				free(yyvsp[0].name);
 				;
     break;}
 case 11:
-#line 78 "parser.y"
+#line 89 "parser.y"
 {
-				mdb_sql_add_sarg(g_sql, yyvsp[0].name, yyvsp[-1].ival, yyvsp[-2].name);
+				mdb_sql_add_sarg(_mdb_sql(NULL), yyvsp[0].name, yyvsp[-1].ival, yyvsp[-2].name);
 				free(yyvsp[-2].name);
 				free(yyvsp[0].name);
 				;
     break;}
 case 12:
-#line 86 "parser.y"
+#line 97 "parser.y"
 { yyval.ival = MDB_EQUAL; ;
     break;}
 case 13:
-#line 87 "parser.y"
+#line 98 "parser.y"
 { yyval.ival = MDB_GT; ;
     break;}
 case 14:
-#line 88 "parser.y"
+#line 99 "parser.y"
 { yyval.ival = MDB_LT; ;
     break;}
 case 15:
-#line 89 "parser.y"
+#line 100 "parser.y"
 { yyval.ival = MDB_LTEQ; ;
     break;}
 case 16:
-#line 90 "parser.y"
+#line 101 "parser.y"
 { yyval.ival = MDB_GTEQ; ;
     break;}
 case 17:
-#line 91 "parser.y"
+#line 102 "parser.y"
 { yyval.ival = MDB_LIKE; ;
     break;}
 case 18:
-#line 94 "parser.y"
+#line 105 "parser.y"
 { yyval.name = yyvsp[0].name; ;
     break;}
 case 19:
-#line 95 "parser.y"
+#line 106 "parser.y"
 { yyval.name = yyvsp[0].name; ;
     break;}
 case 22:
-#line 103 "parser.y"
-{ mdb_sql_add_table(g_sql, yyvsp[0].name); free(yyvsp[0].name); ;
+#line 114 "parser.y"
+{ mdb_sql_add_table(_mdb_sql(NULL), yyvsp[0].name); free(yyvsp[0].name); ;
     break;}
 case 23:
-#line 107 "parser.y"
-{ mdb_sql_all_columns(g_sql); ;
+#line 118 "parser.y"
+{ mdb_sql_all_columns(_mdb_sql(NULL)); ;
     break;}
 case 26:
-#line 113 "parser.y"
-{ mdb_sql_add_column(g_sql, yyvsp[0].name); free(yyvsp[0].name); ;
+#line 124 "parser.y"
+{ mdb_sql_add_column(_mdb_sql(NULL), yyvsp[0].name); free(yyvsp[0].name); ;
     break;}
 }
    /* the action file gets copied in in place of this dollarsign */
@@ -1046,5 +1057,5 @@ yyerrhandle:
     }
   return 1;
 }
-#line 116 "parser.y"
+#line 127 "parser.y"
 

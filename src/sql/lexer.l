@@ -21,7 +21,6 @@
 #include "mdbsql.h"
 #include "parser.h"
 
-extern MdbSQL *g_sql;
 %}
 
 %%
@@ -49,6 +48,10 @@ like		{ return LIKE; }
 .	{ return yytext[0]; }
 %%
 
+int yywrap()
+{
+	return 1;
+}
 void yyerror(char *s)
 {
 	fprintf(stderr,"Error at Line : %s near %s\n", s, yytext);

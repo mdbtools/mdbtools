@@ -12,6 +12,8 @@ mdb-export -- export table to CSV format
 mdb-tables -- a simple dump of table names to be used with shell scripts
 mdb-header -- generates a C header to be used in exporting mdb data to a C prog.
 mdb-parsecvs -- generates a C program given a CSV file made with mdb-export
+mdb-sql    -- if --enable-sql is specified, a simple SQL engine (also used by 
+              ODBC).
 
 And some utilities useful for debugging:
 

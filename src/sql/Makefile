@@ -70,7 +70,7 @@ MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
 ODBC = 
-ODBC_INC = 
+ODBC_INC = /usrl/local/include
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
@@ -79,7 +79,7 @@ VERSION = 0.3
 YACC = bison -y
 
 lib_LTLIBRARIES = libmdbsql.la
-libmdbsql_la_SOURCES = mdbsql.c parser.y lexer.l
+libmdbsql_la_SOURCES = mdbsql.c parser.y lexer.l 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LIBS = `glib-config --libs`
 LDADD = ../libmdb/libmdb.la 
@@ -96,7 +96,7 @@ libmdbsql_la_LIBADD =
 libmdbsql_la_OBJECTS =  mdbsql.lo parser.lo lexer.lo
 LEX_OUTPUT_ROOT = lex.yy
 LEXLIB = -lfl
-CFLAGS = -g -O2 -DSQL
+CFLAGS = -g -O2 -DUNIXODBC -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

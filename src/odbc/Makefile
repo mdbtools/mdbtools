@@ -1,7 +1,7 @@
 # Generated automatically from Makefile.in by configure.
-# Makefile.in generated automatically by automake 1.4 from Makefile.am
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
 
-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -70,7 +70,7 @@ MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
 ODBC = 
-ODBC_INC = 
+ODBC_INC = /usrl/local/include
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
@@ -78,12 +78,23 @@ SQL =
 VERSION = 0.3
 YACC = bison -y
 
+include_HEADERS = connectparams.h
+SQLDIR = ../sql
+SQLSOURCES = mdbsql.c parser.c lexer.c
+MDBDIR = ../libmdb
+MDBSOURCES = backend.c index.c money.c catalog.c kkd.c sargs.c \
+				data.c like.c table.c dump.c file.c mem.c
+
 bin_PROGRAMS = unittest
 lib_LTLIBRARIES = libmdbodbc.la
-libmdbodbc_la_SOURCES = odbc.c connectparams.c
-#libmdbodbc_la_LIBADD=	../libmdb/libmdb.la ../sql/libmdbsql.la
 INCLUDES = -I ../../include `glib-config --cflags`
-LIBS = -lfl
+libmdbodbc_la_SOURCES = odbc.c connectparams.c
+libmdbodbc_la_LIBADD = $(patsubst %, $(SQLDIR)/%, \
+				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
+				$(patsubst %, $(MDBDIR)/%, \
+				$(patsubst %.c, %.lo, $(MDBSOURCES))) -lglib
+
+LIBS = -lfl `glib-config --libs`
 unittest_LDADD = libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
@@ -94,7 +105,9 @@ DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DSTDC_HEADE
 CPPFLAGS = 
 LDFLAGS = 
 libmdbodbc_la_LDFLAGS = 
-libmdbodbc_la_LIBADD = 
+libmdbodbc_la_DEPENDENCIES =  $(patsubst %, $(SQLDIR)/%, $(patsubst %.c, \
+%.lo, $(SQLSOURCES))) $(patsubst %, $(MDBDIR)/%, $(patsubst %.c, %.lo, \
+$(MDBSOURCES)))
 libmdbodbc_la_OBJECTS =  odbc.lo connectparams.lo
 PROGRAMS =  $(bin_PROGRAMS)
 
@@ -103,11 +116,13 @@ unittest_OBJECTS =  unittest.o
 unittest_DEPENDENCIES =  libmdbodbc.la ../libmdb/libmdb.la \
 ../sql/libmdbsql.la
 unittest_LDFLAGS = 
-CFLAGS = -g -O2 -DSQL
+CFLAGS = -g -O2 -DUNIXODBC -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+HEADERS =  $(include_HEADERS)
+
 DIST_COMMON =  Makefile.am Makefile.in
 
 
@@ -219,6 +234,21 @@ unittest: $(unittest_OBJECTS) $(unittest_DEPENDENCIES)
 	@rm -f unittest
 	$(LINK) $(unittest_LDFLAGS) $(unittest_OBJECTS) $(unittest_LDADD) $(LIBS)
 
+install-includeHEADERS: $(include_HEADERS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(includedir)
+	@list='$(include_HEADERS)'; for p in $$list; do \
+	  if test -f "$$p"; then d= ; else d="$(srcdir)/"; fi; \
+	  echo " $(INSTALL_DATA) $$d$$p $(DESTDIR)$(includedir)/$$p"; \
+	  $(INSTALL_DATA) $$d$$p $(DESTDIR)$(includedir)/$$p; \
+	done
+
+uninstall-includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	list='$(include_HEADERS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(includedir)/$$p; \
+	done
+
 tags: TAGS
 
 ID: $(HEADERS) $(SOURCES) $(LISP)
@@ -311,20 +341,22 @@ installcheck: installcheck-am
 install-exec-am: install-libLTLIBRARIES install-binPROGRAMS
 install-exec: install-exec-am
 
-install-data-am:
+install-data-am: install-includeHEADERS
 install-data: install-data-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 install: install-am
-uninstall-am: uninstall-libLTLIBRARIES uninstall-binPROGRAMS
+uninstall-am: uninstall-libLTLIBRARIES uninstall-binPROGRAMS \
+		uninstall-includeHEADERS
 uninstall: uninstall-am
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
 all-redirect: all-am
 install-strip:
 	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
 installdirs:
-	$(mkinstalldirs)  $(DESTDIR)$(libdir) $(DESTDIR)$(bindir)
+	$(mkinstalldirs)  $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) \
+		$(DESTDIR)$(includedir)
 
 
 mostlyclean-generic:
@@ -372,10 +404,11 @@ distclean-compile clean-compile maintainer-clean-compile \
 mostlyclean-libtool distclean-libtool clean-libtool \
 maintainer-clean-libtool mostlyclean-binPROGRAMS distclean-binPROGRAMS \
 clean-binPROGRAMS maintainer-clean-binPROGRAMS uninstall-binPROGRAMS \
-install-binPROGRAMS tags mostlyclean-tags distclean-tags clean-tags \
-maintainer-clean-tags distdir mostlyclean-depend distclean-depend \
-clean-depend maintainer-clean-depend info-am info dvi-am dvi check \
-check-am installcheck-am installcheck install-exec-am install-exec \
+install-binPROGRAMS uninstall-includeHEADERS install-includeHEADERS \
+tags mostlyclean-tags distclean-tags clean-tags maintainer-clean-tags \
+distdir mostlyclean-depend distclean-depend clean-depend \
+maintainer-clean-depend info-am info dvi-am dvi check check-am \
+installcheck-am installcheck install-exec-am install-exec \
 install-data-am install-data install-am install uninstall-am uninstall \
 all-redirect all-am all installdirs mostlyclean-generic \
 distclean-generic clean-generic maintainer-clean-generic clean \
