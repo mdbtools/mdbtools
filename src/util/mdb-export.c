@@ -103,7 +103,8 @@ int  opt;
 					col=g_ptr_array_index(table->columns,j);
 					if (quote_text && 
 						(col->col_type==MDB_TEXT ||
-						col->col_type==MDB_MEMO)) {
+						col->col_type==MDB_MEMO ||
+						col->col_type==MDB_SDATETIME)) {
 						fprintf(stdout,"%s\"%s\"",delimiter,bound_values[j]);
 					} else {
 						fprintf(stdout,"%s%s",delimiter,bound_values[j]);

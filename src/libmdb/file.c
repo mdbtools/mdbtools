@@ -107,6 +107,14 @@ off_t offset = pg * mdb->pg_size;
 	} 
 	return len;
 }
+unsigned char mdb_get_byte(MdbHandle *mdb, int offset)
+{
+unsigned char c;
+
+	c = mdb->pg_buf[offset];
+	mdb->cur_pos++;
+	return c;
+}
 int mdb_get_int16(MdbHandle *mdb, int offset)
 {
 unsigned char *c;

@@ -19,6 +19,8 @@
 
 #include "mdbtools.h"
 
+char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
+
 #define MDB_DEBUG 0
 
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
@@ -63,6 +65,14 @@ int bit_num = (col_num - 1) % 8;
 		return 0;
 	} else {
 		return 1;
+	}
+}
+/* bool has to be handled specially because it uses the null bit to store its 
+** value*/
+static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
+{
+	if (col->bind_ptr) {
+		strcpy(col->bind_ptr,  value ? "0" : "1");
 	}
 }
 static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
@@ -147,7 +157,9 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		col = g_ptr_array_index(table->columns,j);
 		if (mdb_is_fixed_col(col) &&
 		    ++fixed_cols_found <= fixed_cols) {
-			if (mdb_is_null(null_mask, j+1)) {
+			if (col->col_type == MDB_BOOL) {
+				mdb_xfer_bound_bool(mdb, col, mdb_is_null(null_mask, j+1));
+			} else if (mdb_is_null(null_mask, j+1)) {
 				mdb_xfer_bound_data(mdb, 0, col, 0);
 			} else {
 				mdb_xfer_bound_data(mdb,row_start + col_start, col, col->col_size);
@@ -196,7 +208,9 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 					- var_cols_found 
 					- 1 - num_of_jumps ] - col_start;
 
-			if (mdb_is_null(null_mask, j+1)) {
+			if (col->col_type == MDB_BOOL) {
+				mdb_xfer_bound_bool(mdb, col, mdb_is_null(null_mask, j+1));
+			} else if (mdb_is_null(null_mask, j+1)) {
 				mdb_xfer_bound_data(mdb, 0, col, 0);
 			} else {
 				mdb_xfer_bound_data(mdb,row_start + col_start, col, len);
@@ -324,10 +338,15 @@ char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
+time_t t;
 
 	switch (datatype) {
 		case MDB_BOOL:
-			sprintf(text,"%d", mdb->pg_buf[start]);
+			/* shouldn't happen.  bools are handled specially
+			** by mdb_xfer_bound_bool() */
+		break;
+		case MDB_BYTE:
+			sprintf(text,"%d",mdb_get_byte(mdb, start));
 			return text;
 		break;
 		case MDB_INT:
@@ -354,8 +373,19 @@ static char text[MDB_BIND_SIZE];
 			text[size]='\0';
 			return text;
 		break;
+		case MDB_SDATETIME:
+			t = (long int)((mdb_get_double(mdb, start) - 25569.0) * 86400.0);
+			strftime(text, MDB_BIND_SIZE, "%x %X",
+				(struct tm*)gmtime(&t));
+			return text;
+
+		break;
 		case MDB_MEMO:
 			return mdb_memo_to_string(mdb, start, size);
+		break;
+		case MDB_MONEY:
+			mdb_money_to_string(mdb, start, text);
+			return text;
 		break;
 		default:
 			return "";
