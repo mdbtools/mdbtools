@@ -24,22 +24,22 @@ char *mdb_get_coltype_string(int col_type)
 {
 
 /* 
-** need to do this is a way that will allow multiple outputs for different
-** backend servers...these are MS SQL/Sybase specific 
+** These are the Access datatype names, each backend will have to provide
+** its own mapping.
 */
 static char *type_name[] = {"Unknown 0x00",
                         "Unknown 0x01",
                         "Unknown 0x02",
-                        "smallint",
-                        "int",
+                        "Integer",
+                        "Long Integer",
                         "Unknown 0x05",
                         "Unknown 0x06",
                         "Unknown 0x07",
-                        "smalldatetime",
+                        "DateTime (Short)",
                         "Unknown 0x09",
-                        "varchar",
+                        "Varchar",
                         "Unknown 0x0b"
-                        "hyperlink -- fixme"
+                        "Hyperlink"
                 };
 
         if (col_type > 11) {

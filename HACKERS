@@ -63,6 +63,10 @@ record ends on byte 2047 (0 based).
 
 Some of the offsets are not within the bounds of the page.  The reason for this
 is not presently understood and the current code discards them silently.
+Offsets that have 0x40 in the high order byte point to a location within the 
+page where a pointer to another catalog page is stored. This does not seem to 
+yeild a complete chain of catalog pages and is currently being ignored in favor 
+of a brute force read of the entire database for catalog pages.
 
 Little is understood of the meaning of the bytes that make up the records.  They
 vary in size, but portion prior to the objects name seems to be fixed.  All 
@@ -182,7 +186,7 @@ have not looked at tables large enough for this to occur yet.
 KKD Records
 -----------
 
-Design View table definitions look to be stored in 'KKD' records (my name for 
+Design View table definitions appear to be stored in 'KKD' records (my name for 
 them...they always start with 'KKD\0'). Again these reside on pages, packed to 
 the end of the page. 
 
@@ -205,12 +209,5 @@ Next comes one of more rows of data. (column names, descriptions, etc...)
       16 bit length field (non-inclusive)
       value (07.53 for the AccessVersion example above)
 
-See kkd.c for an examples, although it needs cleanup.
-
-Futures
--------
-
-Near term, I'd like to be able to pull the definitions for user tables out of 
-the MDB file and into a MySQL/Postgresql/Sybase/Oracle/DB2/etc... and then 
-populate the data across in one clean automated process.
+See kkd.c for an example, although it needs cleanup.
 

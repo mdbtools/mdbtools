@@ -1,0 +1,11 @@
+Things to Do
+------------
+
+. Implement code for reading data rows
+. Complete list of datatypes
+. Figure out how to properly determine fixed of variable length columns
+. Figure out how NULLs are stored in data rows
+. Figure out what happens for varchar columns > 256
+. Write schema-export utility supporting different backend databases
+. Write data-export utility supporting different backend databases
+
