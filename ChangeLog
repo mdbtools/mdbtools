@@ -1,3 +1,13 @@
+Tue Jan 21 18:10:46 EST 2003	Brian Bruns <camber@ais.org>
+	
+	* src/libmdb/data.c: 
+	move unicode to ascii code to mdb_unicode2ascii function
+	* src/libmdb/sarg.c: 
+	add MdbHandle argument to mdb_sarg_test and invoke mdb_unicode2ascii
+	* src/libmdb/like.c: added debugging info
+	* include/mdbtools.h: prototypes
+	* src/sql/mdbsql.c: fix case compare bug in where clause
+
 Tue Apr  2 21:02:13 EST 2002	Brian Bruns <camber@ais.org>
 
 	* src/libmdb/data.c: ignore 0xff in row offset table (Don Badrak)

@@ -566,7 +566,7 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcmp(col->name, (char *)node->parent)) {
+		if (!strcasecmp(col->name, (char *)node->parent)) {
 			node->col = col;
 			break;
 		}
