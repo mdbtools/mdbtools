@@ -25,7 +25,7 @@
 #include "dmalloc.h"
 #endif
 
-#define MDB_DEBUG_WRITE 1
+#define MDB_DEBUG_WRITE 0
 
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)

@@ -527,7 +527,7 @@ void mdb_sql_listtables(MdbSQL *sql)
      		/* if it's a table */
      		if (entry->object_type == MDB_TABLE) {
        			if (strncmp (entry->object_name, "MSys", 4)) {
-          			col = g_ptr_array_index(table->columns,0);
+          			//col = g_ptr_array_index(table->columns,0);
    				fields[0].value = entry->object_name;
    				fields[0].siz = strlen(entry->object_name); 
    				fields[0].is_fixed = 0;
