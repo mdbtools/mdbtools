@@ -1,0 +1,26 @@
+This is mdbtools version 0.001
+
+This software is very, very pre-pre-pre-pre-alpha (did I make my point?), so
+unless you know C and probably a little something about databases and reverse
+engineering file formats, you're welcome to try it out but don't expect much if anything to work.
+
+For the rest of you, read the HACKERS file for a description of where the code 
+stands and what has been gleened of the file format.
+
+The initial goal of these tools is to be able to extract data structures and 
+data from mdb files.  This goal may of course expand over time as the file 
+format becomes more well understood (if it ever does).
+
+To install type 'make' and hope it works :-)
+
+This will build three executables:
+
+mdb-dump  -- a simple hex dump utility that I've been using to look at mdb files
+prcat     -- print the catalog table from an mdb file (try offset 9000).
+prkkd     -- prints some info about a KKD record given the offset to it.
+
+If you're interested in digging into the project let me know, and I'll try to get a mailing list together.
+
+Brian Bruns
+camber@ais.org
+

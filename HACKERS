@@ -1,0 +1,128 @@
+Ok, this is a brain-dump of everything I've learned about MDB files.  I'm am 
+using Access 97, so everything I say applies to that and maybe or maybe not 
+other versions.
+
+Right, so here goes:
+
+Note: It appears that much of the data in the pages is unitialized garbage.
+This makes the task of figuring out the format a bit more challenging.
+
+Pages
+-----
+
+MDB files are a set of pages.  These pages are 2K (2048 bytes) in size, so in a
+hex dump of the data they start on adreeses like xxx000 and xxx800.  
+
+The first byte of each page seems to be a type indentifier for instance the 
+first page in the mdb file is 0x00, which no other pages seems to share.  Other
+pages have values of 0x01, 0x02, 0x03, 0x04 though the exact meaning of these
+is currently a mystery. (0x04 seems to be data I guess).
+
+The second byte is always 0x01 as far as I can tell.
+
+At some point in the file the page layout is apparently abandoned though the 
+very last 2K in the file again looks like a valid page.  The purpose of this
+non-paged region is so far unknown .
+
+Bytes after the first and second seemed to depend on the type of page, although bytes 4-7 seem to indicate a page type of some sort.  02 00 00 00 is found on all catalog pages.
+
+Pages seem to have two parts, a header and a data portion.  The header starts 
+at the front of the page and builds up.  The data is packed to the end of the 
+page.  This means the last byte of the data portion is the last byte of the 
+page.
+
+Byte Order
+----------
+
+All offsets to data within the file are in little endian (intel) order
+
+Catalogs
+--------
+
+So far the first page of the catalog has always been seen at 0x9000 bytes into
+the file.  It is unclear whether this is always where it occurs, or whether a 
+pointer to this location exists elsewhere.
+
+The header to the catalog page(s) start look something like this:
+
++------+---------+--------------------------------------------------------+
+| 0x01 | 1 byte  | Page type                                              |
+| 0x01 | 1 byte  | Unknown                                                |
+| ???? | 2 bytes | A pointer of unknown use into the page                 |
+| 0x02 | 1 byte  | Unknown                                                |
+| 0x00 | 3 bytes | Possibly part of a 32 bit int including the 0x02 above |
+| ???? | 2 bytes | a 16bit int of the number of records on this page      |
++-------------------------------------------------------------------------+
+| Iterate for the number of records                                       |
++-------------------------------------------------------------------------+
+| ???? | 2 bytes | offset to the records location on this page            |
++-------------------------------------------------------------------------+
+
+The rest of the data is packed to the end of the page, such that the last 
+record ends on byte 2047 (0 based). 
+
+Some of the offsets are not within the bounds of the page.  The reason for this
+is not presently understood and the current code discards them silently.
+
+Little is understood of the meaning of the bytes that make up the records.  They
+vary in size, but portion prior to the objects name seems to be fixed.  All 
+records start with a '0x11' and have a sequential number in the second byte 
+(disregarding system tables which share values and with other gaps). The best 
+way to explain this is the run the 'prcatalogs' table and look at the results.
+
+Byte offset 9 from the beginning of the record contains it's type.  Here is a
+table of known types:
+
+0x00 Form
+0x01 User Table
+0x02 Macro
+0x03 System Table
+0x04 Report
+0x05 Query
+0x06 Linked Table
+0x07 Module
+0x0b Unknown but used for two objects (AccessLayout and UserDefined)
+
+Byte offset 31 from the begining of the record starts the object's name.  I am
+not presently aware of any field defining the length of the name, so the present
+course of action has been to stop at the first non-printable character 
+(generally a 0x03 or 0x02)
+
+After the name there is sometimes have (not yet determined why only sometimes) 
+a page pointer and offset to the KKD records (see below).  There is also pointer to other catalog pages, but I'm not really sure how to parse those.
+
+KKD Records
+-----------
+
+Table definitions look to be stored in 'KKD' records (my name for them...they 
+always start with 'KKD\0'). Again these reside on pages, packed to the end of 
+the page. 
+
+They look a little like this: (this needs work...see the kkd.c)
+
+'K' 'K' 'D' 0x00
+16 bit length value    (this includes the length)
+0x00 0x00
+0x80 0x00              (0x80 seems to indicate a header)
+Then one of more of: 16 bit length field and a value of that size.
+For instance: 
+0x0d 0x00 and 'AccessVersion' (AccessVersion is 13 bytes, 0x0d 0x00 intel order)
+
+Next comes one of more rows of data. (column names, descriptions, etc...)
+16 bit length value    (this includes the length)
+0x00 0x00
+0x00 0x00
+   16bit length field (this include the length itself)
+   4 bytes of unknown purpose
+      16 bit length field (non-inclusive)
+      value (07.53 for the AccessVersion example above)
+
+See kkd.c for an examples, although it needs cleanup.
+
+Futures
+-------
+
+Near term, I'd like to be able to pull the definitions for user tables out of 
+the MDB file and into a MySQL/Postgresql/Sybase/Oracle/DB2/etc... and then 
+populate the data across in one clean automated process.
+
