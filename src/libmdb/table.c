@@ -24,11 +24,11 @@
 #endif
 
 
-static gint mdb_col_comparer(MdbColumn *a, MdbColumn *b)
+static gint mdb_col_comparer(MdbColumn **a, MdbColumn **b)
 {
-	if (a->col_num > b->col_num)
+	if ((*a)->col_num > (*b)->col_num)
 		return 1;
-	else if (a->col_num < b->col_num)
+	else if ((*a)->col_num < (*b)->col_num)
 		return -1;
 	else
 		return 0;
@@ -162,7 +162,6 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	MdbColumn *pcol;
 	unsigned char *col;
 	int i, cur_pos, name_sz;
-	GSList	*slist = NULL;
 	
 	table->columns = g_ptr_array_new();
 
@@ -220,17 +219,16 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			pcol->col_size=0;
 		}
 		
-		slist = g_slist_insert_sorted(slist,pcol,(GCompareFunc)mdb_col_comparer);
+		g_ptr_array_add(table->columns, pcol);
 	}
 
 	g_free (col);
 
 	/* 
-	** column names 
+	** column names - ordered the same as the column attributes table
 	*/
 	for (i=0;i<table->num_cols;i++) {
-		/* fetch the column */
-		pcol = g_slist_nth_data (slist, i);
+		pcol = g_ptr_array_index(table->columns, i);
 
 		if (IS_JET4(mdb)) {
 			char *tmp_buf;
@@ -252,13 +250,9 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			fprintf(stderr,"Unknown MDB version\n");
 		}
 	}
-	/* turn this list into an array */
-	for (i=0;i<table->num_cols;i++) {
-		pcol = g_slist_nth_data (slist, i);
-		g_ptr_array_add(table->columns, pcol);
-	}
 
-	g_slist_free(slist);
+	/* Sort the columns by col_num */
+	g_ptr_array_sort(table->columns, (GCompareFunc)mdb_col_comparer);
 
 	table->index_start = cur_pos;
 	return table->columns;

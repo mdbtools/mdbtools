@@ -1,3 +1,6 @@
+Mon Jun 14 22:52:00 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/table.c: Fix bug in column name ordering
+
 Mon Jun 14 07:12:37 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c: Make better use of read_pg_if_n
 
