@@ -10,10 +10,12 @@ mdb-schema
 mdb-sql
 mdb-tables
 mdb-ver
+mdb-check
 prcat
 prdata
 prdump
 prkkd
 prtable
 prole
+prindex
 updrow
