@@ -1,8 +1,8 @@
 
 CC = gcc
 
-INC = -I ../include
-LIBS = -L ../libmdb -lmdb
+INC = -I ../include `glib-config --cflags`
+LIBS = -L ../libmdb -lmdb `glib-config --libs`
 PROGS = prcat
 PRCATOBJS = prcat.o
 

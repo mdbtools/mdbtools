@@ -1,12 +1,13 @@
 
 CC = gcc
 
-INC = -I ../include
+INC = -I ../include `glib-config --cflags`
 OBJS = catalog.o mem.o file.o 
 
 all: libmdb
 
 libmdb: $(OBJS)
+	rm -f libmdb.a
 	ar cq libmdb.a $(OBJS)
 clean: 
 	rm -f core *.o *.a 

@@ -38,7 +38,7 @@ MDB_HANDLE *mdb;
 	
 	mdb = mdb_open(argv[1]);
 
-	mdb_catalog_dump(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
+	mdb_dump_catalog(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
 
 	mdb_free_handle(mdb);
 }

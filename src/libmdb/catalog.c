@@ -82,27 +82,39 @@ int mdb_catalog_rows(MDB_HANDLE *mdb)
 {
 	return mdb_get_int16(mdb, 0x08);
 }
-void mdb_catalog_dump(MDB_HANDLE *mdb, int obj_type)
+GList *mdb_read_catalog(MDB_HANDLE *mdb, int obj_type)
 {
-int off, save_pos;
+int i;
 int rows;
-int i,j;
-unsigned char *buf;
 MDB_CATALOG_ENTRY entry;
+gpointer data;
 
 	mdb_read_pg(mdb, MDB_CATALOG_PG);
 	rows = mdb_catalog_rows(mdb);
-
+	mdb_free_catalog(mdb);
 	for (i=0;i<rows;i++) {
 		if (mdb_catalog_entry(mdb, i, &entry)) {
-			if (obj_type==-1 || obj_type==entry.object_type) {
-				fprintf(stdout,"Type: %-15s Name: %-30s KKD pg: %04x row: %2d\n",
-				mdb_get_objtype_string(entry.object_type),
-				entry.object_name,
-				entry.kkd_pg,
-				entry.kkd_rowid);
-			}
+			data = g_memdup(&entry,sizeof(MDB_CATALOG_ENTRY));
+			mdb->catalog = g_list_append(mdb->catalog, data);
 		}
 	}
+	return (mdb->catalog);
+}
+void mdb_dump_catalog(MDB_HANDLE *mdb, int obj_type)
+{
+int rows;
+GList *l;
+MDB_CATALOG_ENTRY *entryp;
+
+	mdb_read_catalog(mdb, obj_type);
+	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
+                entryp = l->data;
+		fprintf(stdout,"Type: %-15s Name: %-30s KKD pg: %04x row: %2d\n",
+			mdb_get_objtype_string(entryp->object_type),
+			entryp->object_name,
+			entryp->kkd_pg,
+			entryp->kkd_rowid);
+        }
+	return;
 }
 

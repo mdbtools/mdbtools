@@ -33,5 +33,16 @@ void mdb_free_handle(MDB_HANDLE *mdb)
 	if (!mdb) return;	
 
 	if (mdb->filename) free(mdb->filename);
+	if (mdb->catalog) mdb_free_catalog(mdb);
 	free(mdb);
+}
+void mdb_free_catalog(MDB_HANDLE *mdb)
+{
+GList *l;
+MDB_CATALOG_ENTRY *entryp;
+
+	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
+		entryp = l->data;
+		g_free(entryp);
+	}
 }

@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <glib.h>
 
 #define MDB_PGSIZE 2048
 #define MDB_MAX_OBJ_NAME 30
@@ -50,11 +51,11 @@ enum {
 typedef struct {
 	int           fd;
 	char          *filename;
-	unsigned long cur_pg;
-	unsigned int  row_num;
+	guint16       cur_pg;
+	guint16       row_num;
 	unsigned int  cur_pos;
 	unsigned char pg_buf[MDB_PGSIZE];
-	int           cur_cat_entry;
+	GList         *catalog;
 } MDB_HANDLE; 
 
 typedef struct {
@@ -64,8 +65,11 @@ typedef struct {
 	unsigned int   kkd_rowid;
 } MDB_CATALOG_ENTRY;
 
+/* mem.c */
 extern MDB_HANDLE *mdb_alloc_handle();
 extern void mdb_free_handle(MDB_HANDLE *mdb);
+extern void mdb_free_catalog(MDB_HANDLE *mdb);
+
 extern size_t mdb_read_pg(MDB_HANDLE *mdb, unsigned long pg);
 extern int    mdb_get_int16(MDB_HANDLE *mdb, int offset);
 extern long   mdb_get_int32(MDB_HANDLE *mdb, int offset);
