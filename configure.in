@@ -189,5 +189,5 @@ src/gmdb2/pixmaps/Makefile
 src/gmdb2/help/Makefile
 src/gmdb2/help/C/Makefile
 mdbtools.spec
-include/mdbver.h
-doc/reference/libmdb/Makefile])
+include/mdbver.h])
+dnl doc/reference/libmdb/Makefile])

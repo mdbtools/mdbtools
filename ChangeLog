@@ -1,3 +1,6 @@
+Thu Jun 17 20:56:44 EDT 2004	Brian Bruns <brian@bruns.com>
+	* configure.in: temporarily remove building of reference manual. It broke 'make dist'
+
 Wed Jun 16 17:35:07 EDT 2004	Brian Bruns <brian@bruns.com>
 	* src/gmdb2/file.c: initialize default backend
 	* src/gmdb2/table_def.c: replace reference to mdb_access_types structure with call to mdb_get_coltype_string()
