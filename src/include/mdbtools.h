@@ -95,7 +95,8 @@ typedef struct {
 	int	num_pgs;
 	int	first_data_pg;
 	GPtrArray	*columns;
-	int	cur_pg;
+	int	cur_pg_num;
+	int	cur_phys_pg;
 	int	cur_row;
 } MdbTableDef;
 

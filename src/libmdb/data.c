@@ -171,9 +171,21 @@ int bitmask_sz;
 
 	row_end = row_start-1;
 }
+int mdb_read_next_dpg(MdbTableDef *table)
+{
+MdbCatalogEntry *entry = table->entry;
+MdbHandle *mdb = entry->mdb;
+
+	do {
+		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
+			return 0;
+	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb, 4)!=entry->table_pg);
+	return table->cur_phys_pg;
+}
 int mdb_rewind_table(MdbTableDef *table)
 {
-	table->cur_pg=0;
+	table->cur_pg_num=0;
+	table->cur_phys_pg=0;
 	table->cur_row=0;
 }
 int mdb_fetch_row(MdbTableDef *table)
@@ -181,28 +193,21 @@ int mdb_fetch_row(MdbTableDef *table)
 MdbHandle *mdb = table->entry->mdb;
 int rows;
 
-	if (table->cur_pg > table->num_pgs) {
-		return 0;
-	}
-
-	if (!table->cur_pg) {
-		table->cur_pg=1;
+	if (!table->cur_pg_num) {
+		table->cur_pg_num=1;
 		table->cur_row=0;
-		mdb_read_pg(mdb,table->first_data_pg + table->cur_pg);
+		mdb_read_next_dpg(table);
 	}
 
 	rows = mdb_get_int16(mdb,8);
 	mdb_read_row(table, 
-		table->first_data_pg + table->cur_pg, 
+		table->cur_pg_num, 
 		table->cur_row);
 
 	table->cur_row++;
-	if (table->cur_row >= rows) {
+	if (table->cur_row > rows) {
 		table->cur_row=0;
-		table->cur_pg++;
-		if (table->cur_pg <= table->num_pgs) {
-			mdb_read_pg(mdb,table->first_data_pg + table->cur_pg);
-		}
+		if (!mdb_read_next_dpg(table)) return 0;
 	}
 	return 1;
 }
