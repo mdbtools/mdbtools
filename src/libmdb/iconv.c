@@ -32,7 +32,7 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 {
 	unsigned char *tmp = NULL;
 	unsigned int tlen = 0;
-	int len_in, len_out;
+	unsigned int len_in, len_out;
 	char *in_ptr, *out_ptr;
 
 	if ((!src) || (!dest))
@@ -138,7 +138,7 @@ mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 	/* Unicode Compression */
 	if(IS_JET4(mdb) && (dlen>4)) {
 		char *tmp = g_malloc(dlen);
-		int tptr = 0, dptr = 0;
+		unsigned int tptr = 0, dptr = 0;
 		int comp = 1;
 
 		tmp[tptr++] = 0xff;

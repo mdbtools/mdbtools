@@ -43,7 +43,7 @@ static char *array_to_string(unsigned char *array, int unsigned scale, int neg);
  */
 char *mdb_money_to_string(MdbHandle *mdb, int start)
 {
-	int num_bytes = 8;
+	const int num_bytes = 8;
 	int i;
 	int neg=0;
 	unsigned char multiplier[MAXPRECISION], temp[MAXPRECISION];

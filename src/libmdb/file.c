@@ -65,7 +65,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long
  * freeing.
  **/
 
-static gchar *mdb_find_file(char *file_name)
+static gchar *mdb_find_file(const char *file_name)
 {
 	struct stat status;
 	gchar *mdbpath, **dir, *tmpfname;
@@ -105,9 +105,10 @@ static gchar *mdb_find_file(char *file_name)
  *
  * Return value: pointer to MdbHandle structure.
  **/
-MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
+MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 {
 	MdbHandle *mdb;
+	int open_flags;
 
 	mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
@@ -124,10 +125,16 @@ MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 	}
 	if (flags & MDB_WRITABLE) {
 		mdb->f->writable = TRUE;
-		mdb->f->fd = open(mdb->f->filename,O_RDWR);
+		open_flags = O_RDWR;
 	} else {
-		mdb->f->fd = open(mdb->f->filename,O_RDONLY);
+		open_flags = O_RDONLY;
 	}
+
+#ifdef _WIN32
+	open_flags |= O_BINARY;
+#endif
+
+	mdb->f->fd = open(mdb->f->filename, open_flags);
 
 	if (mdb->f->fd==-1) {
 		fprintf(stderr,"Couldn't open file %s\n",mdb->f->filename); 

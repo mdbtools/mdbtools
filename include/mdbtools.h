@@ -19,6 +19,9 @@
 #ifndef _mdbtools_h_
 #define _mdbtools_h_
 
+#ifdef __cplusplus
+  extern "C" {
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -193,7 +196,7 @@ typedef struct {
 
 /* offset to row count on data pages...version dependant */
 typedef struct {
-	int		pg_size;
+	ssize_t		pg_size;
 	guint16		row_count_offset; 
 	guint16		tab_num_rows_offset;
 	guint16		tab_num_cols_offset;
@@ -283,7 +286,7 @@ typedef struct {
 	MdbProperties	*props;
 	/* info needed for handling deleted/added columns */
 	int 		fixed_offset;
-	int 		var_col_num;
+	unsigned int	var_col_num;
 	/* row_col_num is the row column number order, 
 	 * including deleted columns */
 	int		row_col_num;
@@ -406,7 +409,7 @@ extern long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
 extern float  mdb_pg_get_single(MdbHandle *mdb, int offset);
 extern double mdb_pg_get_double(MdbHandle *mdb, int offset);
 extern gint32 mdb_pg_get_int24_msb(MdbHandle *mdb, int offset);
-extern MdbHandle *mdb_open(char *filename, MdbFileFlags flags);
+extern MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
 extern void mdb_close(MdbHandle *mdb);
 extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
@@ -488,7 +491,7 @@ extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chai
 extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
 extern void mdb_free_indices(GPtrArray *indices);
 void mdb_index_page_reset(MdbIndexPage *ipg);
-
+extern int mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg);
 
 /* stats.c */
 extern void mdb_stats_on(MdbHandle *mdb);
@@ -510,6 +513,7 @@ extern unsigned char *mdb_new_data_pg(MdbCatalogEntry *entry);
 
 /* map.c */
 extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
+extern guint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
 
 /* props.c */
 extern GPtrArray *mdb_read_props_list(gchar *kkd, int len);
@@ -530,5 +534,11 @@ extern void mdb_debug(int klass, char *fmt, ...);
 /* iconv.c */
 extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen);
 extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen);
+extern void mdb_iconv_init(MdbHandle *mdb);
+extern void mdb_iconv_close(MdbHandle *mdb);
+
+#ifdef __cplusplus
+  }
+#endif
 
 #endif /* _mdbtools_h_ */
