@@ -25,8 +25,9 @@
 #include <sys/stat.h>
 
 #include "connectparams.h"
-
-#if !HAVE_SQLGETPRIVATEPROFILESTRING
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 /*
  *  * Last resort place to check for INI file. This is usually set at compile time
@@ -34,6 +35,11 @@
  *    */
 #ifndef SYS_ODBC_INI
 #define SYS_ODBC_INI "/etc/odbc.ini"
+#endif
+
+#if defined(FILENAME_MAX) && FILENAME_MAX < 512
+#undef FILENAME_MAX
+#define FILENAME_MAX 512
 #endif
 
 #define max_line 256
@@ -85,10 +91,40 @@ void FreeConnectParams (ConnectParams* params)
    }
 }
 
+#if !HAVE_SQLGETPRIVATEPROFILESTRING
+int LoadDSN (
+   const gchar* iniFileName, const gchar* dsnName, GHashTable* table)
+{
+   FILE* stream;
+   gchar* name;
+   gchar* value;
+
+
+   if ((stream = fopen (iniFileName, "r" )) != NULL )   
+   {
+      if (!FindSection (stream, dsnName))
+      {
+	 g_printerr ("Couldn't find DSN %s in %s\n", iniFileName, dsnName);
+	 fclose (stream);
+         return 0;
+      }
+      else
+      {
+         while (GetNextItem (stream, &name, &value))
+         {
+            g_hash_table_insert (table, strdup (name), strdup (value));
+         }
+      }
+
+      fclose( stream );   
+   }
+
+   return 1;
+}
+
 /*
  * Find the settings for the specified ODBC DSN
  */
-
 gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
 {
    if (!params) {
@@ -114,7 +150,6 @@ gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
 
    return TRUE;
 }
-
 /*
  * Get the value of a given ODBC Connection Parameter
  */
@@ -126,6 +161,25 @@ gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
 
    return g_hash_table_lookup (params->table, paramName);
 }
+
+#else
+gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
+{
+	return TRUE;
+}
+gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
+{
+	static char tmp[FILENAME_MAX];
+
+	/* use old servername */
+	tmp[0] = '\0';
+	if (SQLGetPrivateProfileString(params->dsnName->str, paramName, "", tmp, FILENAME_MAX, "odbc.ini") > 0) {
+		return tmp;
+	}
+	return NULL;
+
+}
+#endif /* !HAVE_SQLGETPRIVATEPROFILESTRING */
 
 /*
  * Apply a connection string to the ODBC Parameter Settings
@@ -346,35 +400,6 @@ static int FindSection (FILE* stream, const char* section)
    return 0;
 }
 
-int LoadDSN (
-   const gchar* iniFileName, const gchar* dsnName, GHashTable* table)
-{
-   FILE* stream;
-   gchar* name;
-   gchar* value;
-
-   if ((stream = fopen (iniFileName, "r" )) != NULL )   
-   {
-      if (!FindSection (stream, dsnName))
-      {
-	 g_printerr ("Couldn't find DSN %s in %s\n", iniFileName, dsnName);
-	 fclose (stream);
-         return 0;
-      }
-      else
-      {
-         while (GetNextItem (stream, &name, &value))
-         {
-            g_hash_table_insert (table, strdup (name), strdup (value));
-         }
-      }
-
-      fclose( stream );   
-   }
-
-   return 1;
-}
-
 /*
  * Make a hash from all the characters
  */
@@ -452,7 +477,6 @@ static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
    return TRUE;
 }
 
-#endif /* !HAVE_SQLGETPRIVATEPROFILESTRING */
 
 #ifdef UNIXODBC
 

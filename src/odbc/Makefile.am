@@ -5,7 +5,7 @@ MDBDIR         =    ../libmdb
 MDBSOURCES     =    backend.c index.c money.c catalog.c kkd.c sargs.c \
 				data.c like.c table.c dump.c file.c mem.c \
 				map.c props.c worktable.c options.c \
-				write.c stats.c
+				write.c stats.c iconv.c
 
 bin_PROGRAMS	=	unittest
 lib_LTLIBRARIES	=	libmdbodbc.la
@@ -15,7 +15,7 @@ libmdbodbc_la_LIBADD=	$(patsubst %, $(SQLDIR)/%, \
 				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
 				$(patsubst %, $(MDBDIR)/%, \
 				$(patsubst %.c, %.lo, $(MDBSOURCES)))
-LIBS	=	@LEXLIB@ $(GLIB_LIBS)
+LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBCINSTLIB)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 
 ## Need blank statement to avoid compiling odbc.c

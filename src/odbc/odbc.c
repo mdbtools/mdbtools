@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.12 2004/02/08 21:54:20 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.13 2004/03/06 05:13:28 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -820,7 +820,7 @@ struct _henv *env = (struct _henv *) dbc->henv;
         //cur = cur->next;
 	//}
 
-	if (mdb_fetch_row(env->sql->cur_table)) {
+	if (mdb_sql_fetch_row(env->sql, env->sql->cur_table)) {
 		stmt->rows_affected++;
 		return SQL_SUCCESS;
 	} else {

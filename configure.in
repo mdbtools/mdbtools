@@ -89,6 +89,8 @@ if test "x$odbc" = "xtrue"; then
 	AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1, [Define to 1 if you have the SQLGetPrivateProfileString function.])])
 fi
 
+AC_SUBST(ODBCINSTLIB)
+
 dnl check for glib/gtk/gnome
 AM_PATH_GLIB_2_0(2.0.0)
 

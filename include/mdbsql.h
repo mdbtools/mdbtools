@@ -72,5 +72,7 @@ extern void mdb_sql_describe_table(MdbSQL *sql);
 extern int mdb_sql_run_query(MdbSQL *sql, char *query);
 extern void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow);
 extern int mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2);
+extern void mdb_sql_bind_all(MdbSQL *sql);
+extern int mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table);
 
 #endif

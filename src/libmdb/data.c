@@ -557,13 +557,14 @@ int mdb_rewind_table(MdbTableDef *table)
 
 	return 0;
 }
-int mdb_fetch_row(MdbTableDef *table)
+int 
+mdb_fetch_row(MdbTableDef *table)
 {
-MdbHandle *mdb = table->entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
-int rows;
-int rc;
-guint32 pg;
+	MdbHandle *mdb = table->entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
+	int rows;
+	int rc;
+	guint32 pg;
 
 	if (table->num_rows==0)
 		return 0;
@@ -1167,21 +1168,4 @@ int mdb_col_fixed_size(MdbColumn *col)
 		break;
 	}
 	return 0;
-}
-int
-mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest)
-{
-	int i;
-
-	if (buf[offset]==0xff && 
-		buf[offset+1]==0xfe) {
-		strncpy(dest, &buf[offset+2], len-2);
-		dest[len-2]='\0';
-	} else {
-		/* convert unicode to ascii, rather sloppily */
-		for (i=0;i<len;i+=2)
-			dest[i/2] = buf[offset + i];
-		dest[len/2]='\0';
-	}
-	return len;
 }

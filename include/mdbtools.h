@@ -433,7 +433,6 @@ extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 extern int mdb_col_fixed_size(MdbColumn *col);
 extern int mdb_col_disp_size(MdbColumn *col);
 extern void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr);
-extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
 extern int mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern int mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void mdb_set_date_fmt(const char *);
@@ -504,5 +503,9 @@ extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
 /* options.c */
 extern int mdb_get_option(unsigned long optnum);
 void mdb_debug(int klass, char *fmt, ...);
+
+/* iconv.c */
+extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
+extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
 
 #endif /* _mdbtools_h_ */
