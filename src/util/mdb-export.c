@@ -20,6 +20,7 @@
 
 #include "mdbtools.h"
 
+#define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
 main(int argc, char **argv)
 {
 int rows;
@@ -98,13 +99,14 @@ int  opt;
 			}
 
 			while(mdb_fetch_row(table)) {
-				fprintf(stdout,"%s",bound_values[0]);
-        			for (j=1;j<table->num_cols;j++) {
+				if (quote_text && is_text_type(col->col_type)) {
+					fprintf(stdout,"\"%s\"",bound_values[0]);
+				} else {
+					fprintf(stdout,"%s",bound_values[0]);
+				}
+        		for (j=1;j<table->num_cols;j++) {
 					col=g_ptr_array_index(table->columns,j);
-					if (quote_text && 
-						(col->col_type==MDB_TEXT ||
-						col->col_type==MDB_MEMO ||
-						col->col_type==MDB_SDATETIME)) {
+					if (quote_text && is_text_type(col->col_type)) {
 						fprintf(stdout,"%s\"%s\"",delimiter,bound_values[j]);
 					} else {
 						fprintf(stdout,"%s%s",delimiter,bound_values[j]);

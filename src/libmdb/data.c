@@ -145,7 +145,7 @@ unsigned char isnull;
 	if (row_start & 0x8000) lookupflag++;
 	if (row_start & 0x4000) delflag++;
 	row_start &= 0x0FFF; /* remove flags */
-#if DEBUG
+#if MDB_DEBUG
 	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
 		row, row_start, row_end,
 		lookupflag ? "[lookup]" : "",
@@ -231,7 +231,7 @@ unsigned char isnull;
                num_of_jumps++;
        }
 	if (mdb->jet_version==MDB_VER_JET4) {
-		col_ptr = row_end - 2 - bitmask_sz - num_of_jumps - 1;
+		col_ptr = row_end - 2 - bitmask_sz - 1;
 		eod = mdb_get_int16(mdb, col_ptr - var_cols*2);
 		col_start = mdb_get_int16(mdb, col_ptr);
 	} else {
@@ -244,6 +244,10 @@ unsigned char isnull;
 		col_start = mdb->pg_buf[col_ptr];
 	}
 
+#if MDB_DEBUG
+	fprintf(stdout,"col_start %d num_of_jumps %d\n", 
+		col_start, num_of_jumps);
+#endif
 
 	/* variable columns */
 	for (j=0;j<table->num_cols;j++) {
@@ -277,7 +281,9 @@ unsigned char isnull;
 		}
 
 			isnull = mdb_is_null(null_mask, j+1); 
-			//printf("binding len %d isnull %d col_start %d row_start %d row_end %d bitmask %d var_cols_found %d buf %d\n", len, isnull,col_start,row_start,row_end, bitmask_sz, var_cols_found, mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 1 - num_of_jumps ]);
+#if MDB_DEBUG
+			printf("binding len %d isnull %d col_start %d row_start %d row_end %d bitmask %d var_cols_found %d buf %d\n", len, isnull,col_start,row_start,row_end, bitmask_sz, var_cols_found, mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 1 - num_of_jumps ]);
+#endif
 			rc = _mdb_attempt_bind(mdb, col, isnull,
 				row_start + col_start, len);
 			if (!rc) return 0;

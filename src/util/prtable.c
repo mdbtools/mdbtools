@@ -28,6 +28,7 @@ unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 GList *l;
+int found = 0;
 
 
 	if (argc<3) {
@@ -45,9 +46,13 @@ GList *l;
 		if (entry->object_type == MDB_TABLE &&
 			!strcmp(entry->object_name,argv[2])) {
 				mdb_table_dump(entry);
+				found++;
 		}
 	}
 
+	if (!found) {
+		fprintf(stderr,"No table named %s found.\n", argv[2]);
+	}
 	mdb_free_handle(mdb);
 	mdb_exit();
 }

@@ -27,50 +27,60 @@ MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;
 MdbColumn *col;
+char *delimiter = NULL;
+int line_break=0;
+int opt;
 
- if (argc < 2) {
-   fprintf (stderr, "Usage: %s <file>\n",argv[0]);
-   exit (1);
- }
+	if (argc < 2) {
+		fprintf (stderr, "Usage: %s [-1 | -d<delimiter>] <file>\n",argv[0]);
+		exit (1);
+	}
+
+	while ((opt=getopt(argc, argv, "1d:"))!=-1) {
+        switch (opt) {
+        case '1':
+            line_break = 1;
+        break;
+        case 'd':
+            delimiter = (char *) malloc(strlen(optarg)+1);
+            strcpy(delimiter, optarg);
+        break;
+		}
+	}
+
  
- /* initialize the library */
- mdb_init();
+ 	/* initialize the library */
+ 	mdb_init();
 
- /* open the database */
+ 	/* open the database */
+ 	mdb = mdb_open (argv[optind]);
 
- mdb = mdb_open (argv[1]);
+ 	/* read the catalog */
+ 	mdb_read_catalog (mdb, MDB_TABLE);
 
- /* read the catalog */
+ 	/* loop over each entry in the catalog */
+ 	for (i=0; i < mdb->num_catalog; i++) {
+		entry = g_ptr_array_index (mdb->catalog, i);
+
+     	/* if it's a table */
+     	if (entry->object_type == MDB_TABLE) {
+	 		/* skip the MSys tables */
+			if (strncmp (entry->object_name, "MSys", 4)) {
+	       		if (line_break) 
+					fprintf (stdout, "%s\n", entry->object_name);
+				else if (delimiter) 
+					fprintf (stdout, "%s%s", entry->object_name, delimiter);
+				else 
+					fprintf (stdout, "%s ", entry->object_name);
+	     	}
+		}
+	}
+	if (!line_break) 
+		fprintf (stdout, "\n");
  
- mdb_read_catalog (mdb, MDB_TABLE);
+	mdb_free_handle (mdb);
+	mdb_exit();
+	if (delimiter) free(delimiter);
 
- /* loop over each entry in the catalog */
-
- for (i=0; i < mdb->num_catalog; i++) 
-   {
-     entry = g_ptr_array_index (mdb->catalog, i);
-
-     /* if it's a table */
-
-     if (entry->object_type == MDB_TABLE)
-       {
-	 /* skip the MSys tables */
-       if (strncmp (entry->object_name, "MSys", 4))
-	 {
-	   
-	   /* make sure it's a table (may be redundant) */
-
-	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
-	     {
-	       /* drop the table if it exists */
-	       fprintf (stdout, "%s ", entry->object_name);
-	     }
-	 }
-     }
-   }
- fprintf (stdout, "\n");
- 
- mdb_free_handle (mdb);
- mdb_exit();
 }
 
