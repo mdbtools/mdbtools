@@ -277,7 +277,7 @@ static char text[255];
 				relationships[1],relationships[3],relationships[1],
 				relationships[0],relationships[3],relationships[2]);
 		} else {
-			sprintf(text,"relationships are not supported for %s",
+			sprintf(text,"-- relationships are not supported for %s",
 				mdb->backend_name);
 		} /* else */
     } /* got a row */
