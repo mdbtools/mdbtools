@@ -76,7 +76,7 @@ int done = 0;
 
 	/* give the buffer an initial size */
 	bufsz = 4096;
-	mybuf = (char *) malloc(bufsz);
+	mybuf = (char *) g_malloc(bufsz);
 	mybuf[0]='\0';
 
 	sprintf(prompt,"1 => ");
@@ -92,7 +92,7 @@ int done = 0;
 		} else {
 			while (strlen(mybuf) + strlen(s) > bufsz) {
 				bufsz *= 2;
-				mybuf = (char *) realloc(mybuf, bufsz);
+				mybuf = (char *) g_realloc(mybuf, bufsz);
 			}
 			add_history(s);
 			strcat(mybuf,s);
@@ -106,5 +106,7 @@ int done = 0;
 			done = 1;
 		}
 	}
-	mdb_sql_exit(g_sql);	
+	free(s);
+	g_free(mybuf);
+	mdb_sql_exit(g_sql);
 }

@@ -99,29 +99,21 @@ void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
 }
 void mdb_sql_free_column(MdbSQLColumn *c)
 {
-	if (c->name) g_free(c->name);
+	g_free(c->name);
 	g_free(c);
 }
 MdbSQLColumn *mdb_sql_alloc_column()
 {
-MdbSQLColumn *c;
-
-	c = (MdbSQLColumn *) g_malloc(sizeof(MdbSQLColumn));
-	memset(c,0,sizeof(MdbSQLColumn));
-	return c;
+	return (MdbSQLColumn *) g_malloc0(sizeof(MdbSQLColumn));
 }
 void mdb_sql_free_table(MdbSQLTable *t)
 {
-	if (t->name) g_free(t->name);
+	g_free(t->name);
 	g_free(t);
 }
 MdbSQLTable *mdb_sql_alloc_table()
 {
-MdbSQLTable *t;
-
-	t = (MdbSQLTable *) g_malloc(sizeof(MdbSQLTable));
-	memset(t,0,sizeof(MdbSQLTable));
-	return t;
+	return (MdbSQLTable *) g_malloc0(sizeof(MdbSQLTable));
 }
 
 void
@@ -152,13 +144,11 @@ wordexp_t words;
 
 	if (!(sql->mdb = mdb_open(db_namep, MDB_NOFLAGS))) {
 		if (!strstr(db_namep, ".mdb")) {
-			char *tmpstr = (char *) malloc(strlen(db_namep)+5);
-			strcpy(tmpstr,db_namep);
-			strcat(tmpstr,".mdb");
+			char *tmpstr = (char *) g_strconcat(db_namep, ".mdb", NULL);
 			if (!(sql->mdb = mdb_open(tmpstr, MDB_NOFLAGS))) {
 				fail++;
 			}
-			free(tmpstr);
+			g_free(tmpstr);
 		} else {
 			fail++;
 		}
@@ -176,11 +166,7 @@ wordexp_t words;
 MdbSargNode *
 mdb_sql_alloc_node()
 {
-	MdbSargNode *node;
-
-	node = g_malloc0(sizeof(MdbSargNode));
-
-	return node;
+	return (MdbSargNode *) g_malloc0(sizeof(MdbSargNode));
 }
 void
 mdb_sql_free_tree(MdbSargNode *tree)
@@ -809,7 +795,7 @@ mdb_sql_bind_all(MdbSQL *sql)
 int i;
 
 	for (i=0;i<sql->num_columns;i++) {
-		sql->bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
+		sql->bound_values[i] = (char *) g_malloc(MDB_BIND_SIZE);
 		sql->bound_values[i][0] = '\0';
 		mdb_sql_bind_column(sql, i+1, sql->bound_values[i]);
 	}
@@ -880,7 +866,7 @@ MdbSQLColumn *sqlcol;
 	fprintf(stdout,"\n");
 	/* clean up */
 	for (j=0;j<sql->num_columns;j++) {
-		if (sql->bound_values[j]) free(sql->bound_values[j]);
+		g_free(sql->bound_values[j]);
 	}
 
 	/* the column and table names are no good now */

@@ -3,6 +3,8 @@ Sun May 30 00:04:55 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c:
 	* src/libmdb/mem.c:
 	* src/libmdb/table.c: malloc to g_malloc
+	* src/sql/main.c:
+	* src/sql/mdbsql.c: better utilize glib functions, fix memory leak
 
 Sat May 29 14:14:21 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/backend.c:
