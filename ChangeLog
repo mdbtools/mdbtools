@@ -1,3 +1,6 @@
+Fri May 28 06:55:55 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/mem.c: Fixed a couple of potential memory leaks
+
 Sun May  2 06:31:17 EDT 2004	Brian Bruns <brian@bruns.com>
 	* src/util/mdb-tables.c: Add -t flag to specify object type
 	* src/util/mdb-props.c: Handle any object type, not just tables

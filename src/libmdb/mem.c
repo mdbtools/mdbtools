@@ -72,21 +72,17 @@ void mdb_alloc_catalog(MdbHandle *mdb)
 void mdb_free_catalog(MdbHandle *mdb)
 {
 	unsigned int i;
-	MdbCatalogEntry *entry;
 
 	if (!mdb->catalog) return;
-
-	for (i=0; i<mdb->catalog->len; i++) {
-		entry = g_ptr_array_index(mdb->catalog, i);
-		g_free (entry);
-	}
+	for (i=0; i<mdb->catalog->len; i++)
+		g_free (g_ptr_array_index(mdb->catalog, i));
 	g_ptr_array_free(mdb->catalog, TRUE);
 	mdb->catalog = NULL;
 }
 
 MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 {
-MdbTableDef *table;
+	MdbTableDef *table;
 
 	table = (MdbTableDef *) malloc(sizeof(MdbTableDef));
 	memset(table, '\0', sizeof(MdbTableDef));
@@ -107,27 +103,37 @@ mdb_free_tabledef(MdbTableDef *table)
 void
 mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 {
-MdbColumn *col;
-		
+	MdbColumn *col;
+
  	col = g_memdup(in_col,sizeof(MdbColumn));
 	g_ptr_array_add(columns, col);
 }
 void
 mdb_free_columns(GPtrArray *columns)
 {
+	unsigned int i;
+
+	if (!columns) return;
+	for (i=0; i<columns->len; i++)
+		g_free (g_ptr_array_index(columns, i));
 	g_ptr_array_free(columns, TRUE);
 }
 
 void 
 mdb_append_index(GPtrArray *indices, MdbIndex *in_idx)
 {
-MdbIndex *idx;
-		
+	MdbIndex *idx;
+
  	idx = g_memdup(in_idx,sizeof(MdbIndex));
 	g_ptr_array_add(indices, idx);
 }
 void
 mdb_free_indices(GPtrArray *indices)
 {
+	unsigned int i;
+
+	if (!indices) return;
+	for (i=0; i<indices->len; i++)
+		g_free (g_ptr_array_index(indices, i));
 	g_ptr_array_free(indices, TRUE);
 }
