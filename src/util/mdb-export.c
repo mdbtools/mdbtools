@@ -70,7 +70,9 @@ char quote_text = 1;
 				fprintf(stdout,"%s",bound_values[0]);
         			for (j=1;j<table->num_cols;j++) {
 					col=g_ptr_array_index(table->columns,j);
-					if (quote_text && col->col_type==MDB_TEXT) {
+					if (quote_text && 
+						(col->col_type==MDB_TEXT ||
+						col->col_type==MDB_MEMO)) {
 						fprintf(stdout,"%s\"%s\"",delimiter,bound_values[j]);
 					} else {
 						fprintf(stdout,"%s%s",delimiter,bound_values[j]);

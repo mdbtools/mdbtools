@@ -112,7 +112,7 @@ int bitmask_sz;
 					mdb_col_to_string(mdb, 
 						row_start + col_start,
 						col->col_type,
-						0)
+						col->col_size)
 					);
 			}
 #if MDB_DEBUG
