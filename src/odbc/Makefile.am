@@ -9,13 +9,13 @@ MDBSOURCES     =    backend.c index.c money.c catalog.c kkd.c sargs.c \
 
 bin_PROGRAMS	=	unittest 
 lib_LTLIBRARIES	=	libmdbodbc.la
-AM_CPPFLAGS	=	-I ../../include $(GLIB_CFLAGS)
+AM_CPPFLAGS	=	-I ../../include $(GLIB_CFLAGS) $(ODBC_CFLAGS)
 libmdbodbc_la_SOURCES=	odbc.c connectparams.c
 libmdbodbc_la_LIBADD=	$(patsubst %, $(SQLDIR)/%, \
 				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
 				$(patsubst %, $(MDBDIR)/%, \
 				$(patsubst %.c, %.lo, $(MDBSOURCES)))
-LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBCINSTLIB)
+LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBC_LIBS)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 
 ## Need blank statement to avoid compiling odbc.c

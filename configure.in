@@ -55,46 +55,45 @@ dnl check for iODBC
 AC_ARG_WITH(iodbc,
 [  --with-iodbc=/path/to/iodbc build odbc driver against iODBC])
 if test "$with_iodbc"; then
-     CFLAGS="$CFLAGS -DIODBC";
-     ODBC_INC=$with_iodbc/include;
-     odbc=true
-     OPTDIRS="$OPTDIRS odbc"
-     if test "x$sql" != "xtrue" ; then
-          echo
-          echo ODBC requires flex and bison for the SQL engine
-          exit 1
-     fi
+	HAVE_ODBC=true
+	ODBC_CFLAGS="-I$with_iodbc/include"
+	ODBC_LIBS="-L$with_iodbc/lib"
+	CFLAGS="$CFLAGS -DIODBC"
 fi
 
 dnl check for unixODBC
 AC_ARG_WITH(unixodbc,
 [  --with-unixodbc=/path/to/unixodbc build odbc driver against unixODBC])
 if test "$with_unixodbc"; then
-     CFLAGS="$CFLAGS -DUNIXODBC"
-     ODBC_INC=$with_unixodbc/include
-     odbc=true
-     OPTDIRS="$OPTDIRS odbc"
-     if test "x$sql" != "xtrue" ; then
-          echo
-          echo ODBC requires flex and bison for the SQL engine
-          exit 1
-     fi
+	HAVE_ODBC=true
+	ODBC_CFLAGS="-I$with_unixodbc/include"
+	ODBC_LIBS="-L$with_unixodbc/lib"
+	CFLAGS="$CFLAGS -DUNIXODBC"
 fi
-AM_CONDITIONAL(HAVE_ODBC, test x$odbc = xtrue)
-AC_SUBST(HAVE_ODBC)
-AC_SUBST(ODBC_INC)
 
-if test "x$odbc" = "xtrue"; then
-	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBCINSTLIB="-lodbcinst"
+if test "x$HAVE_ODBC" = "xtrue"; then
+	if test "x$sql" != "xtrue" ; then
+		echo
+		echo ODBC requires flex and bison for the SQL engine
+		exit 1
+	fi
+
+	OLDLDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS $ODBC_LIBS"
+	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBC_LIBS="$ODBC_LIBS -lodbcinst"
 	AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1, [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	LDFLAGS=$OLDLDFLAGS
+
+	AC_SUBST(ODBC_CFLAGS)
+	AC_SUBST(ODBC_LIBS)
+	OPTDIRS="$OPTDIRS odbc"
 fi
 
-AC_SUBST(ODBCINSTLIB)
 
 dnl check for glib/gtk/gnome
 AM_PATH_GLIB_2_0(2.0.0)
 
-if test "$no_glib" == yes; then
+if test "$no_glib" = "yes"; then
 	echo
 	echo "glib 2.0 is required by MDB Tools."
 	echo "It can be downloaded at www.gtk.org."
