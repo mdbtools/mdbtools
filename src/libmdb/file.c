@@ -19,6 +19,8 @@
 
 #include "mdbtools.h"
 
+static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
+
 MdbHandle *mdb_open(char *filename)
 {
 MdbHandle *mdb;
@@ -69,6 +71,22 @@ int j,pos;
 size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 {
 size_t len;
+
+	len = _mdb_read_pg(mdb, mdb->pg_buf, pg);
+	/* kan - reset the cur_pos on a new page read */
+	mdb->cur_pos = 0; /* kan */
+	return len;
+}
+size_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg)
+{
+size_t len;
+
+	len = _mdb_read_pg(mdb, mdb->alt_pg_buf, pg);
+	return len;
+}
+static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg)
+{
+size_t len;
 struct stat status;
 off_t offset = pg * mdb->pg_size;
 
@@ -78,7 +96,7 @@ off_t offset = pg * mdb->pg_size;
                 return 0;
         }
 	lseek(mdb->fd, offset, SEEK_SET);
-	len = read(mdb->fd,mdb->pg_buf,mdb->pg_size);
+	len = read(mdb->fd,pg_buf,mdb->pg_size);
 	if (len==-1) {
 		perror("read");
 		return 0;
@@ -86,9 +104,7 @@ off_t offset = pg * mdb->pg_size;
 	else if (len<mdb->pg_size) {
 		/* fprintf(stderr,"EOF reached.\n"); */
 		return 0;
-	}
- 	/* kan - reset the cur_pos on a new page read */
-        mdb->cur_pos = 0; /* kan */
+	} 
 	return len;
 }
 int mdb_get_int16(MdbHandle *mdb, int offset)
@@ -118,6 +134,27 @@ unsigned char *c;
 
 	mdb->cur_pos+=4;
 	return l;
+}
+double mdb_get_double(MdbHandle *mdb, int offset)
+{
+double d, d2;
+unsigned char *c;
+int i;
+
+	if (offset <0 || offset+4 > mdb->pg_size) return -1;
+
+	memcpy(&d, &mdb->pg_buf[offset], 8);
+
+#ifdef HW_BIG_ENDIAN
+	d2 = d;
+	for (i=0; i<sizeof(d); i++) {
+		*(((unsigned char *)&d)+i) =
+		*(((unsigned char *)&d2)+sizeof(d)-1-i);
+	}
+#endif
+	mdb->cur_pos+=8;
+	return d;
+
 }
 int mdb_set_pos(MdbHandle *mdb, int pos)
 {

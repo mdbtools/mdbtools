@@ -1,5 +1,4 @@
 
-
 SHELL = /bin/sh
 VPATH = @srcdir@
 
@@ -19,6 +18,7 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 INSTALL= @INSTALL@
 INC = -I ../include `glib-config --cflags`
+MDBLIB = ../libmdb/libmdb.a
 LIBS = -L ../libmdb -lmdb `glib-config --libs`
 PROGS = prcat prkkd prtable prdata prdump mdb-schema mdb-export mdb-tables mdb-header mdb-parsecsv mdb-array
 PRCATOBJS = prcat.o
@@ -35,44 +35,44 @@ ARROBJS = mdb-array.o
 
 all: $(PROGS)
 
-prcat: $(PRCATOBJS)
+prcat: $(PRCATOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(PRCATOBJS) $(LIBS)
 		
-prkkd: $(PRKKDOBJS)
+prkkd: $(PRKKDOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(PRKKDOBJS) $(LIBS)
 		
-prtable: $(PRTABLEOBJS)
+prtable: $(PRTABLEOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(PRTABLEOBJS) $(LIBS)
 		
-prdata: $(PRDATAOBJS)
+prdata: $(PRDATAOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(PRDATAOBJS) $(LIBS)
 		
-prdump: $(PRDUMPOBJS)
+prdump: $(PRDUMPOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(PRDUMPOBJS) $(LIBS)
 
-mdb-schema: $(SCHEMAOBJS)
+mdb-schema: $(SCHEMAOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(SCHEMAOBJS) $(LIBS)
 
-mdb-export: $(EXPORTOBJS)
+mdb-export: $(EXPORTOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(EXPORTOBJS) $(LIBS)
 
-mdb-tables: $(TABLEOBJS)
+mdb-tables: $(TABLEOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(TABLEOBJS) $(LIBS)
 
-mdb-header: $(HEADEROBJS)
+mdb-header: $(HEADEROBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(HEADEROBJS) $(LIBS)
 
-mdb-parsecsv: $(CSVOBJS)
+mdb-parsecsv: $(CSVOBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(CSVOBJS) $(LIBS)
 
-mdb-array: $(ARROBJS)
+mdb-array: $(ARROBJS) $(MDBLIB)
 	$(CC) -g -o $@ $(ARROBJS) $(LIBS)
 
 clean: 
 	rm -f core *.o $(PROGS)
 
 .c.o:
-	$(CC) -g -c $< $(INC)
+	$(CC) $(CFLAGS) -g -c $< $(INC)
 
 install: 
 	@for prog in $(PROGS); do \
@@ -85,3 +85,16 @@ uninstall:
 	 echo "               removing $$prog from $(bindir)"; \
 	 rm -f $(bindir)/$$prog; \
         done
+
+header.o: header.c ../include/mdbtools.h
+mdb-array.o: mdb-array.c ../include/mdbtools.h
+mdb-export.o: mdb-export.c ../include/mdbtools.h
+parsecsv.o: parsecsv.c ../include/mdbtools.h
+prcat.o: prcat.c ../include/mdbtools.h
+prdata.o: prdata.c ../include/mdbtools.h
+prdump.o: prdump.c ../include/mdbtools.h
+prkkd.o: prkkd.c ../include/mdbtools.h
+prtable.o: prtable.c ../include/mdbtools.h
+schema.o: schema.c ../include/mdbtools.h
+tables.o: tables.c ../include/mdbtools.h
+

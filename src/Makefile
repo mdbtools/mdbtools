@@ -13,7 +13,7 @@ mandir = $(exec_prefix)/man/man1
 
 CC = gcc
 CPPFLAGS = 
-CFLAGS = $(CPPFLAG) -g -O2
+CFLAGS = $(CPPFLAG) -g -O2 -DHW_LITTLE_ENDIAN
 LDFLAGS = 
 LIBS = 
 INSTALL= @INSTALL@

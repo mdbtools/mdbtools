@@ -27,7 +27,6 @@ main (int argc, char **argv)
 {
 int rows;
 int i,  j;
-unsigned char buf [2048];
 MdbHandle *mdb;
 MdbCatalogEntry entry;
 MdbTableDef *table;
@@ -62,7 +61,7 @@ int started;
 	 
 	 for (j = 0; j < table->num_cols; j++) 
 	   {
-	     bound_values [j] =  (char *) malloc (256);
+	     bound_values [j] =  (char *) malloc (MDB_BIND_SIZE);
 	     bound_values [j] [0] = '\0';
 	     mdb_bind_column (table, j + 1, bound_values [j]);
 	   }

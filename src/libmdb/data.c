@@ -255,10 +255,51 @@ int mdb_is_fixed_col(MdbColumn *col)
 {
 	return col->is_fixed;
 }
+static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
+{
+short memo_len;
+static char text[MDB_BIND_SIZE];
+
+	if (size<MDB_MEMO_OVERHEAD) {
+		return "";
+	} else if (size == MDB_MEMO_OVERHEAD) {
+		/* If the only thing here is the field information, the
+		* data is linked.  Go read it from another page.
+		* Question: Do we need to read and evaluate the whole page?
+		* Question: It seems to be the only record on the page.  If
+		*           it weren't, how do we know which record it is?
+		*
+		* WARNING: Assuming the storage area is at least 2048 bytes!
+		*/
+
+		/* The 16 bit integer at offset 0 is the length of the memo field.
+		* The 16 bit integer at offset 5 is the page it is stored on.
+		*/
+		memo_len = mdb_get_int16(mdb, start);
+
+		if(mdb_read_alt_pg(mdb, mdb_get_int16(mdb, start+5)) != mdb->pg_size) {
+			/* Failed to read */
+			return "";
+		}
+		strncpy(text, &mdb->alt_pg_buf[mdb->pg_size - memo_len], memo_len);
+		return text;
+	} else {
+		strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
+			size - MDB_MEMO_OVERHEAD);
+		text[size - MDB_MEMO_OVERHEAD]='\0';
+		return text;
+	}
+#if 0
+			strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD], 
+				size - MDB_MEMO_OVERHEAD);
+			text[size - MDB_MEMO_OVERHEAD]='\0';
+			return text;
+#endif
+}
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
 /* FIX ME -- not thread safe */
-static char text[256];
+static char text[MDB_BIND_SIZE];
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -273,6 +314,10 @@ static char text[256];
 			sprintf(text,"%ld",mdb_get_int32(mdb, start));
 			return text;
 		break;
+		case MDB_DOUBLE:
+			sprintf(text,"%f",mdb_get_double(mdb, start));
+			return text;
+		break;
 		case MDB_TEXT:
 			if (size<0) {
 				return "";
@@ -282,13 +327,7 @@ static char text[256];
 			return text;
 		break;
 		case MDB_MEMO:
-			if (size<MDB_MEMO_OVERHEAD) {
-				return "";
-			}
-			strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD], 
-				size - MDB_MEMO_OVERHEAD);
-			text[size - MDB_MEMO_OVERHEAD]='\0';
-			return text;
+			return mdb_memo_to_string(mdb, start, size);
 		break;
 		default:
 			return "";

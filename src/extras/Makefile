@@ -13,7 +13,7 @@ mandir = $(exec_prefix)/man/man1
 
 CC = gcc
 CPPFLAGS = 
-CFLAGS = $(CPPFLAG) -g -O2
+CFLAGS = $(CPPFLAG) -g -O2 -DHW_LITTLE_ENDIAN
 LDFLAGS = 
 LIBS = 
 INSTALL= @INSTALL@
@@ -30,7 +30,7 @@ mdb-dump: dump.o
 	$(CC) -g -o $@ $< 
 
 .c.o:
-	$(CC) -g -c $<
+	$(CC) $(CFLAGS) -g -c $<
 
 install: 
 	@for prog in $(PROGS); do \

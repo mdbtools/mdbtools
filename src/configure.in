@@ -19,6 +19,13 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
 
+OLDCFLAGS="$CFLAGS"
+CFLAGS=""
+AC_C_BIGENDIAN
+if test $ac_cv_c_bigendian = yes; then OLDCFLAGS="$OLDCFLAGS -DHW_BIG_ENDIAN";
+else OLDCFLAGS="$OLDCFLAGS -DHW_LITTLE_ENDIAN"; fi
+CFLAGS=$OLDCFLAGS
+
 dnl Checks for library functions.
 
 AC_OUTPUT(util/Makefile extras/Makefile Makefile libmdb/Makefile include/Makefile)

@@ -31,7 +31,7 @@ clean:
 	rm -f core *.o *.a 
 
 .c.o:
-	$(CC) -g -c $< $(INC)
+	$(CC) $(CFLAGS) -g -c $< $(INC)
 
 install:
 	@for lib in $(LIBLIST); do \
@@ -44,3 +44,13 @@ uninstall:
 	  echo "             copying $$lib to $(libdir)"; \
           rm -f $(libdir)/$$lib; \
 	done
+
+backend.o: backend.c ../include/mdbtools.h
+catalog.o: catalog.c ../include/mdbtools.h
+data.o: data.c ../include/mdbtools.h
+dump.o: dump.c ../include/mdbtools.h
+file.o: file.c ../include/mdbtools.h
+kkd.o: kkd.c ../include/mdbtools.h
+mem.o: mem.c ../include/mdbtools.h
+table.o: table.c ../include/mdbtools.h
+

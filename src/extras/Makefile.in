@@ -30,7 +30,7 @@ mdb-dump: dump.o
 	$(CC) -g -o $@ $< 
 
 .c.o:
-	$(CC) -g -c $<
+	$(CC) $(CFLAGS) -g -c $<
 
 install: 
 	@for prog in $(PROGS); do \

@@ -33,6 +33,7 @@
 #define MDB_MAX_OBJ_NAME 30
 #define MDB_CATALOG_PG 18
 #define MDB_MEMO_OVERHEAD 12
+#define MDB_BIND_SIZE 2048
 
 enum {
 	MDB_VER_JET3 = 0,
@@ -81,6 +82,7 @@ typedef struct {
 	guint16       row_num;
 	unsigned int  cur_pos;
 	unsigned char pg_buf[MDB_PGSIZE];
+	unsigned char alt_pg_buf[MDB_PGSIZE];
 	int		num_catalog;
 	GArray		*catalog;
 	int		pg_size;
@@ -139,8 +141,10 @@ extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
 
 /* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
+extern size_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
 extern int    mdb_get_int16(MdbHandle *mdb, int offset);
 extern long   mdb_get_int32(MdbHandle *mdb, int offset);
+extern double mdb_get_double(MdbHandle *mdb, int offset);
 extern MdbHandle *mdb_open(char *filename);
 
 /* catalog.c */

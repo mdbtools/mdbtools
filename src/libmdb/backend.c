@@ -159,11 +159,11 @@ MdbBackend *backend;
 		return 0;
 	}
 }
-char *mdb_get_relationships(MdbHandle *mdb) {
 
+static void do_first (MdbHandle *mdb) 
+{
 int   i, j, k;
 static char text[255];
-  void do_first () {
     mdb_read_catalog (mdb, MDB_TABLE);
 
     /* loop over each entry in the catalog */
@@ -171,29 +171,32 @@ static char text[255];
       entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
       if ((entry.object_type == MDB_TABLE) &&
             (strncmp (entry.object_name, "MSysRelationships", 17) == 0))
-{
-    table = mdb_read_table (&entry);
-           if ( table->num_rows > 0 ) {
-             mdb_read_columns(table);
-             mdb_rewind_table(table);
-             for (k=0;k<table->num_cols;k++) {
-               bound_values[k] = (char *) malloc(256);
-			bound_values[k][0] = '\0';
-               mdb_bind_column(table,k+1,bound_values[k]);
-             }
-             relationships[0] = (char *) malloc(256); /* child column */
+		{
+    		table = mdb_read_table (&entry);
+			if ( table->num_rows > 0 ) {
+				mdb_read_columns(table);
+				mdb_rewind_table(table);
+				for (k=0;k<table->num_cols;k++) {
+					bound_values[k] = (char *) malloc(MDB_BIND_SIZE);
+					bound_values[k][0] = '\0';
+					mdb_bind_column(table,k+1,bound_values[k]);
+				}
+				relationships[0] = (char *) malloc(256); /* child column */
+				relationships[1] = (char *) malloc(256); /* child table */
+				relationships[2] = (char *) malloc(256); /* parent column */
+				relationships[3] = (char *) malloc(256); /* parent table */
+			} /* if num_rows > 0 */
+			did_first = 1;
+			return;
+		} /* if MSysRelationships */
+	} /* for */
+}
 
-             relationships[1] = (char *) malloc(256); /* child table */
-             relationships[2] = (char *) malloc(256); /* parent column
-*/
-             relationships[3] = (char *) malloc(256); /* parent table */
+char *mdb_get_relationships(MdbHandle *mdb) {
 
-          }
-          did_first = 1;
-          return;
-      }
-    }
-  }
+int   k;
+static char text[255];
+
 /*
  * generate relationships by "reading" the MSysRelationships table
  *   szColumn contains the column name of the child table
@@ -203,7 +206,7 @@ static char text[255];
  */
   sprintf(text,"%c",0);
   if ( did_first == 0)
-    do_first();
+    do_first(mdb);
   if (table->cur_row < table->num_rows) {
     if (mdb_fetch_row(table)) {
        relationships[0][0] = '\0';
@@ -221,19 +224,17 @@ static char text[255];
           else if (strncmp(col->name,"szReferencedObject",18) == 0)
              strcpy(relationships[3],bound_values[k]);
        }
-       if (strncmp(mdb->backend_name,"oracle",6) == 0)
-         sprintf(text,"alter table %s add constraint %s_%s foreign key
-(%s) references %s(%s)",
-
-relationships[1],relationships[3],relationships[1],
-
-relationships[0],relationships[3],relationships[2]);
-        else
-          sprintf(text,"relationships are not supported for
-%s",mdb->backend_name);
+		if (strncmp(mdb->backend_name,"oracle",6) == 0) {
+			sprintf(text,"alter table %s add constraint %s_%s foreign key (%s) \
+				references %s(%s)",
+				relationships[1],relationships[3],relationships[1],
+				relationships[0],relationships[3],relationships[2]);
+		} else {
+			sprintf(text,"relationships are not supported for %s",
+				mdb->backend_name);
+		} /* else */
     } /* got a row */
-  }
-  else {
+  } else {
     for (k=0;k<table->num_cols;k++) {
        free(bound_values[k]);
     }
