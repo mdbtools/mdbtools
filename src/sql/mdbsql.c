@@ -97,23 +97,18 @@ void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
 {
 	sql->max_rows = maxrow;
 }
-void mdb_sql_free_column(MdbSQLColumn *c)
+
+static void mdb_sql_free_column(gpointer d, gpointer u)
 {
+	MdbSQLColumn *c = (MdbSQLColumn *)d;
 	g_free(c->name);
 	g_free(c);
 }
-MdbSQLColumn *mdb_sql_alloc_column()
+static void mdb_sql_free_table(gpointer d, gpointer u)
 {
-	return (MdbSQLColumn *) g_malloc0(sizeof(MdbSQLColumn));
-}
-void mdb_sql_free_table(MdbSQLTable *t)
-{
+	MdbSQLTable *t = (MdbSQLTable *)d;
 	g_free(t->name);
 	g_free(t);
-}
-MdbSQLTable *mdb_sql_alloc_table()
-{
-	return (MdbSQLTable *) g_malloc0(sizeof(MdbSQLTable));
 }
 
 void
@@ -142,18 +137,13 @@ wordexp_t words;
 	
 #endif
 
-	if (!(sql->mdb = mdb_open(db_namep, MDB_NOFLAGS))) {
-		if (!strstr(db_namep, ".mdb")) {
-			char *tmpstr = (char *) g_strconcat(db_namep, ".mdb", NULL);
-			if (!(sql->mdb = mdb_open(tmpstr, MDB_NOFLAGS))) {
-				fail++;
-			}
-			g_free(tmpstr);
-		} else {
-			fail++;
-		}
+	sql->mdb = mdb_open(db_namep, MDB_NOFLAGS);
+	if ((!sql->mdb) && (!strstr(db_namep, ".mdb"))) {
+		char *tmpstr = (char *) g_strconcat(db_namep, ".mdb", NULL);
+		sql->mdb = mdb_open(tmpstr, MDB_NOFLAGS);
+		g_free(tmpstr);
 	}
-	if (fail) {
+	if (!sql->mdb) {
 		mdb_sql_error("Unable to locate database %s", db_name);
 	}
 
@@ -386,9 +376,9 @@ mdb_sql_all_columns(MdbSQL *sql)
 }
 int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 {
-MdbSQLColumn *c;
+	MdbSQLColumn *c;
 
-	c = mdb_sql_alloc_column();
+	c = (MdbSQLColumn *) g_malloc0(sizeof(MdbSQLColumn));
 	c->name = g_strdup(column_name);
 	g_ptr_array_add(sql->columns, c);
 	sql->num_columns++;
@@ -396,9 +386,9 @@ MdbSQLColumn *c;
 }
 int mdb_sql_add_table(MdbSQL *sql, char *table_name)
 {
-MdbSQLTable *t;
+	MdbSQLTable *t;
 
-	t = mdb_sql_alloc_table();
+	t = (MdbSQLTable *) g_malloc0(sizeof(MdbSQLTable));
 	t->name = g_strdup(table_name);
 	t->alias = NULL;
 	g_ptr_array_add(sql->tables, t);
@@ -422,67 +412,56 @@ void mdb_sql_dump(MdbSQL *sql)
 }
 void mdb_sql_exit(MdbSQL *sql)
 {
-	unsigned int i;
-	MdbSQLColumn *c;
-	MdbSQLTable *t;
+	g_ptr_array_foreach(sql->columns, mdb_sql_free_column, NULL);
+	g_ptr_array_free(sql->columns, TRUE);
+	g_ptr_array_foreach(sql->tables, mdb_sql_free_table, NULL);
+	g_ptr_array_free(sql->tables, TRUE);
 
-	for (i=0;i<sql->num_columns;i++) {
-		c = g_ptr_array_index(sql->columns,i);
-		if (c->name) g_free(c->name);
-	}
-	for (i=0;i<sql->num_tables;i++) {
-		t = g_ptr_array_index(sql->tables,i);
-		if (t->name) g_free(t->name);
-	}
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
 		sql->sarg_tree = NULL;
 	}
 	g_list_free(sql->sarg_stack);
 	sql->sarg_stack = NULL;
-	g_ptr_array_free(sql->columns,TRUE);
-	g_ptr_array_free(sql->tables,TRUE);
+
 	if (sql->mdb) {
 		mdb_close(sql->mdb);
 	}
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
-	unsigned int i;
-	MdbSQLColumn *c;
-	MdbSQLTable *t;
-
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
 		mdb_free_tabledef(sql->cur_table);
 		sql->cur_table = NULL;
 	}
+
 	if (sql->kludge_ttable_pg) {
 		g_free(sql->kludge_ttable_pg);
 		sql->kludge_ttable_pg = NULL;
 	}
-	for (i=0;i<sql->num_columns;i++) {
-		c = g_ptr_array_index(sql->columns,i);
-		mdb_sql_free_column(c);
-	}
-	for (i=0;i<sql->num_tables;i++) {
-		t = g_ptr_array_index(sql->tables,i);
-		mdb_sql_free_table(t);
-	}
+
+	/* Reset columns */
+	g_ptr_array_foreach(sql->columns, mdb_sql_free_column, NULL);
+	g_ptr_array_free(sql->columns, TRUE);
+	sql->num_columns = 0;
+	sql->columns = g_ptr_array_new();
+
+	/* Reset tables */
+	g_ptr_array_foreach(sql->tables, mdb_sql_free_table, NULL);
+	g_ptr_array_free(sql->tables, TRUE);
+	sql->num_tables = 0;
+	sql->tables = g_ptr_array_new();
+
+	/* Reset sargs */
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
 		sql->sarg_tree = NULL;
 	}
 	g_list_free(sql->sarg_stack);
 	sql->sarg_stack = NULL;
-	g_ptr_array_free(sql->columns,TRUE);
-	g_ptr_array_free(sql->tables,TRUE);
 
 	sql->all_columns = 0;
-	sql->num_columns = 0;
-	sql->columns = g_ptr_array_new();
-	sql->num_tables = 0;
-	sql->tables = g_ptr_array_new();
 	sql->max_rows = -1;
 }
 static void print_break(int sz, int first)
@@ -540,16 +519,15 @@ void mdb_sql_listtables(MdbSQL *sql)
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {
      		entry = g_ptr_array_index (mdb->catalog, i);
-     		/* if it's a table */
-     		if (entry->object_type == MDB_TABLE) {
-       			if (strncmp (entry->object_name, "MSys", 4)) {
-          			//col = g_ptr_array_index(table->columns,0);
-				tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, tmpstr);
-				mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
-				row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
-				mdb_add_row_to_pg(ttable,row_buffer, row_size);
-				ttable->num_rows++;
-			}
+     		/* only list user tables */
+     		if ((entry->object_type == MDB_TABLE)
+		 && (strncmp (entry->object_name, "MSys", 4))) {
+          		//col = g_ptr_array_index(table->columns,0);
+			tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, tmpstr);
+			mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
+			row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
+			mdb_add_row_to_pg(ttable,row_buffer, row_size);
+			ttable->num_rows++;
 		}
 	}
 	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
@@ -687,11 +665,8 @@ int found = 0;
 
 	if (sql->all_columns) {
 		for (i=0;i<table->num_cols;i++) {
-			col=g_ptr_array_index(table->columns,i);
-			sqlcol = mdb_sql_alloc_column();
-			sqlcol->name = g_strdup(col->name);
-			g_ptr_array_add(sql->columns, sqlcol);
-			sql->num_columns++;
+			col = g_ptr_array_index(table->columns,i);
+			mdb_sql_add_column(sql, col->name);
 		}
 	}
 	/* verify all specified columns exist in this table */
