@@ -76,6 +76,7 @@ fprintf(stdout,"\n");
 		}
 		if (mdb->jet_version==MDB_VER_JET4) i++;
 	}
+	//fprintf(stderr,"name: %s type: %d\n",entry->object_name, entry->object_type);
 	entry->object_name[j] = '\0';
 	entry->kkd_pg = mdb_get_int16(mdb,offset+31+strlen(entry->object_name)+7);
 	entry->kkd_rowid = mdb->pg_buf[offset+31+strlen(entry->object_name)+6];
@@ -138,7 +139,7 @@ int next_pg, next_pg_off;
 		if (mdb->pg_buf[0]==0x01 && 
 		mdb->pg_buf[1]==0x01 &&
 		mdb_get_int32(mdb,4)==2) {
-			/* fprintf(stderr,"cat page %d\n", next_pg); */
+			// fprintf(stderr,"cat page %d\n", next_pg);
 			rows = mdb_catalog_rows(mdb);
 			for (i=0;i<rows;i++) {
 				if (mdb->pg_buf[11 + 2 * i] & 0x40) continue;

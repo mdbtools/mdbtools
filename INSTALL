@@ -1,7 +1,6 @@
 Basic Installation
 ==================
 
-   $ cd src
    $ ./configure 
    $ make 
 

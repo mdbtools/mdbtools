@@ -246,7 +246,7 @@ MdbHandle *mdb = entry->mdb;
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
 	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb, 4)!=entry->table_pg);
-	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
+	/*fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg);  */
 	return table->cur_phys_pg;
 }
 int mdb_rewind_table(MdbTableDef *table)

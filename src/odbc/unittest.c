@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.3 2001/07/25 01:55:43 brianb Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.4 2001/09/29 00:16:16 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -185,7 +185,8 @@ int i;
 				szSqlState, szErrorMsg);
 			exit(1);
 		}		
-		SQLBindCol(hstmt, 2, SQL_CHAR, szCol1, 60, NULL);
+		//SQLBindCol(hstmt, 2, SQL_CHAR, szCol1, 60, NULL);
+		SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
 	
 		/* Execute statement with first row. */
 

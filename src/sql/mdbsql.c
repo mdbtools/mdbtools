@@ -229,6 +229,10 @@ MdbSQLColumn *c;
 MdbSQLTable *t;
 MdbSQLSarg *sql_sarg;
 
+	if (sql->cur_table) {
+		mdb_free_tabledef(sql->cur_table);
+		sql->cur_table = NULL;
+	}
 	for (i=0;i<sql->num_columns;i++) {
 		c = g_ptr_array_index(sql->columns,i);
 		if (c->name) g_free(c->name);
@@ -377,7 +381,6 @@ char colsize[11];
 
 	/* the column and table names are no good now */
 	mdb_sql_reset(sql);
-
 }
 void mdb_sql_select(MdbSQL *sql)
 {

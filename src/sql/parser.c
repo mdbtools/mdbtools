@@ -25,7 +25,7 @@
 
 #line 1 "parser.y"
 
-/* MDB Tools - A library for reading MS Access database file
+/* MDB Tools - A library for reading MS Access database files
  * Copyright (C) 2000 Brian Bruns
  *
  * This library is free software; you can redistribute it and/or
