@@ -142,18 +142,17 @@ read_pg_if_16(MdbHandle *mdb, int *cur_pos)
 guint16 
 read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len)
 {
-	int half;
-
 	if (*cur_pos + len < mdb->fmt->pg_size) {
 		memcpy(buf, &mdb->pg_buf[*cur_pos], len);
 		return 0;
+	} else {
+		int half = mdb->fmt->pg_size - *cur_pos;
+		memcpy(buf, &mdb->pg_buf[*cur_pos], half);
+		mdb_read_pg(mdb, mdb_pg_get_int32(mdb,4));
+		memcpy(buf + half, &mdb->pg_buf[8], len - half);
+		*cur_pos = 8 - half;
+		return 1;
 	}
-	half = (mdb->fmt->pg_size - *cur_pos - 1);
-	memcpy(buf, &mdb->pg_buf[*cur_pos], half);
-	mdb_read_pg(mdb, mdb_pg_get_int32(mdb,4));
-	memcpy(buf, &mdb->pg_buf[8], len - half);
-	*cur_pos = 8 - (mdb->fmt->pg_size - (*cur_pos));
-	return 1;
 }
 
 GPtrArray *mdb_read_columns(MdbTableDef *table)
@@ -187,7 +186,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
 
-		read_pg_if(mdb, &cur_col, cur_col + fmt->col_num_offset); // col_num_offset == 1 or 5
+		read_pg_if(mdb, &cur_col, fmt->col_num_offset); // col_num_offset == 1 or 5
 		col.col_num = mdb->pg_buf[cur_col + fmt->col_num_offset];
 
 		//fprintf(stdout,"----- column %d -----\n",col.col_num);
