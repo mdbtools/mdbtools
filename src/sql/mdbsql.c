@@ -71,28 +71,51 @@ MdbSQL *sql;
 	return sql;
 }
 
-int _parse(MdbSQL *sql, char *buf)
-{
-	g_input_ptr = buf;
+#ifndef _
+#define _(x) x
+#endif
+
+void mdb_sql_bind_all (MdbSQL*);
+
+/**
+ * mdb_sql_run_query:
+ * @sql: MDB SQL object to execute the query on.
+ * @querystr: SQL query string to execute.
+ *
+ * Parses @querystr and executes it within the given @sql object.
+ *
+ * Returns: the updated MDB SQL object, or NULL on error
+ **/
+MdbSQL*
+mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
+	g_return_val_if_fail (sql, NULL);
+	g_return_val_if_fail (querystr, NULL);
+
+	g_input_ptr = (gchar*) querystr;
+
+	/* calls to yyparse should be serialized for thread safety */
+
 	/* begin unsafe */
-	_mdb_sql(sql);
+	_mdb_sql (sql);
 	if (yyparse()) {
 		/* end unsafe */
-		mdb_sql_reset(sql);
-		return 0;
-	} else {
-		return 1;
+		mdb_sql_error (_("Could not parse '%s' command"), querystr);
+		mdb_sql_reset (sql);
+		return NULL;
 	}
-}
-int mdb_run_query(MdbSQL *sql, char *query)
-{
-	if (_parse(sql,query) && sql->cur_table) {
-		mdb_sql_bind_all(sql);
-		return 1;
-	} else {
-		return 0;
+
+	if (sql->cur_table == NULL) {
+		/* Invalid column name? (should get caught by mdb_sql_select,
+		 * but it appeared to happen anyway with 0.5) */
+		mdb_sql_error (_("Got no result for '%s' command"), querystr);
+		return NULL;
 	}
+
+	mdb_sql_bind_all (sql);
+
+	return sql;
 }
+
 void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
 {
 	sql->max_rows = maxrow;

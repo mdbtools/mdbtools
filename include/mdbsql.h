@@ -67,7 +67,7 @@ extern void mdb_sql_add_and(MdbSQL *sql);
 extern void mdb_sql_listtables(MdbSQL *sql);
 extern void mdb_sql_add_not(MdbSQL *sql);
 extern void mdb_sql_describe_table(MdbSQL *sql);
-extern int mdb_sql_run_query(MdbSQL *sql, char *query);
+extern MdbSQL* mdb_sql_run_query (MdbSQL*, const gchar*);
 extern void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow);
 extern int mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2);
 extern void mdb_sql_bind_all(MdbSQL *sql);
