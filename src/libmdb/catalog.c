@@ -57,7 +57,7 @@ char objname[256];
 char tobjtype[256];
 int type;
 
- mdb_free_catalog(mdb);
+ if (mdb->catalog) mdb_free_catalog(mdb);
  mdb_alloc_catalog(mdb);
  mdb->num_catalog = 0;
 
