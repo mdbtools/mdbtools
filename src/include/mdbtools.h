@@ -35,6 +35,10 @@
 #define MDB_MEMO_OVERHEAD 12
 
 enum {
+	MDB_VER_JET3 = 0,
+	MDB_VER_JET4 = 1
+};
+enum {
 	MDB_FORM = 0,
 	MDB_TABLE,
 	MDB_MACRO,
@@ -73,6 +77,8 @@ typedef struct {
 	int		num_catalog;
 	GArray		*catalog;
 	int		pg_size;
+	guint32		jet_version;
+	guint32		db_key;
 } MdbHandle; 
 
 typedef struct {

@@ -114,18 +114,18 @@ The header to table definition pages start look something like this:
 | ???? | 2 bytes | generally same as # of cols but not always             |
 | ???? | 2 bytes | ???                                                    |
 | ???? | 2 bytes | number of columns in table                             |
-| ???? | 4 bytes | number of data pages in table                          |
-| ???? | 4 bytes | number of data pages in table (repeat)                 |
+| ???? | 4 bytes | number of indexes for this table                       |
+| ???? | 4 bytes | number of indexes for this table (repeat)              |
 | 0x00 | 1 byte  | ???                                                    |
 | ???? | 2 bytes | page number of first datapage for table                |
 | ???? | 2 bytes | ???                                                    |
 | ???? | 2 bytes | page number of first datapage for table                |
 | 0x00 | 1 byte  | ???                                                    |
 +-------------------------------------------------------------------------+
-| Iterate for the 2 x number of datapages                                 |
+| Iterate for the 2 x number of indexes                                   |
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | number of rows in table                                |
-| ???? | 4 bytes | ???                                                    |
+| ???? | 4 bytes | number of rows in the index                            |
 +-------------------------------------------------------------------------+
 
 The next few bytes are somewhat of a mystery right now, but around 0x2B from 
@@ -153,6 +153,11 @@ Column Type may be one of the following (not complete).
 
 Following the 18 byte column records begins the column names, listed in order
 with a 1 byte size prefix preceding each name.
+
+After a number of bytes (generally 0x3a) the names of the indexes are listed.
+
+It is currently unknown how indexes are mapped to columns and how they point at
+index pages or the format of the index pages.
 
 Data Rows
 ---------
