@@ -50,13 +50,12 @@ int  opt;
 	if (!(mdb = mdb_open(argv[optind]))) {
 		exit(1);
 	}
-	switch (mdb->jet_version) {
-		case MDB_VER_JET3:
-			printf("JET3\n");
-			break;
-		case MDB_VER_JET4:
-			printf("JET4\n");
-			break;
+	if (IS_JET3(mdb)) {
+		printf("JET3\n");
+	} else if (IS_JET4(mdb)) {
+		printf("JET4\n");
+	} else {
+		printf("unknown\n");
 	}
 	
 	mdb_free_handle(mdb);

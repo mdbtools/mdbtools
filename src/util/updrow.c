@@ -45,7 +45,7 @@ int len;
 	}
 	
 	mdb_init();
-	mdb = mdb_open(argv[1]);
+	mdb = _mdb_open(argv[1], TRUE);
 	tabname = argv[2];
 	sargname = argv[3];
 	updstr = strdup(argv[4]);
@@ -64,8 +64,10 @@ int len;
 				colval = strtok(NULL,"=");
 				bind_column(table, colname, data, &len);
 				read_to_row(table, sargname);
-				mdb_update_row(table);
 				printf("current value of %s is %s, changing to %s\n", colname, data, colval);
+				len = strlen(colval);
+				strcpy(data,colval);
+				mdb_update_row(table);
 		}
 	}
 

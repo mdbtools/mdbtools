@@ -92,6 +92,15 @@ enum {
 	MDB_DESC
 };
 
+enum {
+	MDB_IDX_UNIQUE = 0x01,
+	MDB_IDX_IGNORENULLS = 0x02,
+	MDB_IDX_REQUIRED = 0x08 
+};
+
+#define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4)
+#define IS_JET3(mdb) (mdb->f->jet_version==MDB_VER_JET3)
+
 /* hash to store registered backends */
 GHashTable	*mdb_backends;
 
@@ -101,24 +110,19 @@ typedef struct {
 
 typedef struct {
 	int           fd;
+	gboolean      writable;
 	char          *filename;
-	guint16       cur_pg;
-	guint16       row_num;
-	unsigned int  cur_pos;
-	unsigned char pg_buf[MDB_PGSIZE];
-	unsigned char alt_pg_buf[MDB_PGSIZE];
-	int		num_catalog;
-	GPtrArray		*catalog;
-	int		pg_size;
 	guint32		jet_version;
 	guint32		db_key;
 	char		db_passwd[14];
-	MdbBackend	*default_backend;
-	char			*backend_name;
 	/* free map */
 	int  map_sz;
 	unsigned char *free_map;
-	/* offset to row count on data pages...version dependant */
+} MdbFile; 
+
+/* offset to row count on data pages...version dependant */
+typedef struct {
+	int		pg_size;
 	guint16		row_count_offset; 
 	guint16		tab_num_rows_offset;
 	guint16		tab_num_cols_offset;
@@ -129,9 +133,23 @@ typedef struct {
 	guint16		tab_cols_start_offset;
 	guint16		tab_ridx_entry_size;
 	guint16		col_fixed_offset;
-	guint16		col_num_offset;
 	guint16		col_size_offset;
+	guint16		col_num_offset;
 	guint16		tab_col_entry_size;
+} MdbFormatConstants; 
+
+typedef struct {
+	MdbFile       *f;
+	guint16       cur_pg;
+	guint16       row_num;
+	unsigned int  cur_pos;
+	unsigned char pg_buf[MDB_PGSIZE];
+	unsigned char alt_pg_buf[MDB_PGSIZE];
+	int		num_catalog;
+	GPtrArray	*catalog;
+	MdbBackend	*default_backend;
+	char		*backend_name;
+	MdbFormatConstants *fmt;
 } MdbHandle; 
 
 typedef struct {
@@ -166,6 +184,9 @@ typedef struct {
 	int  map_sz;
 	unsigned char *usage_map;
 	/* */
+	int  idxmap_base_pg;
+	int  idxmap_sz;
+	unsigned char *idx_usage_map;
 } MdbTableDef;
 
 typedef struct {
@@ -177,6 +198,7 @@ typedef struct {
 	int		num_keys;
 	short	key_col_num[MDB_MAX_IDX_COLS];
 	unsigned char	key_col_order[MDB_MAX_IDX_COLS];
+	unsigned char	flags;
 } MdbIndex;
 
 typedef struct {
@@ -212,6 +234,7 @@ typedef struct {
 	int	op;
 	MdbAny	value;
 } MdbSarg;
+
 
 /* mem.c */
 extern void mdb_init();

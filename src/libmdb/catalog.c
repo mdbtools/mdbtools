@@ -111,7 +111,7 @@ int i,j;
 	if (rowid < 0 || rowid > rows) return NULL;
 
 	offset = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + 2 * rowid);
-	if (mdb->jet_version==MDB_VER_JET4) offset++;
+	if (IS_JET4(mdb)) offset++;
 	/* 
 	** ??? this happens, don't know what it means 
 	*/
@@ -132,7 +132,7 @@ fprintf(stdout,"\n");
 		if (j<=MDB_MAX_OBJ_NAME) {
 			entry->object_name[j++]=mdb->pg_buf[i];
 		}
-		if (mdb->jet_version==MDB_VER_JET4) i++;
+		if (IS_JET4(mdb)) i++;
 	}
 	//fprintf(stderr,"name: %s type: %d\n",entry->object_name, entry->object_type);
 	//fprintf(stderr,"cur page: %d row; %d\n", entry->table_pg, rowid);

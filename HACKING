@@ -193,13 +193,14 @@ with the next_pg pointer.
 | ???? | 1 byte  | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column                       |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (30+5 = 35 bytes)                |
+| Iterate for the number of num_real_idx (30+9 = 39 bytes)                |
 +-------------------------------------------------------------------------+
 |     Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
 +-------------------------------------------------------------------------+
 | ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
 | ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
 +-------------------------------------------------------------------------+
+| ???? | 4 bytes | unknown     |                                          |
 | ???? | 4 bytes | first_dp    | Data pointer of the index page           |
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 +-------------------------------------------------------------------------+
@@ -361,6 +362,10 @@ Each data row looks like this (JET3):
 Note: For boolean fixed columns, the values are in null_table[]:
 0 indicates a false value
 1 indicates a true value
+
+An 0xFF stored in the var_table indicates that this column has been deleted.
+
+Note: A row will always have the number of fixed columns as specified in the table definition, but may have less variable columns, as rows are not updated when columns are added.
 
 In Access 2000 (JET4) data rows are like this
 

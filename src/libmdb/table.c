@@ -44,6 +44,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 {
 MdbTableDef *table;
 MdbHandle *mdb = entry->mdb;
+MdbFormatConstants *fmt = mdb->fmt;
 int len, i;
 int rownum, row_start, row_end;
 
@@ -52,16 +53,16 @@ int rownum, row_start, row_end;
 	mdb_read_pg(mdb, entry->table_pg);
 	len = mdb_get_int16(mdb,8);
 
-	table->num_rows = mdb_get_int32(mdb, mdb->tab_num_rows_offset);
-	table->num_cols = mdb_get_int16(mdb, mdb->tab_num_cols_offset);
-	table->num_idxs = mdb_get_int32(mdb, mdb->tab_num_idxs_offset); 
-	table->num_real_idxs = mdb_get_int32(mdb, mdb->tab_num_ridxs_offset); 
+	table->num_rows = mdb_get_int32(mdb, fmt->tab_num_rows_offset);
+	table->num_cols = mdb_get_int16(mdb, fmt->tab_num_cols_offset);
+	table->num_idxs = mdb_get_int32(mdb, fmt->tab_num_idxs_offset); 
+	table->num_real_idxs = mdb_get_int32(mdb, fmt->tab_num_ridxs_offset); 
 
 	/* grab a copy of the usage map */
-	rownum = mdb->pg_buf[mdb->tab_usage_map_offset];
-	mdb_read_alt_pg(mdb, mdb_get_int24(mdb, mdb->tab_usage_map_offset + 1)); 
+	rownum = mdb->pg_buf[fmt->tab_usage_map_offset];
+	mdb_read_alt_pg(mdb, mdb_get_int24(mdb, fmt->tab_usage_map_offset + 1)); 
 	mdb_swap_pgbuf(mdb);
-	row_start = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + (rownum*2));
+	row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
    row_end = mdb_find_end_of_row(mdb, rownum);
 	table->map_sz = row_end - row_start + 1;
 	table->usage_map = malloc(table->map_sz);
@@ -72,11 +73,11 @@ int rownum, row_start, row_end;
 	/* swap back */
 	mdb_swap_pgbuf(mdb);
 #if MDB_DEBUG_USAGE
-	printf ("usage map found on page %ld start %d end %d\n", mdb_get_int24(mdb, mdb->tab_usage_map_offset + 1), row_start, row_end);
+	printf ("usage map found on page %ld start %d end %d\n", mdb_get_int24(mdb, fmt->tab_usage_map_offset + 1), row_start, row_end);
 #endif
 
 
-	table->first_data_pg = mdb_get_int16(mdb, mdb->tab_first_dpg_offset);
+	table->first_data_pg = mdb_get_int16(mdb, fmt->tab_first_dpg_offset);
 
 	return table;
 }
@@ -87,9 +88,9 @@ int rownum, row_start, row_end;
 */ 
 static int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
 {
-	if (*cur_pos + offset >= mdb->pg_size) {
+	if (*cur_pos + offset >= mdb->fmt->pg_size) {
 		mdb_read_pg(mdb, mdb_get_int32(mdb,4));
-		*cur_pos = 8 - (mdb->pg_size - (*cur_pos));
+		*cur_pos = 8 - (mdb->fmt->pg_size - (*cur_pos));
 		return 1;
 	}
 	return 0;
@@ -98,6 +99,7 @@ static int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
 GPtrArray *mdb_read_columns(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
+MdbFormatConstants *fmt = mdb->fmt;
 MdbColumn col, *pcol;
 int len, i,j;
 unsigned char low_byte, high_byte;
@@ -109,8 +111,8 @@ GSList	*slist = NULL;
 	
 	table->columns = g_ptr_array_new();
 
-	cur_col = mdb->tab_cols_start_offset + 
-		(table->num_real_idxs * mdb->tab_ridx_entry_size);
+	cur_col = fmt->tab_cols_start_offset + 
+		(table->num_real_idxs * fmt->tab_ridx_entry_size);
 
 	/* new code based on patch submitted by Tim Nelson 2000.09.27 */
 
@@ -123,7 +125,7 @@ GSList	*slist = NULL;
 	buffer_dump(mdb->pg_buf, cur_col ,cur_col + 18); */
 #endif
 		memset(&col, 0, sizeof(col));
-		col.col_num = mdb->pg_buf[cur_col + mdb->col_num_offset];
+		col.col_num = mdb->pg_buf[cur_col + fmt->col_num_offset];
 
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
@@ -134,20 +136,20 @@ GSList	*slist = NULL;
 		}
 
 		read_pg_if(mdb, &cur_col, 13);
-		col.is_fixed = mdb->pg_buf[cur_col + mdb->col_fixed_offset] & 
+		col.is_fixed = mdb->pg_buf[cur_col + fmt->col_fixed_offset] & 
 			0x01 ? 1 : 0;
 		if (col.col_type != MDB_BOOL) {
 			read_pg_if(mdb, &cur_col, 17);
-			low_byte = mdb->pg_buf[cur_col + mdb->col_size_offset];
+			low_byte = mdb->pg_buf[cur_col + fmt->col_size_offset];
 			read_pg_if(mdb, &cur_col, 18);
-			high_byte = mdb->pg_buf[cur_col + mdb->col_size_offset + 1];
+			high_byte = mdb->pg_buf[cur_col + fmt->col_size_offset + 1];
 			col.col_size += high_byte * 256 + low_byte;
 		} else
 			col.col_size=0;
 		
 		pcol = g_memdup(&col, sizeof(MdbColumn));
 		slist = g_slist_insert_sorted(slist,pcol,(GCompareFunc)mdb_col_comparer);
-		cur_col += mdb->tab_col_entry_size;
+		cur_col += fmt->tab_col_entry_size;
 	}
 
 	cur_name = cur_col;
@@ -163,12 +165,12 @@ GSList	*slist = NULL;
 		read_pg_if(mdb, &cur_name, 0);
 		name_sz = mdb->pg_buf[cur_name];
 		
-		if (mdb->jet_version==MDB_VER_JET4) {
+		if (IS_JET4(mdb)) {
 			/* FIX ME - for now just skip the high order byte */
 			cur_name += 2;
 			/* determine amount of name on this page */
-			len = ((cur_name + name_sz) > mdb->pg_size) ? 
-				mdb->pg_size - cur_name :
+			len = ((cur_name + name_sz) > fmt->pg_size) ? 
+				fmt->pg_size - cur_name :
 				name_sz;
 	
 			/* strip high order (second) byte from unicode string */
@@ -179,7 +181,7 @@ GSList	*slist = NULL;
 			if (len < name_sz) {
 				/* read the next pg */
 				mdb_read_pg(mdb, mdb_get_int32(mdb,4)); 
-				cur_name = 8 - (mdb->pg_size - cur_name);
+				cur_name = 8 - (fmt->pg_size - cur_name);
 				if (len % 2) cur_name++;
 				/* get the rest of the name */
 				for (j=0;j<len;j+=2) {
@@ -189,10 +191,10 @@ GSList	*slist = NULL;
 			pcol->name[name_sz]='\0';
 
 			cur_name += name_sz;
-		} else if (mdb->jet_version==MDB_VER_JET3) {
+		} else if (IS_JET3(mdb)) {
 			/* determine amount of name on this page */
-			len = ((cur_name + name_sz) > mdb->pg_size) ? 
-				mdb->pg_size - cur_name :
+			len = ((cur_name + name_sz) > fmt->pg_size) ? 
+				fmt->pg_size - cur_name :
 				name_sz;
 	
 			if (len) {
@@ -202,7 +204,7 @@ GSList	*slist = NULL;
 			if (len < name_sz) {
 				/* read the next pg */
 				mdb_read_pg(mdb, mdb_get_int32(mdb,4)); 
-				cur_name = 8 - (mdb->pg_size - cur_name);
+				cur_name = 8 - (fmt->pg_size - cur_name);
 				/* get the rest of the name */
 				memcpy(&pcol->name[len], &mdb->pg_buf[cur_name], name_sz - len);
 			}
@@ -229,6 +231,7 @@ void mdb_table_dump(MdbCatalogEntry *entry)
 {
 MdbTableDef *table;
 MdbColumn *col;
+int coln;
 MdbIndex *idx;
 MdbHandle *mdb = entry->mdb;
 int i,bitn;
@@ -258,12 +261,20 @@ int pgnum;
 		mdb_index_dump(table, idx);
 	}
 	if (table->usage_map) {
+		printf("pages reserved by this object\n",pgnum);
 		pgnum = _mdb_get_int32(table->usage_map,1);
 		/* the first 5 bytes of the usage map mean something */
+		coln = 0;
 		for (i=5;i<table->map_sz;i++) {
 			for (bitn=0;bitn<8;bitn++) {
-				if (table->usage_map[i] & 1 << bitn) 
-					printf("page %ld is reserved by this object\n",pgnum);
+				if (table->usage_map[i] & 1 << bitn) {
+					coln++;
+					printf("%6ld ",pgnum);
+					if (coln==10) {
+						printf("\n");
+						coln = 0;
+					}
+				}
 				pgnum++;
 			}
 		}

@@ -19,20 +19,35 @@
 
 #include "mdbtools.h"
 
+MdbFormatConstants MdbJet4Constants = {
+	4096, 0x0c, 12, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25
+};
+MdbFormatConstants MdbJet3Constants = {
+	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18
+};
+
 static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
 
-MdbHandle *mdb_open(char *filename)
+MdbHandle *_mdb_open(char *filename, gboolean writable)
 {
 MdbHandle *mdb;
 int key[] = {0x86, 0xfb, 0xec, 0x37, 0x5d, 0x44, 0x9c, 0xfa, 0xc6, 0x5e, 0x28, 0xe6, 0x13, 0xb6};
 int j,pos;
 
 	mdb = mdb_alloc_handle();
-	mdb->filename = (char *) malloc(strlen(filename)+1);
-	strcpy(mdb->filename, filename);
-	mdb->fd = open(filename,O_RDONLY);
+	/* need something to bootstrap with, reassign after page 0 is read */
+	mdb->fmt = &MdbJet3Constants;
+	mdb->f = mdb_alloc_file();
+	mdb->f->filename = (char *) malloc(strlen(filename)+1);
+	strcpy(mdb->f->filename, filename);
+	if (writable) {
+		mdb->f->writable = TRUE;
+		mdb->f->fd = open(filename,O_RDWR);
+	} else {
+		mdb->f->fd = open(filename,O_RDONLY);
+	}
 
-	if (mdb->fd==-1) {
+	if (mdb->f->fd==-1) {
 		/* fprintf(stderr,"Couldn't open file %s\n",filename); */
 		return NULL;
 	}
@@ -40,42 +55,16 @@ int j,pos;
 		fprintf(stderr,"Couldn't read first page.\n");
 		return NULL;
 	}
-	mdb->jet_version = mdb_get_int32(mdb, 0x14);
-	if (mdb->jet_version == MDB_VER_JET4) {
-		mdb->pg_size = 4096;
-		mdb->row_count_offset = 0x0c;
-		mdb->tab_num_rows_offset = 12;
-		mdb->tab_num_cols_offset = 45;
-		mdb->tab_num_idxs_offset = 47;
-		mdb->tab_num_ridxs_offset = 51;
-		mdb->tab_usage_map_offset = 55;
-		mdb->tab_first_dpg_offset = 56;
-		mdb->tab_cols_start_offset = 63;
-		mdb->tab_ridx_entry_size = 12;
-		mdb->col_fixed_offset = 15;
-		mdb->col_size_offset = 23;
-		mdb->col_num_offset = 5;
-		mdb->tab_col_entry_size = 25;
+	mdb->f->jet_version = mdb_get_int32(mdb, 0x14);
+	if (IS_JET4(mdb)) {
+		mdb->fmt = &MdbJet4Constants;
 	} else {
-		mdb->pg_size = 2048;
-		mdb->row_count_offset = 0x08;
-		mdb->tab_num_rows_offset = 12;
-		mdb->tab_num_cols_offset = 25;
-		mdb->tab_num_idxs_offset = 27;
-		mdb->tab_num_ridxs_offset = 31;
-		mdb->tab_usage_map_offset = 35;
-		mdb->tab_first_dpg_offset = 36;
-		mdb->tab_cols_start_offset = 43;
-		mdb->tab_ridx_entry_size = 8;
-		mdb->col_fixed_offset = 13;
-		mdb->col_size_offset = 16;
-		mdb->col_num_offset = 1;
-		mdb->tab_col_entry_size = 18;
+		mdb->fmt = &MdbJet3Constants;
 	}
 
 	/* get the db encryption key and xor it back to clear text */
-	mdb->db_key = mdb_get_int32(mdb, 0x3e);
-	mdb->db_key ^= 0xe15e01b9;
+	mdb->f->db_key = mdb_get_int32(mdb, 0x3e);
+	mdb->f->db_key ^= 0xe15e01b9;
 
 
 	/* get the db password located at 0x42 bytes into the file */
@@ -83,22 +72,22 @@ int j,pos;
 		j = mdb_get_int32(mdb,0x42+pos);
 		j ^= key[pos];
 		if ( j != 0)
-			mdb->db_passwd[pos] = j;
+			mdb->f->db_passwd[pos] = j;
 		else
-			mdb->db_passwd[pos] = '\0';
+			mdb->f->db_passwd[pos] = '\0';
         }
 
 	return mdb;
 }
+MdbHandle *mdb_open(char *filename)
+{
+	return _mdb_open(filename, FALSE);
+}
 
 void mdb_close(MdbHandle *mdb)
 {
-	if (mdb->fd > 0) {
-		close(mdb->fd);
-		if (mdb->filename) {
-			free(mdb->filename);
-			mdb->filename = NULL;
-		}
+	if (mdb->f) {
+		mdb_free_file(mdb->f);
 	}
 }
 
@@ -125,21 +114,21 @@ static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long 
 {
 size_t len;
 struct stat status;
-off_t offset = pg * mdb->pg_size;
+off_t offset = pg * mdb->fmt->pg_size;
 
-        fstat(mdb->fd, &status);
+        fstat(mdb->f->fd, &status);
         if (status.st_size < offset) { 
                 fprintf(stderr,"offset %lu is beyond EOF\n",offset);
                 return 0;
         }
-	lseek(mdb->fd, offset, SEEK_SET);
-	len = read(mdb->fd,pg_buf,mdb->pg_size);
+	lseek(mdb->f->fd, offset, SEEK_SET);
+	len = read(mdb->f->fd,pg_buf,mdb->fmt->pg_size);
 	if (len==-1) {
 		perror("read");
 		return 0;
 	}
-	else if (len<mdb->pg_size) {
-		/* fprintf(stderr,"EOF reached %d bytes returned.\n",len, mdb->pg_size); */
+	else if (len<mdb->fmt->pg_size) {
+		/* fprintf(stderr,"EOF reached %d bytes returned.\n",len, mdb->fmt->pg_size); */
 		return 0;
 	} 
 	return len;
@@ -160,14 +149,18 @@ unsigned char c;
 	mdb->cur_pos++;
 	return c;
 }
+int _mdb_get_int16(unsigned char *buf, int offset)
+{
+	return buf[offset+1]*256+buf[offset];
+}
 int mdb_get_int16(MdbHandle *mdb, int offset)
 {
 unsigned char *c;
 int           i;
 
-	if (offset < 0 || offset+2 > mdb->pg_size) return -1;
-	c = &mdb->pg_buf[offset];
-	i = c[1]*256+c[0];
+	if (offset < 0 || offset+2 > mdb->fmt->pg_size) return -1;
+
+	i = _mdb_get_int16(mdb->pg_buf, offset);
 
 	mdb->cur_pos+=2;
 	return i;
@@ -178,7 +171,7 @@ gint32 mdb_get_int24(MdbHandle *mdb, int offset)
 gint32 l;
 unsigned char *c;
 
-	if (offset <0 || offset+3 > mdb->pg_size) return -1;
+	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
 	c = &mdb->pg_buf[offset];
 	l =c[2]; l<<=8;
 	l+=c[1]; l<<=8;
@@ -204,7 +197,7 @@ long mdb_get_int32(MdbHandle *mdb, int offset)
 {
 long l;
 
-	if (offset <0 || offset+4 > mdb->pg_size) return -1;
+	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
 	l = _mdb_get_int32(mdb->pg_buf, offset);
 	mdb->cur_pos+=4;
@@ -216,7 +209,7 @@ float f, f2;
 unsigned char *c;
 int i;
 
-       if (offset <0 || offset+4 > mdb->pg_size) return -1;
+       if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
        memcpy(&f, &mdb->pg_buf[offset], 4);
 
@@ -237,7 +230,7 @@ double d, d2;
 unsigned char *c;
 int i;
 
-	if (offset <0 || offset+4 > mdb->pg_size) return -1;
+	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
 	memcpy(&d, &mdb->pg_buf[offset], 8);
 
@@ -254,7 +247,7 @@ int i;
 }
 int mdb_set_pos(MdbHandle *mdb, int pos)
 {
-	if (pos<0 || pos >= mdb->pg_size) return 0;
+	if (pos<0 || pos >= mdb->fmt->pg_size) return 0;
 
 	mdb->cur_pos=pos;
 	return pos;

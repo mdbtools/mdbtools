@@ -30,13 +30,28 @@ void mdb_exit()
 	g_hash_table_destroy(mdb_backends);
 }
 
+MdbFile *mdb_alloc_file()
+{
+MdbHandle *f;
+	f = (MdbFile *) malloc(sizeof(MdbFile));
+	memset(f, '\0', sizeof(MdbFile));
+
+	return f;	
+}
+void mdb_free_file(MdbFile *f)
+{
+	if (!f) return;	
+	if (f->fd) close(f->fd);
+	if (f->filename) free(f->filename);
+	free(f);
+}
+
 MdbHandle *mdb_alloc_handle()
 {
 MdbHandle *mdb;
 
 	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
 	memset(mdb, '\0', sizeof(MdbHandle));
-	mdb->pg_size = MDB_PGSIZE;
 	mdb_set_default_backend(mdb, "access");
 
 	return mdb;	
@@ -45,8 +60,8 @@ void mdb_free_handle(MdbHandle *mdb)
 {
 	if (!mdb) return;	
 
-	if (mdb->filename) free(mdb->filename);
 	if (mdb->catalog) mdb_free_catalog(mdb);
+	if (mdb->f) mdb_free_file(mdb->f);
 	if (mdb->backend_name) free(mdb->backend_name);
 	free(mdb);
 }

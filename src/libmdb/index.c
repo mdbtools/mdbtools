@@ -106,7 +106,8 @@ int name_sz;
 		pidx->num_keys = key_num;
 		cur_pos += 4;
 		pidx->first_pg = mdb_get_int32(mdb, cur_pos);
-		cur_pos += 5;
+		cur_pos += 4;
+		pidx->flags = mdb->pg_buf[cur_pos++];
 	}
 }
 void mdb_index_walk(MdbTableDef *table, MdbIndex *idx)
@@ -140,10 +141,11 @@ MdbColumn *col;
 	if (idx->index_type==1) fprintf(stdout,"index is a primary key\n");
 	for (i=0;i<idx->num_keys;i++) {
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
-		fprintf(stdout,"Column %s(%d) Sorted %s\n", 
+		fprintf(stdout,"Column %s(%d) Sorted %s Unique: %s\n", 
 			col->name,
 			idx->key_col_num[i], 
-			idx->key_col_order[i]==MDB_ASC ? "ascending" : "descending"
+			idx->key_col_order[i]==MDB_ASC ? "ascending" : "descending",
+			idx->flags & MDB_IDX_UNIQUE ? "Yes" : "No"
 			);
 	}
 	mdb_index_walk(table, idx);
