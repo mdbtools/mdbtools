@@ -106,6 +106,7 @@ int next_pg, next_pg_off;
 #if 0
 	next_pg = MDB_CATALOG_PG;
 	mdb_free_catalog(mdb);
+	mdb->num_catalog = 0;
 
 	while (next_pg) {
 		mdb_read_pg(mdb, next_pg);
@@ -126,6 +127,9 @@ int next_pg, next_pg_off;
 	}
 	return (mdb->catalog);
 #endif
+	mdb_free_catalog(mdb);
+	mdb->num_catalog = 0;
+
 	mdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
 	next_pg=0;
 	while (mdb_read_pg(mdb,next_pg)) {

@@ -33,7 +33,7 @@ int j,pos;
 	mdb->fd = open(filename,O_RDONLY);
 
 	if (mdb->fd==-1) {
-		fprintf(stderr,"Couldn't open file %s\n",filename);
+		/* fprintf(stderr,"Couldn't open file %s\n",filename); */
 		return NULL;
 	}
 	if (!mdb_read_pg(mdb, 0)) {

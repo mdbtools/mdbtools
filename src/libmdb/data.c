@@ -411,3 +411,39 @@ time_t t;
 	}
 	return NULL;
 }
+int mdb_col_disp_size(MdbColumn *col)
+{
+	switch (col->col_type) {
+		case MDB_BOOL:
+			return 1;
+		break;
+		case MDB_BYTE:
+			return 3;
+		break;
+		case MDB_INT:
+			return 5;
+		break;
+		case MDB_LONGINT:
+			return 7;
+		break;
+		case MDB_FLOAT:
+			return 10;
+		break;
+		case MDB_DOUBLE:
+			return 10;
+		break;
+		case MDB_TEXT:
+			return col->col_size;
+		break;
+		case MDB_SDATETIME:
+			return 20;
+		break;
+		case MDB_MEMO:
+			return 255; 
+		break;
+		case MDB_MONEY:
+			return 12;
+		break;
+	}
+	return 0;
+}
