@@ -155,7 +155,7 @@ int lastchar;
 			break;
 		case MDB_TEXT:
 			if (IS_JET4(mdb)) {
-				mdb_unicode2ascii(mdb, field->value, 0, field->siz, tmpbuf);
+				mdb_unicode2ascii(mdb, field->value, 0, field->siz, tmpbuf, 256);
 			} else {
 				strncpy(tmpbuf, field->value, 255);
 				lastchar = field->siz > 255 ? 255 : field->siz;

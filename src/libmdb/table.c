@@ -274,7 +274,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			cur_pos += 2;
 			tmp_buf = (char *) g_malloc(name_sz);
 			read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
-			mdb_unicode2ascii(mdb, tmp_buf, 0, name_sz, pcol->name);
+			mdb_unicode2ascii(mdb, tmp_buf, 0, name_sz, pcol->name, name_sz);
 			g_free(tmp_buf);
 			cur_pos += name_sz;
 		} else if (IS_JET3(mdb)) {

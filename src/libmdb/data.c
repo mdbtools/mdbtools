@@ -638,7 +638,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			strncpy(text, buf + row_start, len);
 			text[len]='\0';
 		} else {
-			mdb_unicode2ascii(mdb, buf, row_start, len, text);
+			mdb_unicode2ascii(mdb, buf, row_start, len, text, MDB_BIND_SIZE);
 		}
 		return text;
 	} else { /* if (memo_flags == 0x0000) { */
@@ -749,7 +749,7 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 				} 
 				fprintf(stdout, "\n");
 */
-				mdb_unicode2ascii(mdb, mdb->pg_buf, start, size, text);
+				mdb_unicode2ascii(mdb, mdb->pg_buf, start, size, text, MDB_BIND_SIZE);
 			} else {
 				strncpy(text, &buf[start], size);
 				text[size]='\0';

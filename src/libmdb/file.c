@@ -153,6 +153,7 @@ MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 		mdb_close(mdb);
 		return NULL; 
 	}
+	mdb_iconv_init(mdb);
 
 	return mdb;
 }
@@ -181,6 +182,8 @@ mdb_close(MdbHandle *mdb)
 			g_free(mdb->f);
 		}
 	}
+
+	mdb_iconv_close(mdb);
 
 	g_free(mdb);
 }
@@ -211,6 +214,8 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	if (mdb->f) {
 		mdb->f->refs++;
 	}
+	mdb_iconv_init(mdb);
+
 	return newmdb;
 }
 

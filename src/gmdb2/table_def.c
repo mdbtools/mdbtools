@@ -56,7 +56,7 @@ GtkStyle *style;
 	/* do we have an active window for this object? if so raise it */
 	for (i=0;i<g_list_length(window_list);i++) {
 		defw = g_list_nth_data(window_list, i);
-		if (!strcmp(defw->table_name, entry->object_name)) {
+		if (!strcmp(defw->table_name, entry->object_name) && entry->object_type == MDB_TABLE) {
 			gdk_window_raise (defw->window->window);
 			return defw->window;
 		}

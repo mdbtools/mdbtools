@@ -21,7 +21,7 @@
 #include "mdbtools.h"
 
 #define MSYSOBJECTS "MSysObjects"
-#define LVPROP "LvProp"
+#define LVPROP "Lv"
 
 #undef MDB_DEBUG
 //#define MDB_DEBUG 1
@@ -60,7 +60,7 @@ main(int argc, char **argv)
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
-	col_num = mdb_bind_column_by_name(table, LVPROP, buf);
+	col_num = mdb_bind_column_by_name(table, argv[optind+2], buf);
 	mdb_bind_len(table, col_num, &len);
 	mdb_bind_column_by_name(table, "Name", name);
 
@@ -68,6 +68,7 @@ main(int argc, char **argv)
 		if (!strcmp(name, argv[optind+1])) {
 			memcpy(kkd_ptr, buf, MDB_MEMO_OVERHEAD);
 			col=g_ptr_array_index(table->columns,col_num - 1);
+/*
 			len = mdb_ole_read(mdb, col, kkd_ptr, MDB_BIND_SIZE);
 			memcpy(kkd_pg, buf, len);
 			pos = len;
@@ -75,8 +76,10 @@ main(int argc, char **argv)
 				memcpy(&kkd_pg[pos], buf, len);
 				pos += len;
 			}
+*/
 			len = pos;
-			dump_kkd(kkd_pg, len);
+			buffer_dump(buf, 0, MDB_MEMO_OVERHEAD);
+			//dump_kkd(kkd_pg, len);
 		}
 	}
 

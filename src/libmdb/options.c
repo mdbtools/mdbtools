@@ -61,6 +61,7 @@ load_options()
 		opt = strtok(s, ":");
 		do {
         	if (!strcmp(opt, "use_index")) opts |= MDB_USE_INDEX;
+        	if (!strcmp(opt, "no_memo")) opts |= MDB_NO_MEMO;
         	if (!strcmp(opt, "debug_like")) opts |= MDB_DEBUG_LIKE;
         	if (!strcmp(opt, "debug_write")) opts |= MDB_DEBUG_WRITE;
         	if (!strcmp(opt, "debug_usage")) opts |= MDB_DEBUG_USAGE;

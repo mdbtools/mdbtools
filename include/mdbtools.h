@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#include <config.h>
 
 #ifdef HAVE_ICONV
 #include <iconv.h>
@@ -120,7 +121,8 @@ enum {
 	MDB_DEBUG_USAGE = 0x0004,
 	MDB_DEBUG_OLE = 0x0008,
 	MDB_DEBUG_ROW = 0x0010,
-	MDB_USE_INDEX = 0x0020
+	MDB_USE_INDEX = 0x0020,
+	MDB_NO_MEMO = 0x0040 /* don't follow memo fields */
 };
 
 #define mdb_is_logical_op(x) (x == MDB_OR || \
@@ -226,7 +228,9 @@ typedef struct {
 	MdbFormatConstants *fmt;
 	MdbStatistics *stats;
 #ifdef HAVE_ICONV
+	iconv_t	iconv_in;
 	iconv_t	iconv_out;
+	iconv_t	iconv_compress;
 #endif
 } MdbHandle; 
 
@@ -526,7 +530,7 @@ extern int mdb_get_option(unsigned long optnum);
 extern void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest);
-extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest);
+extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest, unsigned int dest_sz);
+extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest, unsigned int dest_sz);
 
 #endif /* _mdbtools_h_ */

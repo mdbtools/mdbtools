@@ -540,7 +540,7 @@ void mdb_sql_listtables(MdbSQL *sql)
      		entry = g_ptr_array_index (mdb->catalog, i);
      		if (mdb_is_user_table(entry)) {
           		//col = g_ptr_array_index(table->columns,0);
-			tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, tmpstr);
+			tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, strlen(entry->object_name), tmpstr, 100);
 			mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
 			row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
 			mdb_add_row_to_pg(ttable,row_buffer, row_size);
@@ -605,15 +605,15 @@ void mdb_sql_describe_table(MdbSQL *sql)
      for (i=0;i<table->num_cols;i++) {
 
         col = g_ptr_array_index(table->columns,i);
-		tmpsiz = mdb_ascii2unicode(mdb, col->name, 0, 100, col_name);
+		tmpsiz = mdb_ascii2unicode(mdb, col->name, 0, strlen(col->name), col_name, 100);
 		mdb_fill_temp_field(&fields[0],col_name, tmpsiz, 0,0,0,0);
 
 		strcpy(tmpstr, mdb_get_coltype_string(mdb->default_backend, col->col_type));
-		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, 100, col_type);
+		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, strlen(col->name), col_type, 100);
 		mdb_fill_temp_field(&fields[1],col_type, tmpsiz, 0,0,0,1);
 
 		sprintf(tmpstr,"%d",col->col_size);
-		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, 100, col_size);
+		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, strlen(tmpstr), col_size, 100);
 		mdb_fill_temp_field(&fields[2],col_size, tmpsiz, 0,0,0,2);
 
 		row_size = mdb_pack_row(ttable, row_buffer, 3, fields);
