@@ -1,7 +1,8 @@
-/* MDB Tools - A library for reading MS Access database files
+/* MDB Tools - A library for reading MS Access database file
  * Copyright (C) 2000 Brian Bruns
  *
- * This library is free software; you can redistribute it and/or
+ *
+ * This library is free software; you can redistribute it and/or 
  * modify it under the terms of the GNU Library General Public
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
@@ -19,41 +20,35 @@
 
 #include "mdbtools.h"
 
-MdbHandle *mdb_alloc_handle()
+main(int argc, char **argv)
 {
+int rows;
+int i;
+unsigned char buf[2048];
 MdbHandle *mdb;
-
-	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
-	memset(mdb, '\0', sizeof(MdbHandle));
-
-	return mdb;	
-}
-void mdb_free_handle(MdbHandle *mdb)
-{
-	if (!mdb) return;	
-
-	if (mdb->filename) free(mdb->filename);
-	if (mdb->catalog) mdb_free_catalog(mdb);
-	free(mdb);
-}
-void mdb_free_catalog(MdbHandle *mdb)
-{
-GList *l;
 MdbCatalogEntry entry;
-
-}
-MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
-{
 MdbTableDef *table;
+GList *l;
 
-	table = (MdbTableDef *) malloc(sizeof(MdbTableDef));
-	memset(table, '\0', sizeof(MdbTableDef));
-	table->entry=entry;
-	strcpy(table->name, entry->object_name);
 
-	return table;	
+	if (argc<2) {
+		fprintf(stderr,"Usage: prtable <file> <table>\n");
+		exit(1);
+	}
+	
+	mdb = mdb_open(argv[1]);
+
+	mdb_read_catalog(mdb, MDB_TABLE);
+
+	for (i=0;i<mdb->num_catalog;i++) {
+		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
+		if (!strcmp(entry.object_name,argv[2])) {
+				table = mdb_read_table(&entry);
+				mdb_read_columns(table);
+				mdb_data_dump(table);
+		}
+	}
+
+	mdb_free_handle(mdb);
 }
-void mdb_free_tabledef(MdbTableDef *table)
-{
-	if (table) free(table);
-}
+

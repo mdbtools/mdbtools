@@ -1,4 +1,4 @@
-/* MDB Tools - A library for reading MS Access database files
+/* MDB Tools - A library for reading MS Access database file
  * Copyright (C) 2000 Brian Bruns
  *
  * This library is free software; you can redistribute it and/or
@@ -19,41 +19,26 @@
 
 #include "mdbtools.h"
 
-MdbHandle *mdb_alloc_handle()
+
+void mdb_data_dump(MdbTableDef *table)
 {
-MdbHandle *mdb;
+MdbColumn col;
+MdbHandle *mdb = table->entry->mdb;
+int i, pg_num;
+int rows;
+int row_start, row_end;
 
-	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
-	memset(mdb, '\0', sizeof(MdbHandle));
-
-	return mdb;	
-}
-void mdb_free_handle(MdbHandle *mdb)
-{
-	if (!mdb) return;	
-
-	if (mdb->filename) free(mdb->filename);
-	if (mdb->catalog) mdb_free_catalog(mdb);
-	free(mdb);
-}
-void mdb_free_catalog(MdbHandle *mdb)
-{
-GList *l;
-MdbCatalogEntry entry;
-
-}
-MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
-{
-MdbTableDef *table;
-
-	table = (MdbTableDef *) malloc(sizeof(MdbTableDef));
-	memset(table, '\0', sizeof(MdbTableDef));
-	table->entry=entry;
-	strcpy(table->name, entry->object_name);
-
-	return table;	
-}
-void mdb_free_tabledef(MdbTableDef *table)
-{
-	if (table) free(table);
+	for (pg_num=1;pg_num<=table->num_pgs;pg_num++) {
+		mdb_read_pg(mdb,table->first_data_pg + pg_num);
+		rows = mdb_get_int16(mdb,8);
+		fprintf(stdout,"Rows on page %d: %d\n", pg_num, rows);
+		row_end=2047;
+		for (i=0;i<rows;i++) {
+			row_start = mdb_get_int16(mdb,10+i*2);
+			fprintf(stdout,"Row %d bytes %d to %d\n", i, row_start, row_end);
+			
+			fprintf(stdout,"#cols: %-3d #varcols %-3d\n", mdb->pg_buf[row_start], mdb->pg_buf[row_end-1]);
+			row_end = row_start-1;
+		}
+	}
 }

@@ -77,8 +77,9 @@ int len, i;
 	return table;
 }
 
-GArray *mdb_read_columns(MdbHandle *mdb, MdbTableDef *table)
+GArray *mdb_read_columns(MdbTableDef *table)
 {
+MdbHandle *mdb = table->entry->mdb;
 MdbColumn col;
 GArray *columns;
 int len, i;
@@ -127,13 +128,13 @@ int i;
 	fprintf(stdout,"number of datapages = %d\n",table->num_pgs);
 	fprintf(stdout,"first data page     = %d\n",table->first_data_pg);
 
-	mdb_read_columns(mdb, table);
+	mdb_read_columns(table);
 	for (i=0;i<table->num_cols;i++) {
 		col = g_array_index(table->columns,MdbColumn,i);
 	
-		fprintf(stdout,"column %2d %s\n",i,col.name);
-		fprintf(stdout,"column type %s\n",
-			mdb_get_coltype_string(col.col_type));
-		fprintf(stdout,"column size %d\n",col.col_size);
+		fprintf(stdout,"column %d Name: %-20s Type: %s(%d)\n",
+			i, col.name,
+			mdb_get_coltype_string(col.col_type),
+			col.col_size);
 	}
 }

@@ -79,6 +79,7 @@ typedef struct {
 } MdbCatalogEntry;
 
 typedef struct {
+	MdbCatalogEntry *entry;
 	char	name[MDB_MAX_OBJ_NAME+1];
 	int	num_cols;
 	int	num_rows;
@@ -104,11 +105,20 @@ extern void mdb_free_handle(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
 extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
 
+/* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
 extern int    mdb_get_int16(MdbHandle *mdb, int offset);
 extern long   mdb_get_int32(MdbHandle *mdb, int offset);
 extern MdbHandle *mdb_open(char *filename);
+
+/* catalog.c */
 extern void   mdb_catalog_dump(MdbHandle *mdb, int obj_type);
 extern int mdb_catalog_rows(MdbHandle *mdb);
 extern MdbCatalogEntry *mdb_get_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry);
+
+/* table.c */
+extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
+
+/* data.c */
+extern void mdb_data_dump(MdbTableDef *table);
 #endif /* _mdbtools_h_ */
