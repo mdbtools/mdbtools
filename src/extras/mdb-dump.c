@@ -10,6 +10,11 @@
 #include <limits.h>
 #include <assert.h>
 #include <ctype.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <string.h>
 
 int main(int argc, char **argv)
 {
@@ -20,8 +25,9 @@ int main(int argc, char **argv)
    int                  length;
    int                  pg=0;
    char                 addr[10];
+   int                  jet4 = 0;
 
-   if (argc < 2) {
+   if (argc < 1) {
 	fprintf(stderr, "Usage: mdb-dump <filename>\n\n");
 	exit(1);
    }
@@ -29,9 +35,15 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Couldn't open file %s\n", argv[1]);
 	exit(1);
    }
+   fseek(in,0x14,SEEK_SET);
+   fread(data,1,1,in);
+   if (data[0]==0x01) {
+	jet4 = 1;
+   } 
+   fseek(in,0,SEEK_SET);
    while (length = fread(data,1,16,in)) {
       sprintf(addr, "%06x", i);
-      if (!strcmp(&addr[3],"000") ) { //|| ! strcmp(&addr[3],"800")) {
+      if (!strcmp(&addr[3],"000") || (!jet4 && !strcmp(&addr[3],"800"))) {
 	fprintf(stdout,"-- Page 0x%04x (%d) --\n", pg, pg);
 	pg++;
       }

@@ -11,8 +11,9 @@ Pages
 -----
 
 MDB files are a set of pages.  These pages are 2K (2048 bytes) in size, so in a
-hex dump of the data they start on adreeses like xxx000 and xxx800.  Acess 2000
-has increased the page size to 4K.
+hex dump of the data they start on addreeses like xxx000 and xxx800.  Access 
+2000 has increased the page size to 4K and thus pages would appear on hex
+addresses ending in xxx000.
 
 Each page is known by a page_id of 3 bytes (max value is 0x07FFFF). 
 The start adresse of a page is at page_id * 0x800.
@@ -51,7 +52,7 @@ The second byte is always 0x01 as far as I can tell.
 
 At some point in the file the page layout is apparently abandoned though the 
 very last 2K in the file again looks like a valid page.  The purpose of this
-non-paged region is so far unknown. Could be a corrupt db as well.
+non-paged region is so far unknown. Could be a corrupt db as well.  My current thinking is that this area is unallocated pages based on the GAM (global allocation map stored on page 0x01).
 
 Bytes after the first and second seemed to depend on the type of page, although bytes 4-7 seem to indicate a page type of some sort.  02 00 00 00 is found on all catalog pages.
 
@@ -279,7 +280,7 @@ Notes for offset_row:
  (These flags are delflag and lookupflag in source code)
 
 
-Each data row looks like this:
+Each data row looks like this (JET3):
 
 +------+---------+----------------------------------------------------------+
 | data | length  | name        | description                                |
@@ -298,6 +299,22 @@ Each data row looks like this:
 Note: For boolean fixed columns, the values are in null_table[]:
 0 indicates a false value
 1 indicates a true value
+
+In Access 2000 (JET4) data rows are like this
+
++------+---------+----------------------------------------------------------+
+| data | length  | name        | description                                |
++------+---------+----------------------------------------------------------+
+| ???? | 2 bytes | num_cols    | Number of columns stored in this row       |
+| ???? | n bytes |             | Fixed length columns                       |
+| ???? | n bytes |             | Variable length columns                    |
+| ???? | 2 bytes | fixed_len   | length of data from beginning of record    |
+| ???? | n bytes | var_table[] | offset from start of row for each variable |
+|      |         |             | length column. (2 bytes per var column)    |
+| ???? | 2 bytes | var_len     | number of variable length columns          |
+| ???? | n bytes | null_table[]| Null indicator. size is 1 byte per 8 cols. |
+|      |         |             | 0 indicates a null value.                  |
++------+---------+----------------------------------------------------------+
 
 Note: it is possible for the offset to the beginning of a variable length 
 column to require more than one byte (if the sum of the lengths of columns is

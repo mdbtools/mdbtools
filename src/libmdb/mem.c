@@ -73,6 +73,7 @@ MdbTableDef *table;
 }
 void mdb_free_tabledef(MdbTableDef *table)
 {
+	if (table->usage_map) free(table->usage_map);
 	if (table) free(table);
 }
 mdb_append_column(GPtrArray *columns, MdbColumn *in_col)

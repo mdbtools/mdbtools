@@ -152,6 +152,11 @@ typedef struct {
 	int	cur_phys_pg;
 	int	cur_row;
 	int  noskip_del;  /* don't skip deleted rows */
+	/* object allocation map */
+	int  map_base_pg;
+	int  map_sz;
+	unsigned char *usage_map;
+	/* */
 } MdbTableDef;
 
 typedef struct {

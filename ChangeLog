@@ -1,3 +1,10 @@
+Sat Mar 16 21:37:01 EST 2002	Brian Bruns	<camber@ais.org>
+
+	* include/mdbtools.h: added oam usage map fields to TableDef
+	* src/extras/mdb-dump.c: added JET4 support
+	* src/libmdb/data.c: added code to check for unicode compression
+	* src/libmdb/mem.c(mdb_free_tabledef): clean up for oam fields
+
 2002-03-15  Brian Bruns <camber@ais.org>
 
 	* src/libmdb/money.c: Two's complement fix from 
