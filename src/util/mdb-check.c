@@ -84,6 +84,8 @@ int opt;
 		if ((tabname && !strcmp(entry->object_name,tabname)) ||
 			(!tabname )) {
 			 // && strncmp (entry->object_name, "MSys", 4))) {
+			int ret;
+
 	       		table = mdb_read_table(entry);
 
 	       		/* get the columns */
@@ -97,6 +99,7 @@ int opt;
 			//check_ret(table, ret);
 		}
 	}
+   }
 
 	mdb_free_handle (mdb);
 	mdb_exit();

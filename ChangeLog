@@ -1,3 +1,6 @@
+Tue Apr 13 19:08:51 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-check.c: Make mdb-check compilable
+
 Tue Apr 13 15:25:26 EDT 2004	Brian Bruns <brian@bruns.com>
 	* include/mdbtools.h:
 	* src/sql/mdbsql.c:
