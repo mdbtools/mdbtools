@@ -166,7 +166,7 @@ int i;
 
        memcpy(&f, &mdb->pg_buf[offset], 4);
 
-#ifdef HW_BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
        f2 = f;
        for (i=0; i<sizeof(f); i++) {
                *(((unsigned char *)&f)+i) =
@@ -187,7 +187,7 @@ int i;
 
 	memcpy(&d, &mdb->pg_buf[offset], 8);
 
-#ifdef HW_BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
 	d2 = d;
 	for (i=0; i<sizeof(d); i++) {
 		*(((unsigned char *)&d)+i) =

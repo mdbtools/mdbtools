@@ -21,6 +21,40 @@ AC_TYPE_SIZE_T
 
 AC_C_BIGENDIAN
 
+dnl ---------------------------------------------------------------------
+dnl Compile time options
+dnl ---------------------------------------------------------------------
+AC_ARG_WITH(iodbc,
+[  --with-iodbc=/path/to/iodbc build odbc driver against iODBC])
+if test "$with_iodbc"; then
+     CFLAGS="$CFLAGS -DIODBC";
+     ODBC_INC=$with_iodbc/include;
+     odbc=true
+fi
+
+AC_ARG_WITH(iodbc,
+[  --with-unixodbc=/path/to/unixodbc build odbc driver against unixODBC])
+if test "$with_unixodbc"; then
+     CFLAGS="$CFLAGS -DUNIXODBC"
+     ODBC_INC=$with_unixodbc/include
+     odbc=true
+fi
+AM_CONDITIONAL(ODBC, test x$odbc = xtrue)
+AC_SUBST(ODBC)
+AC_SUBST(ODBC_INC)
+
+AC_ARG_ENABLE(sql,
+  [  --enable-sql Enable SQL engine])
+
+if test "$enable_sql" = "yes" ; then
+	echo "SQL ENABLED!"
+     CFLAGS="$CFLAGS -DSQL"
+	sql=true
+fi
+AM_CONDITIONAL(SQL, test x$sql = xtrue)
+AC_SUBST(SQL)
+
+
 dnl Checks for library functions.
 
 OLDLDFLAGS=$LDFLAGS

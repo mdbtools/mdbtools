@@ -69,9 +69,12 @@ LN_S = ln -s
 MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
+ODBC = 
+ODBC_INC = 
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
+SQL = 
 VERSION = 0.3
 YACC = bison -y
 
@@ -87,7 +90,7 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES =  $(lib_LTLIBRARIES)
 
 
-DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_WORDEXP_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
+DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_WORDEXP_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
 CPPFLAGS = 
 LDFLAGS = 
 libmdbodbc_la_LDFLAGS = 
@@ -100,7 +103,7 @@ unittest_OBJECTS =  unittest.o
 unittest_DEPENDENCIES =  libmdbodbc.la ../libmdb/libmdb.la \
 ../sql/libmdbsql.la
 unittest_LDFLAGS = 
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

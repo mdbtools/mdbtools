@@ -69,15 +69,18 @@ LN_S = ln -s
 MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
+ODBC = 
+ODBC_INC = 
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
+SQL = 
 VERSION = 0.3
 YACC = bison -y
-
 SUBDIRS = libmdb sql util extras 
-
+#SUBDIRS = libmdb util extras 
 DEFDIR = $(prefix)
+#DEFDIR = $(prefix)
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 DIST_COMMON =  Makefile.am Makefile.in
@@ -87,6 +90,7 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
+DIST_SUBDIRS =  libmdb sql util extras libmdb util extras
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
@@ -206,7 +210,7 @@ distdir: $(DISTFILES)
 	    || cp -p $$d/$$file $(distdir)/$$file || :; \
 	  fi; \
 	done
-	for subdir in $(SUBDIRS); do \
+	for subdir in $(DIST_SUBDIRS); do \
 	  if test "$$subdir" = .; then :; else \
 	    test -d $(distdir)/$$subdir \
 	    || mkdir $(distdir)/$$subdir \

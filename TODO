@@ -14,3 +14,4 @@ Things to Do
 . Sargs need to support all datatypes
 . Need a way to express logical relationships between sargs (tree)
 . Add support for index scanning when using sargs
+. Convert code to use MSysObjects table for reading catalog.

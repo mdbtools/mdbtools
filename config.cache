@@ -17,12 +17,10 @@ ac_cv_c_const=${ac_cv_c_const=yes}
 ac_cv_exeext=${ac_cv_exeext=no}
 ac_cv_header_fcntl_h=${ac_cv_header_fcntl_h=yes}
 ac_cv_header_limits_h=${ac_cv_header_limits_h=yes}
-ac_cv_header_stdc=${ac_cv_header_stdc=no}
+ac_cv_header_stdc=${ac_cv_header_stdc=yes}
 ac_cv_header_unistd_h=${ac_cv_header_unistd_h=yes}
 ac_cv_header_wordexp_h=${ac_cv_header_wordexp_h=yes}
 ac_cv_lib_fl_yywrap=${ac_cv_lib_fl_yywrap=yes}
-ac_cv_lib_ibs_main=${ac_cv_lib_ibs_main=no}
-ac_cv_lib_mdb_mdb_free_handle=${ac_cv_lib_mdb_mdb_free_handle=yes}
 ac_cv_lib_ncurses_initscr=${ac_cv_lib_ncurses_initscr=yes}
 ac_cv_lib_readline_add_history=${ac_cv_lib_readline_add_history=yes}
 ac_cv_path_LD=${ac_cv_path_LD=/usr/bin/ld}

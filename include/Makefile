@@ -69,9 +69,12 @@ LN_S = ln -s
 MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
+ODBC = 
+ODBC_INC = 
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
+SQL = 
 VERSION = 0.3
 YACC = bison -y
 
