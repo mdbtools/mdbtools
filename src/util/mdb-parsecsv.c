@@ -158,4 +158,6 @@ main (int argc, char **argv)
 
   fprintf (stdout, "count = %d\n", count);
 
+
+  exit(0);
 }

@@ -53,5 +53,7 @@ int page, start, stop;
 
 	mdb_free_handle(mdb);
 	mdb_exit();
+
+	exit(0);
 }
 

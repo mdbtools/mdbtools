@@ -82,5 +82,6 @@ int opt;
 	mdb_exit();
 	if (delimiter) free(delimiter);
 
+	exit(0);
 }
 

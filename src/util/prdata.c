@@ -53,5 +53,7 @@ GList *l;
 
 	mdb_free_handle(mdb);
 	mdb_exit();
+
+	exit(0);
 }
 

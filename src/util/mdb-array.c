@@ -127,5 +127,6 @@ int started;
 	  argv [2],
 	  count);
 
+ exit(0);
 }
 

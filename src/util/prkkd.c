@@ -49,5 +49,7 @@ MdbCatalogEntry entry;
 	mdb_free_handle(mdb);
 	mdb_exit();
 #endif
+
+	exit(0);
 }
 
