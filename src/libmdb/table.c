@@ -43,8 +43,25 @@ unsigned char mdb_col_needs_size(int col_type)
 	}
 }
 
-MdbTableDef *
-mdb_read_table(MdbCatalogEntry *entry)
+MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
+{
+	MdbTableDef *table;
+
+	table = (MdbTableDef *) g_malloc0(sizeof(MdbTableDef));
+	table->entry=entry;
+	strcpy(table->name, entry->object_name);
+
+	return table;	
+}
+void mdb_free_tabledef(MdbTableDef *table)
+{
+	if (!table) return;
+	mdb_free_columns(table->columns);
+	g_free(table->usage_map);
+	g_free(table->free_usage_map);
+	g_free(table);
+}
+MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 {
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
@@ -155,6 +172,19 @@ read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len)
 	}
 }
 
+void mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
+{
+	g_ptr_array_add(columns, g_memdup(in_col,sizeof(MdbColumn)));
+}
+void mdb_free_columns(GPtrArray *columns)
+{
+	unsigned int i;
+
+	if (!columns) return;
+	for (i=0; i<columns->len; i++)
+		g_free (g_ptr_array_index(columns, i));
+	g_ptr_array_free(columns, TRUE);
+}
 GPtrArray *mdb_read_columns(MdbTableDef *table)
 {
 	MdbHandle *mdb = table->entry->mdb;

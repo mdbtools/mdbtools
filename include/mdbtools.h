@@ -384,10 +384,6 @@ extern void mdb_init();
 extern void mdb_exit();
 extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
 extern void mdb_free_stats(MdbHandle *mdb);
-extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
-extern void mdb_free_tabledef(MdbTableDef *table);
-extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
-extern void mdb_free_columns(GPtrArray *columns);
 
 /* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -420,7 +416,11 @@ extern char *mdb_get_objtype_string(int obj_type);
 extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 
 /* table.c */
+extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
+extern void mdb_free_tabledef(MdbTableDef *table);
 extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
+extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
+extern void mdb_free_columns(GPtrArray *columns);
 extern GPtrArray *mdb_read_columns(MdbTableDef *table);
 extern void mdb_table_dump(MdbCatalogEntry *entry);
 extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
