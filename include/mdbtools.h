@@ -34,7 +34,7 @@
 #define MDB_DEBUG 0
 
 #define MDB_PGSIZE 4096
-#define MDB_MAX_OBJ_NAME 30
+#define MDB_MAX_OBJ_NAME 256
 #define MDB_MAX_COLS 256
 #define MDB_MAX_IDX_COLS 10
 #define MDB_CATALOG_PG 18

@@ -1,6 +1,7 @@
 Wed Jun 16 17:35:07 EDT 2004	Brian Bruns <brian@bruns.com>
 	* src/gmdb2/file.c: initialize default backend
 	* src/gmdb2/table_def.c: replace reference to mdb_access_types structure with call to mdb_get_coltype_string()
+	* include/mdbtools.h: increase max objects to 256 bytes.
 
 Mon Jun 14 22:52:00 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c: Fix bug in column name ordering
