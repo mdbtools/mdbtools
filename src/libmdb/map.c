@@ -114,7 +114,7 @@ mdb_map_find_next_freepage(MdbTableDef *table, int row_size)
 		pgnum = mdb_map_find_next(mdb, 
 				table->free_usage_map, 
 				table->freemap_sz, cur_pg);
-		printf("looking at page %d\n", pgnum);
+		//printf("looking at page %d\n", pgnum);
 		if (!pgnum) {
 			/* allocate new page */
 			pgnum = mdb_alloc_page(table);
@@ -127,7 +127,7 @@ mdb_map_find_next_freepage(MdbTableDef *table, int row_size)
 		
 	} while (free_space < row_size);
 
-	printf("page %d has %d bytes left\n", pgnum, free_space);
+	//printf("page %d has %d bytes left\n", pgnum, free_space);
 
 	return pgnum;
 }

@@ -185,7 +185,7 @@ mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest)
 {
 	int i, j = 0;
 
-	for (i = sz; i > 0; i--) {
+	for (i = sz-1; i >= 0; i--) {
 		dest[j++] = src[i];
 	}
 }
@@ -321,9 +321,9 @@ mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 	start = ipg->idx_starts[elem++];
 
 	while (start) {
-		fprintf(stdout, "elem %d is %d\n", elem, ipg->idx_starts[elem]);
+		//fprintf(stdout, "elem %d is %d\n", elem, ipg->idx_starts[elem]);
 		len = ipg->idx_starts[elem] - start;
-		fprintf(stdout, "len is %d\n", len);
+		//fprintf(stdout, "len is %d\n", len);
 		for (i=0; i < len; i++) {
 			mask_bit++;
 			if (mask_bit==8) {
@@ -334,7 +334,7 @@ mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 			/* upon reaching the len, set the bit */
 		}
 		mask_byte = (1 << mask_bit) | mask_byte;
-		fprintf(stdout, "mask byte is %02x at %d\n", mask_byte, mask_pos);
+		//fprintf(stdout, "mask byte is %02x at %d\n", mask_byte, mask_pos);
 		start = ipg->idx_starts[elem++];
 	}
 	/* flush the last byte if any */

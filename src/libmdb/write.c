@@ -572,6 +572,7 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, Mdb
 			}
 		}
 	}
+/*
 	for (i = 0; i < idx->num_keys; i++) {
 		fprintf(stdout, "key col %d (%d) is mapped to field %d (%d %d)\n",
 			i, idx->key_col_num[i], idx_xref[i], fields[idx_xref[i]].colnum, 
@@ -582,13 +583,14 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, Mdb
 			i, fields[i].colnum, 
 			fields[i].siz);
 	}
+*/
 
 	chain = g_malloc0(sizeof(MdbIndexChain));
 
 	mdb_index_find_row(mdb, idx, chain, pgnum, rownum);
-	printf("chain depth = %d\n", chain->cur_depth);
-	printf("pg = %" G_GUINT32_FORMAT "\n",
-		chain->pages[chain->cur_depth-1].pg);
+	//printf("chain depth = %d\n", chain->cur_depth);
+	//printf("pg = %" G_GUINT32_FORMAT "\n",
+		//chain->pages[chain->cur_depth-1].pg);
 	//mdb_copy_index_pg(table, idx, &chain->pages[chain->cur_depth-1]);
 	mdb_add_row_to_leaf_pg(table, idx, &chain->pages[chain->cur_depth-1], idx_fields, pgnum, rownum);
 	
@@ -742,13 +744,12 @@ unsigned int num_fields;
 
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
 		for (i=0;i<num_fields;i++) {
-			printf("col %d %d start %d siz %d\n", i, fields[i].colnum, fields[i].start, fields[i].siz);
+			//printf("col %d %d start %d siz %d fixed 5d\n", i, fields[i].colnum, fields[i].start, fields[i].siz, fields[i].is_fixed);
 		}
 	}
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
 		if (col->bind_ptr) {
-			printf("yes\n");
 			fields[i].value = col->bind_ptr;
 			fields[i].siz = *(col->len_ptr);
 		}
@@ -851,6 +852,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 
 	new_pg = mdb_new_leaf_pg(entry);
 
+	/* reinitial ipg pointers to start of page */
 	mdb_index_page_reset(ipg);
 	mdb_read_pg(mdb, ipg->pg);
 
@@ -861,12 +863,10 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	}
 	keycol = idx->key_col_num[0];
 	col = g_ptr_array_index (table->columns, keycol - 1);
-	printf("keycol = %d (%s)\n", keycol, col->name);
 	if (!mdb_is_fixed_col(col)) {
 		fprintf(stderr,"variable length key columns not yet supported, aborting\n");
 		return 0;
 	}
-	printf("col size = %d\n", col->col_size);
 
 	while (mdb_index_find_next_on_page(mdb, ipg)) {
 
@@ -884,13 +884,11 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 		mdb_index_swap_n(&mdb->pg_buf[ipg->offset + 1], col->col_size, key_hash);
 		key_hash[col->col_size - 1] &= 0x7f;
 
-		printf("length = %d\n", ipg->len);
-		printf("offset = %d\n", ipg->offset);
-		printf("iflag = %d pg = %" G_GUINT32_FORMAT
-			" row = %" G_GUINT16_FORMAT "\n", iflag, pg, row);
-		buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset + ipg->len - 1);
-		buffer_dump(mdb->pg_buf, ipg->offset + 1, ipg->offset + col->col_size);
-		buffer_dump(key_hash, 0, col->col_size - 1);
+		if (mdb_get_option(MDB_DEBUG_WRITE)) {
+			buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset + ipg->len - 1);
+			buffer_dump(mdb->pg_buf, ipg->offset + 1, ipg->offset + col->col_size);
+			buffer_dump(key_hash, 0, col->col_size - 1);
+		}
 
 		memcpy(&new_pg[ipg->offset], &mdb->pg_buf[ipg->offset], ipg->len);
 		ipg->offset += ipg->len;
@@ -901,20 +899,30 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	//_mdb_put_int16(new_pg, mdb->fmt->row_count_offset, row);
 	/* free space left */
 	_mdb_put_int16(new_pg, 2, mdb->fmt->pg_size - ipg->offset);
-	printf("offset = %d\n", ipg->offset);
+	//printf("offset = %d\n", ipg->offset);
 
 	mdb_index_swap_n(idx_fields[0].value, col->col_size, key_hash);
+	key_hash[0] |= 0x080;
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		printf("key_hash\n");
+		buffer_dump(idx_fields[0].value, 0, col->col_size-1);
+		buffer_dump(key_hash, 0, col->col_size-1);
+		printf("--------\n");
+	}
 	new_pg[ipg->offset] = 0x7f;
 	memcpy(&new_pg[ipg->offset + 1], key_hash, col->col_size);
 	_mdb_put_int24_msb(new_pg, ipg->offset + 5, pgnum);
-	new_pg[ipg->offset + 8] = rownum;
-	printf("row %d offset %d\n", row, ipg->offset);
+	new_pg[ipg->offset + 8] = rownum-1;
 	ipg->idx_starts[row++] = ipg->offset + ipg->len;
 	//ipg->idx_starts[row] = ipg->offset + ipg->len;
-	buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+	}
 	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
 	mdb_index_pack_bitmap(mdb, ipg);
-	buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+	}
 	g_free(new_pg);
 
 	return ipg->len;

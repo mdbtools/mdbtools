@@ -39,6 +39,7 @@ convert_field(MdbColumn *col, char *s, MdbField *field)
 	MdbAny any;
 
 	field->colnum = col->col_num;
+	field->is_fixed = col->is_fixed;
 	switch (col->col_type) {
 		case MDB_TEXT:
 			field->value = g_strdup(s);

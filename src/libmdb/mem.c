@@ -33,7 +33,7 @@
  * by calling program and prior to any other function.
  *
  **/
-METHOD void mdb_init()
+/* METHOD */ void mdb_init()
 {
 	mdb_init_backends();
 }
@@ -46,7 +46,7 @@ METHOD void mdb_init()
  * functions).
  *
  **/
-METHOD void mdb_exit()
+/* METHOD */ void mdb_exit()
 {
 	mdb_remove_backends();
 }
