@@ -910,18 +910,6 @@ guint16 len;
 			text[len]='\0';
 		} else {
 			mdb_unicode2ascii(mdb, mdb->pg_buf, row_start, len, text);
-#if 0
-			if (mdb->pg_buf[row_start]==0xff && 
-			   mdb->pg_buf[row_start+1]==0xfe) {
-				strncpy(text, &mdb->pg_buf[row_start+2], len-2);
-				text[len-2]='\0';
-			} else {
-				/* convert unicode to ascii, rather sloppily */
-				for (i=0;i<len;i+=2)
-					text[i/2] = mdb->pg_buf[row_start + i];
-				text[len/2]='\0';
-			}
-#endif
 		}
 		/* make sure to swap page back */
 		mdb_swap_pgbuf(mdb);
