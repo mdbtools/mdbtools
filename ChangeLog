@@ -1,5 +1,6 @@
 Sat Jul 17 23:09:40 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/catalog.c: Clean out some stale code
+	* src/libmdb/data.c: Use mdb_unicode2ascii in mdb_col_to_string
 
 Sat Jul 17 09:21:13 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:

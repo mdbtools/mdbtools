@@ -1047,16 +1047,7 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 				} 
 				fprintf(stdout, "\n");
 */
-				if (mdb->pg_buf[start]==0xff && 
-				   mdb->pg_buf[start+1]==0xfe) {
-					strncpy(text, &mdb->pg_buf[start+2], size-2);
-					text[size-2]='\0';
-				} else {
-					/* convert unicode to ascii, rather sloppily */
-					for (i=0;i<size;i+=2)
-						text[i/2] = mdb->pg_buf[start + i];
-					text[size/2]='\0';
-				}
+				mdb_unicode2ascii(mdb, mdb->pg_buf, start, size, text);
 			} else {
 				strncpy(text, &buf[start], size);
 				text[size]='\0';
