@@ -21,6 +21,8 @@
 #include "time.h"
 #include "math.h"
 
+//#define FAST_READ 1
+
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
@@ -342,12 +344,34 @@ int mdb_read_next_dpg(MdbTableDef *table)
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
 
+#if FAST_READ
+int pgnum, i, bitn;
+
+	pgnum = _mdb_get_int32(table->usage_map,1);
+	/* the first 5 bytes of the usage map mean something */
+	for (i=5;i<table->map_sz;i++) {
+		for (bitn=0;bitn<8;bitn++) {
+			if (table->usage_map[i] & 1 << bitn && pgnum > table->cur_phys_pg) {
+				table->cur_phys_pg = pgnum;
+				if (!mdb_read_pg(mdb, pgnum)) {
+					return 0;
+				} else {
+					return pgnum;
+				}
+			}
+			pgnum++;
+		}
+	}
+	/* didn't find anything */
+	return 0;
+#else
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
 	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb, 4)!=entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg);  */
 	return table->cur_phys_pg;
+#endif
 }
 int mdb_rewind_table(MdbTableDef *table)
 {
@@ -417,6 +441,17 @@ char *bound_values[MDB_MAX_COLS];
 int mdb_is_fixed_col(MdbColumn *col)
 {
 	return col->is_fixed;
+}
+static char *mdb_data_to_hex(MdbHandle *mdb, char *text, int start, int size) 
+{
+int i;
+
+	for (i=start; i<start+size; i++) {
+		sprintf(&text[(i-start)*2],"%02x", mdb->pg_buf[i]);
+	}
+	text[(i-start)*2]='\0';
+
+	return text;
 }
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
@@ -577,6 +612,7 @@ char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
+char tmpbuf[10];
 time_t t;
 int i,j;
 

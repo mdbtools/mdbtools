@@ -48,6 +48,7 @@ int j,pos;
 		mdb->tab_num_cols_offset = 45;
 		mdb->tab_num_idxs_offset = 47;
 		mdb->tab_num_ridxs_offset = 51;
+		mdb->tab_usage_map_offset = 55;
 		mdb->tab_first_dpg_offset = 56;
 		mdb->tab_cols_start_offset = 63;
 		mdb->tab_ridx_entry_size = 12;
@@ -62,6 +63,7 @@ int j,pos;
 		mdb->tab_num_cols_offset = 25;
 		mdb->tab_num_idxs_offset = 27;
 		mdb->tab_num_ridxs_offset = 31;
+		mdb->tab_usage_map_offset = 35;
 		mdb->tab_first_dpg_offset = 36;
 		mdb->tab_cols_start_offset = 43;
 		mdb->tab_ridx_entry_size = 8;
@@ -185,18 +187,26 @@ unsigned char *c;
 	mdb->cur_pos+=3;
 	return l;
 }
-long mdb_get_int32(MdbHandle *mdb, int offset)
+long _mdb_get_int32(unsigned char *buf, int offset)
 {
 long l;
 unsigned char *c;
 
-	if (offset <0 || offset+4 > mdb->pg_size) return -1;
-	c = &mdb->pg_buf[offset];
+	c = &buf[offset];
 	l =c[3]; l<<=8;
 	l+=c[2]; l<<=8;
 	l+=c[1]; l<<=8;
 	l+=c[0];
 
+	return l;
+}
+long mdb_get_int32(MdbHandle *mdb, int offset)
+{
+long l;
+
+	if (offset <0 || offset+4 > mdb->pg_size) return -1;
+
+	l = _mdb_get_int32(mdb->pg_buf, offset);
 	mdb->cur_pos+=4;
 	return l;
 }

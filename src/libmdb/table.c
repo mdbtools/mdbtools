@@ -43,6 +43,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 MdbTableDef *table;
 MdbHandle *mdb = entry->mdb;
 int len, i;
+int rownum, row_start, row_end;
 
 	table = mdb_alloc_tabledef(entry);
 
@@ -53,6 +54,22 @@ int len, i;
 	table->num_cols = mdb_get_int16(mdb, mdb->tab_num_cols_offset);
 	table->num_idxs = mdb_get_int32(mdb, mdb->tab_num_idxs_offset); 
 	table->num_real_idxs = mdb_get_int32(mdb, mdb->tab_num_ridxs_offset); 
+
+	/* grab a copy of the usage map */
+	rownum = mdb->pg_buf[mdb->tab_usage_map_offset];
+	mdb_read_alt_pg(mdb, mdb_get_int24(mdb, mdb->tab_usage_map_offset + 1)); 
+	mdb_swap_pgbuf(mdb);
+	row_start = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + (rownum*2));
+   row_end = mdb_find_end_of_row(mdb, rownum);
+	table->map_sz = row_end - row_start;
+	table->usage_map = malloc(table->map_sz);
+	memcpy(table->usage_map, &mdb->pg_buf[row_start], table->map_sz);
+	buffer_dump(mdb->pg_buf, row_start, row_end);
+	/* swap back */
+	mdb_swap_pgbuf(mdb);
+	printf ("usage map found on page %ld start %d end %d\n", mdb_get_int24(mdb, mdb->tab_usage_map_offset + 1), row_start, row_end);
+
+
 	table->first_data_pg = mdb_get_int16(mdb, mdb->tab_first_dpg_offset);
 
 	return table;
@@ -208,7 +225,8 @@ MdbTableDef *table;
 MdbColumn *col;
 MdbIndex *idx;
 MdbHandle *mdb = entry->mdb;
-int i;
+int i,bitn;
+int pgnum;
 
 	table = mdb_read_table(entry);
 	fprintf(stdout,"definition page     = %d\n",entry->table_pg);
@@ -232,5 +250,16 @@ int i;
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
 		mdb_index_dump(table, idx);
+	}
+	if (table->usage_map) {
+		pgnum = _mdb_get_int32(table->usage_map,1);
+		/* the first 5 bytes of the usage map mean something */
+		for (i=5;i<table->map_sz;i++) {
+			for (bitn=0;bitn<8;bitn++) {
+				if (table->usage_map[i] & 1 << bitn) 
+					printf("page %ld is reserved by this object\n",pgnum);
+				pgnum++;
+			}
+		}
 	}
 }
