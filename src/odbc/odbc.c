@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.7 2002/04/14 23:35:39 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.8 2003/01/07 02:24:35 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -51,8 +51,8 @@ static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
 
-//#define TRACE(x) fprintf(stderr,"Function %s\n", x);
-#define TRACE(x)
+#define TRACE(x) fprintf(stderr,"Function %s\n", x);
+//#define TRACE(x)
 
 /* The SQL engine is presently non-reenterrant and non-thread safe.  
    See _SQLExecute for details.
@@ -183,8 +183,28 @@ SQLRETURN SQL_API SQLExtendedFetch(
     SQLUINTEGER FAR   *pcrow,
     SQLUSMALLINT FAR  *rgfRowStatus)
 {
+struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
+
 	TRACE("SQLExtendedFetch");
-	return SQL_SUCCESS;
+	if (fFetchType!=SQL_FETCH_NEXT) {
+		LogError("Fetch type not supported in SQLExtendedFetch");
+		return SQL_ERROR;
+	}
+	if (pcrow)
+		*pcrow=1;
+	if (rgfRowStatus)
+		*rgfRowStatus = SQL_SUCCESS; /* what is the row status value? */
+	
+	bind_columns(stmt);
+
+	if (mdb_fetch_row(env->sql->cur_table)) {
+		stmt->rows_affected++;
+		return SQL_SUCCESS;
+	} else {
+		return SQL_NO_DATA_FOUND;
+	}
 }
 
 SQLRETURN SQL_API SQLForeignKeys(
@@ -753,17 +773,13 @@ SQLRETURN SQL_API SQLExecute(
 	TRACE("SQLExecute");
    return _SQLExecute(hstmt);
 }
-
-SQLRETURN SQL_API SQLFetch(
-    SQLHSTMT           hstmt)
+static void
+bind_columns(struct _hstmt *stmt)
 {
-struct _hstmt *stmt = (struct _hstmt *) hstmt;
 struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
 struct _henv *env = (struct _henv *) dbc->henv;
 struct _sql_bind_info *cur;
 
-	TRACE("SQLFetch");
-    /* if we bound columns, transfer them to res_info now that we have one */
     if (stmt->rows_affected==0) {
         cur = stmt->bind_head;
         while (cur) {
@@ -780,6 +796,17 @@ struct _sql_bind_info *cur;
             cur = cur->next;
         }
     }
+}
+SQLRETURN SQL_API SQLFetch(
+    SQLHSTMT           hstmt)
+{
+struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
+
+	TRACE("SQLFetch");
+    /* if we bound columns, transfer them to res_info now that we have one */
+	bind_columns(stmt);
     //cur = stmt->bind_head;
     //while (cur) {
     	//if (cur->column_number>0 &&
