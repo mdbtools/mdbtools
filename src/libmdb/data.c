@@ -79,8 +79,15 @@ int delflag, lookupflag;
 
 	/* find out all the important stuff about the row */
 	num_cols = mdb->pg_buf[row_start];
-	var_cols = mdb->pg_buf[row_end-1];
-	fixed_cols = num_cols - var_cols;
+	var_cols = 0; /* mdb->pg_buf[row_end-1]; */
+	fixed_cols = 0; /* num_cols - var_cols; */
+	for (j = 0; j < table->num_cols; j++) {
+		col = g_ptr_array_index (table->columns, j);
+		if (mdb_is_fixed_col(col)) 
+			fixed_cols++;
+		else
+			var_cols++;
+	}
 	eod = mdb->pg_buf[row_end-2-var_cols];
 
 #if MDB_DEBUG
