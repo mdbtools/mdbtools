@@ -27,11 +27,7 @@ MdbHandle *mdb;
 extern int main_show_debug;
 extern GladeXML *mainwin_xml;
 
-void gmdb_file_open_recent_1() { gmdb_file_open_recent("menu_recent1"); }
-void gmdb_file_open_recent_2() { gmdb_file_open_recent("menu_recent2"); }
-void gmdb_file_open_recent_3() { gmdb_file_open_recent("menu_recent3"); }
-void gmdb_file_open_recent_4() { gmdb_file_open_recent("menu_recent4"); }
-void gmdb_file_open_recent(gchar *menuname) 
+static void gmdb_file_open_recent(gchar *menuname) 
 { 
 gchar *text, cfgname[100];
 
@@ -41,6 +37,11 @@ gchar *text, cfgname[100];
 	g_free(text);
 	gmdb_load_recent_files();
 }
+void gmdb_file_open_recent_1() { gmdb_file_open_recent("menu_recent1"); }
+void gmdb_file_open_recent_2() { gmdb_file_open_recent("menu_recent2"); }
+void gmdb_file_open_recent_3() { gmdb_file_open_recent("menu_recent3"); }
+void gmdb_file_open_recent_4() { gmdb_file_open_recent("menu_recent4"); }
+
 static void
 gmdb_file_shuffle_recent(gchar *file_path)
 {

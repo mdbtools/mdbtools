@@ -53,6 +53,7 @@ gmdb_print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, ch
 	}
 }
 
+void
 gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
 {
 	GtkWidget *combo;
@@ -102,7 +103,7 @@ gmdb_export_get_quote(GladeXML *xml)
 }
 
 char
-gmdb_export_get_quotechar(GladeXML *xml)	
+gmdb_export_get_quotechar(GladeXML *xml)
 {
 	GtkWidget *combo;
 	gchar *str;
@@ -115,7 +116,7 @@ gmdb_export_get_quotechar(GladeXML *xml)
 	return quotechar;
 }
 int
-gmdb_export_get_headers(GladeXML *xml)	
+gmdb_export_get_headers(GladeXML *xml)
 {
 	GtkWidget *checkbox;
 
@@ -126,7 +127,7 @@ gmdb_export_get_headers(GladeXML *xml)
 		return 0;
 }
 gchar *
-gmdb_export_get_filepath(GladeXML *xml)	
+gmdb_export_get_filepath(GladeXML *xml)
 {
 	GtkWidget *fentry;
 

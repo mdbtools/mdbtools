@@ -28,7 +28,7 @@ typedef struct GMdbDataWindow {
 static GList *window_list;
 
 /* callbacks */
-gint
+static gint
 gmdb_table_data_close(GtkWidget *w, GdkEvent *event, GMdbDataWindow *dataw)
 {
 	window_list = g_list_remove(window_list, dataw);

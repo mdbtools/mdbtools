@@ -29,7 +29,7 @@ typedef struct GMdbDefWindow {
 static GList *window_list;
 
 /* callbacks */
-gint
+static gint
 gmdb_table_def_close(GtkList *list, GtkWidget *w, GMdbDefWindow *defw)
 {
 	window_list = g_list_remove(window_list, defw);

@@ -21,12 +21,12 @@
 extern GladeXML* mainwin_xml;
 extern GtkWidget *app;
 
-void
+static void
 gmdb_macro_add_icon(gchar *text)
 {
 GnomeIconList *gil;
 
-        gil = glade_xml_get_widget (mainwin_xml, "macro_iconlist");
+        gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "macro_iconlist");
         gnome_icon_list_append(gil, GMDB_ICONDIR "macro_big.xpm", text);
 }
 

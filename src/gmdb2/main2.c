@@ -28,7 +28,7 @@ GladeXML *mainwin_xml;
 MdbSQL *sql;
 
 /* called when the user closes the window */
-gint
+static gint
 delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	/* signal the main loop to quit */
@@ -76,7 +76,7 @@ gmdb_info_cb(GtkWidget *button, gpointer data)
 
 
 /* a callback for the buttons */
-void
+static void
 a_callback(GtkWidget *button, gpointer data)
 {
 
@@ -176,12 +176,13 @@ gmdb_set_sensitive(gboolean b)
 	gtk_widget_set_sensitive(button,b);
 }
 	
-void gmdb_init_popups()
+static void
+gmdb_init_popups()
 {
 		gmdb_table_init_popup();
 }
 
-void
+static void
 gmdb_load_icons(GladeXML *xml)
 {
 	GtkWidget *icon;

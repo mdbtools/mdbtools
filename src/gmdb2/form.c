@@ -21,7 +21,7 @@
 extern GladeXML* mainwin_xml;
 extern GtkWidget *app;
 
-void
+static void
 gmdb_form_add_icon(gchar *text)
 {
 GnomeIconList *gil;

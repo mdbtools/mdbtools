@@ -27,8 +27,6 @@ extern MdbHandle *mdb;
 int selected_table = -1;
 extern char *mdb_access_types[];
 
-void gmdb_table_set_sensitive(gboolean b);
-
 /* callbacks */
 void
 gmdb_table_debug_cb(GtkList *list, GtkWidget *w, gpointer data)
@@ -116,7 +114,7 @@ gmdb_table_select_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data)
 	}
 	
 }
-gboolean
+static gboolean
 gmdb_table_popup_cb(GtkWidget *menu, GdkEvent *event)
 {
 	GdkEventButton *event_button;
@@ -198,7 +196,7 @@ GtkWidget *menu, *mi;
 	g_signal_connect_swapped (GTK_OBJECT (gil), "button_press_event",
 		G_CALLBACK (gmdb_table_popup_cb), GTK_OBJECT(menu));
 }	
-void
+static void
 gmdb_table_add_icon(gchar *text)
 {
 GnomeIconList *gil;

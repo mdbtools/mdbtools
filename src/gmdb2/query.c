@@ -22,12 +22,12 @@ extern GladeXML* mainwin_xml;
 GtkWidget *query_list;
 extern GtkWidget *app;
 
-void
+static void
 gmdb_query_add_icon(gchar *text)
 {
 GnomeIconList *gil;
 
-	gil = glade_xml_get_widget (mainwin_xml, "query_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "query_iconlist");
 	gnome_icon_list_append(gil, GMDB_ICONDIR "query_big.xpm", text);
 
 }

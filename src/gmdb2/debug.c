@@ -32,15 +32,15 @@ GList *debug_list = NULL;
 static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml);
 static void gmdb_debug_text_on(GtkWidget *textbox, int start_byte, int end_byte);
 static void gmdb_debug_text_off(GtkWidget *textbox);
-GtkTreeIter *gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter, gchar *text, int start, int end);
+static GtkTreeIter *gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter, gchar *text, int start, int end);
 static void gmdb_debug_clear(GladeXML *xml);
-void gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len);
+static void gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len);
 static guint16 get_uint16(unsigned char *c);
 static guint32 get_uint24(unsigned char *c);
 static guint32 get_uint32(unsigned char *c);
 static long gmdb_get_max_page(MdbHandle *mdb);
-void gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml);
-void gmdb_debug_display(GladeXML *xml, guint32 page);
+static void gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml);
+static void gmdb_debug_display(GladeXML *xml, guint32 page);
 
 /* value to string stuff */
 typedef struct GMdbValStr {
@@ -78,8 +78,9 @@ GMdbValStr object_types[] = {
 	{ 0x04, "Leaf Index Page" },
 	{ 0, NULL }
 };
+
 /* callbacks */
-void
+static void
 gmdb_debug_select_cb(GtkTreeSelection *select, GladeXML *xml)
 {
 int start_row, end_row;
@@ -139,7 +140,7 @@ GtkWidget *textview;
 			LINESZ * end_row + 59 + (end % 16) + 1); 
 	}
 }
-void
+static void
 gmdb_debug_forward_cb(GtkWidget *w, GladeXML *xml)
 {
 	guint *nav_elem;
@@ -162,7 +163,7 @@ gmdb_debug_forward_cb(GtkWidget *w, GladeXML *xml)
 	page_num = atol(page);
 	gmdb_debug_display(xml, page_num);
 }
-void
+static void
 gmdb_debug_back_cb(GtkWidget *w, GladeXML *xml)
 {
 	guint *nav_elem;
@@ -183,7 +184,7 @@ gmdb_debug_back_cb(GtkWidget *w, GladeXML *xml)
 	page_num = atol(page);
 	gmdb_debug_display(xml, page_num);
 }
-void
+static void
 gmdb_nav_add_page(GladeXML *xml, guint32 page_num)
 {
 	GList *nav_list = NULL;
@@ -227,7 +228,7 @@ gmdb_nav_add_page(GladeXML *xml, guint32 page_num)
 	g_object_set_data(G_OBJECT(win), "nav_list", nav_list);
 	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
 }
-void
+static void
 gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkTextView *textview;
@@ -266,7 +267,7 @@ gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 	gtk_entry_set_text(GTK_ENTRY(entry),page);
 	gmdb_debug_display_cb(w, xml);
 }
-void
+static void
 gmdb_debug_jump_msb_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkTextView *textview;
@@ -306,7 +307,7 @@ gmdb_debug_jump_msb_cb(GtkWidget *w, GladeXML *xml)
 	gtk_entry_set_text(GTK_ENTRY(entry),page);
 	gmdb_debug_display_cb(w, xml);
 }
-void
+static void
 gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
 {
 	int page;
@@ -333,8 +334,10 @@ gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
 		page = atol(gtk_entry_get_text(GTK_ENTRY(entry)));
 	}
 	if (page>gmdb_get_max_page(mdb) || page<0) {
-		GtkWidget* dlg = gtk_message_dialog_new (gtk_widget_get_toplevel (w),
-		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		GtkWidget* dlg = gtk_message_dialog_new (
+		    GTK_WINDOW(gtk_widget_get_toplevel(w)),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING,
+		    GTK_BUTTONS_CLOSE,
 		    _("Page entered is outside valid page range."));
 		gtk_dialog_run (GTK_DIALOG (dlg));
 		gtk_widget_destroy (dlg);
@@ -345,7 +348,7 @@ gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
 	/* gmdb_debug_display handles the mechanics of getting the page up */
 	gmdb_debug_display(xml, page);
 }
-void
+static void
 gmdb_debug_display(GladeXML *xml, guint32 page)
 {
 	unsigned char *fbuf;
@@ -421,7 +424,7 @@ struct stat st;
 	assert( fstat(mdb->f->fd, &st)!=-1 );
 	return st.st_size/mdb->fmt->pg_size;
 }
-gchar *
+static gchar *
 gmdb_val_to_str(GMdbValStr *valstr, gint val)
 {
 gchar *strptr;
@@ -469,7 +472,7 @@ l+=c[0];
 
 return l;
 }
-void 
+static void 
 gmdb_debug_dissect_column(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
 	gchar str[100];
@@ -493,7 +496,7 @@ gmdb_debug_dissect_column(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, 
 	snprintf(str, 100, "Column Length: %d", get_uint16(&fbuf[offset+16]));
 	gmdb_debug_add_item(store, parent, str, offset+16, offset+17);
 }
-void 
+static void 
 gmdb_debug_dissect_index1(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
 	gchar str[100];
@@ -503,7 +506,7 @@ gmdb_debug_dissect_index1(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, 
 	snprintf(str, 100, "Rows in Index: %lu", (unsigned long)get_uint32(&fbuf[offset+4])); 
 	gmdb_debug_add_item(store, parent, str, offset+4, offset+7);
 }
-void 
+static void 
 gmdb_debug_dissect_index2(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
 	gchar str[100];
@@ -534,7 +537,7 @@ gmdb_debug_dissect_index2(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, 
 	snprintf(str, 100, "Index Flags (%s)", flagstr);
 	gmdb_debug_add_item(store, parent, str, offset+38, offset+38);
 }
-void 
+static void 
 gmdb_debug_add_page_ptr(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, const char *label, int offset)
 {
 gchar str[100];
@@ -548,7 +551,7 @@ GtkTreeIter *node;
 	snprintf(str, 100, "Page Number: %lu", (unsigned long)get_uint24(&fbuf[offset+1])); 
 	gmdb_debug_add_item(store, node, str, offset+1, offset+3);
 }
-void 
+static void 
 gmdb_debug_dissect_row(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset, int end)
 {
 gchar str[100];
@@ -584,7 +587,7 @@ int i;
 	snprintf(str, 100, "Null mask");
 	gmdb_debug_add_item(store, parent, str, var_cols_loc + 1, end);
 }
-void 
+static void 
 gmdb_debug_dissect_index_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 gchar str[100];
@@ -598,7 +601,7 @@ guint32 tdef;
 	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
 }
 
-void 
+static void 
 gmdb_debug_dissect_leaf_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 gchar str[100];
@@ -612,7 +615,7 @@ guint32 tdef;
 	snprintf(str, 100, "Next leaf page: 0x%06x (%lu)", get_uint32(&fbuf[offset+12]),(unsigned long)get_uint32(&fbuf[offset+12]));
 	gmdb_debug_add_item(store, NULL, str, offset+12, offset+15);
 }
-void 
+static void 
 gmdb_debug_dissect_data_pg4(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 	gchar str[100];
@@ -653,7 +656,7 @@ gmdb_debug_dissect_data_pg4(GtkTreeStore *store, char *fbuf, int offset, int len
 		*/
 	}
 }
-void 
+static void 
 gmdb_debug_dissect_data_pg3(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 	gchar str[100];
@@ -693,7 +696,7 @@ gmdb_debug_dissect_data_pg3(GtkTreeStore *store, char *fbuf, int offset, int len
 			gmdb_debug_dissect_row(store, container, fbuf, row_start, row_end);
 	}
 }
-void 
+static void 
 gmdb_debug_dissect_data_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 	if (IS_JET3(mdb))
@@ -701,7 +704,7 @@ gmdb_debug_dissect_data_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 	else
 		gmdb_debug_dissect_data_pg4(store, fbuf, offset, len);
 }
-void 
+static void 
 gmdb_debug_dissect_tabledef_pg4(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 gchar str[100];
@@ -757,7 +760,7 @@ GtkTreeIter *node, *container;
 	}
 	newbase += 25*num_cols;
 }
-void 
+static void 
 gmdb_debug_dissect_tabledef_pg3(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 gchar str[100];
@@ -856,7 +859,7 @@ GtkTreeIter *node, *container;
 		newbase += namelen + 1;
 	}
 }
-void 
+static void 
 gmdb_debug_dissect_tabledef_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 	if (IS_JET3(mdb))
@@ -864,7 +867,7 @@ gmdb_debug_dissect_tabledef_pg(GtkTreeStore *store, char *fbuf, int offset, int 
 	else
 		gmdb_debug_dissect_tabledef_pg4(store, fbuf, offset, len);
 }
-void 
+static void 
 gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 	gchar str[100];
@@ -910,7 +913,7 @@ GtkWidget *treeview, *textview, *store;
 
 }
 
-GtkTreeIter *
+static GtkTreeIter *
 gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter1, gchar *text, int start, int end)
 {
 GtkTreeIter *iter2;
@@ -966,12 +969,12 @@ GtkTextIter start, end;
 	gtk_text_buffer_apply_tag (buffer, tag, &start, &end);
 }
 
-gint
+static gint
 gmdb_debug_delete_cb(GtkWidget *w, GladeXML *xml)
 {
 	return FALSE;
 }
-void
+static void
 gmdb_debug_close_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *win;

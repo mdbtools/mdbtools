@@ -35,7 +35,7 @@ gmdb_prefs_get_maxrows()
 }
 
 /* callbacks */
-void
+static void
 gmdb_prefs_help_cb(GtkWidget *w, gpointer data)
 {
 	GError *error = NULL;
@@ -47,7 +47,7 @@ gmdb_prefs_help_cb(GtkWidget *w, gpointer data)
 	}
 }
 
-void
+static void
 gmdb_prefs_save_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *entry;
@@ -63,7 +63,7 @@ gmdb_prefs_save_cb(GtkWidget *w, GladeXML *xml)
 	if (win) gtk_widget_destroy(win);
 }
 
-void
+static void
 gmdb_prefs_cancel_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *win;

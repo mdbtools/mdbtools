@@ -39,8 +39,8 @@ extern GtkWidget *app;
 extern MdbHandle *mdb;
 extern MdbSQL *sql;
 
-void gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml);
-void gmdb_sql_load_query(GladeXML *xml, gchar *file_path);
+static void gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml);
+static void gmdb_sql_load_query(GladeXML *xml, gchar *file_path);
 
 void
 gmdb_sql_close_all()
@@ -56,7 +56,7 @@ gmdb_sql_close_all()
 }
 
 /* callbacks */
-void
+static void
 gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 {
 	gchar *file_path;
@@ -99,27 +99,32 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	}
 
 	treeview = glade_xml_get_widget (sql_xml, "sql_results");
-	glist = gtk_tree_view_get_columns(treeview);
+	glist = gtk_tree_view_get_columns(GTK_TREE_VIEW(treeview));
 	i = 0;
 	if (need_headers)  {
 		while (col = g_list_nth_data(glist, i)) {
+			gchar *title;
 			if (i>0) fprintf(outfile,delimiter);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, gtk_tree_view_column_get_title(col));
-			fprintf(outfile,"%s", gtk_tree_view_column_get_title(col));
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, gtk_tree_view_column_get_title(col));
+			title = g_strdup(gtk_tree_view_column_get_title(col));
+			gmdb_print_quote(outfile, need_quote, quotechar,
+				delimiter, title);
+			fprintf(outfile,"%s", title);
+			gmdb_print_quote(outfile, need_quote, quotechar,
+				delimiter, title);
+			g_free(title);
 			i++;
 		}
 		fprintf(outfile,lineterm);
 		g_list_free(glist);
 	}
 
-	store = (GtkTreeStore *) gtk_tree_view_get_model(treeview);
+	store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 	rows=0;
 	g_value_init (&value, G_TYPE_STRING);
 	do {
 		rows++;
-		n_columns = gtk_tree_model_get_n_columns(store);
+		n_columns = gtk_tree_model_get_n_columns(GTK_TREE_MODEL(store));
 		for (i=0; i < n_columns; i++) {
 			if (i>0) fprintf(outfile,delimiter);
 			gtk_tree_model_get_value(GTK_TREE_MODEL(store), 
@@ -141,7 +146,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	gtk_dialog_run (GTK_DIALOG (dlg));
 	gtk_widget_destroy (dlg);
 }
-void
+static void
 gmdb_sql_write_cb(GtkWidget *w, GladeXML *xml)
 {
 	gchar *file_path;
@@ -155,7 +160,7 @@ gmdb_sql_write_cb(GtkWidget *w, GladeXML *xml)
 
 	gtk_widget_destroy(filesel);
 }
-void
+static void
 gmdb_sql_load_cb(GtkWidget *w, GladeXML *xml)
 {
 	gchar *file_path;
@@ -169,7 +174,7 @@ gmdb_sql_load_cb(GtkWidget *w, GladeXML *xml)
 
 	gtk_widget_destroy(filesel);
 }
-void
+static void
 gmdb_sql_results_cb(GtkWidget *w, GladeXML *xml)
 {
 	GladeXML *dialog_xml;
@@ -199,7 +204,7 @@ gmdb_sql_results_cb(GtkWidget *w, GladeXML *xml)
 
 	g_object_set_data(G_OBJECT(filesel), "sql_xml", xml);
 }
-void
+static void
 gmdb_sql_save_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *textview;
@@ -235,7 +240,7 @@ gmdb_sql_save_as_cb(GtkWidget *w, GladeXML *xml)
 
 	g_object_set_data(G_OBJECT(filesel), "sql_xml", xml);
 }
-void
+static void
 gmdb_sql_open_cb(GtkWidget *w, GladeXML *xml)
 {
 	GladeXML *dialog_xml;
@@ -255,7 +260,7 @@ gmdb_sql_open_cb(GtkWidget *w, GladeXML *xml)
 	filesel = glade_xml_get_widget (dialog_xml, "file_dialog");
 	g_object_set_data(G_OBJECT(filesel), "sql_xml", xml);
 }
-void
+static void
 gmdb_sql_copy_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkTextBuffer *txtbuffer;
@@ -267,7 +272,7 @@ gmdb_sql_copy_cb(GtkWidget *w, GladeXML *xml)
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 	gtk_text_buffer_copy_clipboard(txtbuffer, clipboard);
 }
-void
+static void
 gmdb_sql_cut_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkTextBuffer *txtbuffer;
@@ -279,7 +284,7 @@ gmdb_sql_cut_cb(GtkWidget *w, GladeXML *xml)
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 	gtk_text_buffer_cut_clipboard(txtbuffer, clipboard, TRUE);
 }
-void
+static void
 gmdb_sql_paste_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkTextBuffer *txtbuffer;
@@ -291,7 +296,7 @@ gmdb_sql_paste_cb(GtkWidget *w, GladeXML *xml)
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 	gtk_text_buffer_paste_clipboard(txtbuffer, clipboard, NULL, TRUE);
 }
-void
+static void
 gmdb_sql_close_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *win;
@@ -300,7 +305,7 @@ gmdb_sql_close_cb(GtkWidget *w, GladeXML *xml)
 	if (win) gtk_widget_destroy(win);
 }
 
-void 
+static void 
 gmdb_sql_dnd_dataget_cb(
     GtkWidget *w, GdkDragContext *dc,
     GtkSelectionData *selection_data, guint info, guint t,
@@ -329,7 +334,7 @@ GtkTreeIter iter2;
 		8,  /* 8 bits per character. */
 		tablename, strlen(tablename));
 }
-void gmdb_sql_dnd_datareceived_cb(
+static void gmdb_sql_dnd_datareceived_cb(
         GtkWidget *w,
         GdkDragContext *dc,
         gint x, gint y,
@@ -352,7 +357,7 @@ GtkWidget *textview;
 	gtk_widget_grab_focus(GTK_WIDGET(textview));
 }
 
-void
+static void
 gmdb_sql_select_hist_cb(GtkList *list, GladeXML *xml)
 {
 	gchar *buf;
@@ -368,7 +373,7 @@ gmdb_sql_select_hist_cb(GtkList *list, GladeXML *xml)
 	gtk_text_buffer_set_text(txtbuffer, buf, strlen(buf));
 }
 
-void
+static void
 gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 {
 	guint len;
@@ -431,7 +436,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	for (i=0;i<sql->num_columns;i++) 
 		gtypes[i]=G_TYPE_STRING;
 
-	store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
+	store = (GtkWidget *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 	if (store) {
 		i=0;
 		while (column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), i)) {
@@ -610,7 +615,7 @@ gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 }
 
 /* functions */
-gchar *
+static gchar *
 gmdb_sql_get_basename(char *file_path)
 {
 	int i, len;
@@ -629,7 +634,7 @@ gmdb_sql_get_basename(char *file_path)
 	return basename;
 }
 
-void
+static void
 gmdb_sql_set_file(GladeXML *xml, gchar *file_name)
 {
 	GtkWidget *window, *textview;
@@ -673,7 +678,7 @@ gmdb_sql_save_query(GladeXML *xml, gchar *file_path)
 	fclose(out);
 	gmdb_sql_set_file(xml, file_path);
 }
-void
+static void
 gmdb_sql_load_query(GladeXML *xml, gchar *file_path)
 {
 	FILE *in;
@@ -696,14 +701,14 @@ gmdb_sql_load_query(GladeXML *xml, gchar *file_path)
 	gtk_text_buffer_get_start_iter(txtbuffer, &start);
 	gtk_text_buffer_get_end_iter(txtbuffer, &end);
 	gtk_text_buffer_delete(txtbuffer, &start, &end);
-	while (len = fgets(buf, 255, in)) {
+	while (fgets(buf, 255, in) && (*buf != '\0')) {
 		gtk_text_buffer_get_end_iter(txtbuffer, &end);
-		gtk_text_buffer_insert(txtbuffer, &end, buf, len);
+		gtk_text_buffer_insert(txtbuffer, &end, buf, strlen(buf));
 	}
 	fclose(in);
 	gmdb_sql_set_file(xml, file_path);
 }
-void 
+static void 
 gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml)
 {
 int   i;

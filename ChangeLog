@@ -1,3 +1,21 @@
+Wed Jan  5 07:43:07 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/gmdb2/debug.c:
+	* src/gmdb2/file.c:
+	* src/gmdb2/form.c:
+	* src/gmdb2/gmdb.h:
+	* src/gmdb2/macro.c:
+	* src/gmdb2/main2.c:
+	* src/gmdb2/module.c:
+	* src/gmdb2/prefs.c:
+	* src/gmdb2/query.c:
+	* src/gmdb2/report.c:
+	* src/gmdb2/schema.c:
+	* src/gmdb2/sql.c:
+	* src/gmdb2/table.c:
+	* src/gmdb2/table_data.c:
+	* src/gmdb2/table_def.c:
+	* src/gmdb2/table_export.c: Fix various warnings
+
 Thu Dec 30 19:26:01 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING:
 	* doc/reference/libmdb/libmdb-sections.txt:

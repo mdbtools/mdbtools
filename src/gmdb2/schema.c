@@ -33,7 +33,7 @@ static gchar drops;
 
 #define ALL_TABLES   "(All Tables)"
 
-void
+static void
 gmdb_schema_export()
 {
 FILE *outfile;
