@@ -1,3 +1,6 @@
+Wed Jun  2 07:31:04 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/file.c: Improve mdb_open's error handling
+
 Mon May 31 12:19:05 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c: Make better use of glib functions
 

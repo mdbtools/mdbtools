@@ -103,13 +103,12 @@ MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
 	mdb->f = (MdbFile *) g_malloc0(sizeof(MdbFile));
+	mdb->f->refs = 1;
+	mdb->f->fd = -1;
 	mdb->f->filename = (char *) mdb_find_file(filename);
 	if (!mdb->f->filename) { 
 		fprintf(stderr, "Can't alloc filename\n");
-		g_free(mdb->f->filename);
-		g_free(mdb->f);
-		g_free(mdb->backend_name);
-		g_free(mdb);
+		mdb_close(mdb);
 		return NULL; 
 	}
 	if (flags & MDB_WRITABLE) {
@@ -121,14 +120,16 @@ MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 
 	if (mdb->f->fd==-1) {
 		fprintf(stderr,"Couldn't open file %s\n",mdb->f->filename); 
+		mdb_close(mdb);
 		return NULL;
 	}
 	if (!mdb_read_pg(mdb, 0)) {
 		fprintf(stderr,"Couldn't read first page.\n");
+		mdb_close(mdb);
 		return NULL;
 	}
 	if (mdb->pg_buf[0] != 0) {
-		close(mdb->f->fd);
+		mdb_close(mdb);
 		return NULL; 
 	}
 	mdb->f->jet_version = mdb_pg_get_int32(mdb, 0x14);
@@ -138,10 +139,10 @@ MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 		mdb->fmt = &MdbJet3Constants;
 	} else {
 		fprintf(stderr,"Unknown Jet version.\n");
+		mdb_close(mdb);
 		return NULL; 
 	}
 
-	mdb->f->refs++;
 	return mdb;
 }
 
@@ -164,7 +165,7 @@ mdb_close(MdbHandle *mdb)
 		if (mdb->f->refs > 1) {
 			mdb->f->refs--;
 		} else {
-			if (mdb->f->fd) close(mdb->f->fd);
+			if (mdb->f->fd != -1) close(mdb->f->fd);
 			g_free(mdb->f->filename);
 			g_free(mdb->f);
 		}
