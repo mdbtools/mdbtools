@@ -133,7 +133,11 @@ the start of the page (though not always) begins a series of 18 byte records
 one for each column present.  It's format is as follows:
 +------+---------+--------------------------------------------------------+
 | ???? | 1 byte  | Column Type (see table below)                          |
-| ???? |15 bytes | ???                                                    |
+| ???? | 2 bytes | Column Number, ascending sequential number, starts at 0|
+| ???? | 1 byte  | appears to denote whether a text field is required     |
+| ???? | 1 byte  | unknown                                                |
+| ???? | 4 bytes | Column Number (again)                                  |
+| ???? | 7 bytes | ??? (timestamp?)                                       |
 | ???? | 2 bytes | length of column                                       |
 +-------------------------------------------------------------------------+
 

@@ -54,6 +54,7 @@ int fixed_cols_found, var_cols_found;
 int col_start, len;
 int eod; /* end of data */
 int delflag, lookupflag;
+int bitmask_sz;
 
 	row_start = mdb_get_int16(mdb, 10+(row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
@@ -88,7 +89,8 @@ int delflag, lookupflag;
 		else
 			var_cols++;
 	}
-	eod = mdb->pg_buf[row_end-2-var_cols];
+	bitmask_sz = (num_cols - 1) / 8 - 1;
+	eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
 
 #if MDB_DEBUG
 	fprintf(stdout,"#cols: %-3d #varcols %-3d EOD %-3d\n", 
