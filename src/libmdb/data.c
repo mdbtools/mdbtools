@@ -19,14 +19,18 @@
 
 #include "mdbtools.h"
 
+char *mdb_col_to_string(const char *buf, int datatype, int size);
 
 void mdb_data_dump(MdbTableDef *table)
 {
 MdbColumn col;
 MdbHandle *mdb = table->entry->mdb;
-int i, pg_num;
-int rows;
+int i, j, pg_num;
+int rows, num_cols, var_cols, fixed_cols;
 int row_start, row_end;
+int fixed_cols_found, var_cols_found;
+int col_start, len;
+int eod; /* end of data */
 
 	for (pg_num=1;pg_num<=table->num_pgs;pg_num++) {
 		mdb_read_pg(mdb,table->first_data_pg + pg_num);
@@ -35,10 +39,72 @@ int row_start, row_end;
 		row_end=2047;
 		for (i=0;i<rows;i++) {
 			row_start = mdb_get_int16(mdb,10+i*2);
-			fprintf(stdout,"Row %d bytes %d to %d\n", i, row_start, row_end);
+			fprintf(stdout,"Pg %d Row %d bytes %d to %d\n", pg_num, i, row_start, row_end);
 			
-			fprintf(stdout,"#cols: %-3d #varcols %-3d\n", mdb->pg_buf[row_start], mdb->pg_buf[row_end-1]);
+			num_cols = mdb->pg_buf[row_start];
+			var_cols = mdb->pg_buf[row_end-1];
+			fixed_cols = num_cols - var_cols;
+			eod = mdb->pg_buf[row_end-2-var_cols];
+
+			fprintf(stdout,"#cols: %-3d #varcols %-3d EOD %-3d\n", num_cols, var_cols, eod);
+
+			col_start = 1;
+			fixed_cols_found = 0;
+			var_cols_found = 0;
+			for (j=0;j<table->num_cols;j++) {
+				col = g_array_index(table->columns,MdbColumn,j);
+				if (mdb_is_fixed_col(&col) &&
+				    ++fixed_cols_found <= fixed_cols) {
+					fprintf(stdout,"fixed col %s = %s\n",col.name,mdb_col_to_string(&mdb->pg_buf[row_start + col_start],col.col_type,NULL));
+					col_start += col.col_size;
+				}
+			}
+			for (j=0;j<table->num_cols;j++) {
+				col = g_array_index(table->columns,MdbColumn,j);
+				if (!mdb_is_fixed_col(&col) &&
+				    ++var_cols_found <= var_cols) {
+					col_start = mdb->pg_buf[row_end-1-var_cols_found];
+					if (var_cols_found==var_cols) 
+						len=eod - col_start;
+					else 
+						len=col_start - mdb->pg_buf[row_end-1-var_cols_found-1];
+					fprintf(stdout,"coltype %d colstart %d len %d\n",col.col_type,col_start, len);
+					fprintf(stdout,"var col %s = %s\n", col.name, mdb_col_to_string(&mdb->pg_buf[row_start + col_start],col.col_type,len));
+					col_start += len;
+				}
+			}
 			row_end = row_start-1;
 		}
 	}
+}
+
+int mdb_is_fixed_col(MdbColumn *col)
+{
+	/* FIX ME -- not complete */
+	if (col->col_type==MDB_TEXT)
+		return FALSE;
+	else 
+		return TRUE;
+}
+char *mdb_col_to_string(const char *buf, int datatype, int size)
+{
+/* FIX ME -- fix for big endian boxes */
+static char text[256];
+
+	switch (datatype) {
+		case MDB_INT:
+			sprintf(text,"%ld",*((gint16 *)buf));
+			return "test";
+		break;
+		case MDB_LONGINT:
+			sprintf(text,"%ld",*((gint32 *)buf));
+			return text;
+		break;
+		case MDB_TEXT:
+			strncpy(text, buf, size);
+			text[size]='\0';
+			return text;
+		break;
+	}
+	return NULL;
 }
