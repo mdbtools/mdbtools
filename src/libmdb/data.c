@@ -326,7 +326,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
-	} while (mdb->pg_buf[0]!=0x01 || mdb_pg_get_int32(mdb, 4)!=entry->table_pg);
+	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb->pg_buf, 4)!=entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
 	return table->cur_phys_pg;
 }
@@ -381,7 +381,7 @@ mdb_fetch_row(MdbTableDef *table)
 			}
 			mdb_read_pg(mdb, pg);
 		} else {
-			rows = mdb_pg_get_int16(mdb,fmt->row_count_offset);
+			rows = mdb_get_int16(mdb->pg_buf,fmt->row_count_offset);
 
 			/* if at end of page, find a new page */
 			if (table->cur_row >= rows) {
@@ -440,32 +440,25 @@ int i;
 int 
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
-	guint16 ole_len;
-	guint16 ole_flags;
+	guint32 ole_len;
 	char *buf;
 	int pg_row, row_start;
 	int len;
 
-	ole_len = mdb_get_int16(ole_ptr, 0);
-	ole_flags = mdb_get_int16(ole_ptr, 2);
+	ole_len = mdb_get_int32(ole_ptr, 0);
 
-	if (ole_flags == 0x8000) {
-		/* inline fields don't have a next */
+	if ((ole_len & 0x80000000)
+	 || (ole_len & 0x40000000)) {
+		/* inline or single-page fields don't have a next */
 		return 0;
-	} else if (ole_flags == 0x4000) {
-		/* 0x4000 flagged ole's are contained on one page and thus 
-		 * should be handled entirely with mdb_ole_read() */
-		return 0;
-	} else if (ole_flags == 0x0000) {
-		pg_row = (col->cur_blob_pg << 8) & col->cur_blob_row;
-		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
+	} else {
+		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
+			&buf, &row_start, &len)) {
 			return 0;
 		}
 		if (col->bind_ptr)
-			memcpy(col->bind_ptr, buf + row_start, len);
-		pg_row = mdb_get_int32(buf, row_start);
-		col->cur_blob_pg = pg_row >> 8;
-		col->cur_blob_row = pg_row & 0xff;
+			memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
+		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
 
 		return len;
 	}
@@ -474,20 +467,18 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 int 
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
-	guint16 ole_len;
-	guint16 ole_flags;
+	guint32 ole_len;
 	char *buf;
 	int pg_row, row_start;
 	int len;
 
-	ole_len = mdb_get_int16(ole_ptr, 0);
-	ole_flags = mdb_get_int16(ole_ptr, 2);
-	mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %08x",
-		ole_len, ole_flags);
+	ole_len = mdb_get_int32(ole_ptr, 0);
+	mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %02x",
+		ole_len & 0x00ffffff, ole_len >> 24);
 
 	col->chunk_size = chunk_size;
 
-	if (ole_flags == 0x8000) {
+	if (ole_len & 0x80000000) {
 		/* inline ole field, if we can satisfy it, then do it */
 		len = col->cur_value_len - MDB_MEMO_OVERHEAD;
 		if (chunk_size >= len) {
@@ -500,14 +491,14 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		} else {
 			return 0;
 		}
-	} else if (ole_flags == 0x4000) {
-		pg_row = mdb_get_int32(ole_ptr, 4);
-		col->cur_blob_pg = pg_row >> 8;
-		col->cur_blob_row = pg_row & 0xff;
+	} else if (ole_len & 0x40000000) {
+		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
-			col->cur_blob_row, col->cur_blob_pg);
+			col->cur_blob_pg_row & 0xff,
+			col->cur_blob_pg_row >> 8);
 
-		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
+		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
+			&buf, &row_start, &len)) {
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -518,35 +509,29 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 				buffer_dump(col->bind_ptr, 0, 16);
 		}
 		return len;
-	} else if (ole_flags == 0x0000) {
-		pg_row = mdb_get_int32(ole_ptr, 4);
-		col->cur_blob_pg = pg_row >> 8;
-		col->cur_blob_row = pg_row & 0xff;
+	} else if (ole_len & 0xff000000 == 0) {
+		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 
-		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
+		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
+			&buf, &row_start, &len)) {
 			return 0;
 		}
-
 		if (col->bind_ptr) 
-			memcpy(col->bind_ptr, buf + row_start, len);
-
-		pg_row = mdb_get_int32(buf, row_start);
-		col->cur_blob_pg = pg_row >> 8;
-		col->cur_blob_row = pg_row & 0xff;
+			memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
+		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
 
 		return len;
 	} else {
-		fprintf(stderr,"Unhandled ole field flags = %04x\n", ole_flags);
+		fprintf(stderr,"Unhandled ole field flags = %02x\n", ole_len >> 24);
 		return 0;
 	}
 }
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 {
-	guint16 ole_len;
-	guint16 ole_flags;
+	guint32 ole_len;
 	guint32 row_start, pg_row;
 	guint32 len;
-	char *buf;
+	char *buf, *pg_buf = mdb->pg_buf;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return 0;
@@ -555,17 +540,16 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 	/* The 16 bit integer at offset 0 is the length of the memo field.
 	 * The 32 bit integer at offset 4 contains page and row information.
 	 */
-	ole_len = mdb_pg_get_int16(mdb, start);
-	ole_flags = mdb_pg_get_int16(mdb, start+2);
+	ole_len = mdb_get_int32(pg_buf, start);
 
-	if (ole_flags == 0x8000) {
+	if (ole_len & 0x80000000) {
+		/* inline */
 		len = size - MDB_MEMO_OVERHEAD;
-		/* inline ole field */
-		if (dest) memcpy(dest, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
-			size - MDB_MEMO_OVERHEAD);
+		if (dest) memcpy(dest, pg_buf + start + MDB_MEMO_OVERHEAD, len);
 		return len;
-	} else if (ole_flags == 0x4000) {
-		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
+	} else if (ole_len & 0x40000000) {
+		/* single page */
+		pg_row = mdb_get_int32(pg_buf, start+4);
 		mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", pg_row >> 8);
 
 		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
@@ -577,11 +561,14 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 		if (dest)
 			memcpy(dest, buf + row_start, len);
 		return len;
-	} else if (ole_flags == 0x0000) {
+	} else if (ole_len & 0xff000000 == 0) { // assume all flags in MSB
+		/* multi-page */
 		int cur = 0;
-		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
-		mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", pg_row >> 8);
+		pg_row = mdb_get_int32(pg_buf, start+4);
 		do {
+			mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x",
+				pg_row >> 8);
+
 			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
 				return 0;
 			}
@@ -598,7 +585,7 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 		} while ((pg_row >> 8));
 		return cur;
 	} else {
-		fprintf(stderr,"Unhandled ole field flags = %04x\n", ole_flags);
+		fprintf(stderr, "Unhandled ole field flags = %02x\n", ole_len >> 24);
 		return 0;
 	}
 }
@@ -607,7 +594,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	guint32 memo_len;
 	guint32 row_start, pg_row;
 	guint32 len;
-	char *buf;
+	char *buf, *pg_buf = mdb->pg_buf;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
 	if (size<MDB_MEMO_OVERHEAD) {
@@ -616,23 +603,23 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	} 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, start, start + MDB_MEMO_OVERHEAD - 1);
+	buffer_dump(pg_buf, start, start + MDB_MEMO_OVERHEAD - 1);
 #endif
 
 	/* The 32 bit integer at offset 0 is the length of the memo field
 	 *   with some flags in the high bits.
 	 * The 32 bit integer at offset 4 contains page and row information.
 	 */
-	memo_len = mdb_pg_get_int32(mdb, start);
+	memo_len = mdb_get_int32(pg_buf, start);
 
 	if (memo_len & 0x80000000) {
 		/* inline memo field */
-		mdb_unicode2ascii(mdb, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
+		mdb_unicode2ascii(mdb, pg_buf + start + MDB_MEMO_OVERHEAD,
 			size - MDB_MEMO_OVERHEAD, text, MDB_BIND_SIZE);
 		return text;
 	} else if (memo_len & 0x40000000) {
 		/* single-page memo field */
-		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
+		pg_row = mdb_get_int32(pg_buf, start+4);
 #if MDB_DEBUG
 		printf("Reading LVAL page %06x\n", pg_row >> 8);
 #endif
@@ -647,14 +634,13 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 #endif
 		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;
-	} else {
+	} else if (memo_len & 0xff000000 == 0) { // assume all flags in MSB
 		/* multi-page memo field */
 		guint32 tmpoff = 0;
 		char *tmp;
 
-		memo_len &= 0x3fffffff;
 		tmp = (char *) g_malloc(memo_len);
-		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
+		pg_row = mdb_get_int32(pg_buf, start+4);
 		do {
 #if MDB_DEBUG
 			printf("Reading LVAL page %06x\n", pg_row >> 8);
@@ -680,11 +666,9 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		mdb_unicode2ascii(mdb, tmp, tmpoff, text, MDB_BIND_SIZE);
 		g_free(tmp);
 		return text;
-/*
 	} else {
-		fprintf(stderr,"Unhandled memo field flags = %04x\n", memo_flags);
+		fprintf(stderr, "Unhandled memo field flags = %02x\n", memo_len >> 24);
 		return "";
-*/
 	}
 }
 static char *

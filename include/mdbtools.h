@@ -277,8 +277,7 @@ typedef struct {
 	int		cur_value_start;
 	int 		cur_value_len;
 	/* MEMO/OLE readers */
-	guint32		cur_blob_pg;
-	int		cur_blob_row;
+	guint32		cur_blob_pg_row;
 	int		chunk_size;
 	/* numerics only */
 	int		col_prec;
