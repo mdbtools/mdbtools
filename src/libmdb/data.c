@@ -19,6 +19,8 @@
 
 #include "mdbtools.h"
 
+#define MDB_DEBUG 1
+
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size);
 
 void mdb_bind_col(MdbColumn *col, void *bind_ptr)
@@ -66,16 +68,22 @@ int delflag, lookupflag;
 		return 0;
 	}
 
+#if MDB_DEBUG
 	buffer_dump(mdb->pg_buf, row_start, row_end);
+#endif
 
+	/* find out all the important stuff about the row */
 	num_cols = mdb->pg_buf[row_start];
 	var_cols = mdb->pg_buf[row_end-1];
 	fixed_cols = num_cols - var_cols;
 	eod = mdb->pg_buf[row_end-2-var_cols];
 
+#if MDB_DEBUG
 	fprintf(stdout,"#cols: %-3d #varcols %-3d EOD %-3d\n", 
 		num_cols, var_cols, eod);
+#endif
 
+	/* data starts at 1 */
 	col_start = 1;
 	fixed_cols_found = 0;
 	var_cols_found = 0;
@@ -85,6 +93,15 @@ int delflag, lookupflag;
 		col = g_array_index(table->columns,MdbColumn,j);
 		if (mdb_is_fixed_col(&col) &&
 		    ++fixed_cols_found <= fixed_cols) {
+			if (col.bind_ptr) {
+				strcpy(col.bind_ptr, 
+					mdb_col_to_string(mdb, 
+						row_start + col_start,
+						col.col_type,
+						0)
+					);
+			}
+#if MDB_DEBUG
 			fprintf(stdout,"fixed col %s = %s\n",
 				col.name,
 				mdb_col_to_string(mdb, 
@@ -92,6 +109,7 @@ int delflag, lookupflag;
 					col.col_type,
 					0));
 			col_start += col.col_size;
+#endif
 		}
 	}
 
@@ -105,18 +123,31 @@ int delflag, lookupflag;
 			if (var_cols_found==var_cols) 
 				len=eod - col_start;
 			else 
-				len=col_start - mdb->pg_buf[row_end-1-var_cols_found-1];
+				len=mdb->pg_buf[row_end-1-var_cols_found-1] - col_start;
 
+#if MDB_DEBUG
 			fprintf(stdout,"coltype %d colstart %d len %d\n",
 				col.col_type,
 				col_start, 
 				len);
+#endif
+			if (col.bind_ptr) {
+				strcpy(col.bind_ptr, 
+					mdb_col_to_string(mdb, 
+						row_start + col_start,
+						col.col_type,
+						len)
+					);
+			}
+#if MDB_DEBUG
 			fprintf(stdout,"var col %s = %s\n", 
 				col.name, 
 				mdb_col_to_string(mdb,
 					row_start + col_start,
 					col.col_type,
 					len));
+#endif
+
 			col_start += len;
 		}
 	}
