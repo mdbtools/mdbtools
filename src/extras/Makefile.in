@@ -1,21 +1,21 @@
-# Generated automatically from Makefile.in by configure.
 
 SHELL = /bin/sh
+VPATH = @srcdir@
 
-top_srcdir = ..
-srcdir = .
-prefix = /usr/local
-exec_prefix = ${prefix}
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
 infodir = $(exec_prefix)/info
 libdir = $(exec_prefix)/lib
 mandir = $(exec_prefix)/man/man1
 
-CC = gcc
-CPPFLAGS = 
-CFLAGS = $(CPPFLAG) -g -O2
-LDFLAGS = 
-LIBS = 
+CC = @CC@
+CPPFLAGS = @CPPFLAGS@
+CFLAGS = $(CPPFLAG) @CFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
 INSTALL= @INSTALL@
 
 PROGS = mdb-dump

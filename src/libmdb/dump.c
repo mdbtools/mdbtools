@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void buffer_dump(const char* buf, int start, int end)
+void buffer_dump(const unsigned char* buf, int start, int end)
 {
 	char asc[20];
 	int j, k;
