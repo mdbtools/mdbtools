@@ -104,7 +104,7 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	unsigned int *var_col_offsets = NULL;
 
 	if (mdb_get_option(MDB_DEBUG_ROW)) {
-		buffer_dump(pg_buf, row_start, row_end+1);
+		buffer_dump(pg_buf, row_start, row_end);
 	}
 
 	row_cols = mdb_pg_get_int16(mdb, row_start);
@@ -141,6 +141,8 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 			fields[i].value = &pg_buf[row_start + col_start];
 			fields[i].siz = col->col_size;
 			fixed_cols_found++;
+		/* Use col->var_col_num because a deleted column is still
+		 * present in the variable column offsets table for the row */
 		} else if ((!fields[i].is_fixed)
 		 && (col->var_col_num < row_var_cols)) {
 			col_start = var_col_offsets[col->var_col_num];
@@ -190,11 +192,11 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	if (table->num_var_cols > 0) {
 		row_var_cols = pg_buf[row_end - bitmask_sz];
 		row_len = row_end - row_start + 1;
-		num_jumps = 0;
-		while (num_jumps < (row_len-bitmask_sz-row_var_cols-num_jumps-2)/256) {
-			num_jumps ++;
-		}
+		num_jumps = (row_len - 1) / 256;
 		col_ptr = row_end - bitmask_sz - num_jumps - 1;
+		/* If last jump is a dummy value, ignore it */
+		if ((col_ptr-row_start-row_var_cols)/256 < num_jumps)
+			num_jumps--;
 
 		var_col_offsets = (int *)g_malloc((row_var_cols+1)*sizeof(int));
 		jumps_used = 0;
@@ -331,6 +333,11 @@ mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 			pos += fields[i].siz;
 		}
 	}
+	/* For tables without variable-length columns */
+	if (table->num_var_cols == 0) {
+		pos += mdb_pack_null_mask(&row_buffer[pos], num_fields, fields);
+		return pos;
+	}
 	/* Variable length columns */
 	for (i=0;i<num_fields;i++) {
 		if (!fields[i].is_fixed) {
@@ -359,7 +366,6 @@ mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 	row_buffer[pos++] = (var_cols >> 8) & 0xff;
 
 	pos += mdb_pack_null_mask(&row_buffer[pos], num_fields, fields);
-
 	return pos;
 }
 
@@ -368,7 +374,8 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 {
 	unsigned int pos = 0;
 	unsigned int var_cols = 0;
-	unsigned int i;
+	unsigned int i, j;
+	unsigned char *offset_high;
 
 	row_buffer[pos++] = num_fields;
 
@@ -379,6 +386,11 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 			memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
 			pos += fields[i].siz;
 		}
+	}
+	/* For tables without variable-length columns */
+	if (table->num_var_cols == 0) {
+		pos += mdb_pack_null_mask(&row_buffer[pos], num_fields, fields);
+		return pos;
 	}
 	/* Variable length columns */
 	for (i=0;i<num_fields;i++) {
@@ -391,22 +403,38 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 			}
 		}
 	}
+
+	offset_high = (unsigned char *) g_malloc(var_cols+1);
+	offset_high[0] = (pos << 8) & 0xff;
+	j = 1;
+	
 	/* EOD */
-	row_buffer[pos] = pos;
+	row_buffer[pos] = pos & 0xff;
 	pos++;
 
+	/* Variable length column offsets */
 	for (i=num_fields; i>0; i--) {
 		if (!fields[i-1].is_fixed) {
 			row_buffer[pos++] = fields[i-1].offset & 0xff;
+			offset_high[j++] = (fields[i-1].offset << 8) & 0xff;
 		}
 	}
 
-	/* FIXME: jump table goes here */
+	/* Dummy jump table entry */
+	if (offset_high[0] < (pos+(num_fields+7)/8-1)/255) {
+		row_buffer[pos++] = 0xff;
+	}
+	/* Jump table */
+	for (i=0; i<var_cols; i++) {
+		if (offset_high[i] > offset_high[i+1]) {
+			row_buffer[pos++] = var_cols-i;
+		}
+	}
+	g_free(offset_high);
 
 	row_buffer[pos++] = var_cols;
 
 	pos += mdb_pack_null_mask(&row_buffer[pos], num_fields, fields);
-
 	return pos;
 }
 int

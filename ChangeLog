@@ -1,3 +1,6 @@
+Sat Aug 28 00:20:44 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/write: Jump table packing/cracking improvements
+
 Thu Aug 26 21:06:35 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Documentation fix
 	* src/sql/lexer.l: Add SQL quote escaping
