@@ -32,6 +32,7 @@ MdbCatalogEntry entry;
 		exit(1);
 	}
 	
+	mdb_init();
 	mdb = mdb_open(argv[1]);
 
 	mdb_read_pg(mdb, MDB_CATALOG_PG);
@@ -46,5 +47,6 @@ MdbCatalogEntry entry;
 	}
 
 	mdb_free_handle(mdb);
+	mdb_exit();
 }
 

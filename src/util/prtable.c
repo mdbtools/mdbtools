@@ -30,11 +30,12 @@ MdbCatalogEntry entry;
 GList *l;
 
 
-	if (argc<2) {
+	if (argc<3) {
 		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);
 		exit(1);
 	}
 	
+	mdb_init();
 	mdb = mdb_open(argv[1]);
 
 	mdb_read_catalog(mdb, MDB_TABLE);
@@ -47,5 +48,6 @@ GList *l;
 	}
 
 	mdb_free_handle(mdb);
+	mdb_exit();
 }
 

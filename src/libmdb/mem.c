@@ -19,6 +19,17 @@
 
 #include "mdbtools.h"
 
+void mdb_init()
+{
+	mdb_init_backends();
+}
+
+void mdb_exit()
+{
+	/* FIX ME -- need to deallocate backend structures */
+	g_hash_table_destroy(mdb_backends);
+}
+
 MdbHandle *mdb_alloc_handle()
 {
 MdbHandle *mdb;
@@ -26,6 +37,7 @@ MdbHandle *mdb;
 	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
 	memset(mdb, '\0', sizeof(MdbHandle));
 	mdb->pg_size = MDB_PGSIZE;
+	mdb_set_default_backend(mdb, "access");
 
 	return mdb;	
 }

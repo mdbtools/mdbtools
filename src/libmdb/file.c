@@ -22,6 +22,8 @@
 MdbHandle *mdb_open(char *filename)
 {
 MdbHandle *mdb;
+int key[] = {0x86, 0xfb, 0xec, 0x37, 0x5d, 0x44, 0x9c, 0xfa, 0xc6, 0x5e, 0x28, 0xe6, 0x13, 0xb6};
+int j,pos;
 
 	mdb = mdb_alloc_handle();
 	mdb->filename = (char *) malloc(strlen(filename)+1);
@@ -46,6 +48,17 @@ MdbHandle *mdb;
 	/* get the db encryption key and xor it back to clear text */
 	mdb->db_key = mdb_get_int32(mdb, 0x3e);
 	mdb->db_key ^= 0xe15e01b9;
+
+
+	/* get the db password located at 0x42 bytes into the file */
+	for (pos=0;pos<14;pos++) {
+		j = mdb_get_int32(mdb,0x42+pos);
+		j ^= key[pos];
+		if ( j != 0)
+			mdb->db_passwd[pos] = j;
+		else
+			mdb->db_passwd[pos] = '\0';
+        }
 
 	return mdb;
 }

@@ -20,7 +20,7 @@ INSTALL= @INSTALL@
 LIBLIST = libmdb.a
 
 INC = -I ../include `glib-config --cflags`
-OBJS = catalog.o mem.o file.o kkd.o table.o data.o dump.o
+OBJS = catalog.o mem.o file.o kkd.o table.o data.o dump.o backend.o
 
 all: libmdb
 

@@ -20,38 +20,6 @@
 #include "mdbtools.h"
 
 
-char *mdb_get_coltype_string(int col_type)
-{
-
-/* 
-** These are the Access datatype names, each backend will have to provide
-** its own mapping.
-*/
-static char *type_name[] = {"Unknown 0x00",
-                        "Boolean",
-                        "Byte",
-                        "Integer",
-                        "Long Integer",
-                        "Currency",
-                        "Single",
-                        "Double",
-                        "DateTime (Short)",
-                        "Unknown 0x09",
-                        "Text",
-                        "OLE",
-                        "Memo/Hyperlink",
-                        "Unknown 0x0d",
-                        "Unknown 0x0e",
-			"Replication ID"
-                };
-
-        if (col_type > 0x0f) {
-                return NULL;
-        } else {
-                return type_name[col_type];
-        }
-}
-
 unsigned char mdb_col_needs_size(int col_type)
 {
 	if (col_type == MDB_TEXT) {
@@ -137,7 +105,7 @@ int i;
 	
 		fprintf(stdout,"column %d Name: %-20s Type: %s(%d)\n",
 			i, col->name,
-			mdb_get_coltype_string(col->col_type),
+			mdb_get_coltype_string(mdb->default_backend, col->col_type),
 			col->col_size);
 	}
 }

@@ -258,14 +258,14 @@ static char text[256];
 		break;
 		case MDB_TEXT:
 			if (size<0) {
-				return "(oops)";
+				return "";
 			}
 			strncpy(text, &mdb->pg_buf[start], size);
 			text[size]='\0';
 			return text;
 		case MDB_MEMO:
 			if (size<MDB_MEMO_OVERHEAD) {
-				return "(oops)";
+				return "";
 			}
 			strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD], 
 				size - MDB_MEMO_OVERHEAD);

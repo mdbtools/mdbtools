@@ -67,6 +67,13 @@ enum {
 	MDB_REPID = 0x0f
 };
 
+/* hash to store registered backends */
+GHashTable	*mdb_backends;
+
+typedef struct {
+	char **types_table;
+} MdbBackend;
+
 typedef struct {
 	int           fd;
 	char          *filename;
@@ -79,6 +86,8 @@ typedef struct {
 	int		pg_size;
 	guint32		jet_version;
 	guint32		db_key;
+	char		db_passwd[14];
+	MdbBackend	*default_backend;
 } MdbHandle; 
 
 typedef struct {
@@ -120,6 +129,8 @@ typedef struct {
 } MdbColumn;
 
 /* mem.c */
+extern void mdb_init();
+extern void mdb_exit();
 extern MdbHandle *mdb_alloc_handle();
 extern void mdb_free_handle(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
@@ -150,6 +161,12 @@ extern char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size
 
 
 /* dump.c */
-void buffer_dump(const unsigned char* buf, int start, int end);
+extern void buffer_dump(const unsigned char* buf, int start, int end);
+
+/* backend.c */
+extern char *mdb_get_coltype_string(MdbBackend *backend, int col_type);
+extern void mdb_init_backends();
+extern void mdb_register_backend(MdbBackend *backend, char *backend_name);
+extern int  mdb_set_default_backend(MdbHandle *mdb, char *backend_name);
 
 #endif /* _mdbtools_h_ */

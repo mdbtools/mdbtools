@@ -37,6 +37,7 @@ int page, start, stop;
 		exit(1);
 	}
 	
+	mdb_init();
 	mdb = mdb_open(argv[1]);
 
 	mdb_read_catalog(mdb, MDB_TABLE);
@@ -51,5 +52,6 @@ int page, start, stop;
 	  }
 
 	mdb_free_handle(mdb);
+	mdb_exit();
 }
 

@@ -20,7 +20,7 @@ LIBS =
 INSTALL= @INSTALL@
 INC = -I ../include `glib-config --cflags`
 LIBS = -L ../libmdb -lmdb `glib-config --libs`
-PROGS = prcat prkkd prtable prdata prdump mdb-schema mdb-export mdb-tables mdb-header mdb-parsecsv
+PROGS = prcat prkkd prtable prdata prdump mdb-schema mdb-export mdb-tables mdb-header mdb-parsecsv mdb-array
 PRCATOBJS = prcat.o
 PRKKDOBJS = prkkd.o
 PRTABLEOBJS = prtable.o
@@ -31,6 +31,7 @@ EXPORTOBJS = mdb-export.o
 HEADEROBJS = header.o
 TABLEOBJS = tables.o
 CSVOBJS = parsecsv.o
+ARROBJS = mdb-array.o
 
 all: $(PROGS)
 
@@ -63,6 +64,9 @@ mdb-header: $(HEADEROBJS)
 
 mdb-parsecsv: $(CSVOBJS)
 	$(CC) -g -o $@ $(CSVOBJS) $(LIBS)
+
+mdb-array: $(ARROBJS)
+	$(CC) -g -o $@ $(ARROBJS) $(LIBS)
 
 clean: 
 	rm -f core *.o $(PROGS)

@@ -35,10 +35,13 @@ MdbHandle *mdb;
 		exit(1);
 	}
 	
+	mdb_init();
+
 	mdb = mdb_open(argv[1]);
 
 	mdb_dump_catalog(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
 
 	mdb_free_handle(mdb);
+	mdb_exit();
 }
 

@@ -33,6 +33,9 @@ MdbColumn *col;
    exit (1);
  }
  
+ /* initialize the library */
+ mdb_init();
+
  /* open the database */
 
  mdb = mdb_open (argv[1]);
@@ -68,5 +71,6 @@ MdbColumn *col;
  fprintf (stdout, "\n");
  
  mdb_free_handle (mdb);
+ mdb_exit();
 }
 

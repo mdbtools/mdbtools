@@ -29,13 +29,22 @@ MdbTableDef *table;
 MdbColumn *col;
 
  if (argc < 2) {
-   fprintf (stderr, "Usage: %s <file>\n",argv[0]);
+   fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
    exit (1);
  }
  
+ mdb_init();
+
  /* open the database */
 
  mdb = mdb_open (argv[1]);
+ if (argc>2) {
+	if (!mdb_set_default_backend(mdb, argv[2])) {
+		fprintf(stderr,"Invalid backend type\n");
+		mdb_exit();
+		exit(1);
+	}
+ }
 
  /* read the catalog */
  
@@ -78,7 +87,7 @@ MdbColumn *col;
 		   col = g_ptr_array_index (table->columns, k);
 		   
 		   fprintf (stdout, "\t%s\t\t\t%s", col->name, 
-			    mdb_get_coltype_string (col->col_type));
+			    mdb_get_coltype_string (mdb->default_backend, col->col_type));
 		   
 		   if (col->col_size != 0)
 		     fprintf (stdout, " (%d)", col->col_size);
@@ -98,5 +107,6 @@ MdbColumn *col;
    }
  
  mdb_free_handle (mdb);
+ mdb_exit();
 }
 

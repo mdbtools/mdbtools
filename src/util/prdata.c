@@ -36,6 +36,7 @@ GList *l;
 		exit(1);
 	}
 	
+	mdb_init();
 	mdb = mdb_open(argv[1]);
 
 	mdb_read_catalog(mdb, MDB_TABLE);
@@ -50,5 +51,6 @@ GList *l;
 	}
 
 	mdb_free_handle(mdb);
+	mdb_exit();
 }
 

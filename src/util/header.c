@@ -45,10 +45,13 @@ FILE *cfile;
    exit (1);
  }
 
+ mdb_init();
+
  /* open the database */
 
  mdb = mdb_open (argv[1]);
  if (!mdb) {
+ 	mdb_exit();
 	exit(1);
  }
 
@@ -147,5 +150,6 @@ FILE *cfile;
  fclose (cfile);
  
  mdb_free_handle (mdb);
+ mdb_exit();
 }
 
