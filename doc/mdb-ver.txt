@@ -1,0 +1,25 @@
+NAME
+  mdb-ver - Return the format of a given MDB database.
+SYNOPSIS
+  mdb-ver <database>
+
+DESCRIPTION
+  mdb-ver is a utility program distributed with MDB Tools. 
+
+  It will return a single line of output with either 'JET3' for those files produced in Access 97 format or 'JET4' for those produced by Access 2000 and XP.
+
+OPTIONS
+
+NOTES 
+  Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats.
+
+HISTORY
+  mdb-ver first appeared in MDB Tools 0\.4
+
+AUTHORS
+  The mdb-ver utility was written by Brian Bruns
+
+BUGS
+  mdb-ver does minimal checking on the validity of a file. It is possbile for it to misidentify a non-MDB file.
+
+  mdb-ver does not recognize Access 2.0 (Jet 2) or the newer MSDE format files.

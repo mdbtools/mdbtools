@@ -126,7 +126,7 @@ int i;
 	for (i=0;i<idx->num_keys;i++) {
 		marker = mdb->pg_buf[cur_pos++];
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
-		printf("column %d coltype %d col_size %d\n",i,col->col_type, mdb_col_fixed_size(col));
+		printf("column %d coltype %d col_size %d (%d)\n",i,col->col_type, mdb_col_fixed_size(col), col->col_size);
 	}
 }
 void mdb_index_dump(MdbTableDef *table, MdbIndex *idx)

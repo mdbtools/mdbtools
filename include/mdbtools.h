@@ -38,7 +38,7 @@
 #define MDB_MAX_IDX_COLS 10
 #define MDB_CATALOG_PG 18
 #define MDB_MEMO_OVERHEAD 12
-#define MDB_BIND_SIZE 65536
+#define MDB_BIND_SIZE 16384
 
 enum {
 	MDB_VER_JET3 = 0,
@@ -109,15 +109,25 @@ typedef struct {
 } MdbBackend;
 
 typedef struct {
+	gboolean collect;
+	unsigned long pg_reads;
+} MdbStatistics;
+
+typedef struct {
 	int           fd;
 	gboolean      writable;
 	char          *filename;
 	guint32		jet_version;
 	guint32		db_key;
 	char		db_passwd[14];
+	MdbBackend	*default_backend;
+	char			*backend_name;
+	MdbStatistics	*stats;
 	/* free map */
 	int  map_sz;
 	unsigned char *free_map;
+	/* reference count */
+	int refs;
 } MdbFile; 
 
 /* offset to row count on data pages...version dependant */
@@ -150,6 +160,7 @@ typedef struct {
 	MdbBackend	*default_backend;
 	char		*backend_name;
 	MdbFormatConstants *fmt;
+	MdbStatistics *stats;
 } MdbHandle; 
 
 typedef struct {

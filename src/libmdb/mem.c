@@ -30,6 +30,16 @@ void mdb_exit()
 	g_hash_table_destroy(mdb_backends);
 }
 
+MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)
+{
+	mdb->stats = g_malloc0(sizeof(MdbStatistics));
+	return mdb->stats;
+}
+void mdb_free_stats(MdbHandle *mdb)
+{
+	g_free(mdb->stats);
+	mdb->stats = NULL;
+}
 MdbFile *mdb_alloc_file()
 {
 MdbHandle *f;
@@ -60,8 +70,9 @@ void mdb_free_handle(MdbHandle *mdb)
 {
 	if (!mdb) return;	
 
+	if (mdb->stats) mdb_free_stats(mdb);
 	if (mdb->catalog) mdb_free_catalog(mdb);
-	if (mdb->f) mdb_free_file(mdb->f);
+	if (mdb->f && mdb->f->refs<=0) mdb_free_file(mdb->f);
 	if (mdb->backend_name) free(mdb->backend_name);
 	free(mdb);
 }

@@ -110,4 +110,4 @@ LDFLAGS=$OLDLDFLAGS
 
 AC_SUBST(READLINE_LIBS)
 
-AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb2/Makefile)
+AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb2/Makefile doc/Makefile)

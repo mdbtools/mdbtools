@@ -1,0 +1,25 @@
+NAME
+  mdb-export - Export data in an MDB database table to CSV format.
+SYNOPSIS
+  mdb-export [-H] [-Q] [-d <delimiter>] <database> <table>
+
+DESCRIPTION
+  mdb-export is a utility program distributed with MDB Tools. 
+
+  It produces a CSV (comma separated value) output for the given table. Such output is suitable for importation into databases or spreadsheets.
+
+OPTIONS
+  -H            Supress header row
+  -Q            Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
+  -d 		Specify an alternative column delimiter If no delimiter is specified, table names will be delimited by a , (comma) character.
+
+NOTES 
+
+HISTORY
+  mdb-export first appeared in MDB Tools 0\.1
+
+AUTHORS
+  The mdb-export utility was written by Brian Bruns
+
+BUGS
+  Memo fields are allowed to contain a newline characters, the current program does nothing about this.

@@ -1,0 +1,27 @@
+NAME
+  mdb-tables - Get listing of tables in an MDB database
+SYNOPSIS
+  mdb-tables [-S] [-1 | -d<delimiter>] <database>
+
+DESCRIPTION
+  mdb-tables is a utility program distributed with MDB Tools. 
+
+  It produces a list of tables contained within an MDB database in a format suitable for use in shell scripts.
+
+OPTIONS
+  -S            Show system tables. System tables are generally those beginning with 'MSys'
+
+  -1            specifies that the tables should be listed 1 per line.
+
+  -d delimiter  specifies an alternative delimiter. If no delimiter is specified, table names will be delimited by a tab character, or by newline if the -1 option was specified.
+
+NOTES 
+
+HISTORY
+  mdb-tables first appeared in MDB Tools 0\.3
+
+AUTHORS
+  The mdb-tables utility was written by Brian Bruns
+
+BUGS
+  Access allows for tables to have spaces embeded in the table name.  You must specify a delimiter (-d) if you intend on piping the output of mdb-tables to a program such as awk or cut.

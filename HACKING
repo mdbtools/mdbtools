@@ -461,18 +461,43 @@ Indices
 
 Indices are not completely understood but here is what we know.
 
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| 0x01 | 1 bytes | page_type   | 0x03 indicate an index page              |
+| 0x01 | 1 bytes | unknown     |                                          |
+| ???? | 2 bytes | free_space  | The free space at the end this page      |
+| ???? | 4 bytes | parent_page | The page number of the TDEF for this idx |
+| ???? | 4 bytes | prev_page   | Previous page at this index level        |
+| ???? | 4 bytes | next_page   | Next page at this index level            |
+| ???? | 4 bytes | leaf_page   | Pointer to leaf page, purpose unknown    |
++-------------------------------------------------------------------------+
+
 On the page pointed to by the table definition a series of records start at
 byte offset 0xf8.
 
-The record generally begins with 0x7f or 0x80.  0x80 is the one's complement of 0x7f and all text data in the index would then need to be negated.  The reason
-for this negation is unknown, although I suspect it has to do with descending
-order.
+If the page is an index page (type 0x03) then the value of each key column is
+stored (for integers it seems to be in msb-lsb order to help comparison) preceded
+by a flag field and followed by the data pointer to the index entries record, this 
+is then followed by a pointer to a leaf index page.
 
-Access stored an 'alphabetic sort order' version of the text key columns in the index.  Basically this means that upper and lower case characters A-Z are merged and start at 0x60. Digits are 0x56 through 0x5f. Once converted into this 
+The flag field is generally either 0x00, 0x7f, 0x80.  0x80 is the one's complement 
+of 0x7f and all text data in the index would then need to be negated.  The reason
+for this negation is unknown, although I suspect it has to do with descending
+order.  The 0x00 flag indicates that the key column is null, and no data will follow,
+only the page pointer.
+
+Access stores an 'alphabetic sort order' version of the text key columns in the index.  Basically this means that upper and lower case characters A-Z are merged and start at 0x60. Digits are 0x56 through 0x5f. Once converted into this 
 (non-ascii) character set, the text value is able to be sorted in 'alphabetic'
 order.  A text column will end with a NULL (0x00 or 0xff if negated).  
 
-Beyond the key columns is stored a 3 byte page number and 1 byte row number.
+The leaf page entries store the key column and the 3 byte page and 1 byte row
+number.
+
+The value of the index root page in the index definition may be an index page
+(type 0x03), an index leaf page (type 0x04) if there is only one index page, 
+or (in the case of tables small enough to fit on one page) a data page 
+(type 0x01).
 
 So to search the index, you need to convert your value into the alphabetic 
 character set, compare against each index entry, and on successful comparison

@@ -30,8 +30,7 @@ typedef struct GMdbSQLWindow {
 	GList *history;
 } GMdbSQLWindow;
 
-GList *window_list;
-GladeXML *sqlwin_xml;
+GList *sql_list;
 
 extern GtkWidget *app;
 extern MdbHandle *mdb;
@@ -39,20 +38,25 @@ extern MdbSQL *sql;
 
 void gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml);
 
-/* callbacks */
-#if 0
-gint
-gmdb_sql_close_cb(GtkList *list, GtkWidget *w, GMdbSQLWindow *sqlwin)
+void
+gmdb_sql_close_all()
 {
-    window_list = g_list_remove(window_list, sql);
-    g_free(sql);
-    return FALSE;
+	GladeXML *xml;
+	GtkWidget *win;
+
+	while (xml = g_list_nth_data(sql_list, 0)) {
+		win = glade_xml_get_widget (xml, "sql_window");
+		sql_list = g_list_remove(sql_list, xml);
+		if (win) gtk_widget_destroy(win);
+	}
 }
-#endif
+
+/* callbacks */
 void
 gmdb_sql_close_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *win;
+	sql_list = g_list_remove(sql_list, xml);
 	win = glade_xml_get_widget (xml, "sql_window");
 	if (win) gtk_widget_destroy(win);
 }
@@ -71,7 +75,7 @@ GtkTreeStore *store;
 GtkTreeView *tree;
 GtkTreeIter *iter, iter2;
 
-	tree = (GtkTreeView *) glade_xml_get_widget(sqlwin_xml, "sql_treeview");
+	tree = (GtkTreeView *) glade_xml_get_widget(xml, "sql_treeview");
 	select = gtk_tree_view_get_selection(GTK_TREE_VIEW (tree));
 	store = (GtkTreeStore *) gtk_tree_view_get_model(tree);
 	gtk_tree_selection_get_selected (select, NULL, &iter2);
@@ -221,11 +225,14 @@ gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 {
 GtkTargetEntry src;
 GtkWidget *mi, *but;
+GladeXML *sqlwin_xml;
 
 	/* load the interface */
 	sqlwin_xml = glade_xml_new("gladefiles/gmdb-sql.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(sqlwin_xml);
+
+	sql_list = g_list_append(sql_list, sqlwin_xml);
 
 	mi = glade_xml_get_widget (sqlwin_xml, "close_menu");
 	g_signal_connect (G_OBJECT (mi), "activate",
@@ -290,7 +297,7 @@ int   i;
 MdbCatalogEntry *entry;
 GtkTreeIter *iter1, *iter2;
 
-	GtkWidget *tree = glade_xml_get_widget(sqlwin_xml, "sql_treeview");
+	GtkWidget *tree = glade_xml_get_widget(xml, "sql_treeview");
 	GtkTreeStore *store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
 	/* loop over each entry in the catalog */

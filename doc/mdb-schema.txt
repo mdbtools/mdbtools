@@ -1,0 +1,25 @@
+NAME
+  mdb-schema - Generate schema creation DDL
+SYNOPSIS
+  mdb-schema [-T <table>] <database> [<backend>]
+
+DESCRIPTION
+  mdb-schema is a utility program distributed with MDB Tools. 
+
+  It produces DDL (data definition language) output for the given database. This can be passed to another database to create a replica of the original access table format.
+
+OPTIONS
+  -T            Single table option.  Create schema for this table only.
+  backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, and postgres. If not specified the generated DDL will be in access format.
+
+NOTES 
+
+HISTORY
+  mdb-schema first appeared in MDB Tools 0\.1
+
+AUTHORS
+  The mdb-schema utility was written by Brian Bruns
+
+BUGS
+  Relationships and other features may not be supported by all databases.
+  Access datatypes are mapped to their closest counterparts in the target backend. This may not always yield an exact fit.

@@ -74,7 +74,7 @@ char *sargname = NULL;
 void dump_ole(MdbTableDef *table, char *colname, char *sargname)
 {
 int i, found = 0;
-char ole_data[12000];
+char ole_data[200000];
 int len;
 MdbColumn *col;
 MdbSarg sarg;

@@ -21,6 +21,8 @@
 #include "time.h"
 #include "math.h"
 
+#define MDB_DEBUG_OLE 1
+
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
@@ -561,7 +563,7 @@ guint16 len, cur;
 		ole_row = mdb->pg_buf[start+4];
 		
 		lval_pg = mdb_get_int24(mdb, start+5);
-#if MDB_DEBUG
+#if MDB_DEBUG_OLE
 		printf("Reading LVAL page %06x\n", lval_pg);
 #endif
 		if(mdb_read_alt_pg(mdb, lval_pg) != mdb->fmt->pg_size) {
@@ -576,7 +578,7 @@ guint16 len, cur;
 			row_stop = mdb->fmt->pg_size - 1;
 		}
 		row_start = mdb_get_int16(mdb, 10 + ole_row * 2);
-#if MDB_DEBUG
+#if MDB_DEBUG_OLE
 			printf("row num %d row start %d row stop %d\n", ole_row, row_start, row_stop);
 #endif
 			len = row_stop - row_start;
@@ -587,7 +589,7 @@ guint16 len, cur;
 		} else if (ole_flags == 0x0000) {
 			ole_row = mdb->pg_buf[start+4];
 			lval_pg = mdb_get_int24(mdb, start+5);
-#if MDB_DEBUG
+#if MDB_DEBUG_OLE
 			printf("Reading LVAL page %06x\n", lval_pg);
 #endif
 		/* swap the alt and regular page buffers, so we can call get_int16 */
@@ -604,7 +606,7 @@ guint16 len, cur;
 				row_stop = mdb->fmt->pg_size - 1;
 			}
 			row_start = mdb_get_int16(mdb, 10 + ole_row * 2);
-#if MDB_DEBUG
+#if MDB_DEBUG_OLE
 		printf("row num %d row start %d row stop %d\n", ole_row, row_start, row_stop);
 #endif
 			len = row_stop - row_start;

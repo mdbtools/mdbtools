@@ -156,4 +156,6 @@ void
 gmdb_file_close_cb(GtkWidget *button, gpointer data)
 {
 	gmdb_reset_widgets();
+	gmdb_debug_close_all();
+	gmdb_sql_close_all();
 }

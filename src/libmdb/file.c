@@ -51,6 +51,7 @@ int j,pos;
 		/* fprintf(stderr,"Couldn't open file %s\n",filename); */
 		return NULL;
 	}
+	mdb->f->refs++;
 	if (!mdb_read_pg(mdb, 0)) {
 		fprintf(stderr,"Couldn't read first page.\n");
 		return NULL;
@@ -87,8 +88,29 @@ MdbHandle *mdb_open(char *filename)
 void mdb_close(MdbHandle *mdb)
 {
 	if (mdb->f) {
-		mdb_free_file(mdb->f);
+		mdb->f->refs--;
+		if (mdb->f->refs<=0) mdb_free_file(mdb->f);
 	}
+}
+MdbHandle *mdb_clone_handle(MdbHandle *mdb)
+{
+	MdbHandle *newmdb;
+	MdbCatalogEntry *entry;
+	int i;
+
+	newmdb = mdb_alloc_handle();
+	memcpy(newmdb, mdb, sizeof(MdbHandle));
+	newmdb->stats = NULL;
+	newmdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
+	for (i=0;i<mdb->num_catalog;i++) {
+		entry = g_ptr_array_index(mdb->catalog,i);
+		newmdb->catalog = g_array_append_val(newmdb->catalog, entry);
+	}
+	mdb->backend_name = NULL;
+	if (mdb->f) {
+		mdb->f->refs++;
+	}
+	return newmdb;
 }
 
 /* 
@@ -121,6 +143,9 @@ off_t offset = pg * mdb->fmt->pg_size;
                 fprintf(stderr,"offset %lu is beyond EOF\n",offset);
                 return 0;
         }
+	if (mdb->stats && mdb->stats->collect) 
+		mdb->stats->pg_reads++;
+
 	lseek(mdb->f->fd, offset, SEEK_SET);
 	len = read(mdb->f->fd,pg_buf,mdb->fmt->pg_size);
 	if (len==-1) {
@@ -165,6 +190,20 @@ int           i;
 	mdb->cur_pos+=2;
 	return i;
 	
+}
+gint32 mdb_get_int24_msb(MdbHandle *mdb, int offset)
+{
+gint32 l;
+unsigned char *c;
+
+	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
+	c = &mdb->pg_buf[offset];
+	l =c[0]; l<<=8;
+	l+=c[1]; l<<=8;
+	l+=c[2];
+
+	mdb->cur_pos+=3;
+	return l;
 }
 gint32 mdb_get_int24(MdbHandle *mdb, int offset)
 {
