@@ -428,7 +428,7 @@ extern char *mdb_get_relationships(MdbHandle *mdb);
 
 /* sargs.c */
 extern int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
-extern int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, void *buf, int len);
+extern int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field);
 extern void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
 extern int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
 extern int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg);

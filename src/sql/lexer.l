@@ -38,6 +38,7 @@ and		{ return AND; }
 or		{ return OR; }
 not		{ return NOT; }
 is		{ return IS; }
+null		{ return NULL; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }

@@ -128,27 +128,37 @@ mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 	return 0;
 }
 int 
-mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, void *buf, int len)
+mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field)
 {
 char tmpbuf[256];
 int lastchar;
 
+	if (node->op == MDB_ISNULL) {
+		if (field->is_null) return 0;
+		else return 1;
+	} else if (node->op == MDB_NOTNULL) {
+		if (field->is_null) return 1;
+		else return 0;
+	}
 	switch (col->col_type) {
+		case MDB_BOOL:
+			return mdb_test_int(node, field->is_null);
+			break;
 		case MDB_BYTE:
-			return mdb_test_int(node, (gint32)((char *)buf)[0]);
+			return mdb_test_int(node, (gint32)((char *)field->value)[0]);
 			break;
 		case MDB_INT:
-			return mdb_test_int(node, (gint32)mdb_get_int16(buf, 0));
+			return mdb_test_int(node, (gint32)mdb_get_int16(field->value, 0));
 			break;
 		case MDB_LONGINT:
-			return mdb_test_int(node, (gint32)mdb_get_int32(buf, 0));
+			return mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
 			break;
 		case MDB_TEXT:
 			if (IS_JET4(mdb)) {
-				mdb_unicode2ascii(mdb, buf, 0, len, tmpbuf);
+				mdb_unicode2ascii(mdb, field->value, 0, field->siz, tmpbuf);
 			} else {
-				strncpy(tmpbuf, buf,255);
-				lastchar = len > 255 ? 255 : len;
+				strncpy(tmpbuf, field->value, 255);
+				lastchar = field->siz > 255 ? 255 : field->siz;
 				tmpbuf[lastchar]='\0';
 			}
 			return mdb_test_string(node, tmpbuf);
@@ -178,10 +188,7 @@ mdb_test_sarg_node(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int num_
 	if (mdb_is_relational_op(node->op)) {
 		col = node->col;
 		elem = mdb_find_field(col->col_num, fields, num_fields);
-		if (!mdb_test_sarg(mdb, col, 
-				node, 
-				fields[elem].value, 
-				fields[elem].siz)) 
+		if (!mdb_test_sarg(mdb, col, node, &fields[elem])) 
 			return 0;
 	} else { /* logical op */
 		switch (node->op) {

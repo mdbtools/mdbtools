@@ -212,7 +212,7 @@ mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		//cache_int = sarg->value.i * -1;
 		c = (unsigned char *) &(idx_sarg->value.i);
 		c[0] |= 0x80;
-		//printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
+		printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
 		break;	
 
 		case MDB_INT:
@@ -259,6 +259,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 	MdbTableDef *table = idx->table;
 	MdbSarg *idx_sarg;
 	MdbSarg *sarg;
+	MdbField field;
 	MdbSargNode node;
 	int c_offset = 0, c_len;
 
@@ -298,7 +299,10 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 			/* XXX - kludge */
 			node.op = sarg->op;
 			node.value = sarg->value;
-			if (!mdb_test_sarg(mdb, col, &node, &mdb->pg_buf[offset + c_offset], c_len)) {
+			field.value = &mdb->pg_buf[offset + c_offset];
+		       	field.siz = c_len;
+		       	field.is_null = FALSE;
+			if (!mdb_test_sarg(mdb, col, &node, &field)) {
 				/* sarg didn't match, no sense going on */
 				return 0;
 			}

@@ -195,6 +195,7 @@ int col_start, next_col;
 unsigned char *nullmask;
 int bitmask_sz;
 int byte_num, bit_num;
+int num_of_jumps = 0, jumps_used = 0;
 int eod, len; /* end of data */
 
 	num_cols = mdb->pg_buf[row_start];
@@ -225,6 +226,7 @@ int eod, len; /* end of data */
 		bit_num = i % 8;
 		/* logic on nulls is reverse, 1 is not null, 0 is null */
 		fields[i].is_null = nullmask[byte_num] & 1 << bit_num ? 0 : 1;
+		//printf("col %d is %s\n", i, fields[i].is_null ? "null" : "not null");
 	}
 
 	/* find the end of data pointer */
@@ -248,9 +250,37 @@ int eod, len; /* end of data */
 				col_start += col->col_size;
 		}
 	}
+
+	//fprintf(stderr, "col_start: %d\n", col_start);
+	/* if fixed columns add up to more than 256, we need a jump */
+	int col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
+	if (col_start >= 256) {
+		num_of_jumps++;
+		jumps_used++;
+		row_start = row_start + col_start - (col_start % 256);
+	}
+	col_start = row_start;
+	
+	while (col_start+256 < row_end-bitmask_sz-1-var_cols-num_of_jumps){
+		col_start += 256;
+		num_of_jumps++;
+	}
+	if (mdb->pg_buf[col_ptr]==0xFF) {
+		col_ptr--;
+	}
+	col_start = mdb->pg_buf[col_ptr];
+
 	for (j=0;j<table->num_cols;j++) {
 		col = g_ptr_array_index(table->columns,j);
 		if (!mdb_is_fixed_col(col) && ++var_cols_found <= var_cols) {
+
+			if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
+				jumps_used < num_of_jumps) {
+				row_start += 256;
+				col_start -= 256;
+				jumps_used++;
+			}
+
 			if (var_cols_found==var_cols)  {
 				len=eod - col_start;
 				//printf("len = %d eod %d col_start %d\n",len, eod, col_start);
@@ -324,7 +354,7 @@ int i;
 	byte = 0;
 	bit = 0;
 	for (i=0;i<num_fields;i++) {	
-		/* column is null is bit is clear (0) */
+		/* column is null if bit is clear (0) */
 		if (!fields[i].is_null) {
 			byte |= 1 << bit;
 			//printf("%d %d %d %d\n", i, bit, 1 << bit, byte);

@@ -392,7 +392,7 @@ int mdb_read_row(MdbTableDef *table, int row)
 			} else {
 				len=mdb->pg_buf[col_ptr - var_cols_found ] - col_start;
 			}
-			if (len<0)
+			while (len<0)
 				len+=256;
 		}
 
@@ -471,7 +471,7 @@ mdb_read_next_dpg_by_map1(MdbTableDef *table)
 	* offset gives us a page offset into the bitmap (must be converted
 	* to bytes and bits).
 	*/
-	pgnum = table->cur_phys_pg + 1;
+	pgnum = table->cur_phys_pg + 1; 
 	map_ind = pgnum / ((mdb->fmt->pg_size - 4) * 8);
 	offset = pgnum % ((mdb->fmt->pg_size - 4) * 8);
 	bit_offset = offset % 8;

@@ -311,6 +311,13 @@ mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 	sql_sarg->col_name = g_strdup(col_name);
 	sql_sarg->sarg->op = op;
 
+	if (!constant) {
+		/* XXX - do we need to check operator? */
+		g_ptr_array_add(sql->sargs, sql_sarg);
+		sql->num_sargs++;
+		mdb_sql_push_node(sql, node);
+		return 0;
+	}
 	/* FIX ME -- we should probably just be storing the ascii value until the 
 	** column definition can be checked for validity
 	*/

@@ -356,7 +356,7 @@ mdb_get_double(unsigned char *buf, int offset)
 	double d;
 
 
-	memcpy(&d, &buf, 8);
+	memcpy(&d, &buf[offset], 8);
 
 #ifdef WORDS_BIGENDIAN
 	d2 = d;
