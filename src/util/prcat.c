@@ -35,7 +35,7 @@ main(int argc, char **argv)
 
 	mdb_dump_catalog(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
 
-	mdb_free_handle(mdb);
+	mdb_close(mdb);
 	mdb_exit();
 
 	exit(0);

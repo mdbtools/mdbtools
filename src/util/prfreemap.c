@@ -58,7 +58,7 @@ unsigned char *map_buf;
 	}
 	if (coln!=1) printf("\n");
 
-	mdb_free_handle(mdb);
+	mdb_close(mdb);
 	mdb_exit();
 
 	exit(0);

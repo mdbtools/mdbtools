@@ -91,7 +91,6 @@ int opt;
 		fprintf (stdout, "\n");
  
 	mdb_close(mdb);
-	mdb_free_handle(mdb);
 	mdb_exit();
 	if (delimiter) free(delimiter);
 

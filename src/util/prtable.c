@@ -51,7 +51,7 @@ int found = 0;
 	if (!found) {
 		fprintf(stderr,"No table named %s found.\n", argv[2]);
 	}
-	mdb_free_handle(mdb);
+	mdb_close(mdb);
 	mdb_exit();
 
 	exit(0);

@@ -46,7 +46,7 @@ int page, start, stop;
 	    fprintf (stderr, "%4x %4x %c\n", j, mdb->pg_buf [j], mdb->pg_buf [j]);
 	  }
 
-	mdb_free_handle(mdb);
+	mdb_close(mdb);
 	mdb_exit();
 
 	exit(0);

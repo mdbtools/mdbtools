@@ -198,7 +198,6 @@ main(int argc, char **argv)
 	}
 
 	mdb_close(mdb);
-	mdb_free_handle(mdb);
 	mdb_exit();
 
 	exit(0);

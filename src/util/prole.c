@@ -63,7 +63,7 @@ char *sargname = NULL;
 		}
 	}
 
-	mdb_free_handle(mdb);
+	mdb_close(mdb);
 	mdb_exit();
 
 	exit(0);

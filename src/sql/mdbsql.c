@@ -130,7 +130,6 @@ mdb_sql_close(MdbSQL *sql)
 {
 	if (sql->mdb) {
 		mdb_close(sql->mdb);
-		mdb_free_handle(sql->mdb);
 		sql->mdb = NULL;
 	} else {
 		mdb_sql_error("Not connected.");
@@ -460,7 +459,6 @@ MdbSQLTable *t;
 	g_ptr_array_free(sql->tables,TRUE);
 	if (sql->mdb) {
 		mdb_close(sql->mdb);	
-		mdb_free_handle(sql->mdb);	
 	}
 }
 void mdb_sql_reset(MdbSQL *sql)

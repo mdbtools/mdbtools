@@ -4,6 +4,27 @@ Tue Apr 13 19:08:51 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/odbc/Makefile.am: Improve configure for ODBC
 	* acinclude.m4: Update to the latest libtool.m4
 	* src/libmdb/file.c: Make mdb_close free the handle
+	* src/sql/mdbsql.c:
+	* src/util/mdb-array.c:
+	* src/util/mdb-check.c:
+	* src/util/mdb-export.c:
+	* src/util/mdb-header.c:
+	* src/util/mdb-import.c:
+	* src/util/mdb-prop.c:
+	* src/util/mdb-schema.c:
+	* src/util/mdb-tables.c:
+	* src/util/mdb-ver.c:
+	* src/util/prcat.c:
+	* src/util/prdata.c:
+	* src/util/prdump.c:
+	* src/util/prfreemap.c:
+	* src/util/prindex.c:
+	* src/util/prkkd.c:
+	* src/util/prole.c:
+	* src/util/prtable.c:
+	* src/util/sargtest.c:
+	* src/util/updrow.c: Use mdb_close to match mdb_open instead of
+	                     mdb_free_handle
 
 Tue Apr 13 15:25:26 EDT 2004	Brian Bruns <brian@bruns.com>
 	* include/mdbtools.h:

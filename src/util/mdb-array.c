@@ -123,7 +123,7 @@ int started;
        }
    }
  
- mdb_free_handle (mdb);
+ mdb_close (mdb);
  mdb_exit();
 
  fprintf (stdout, "\n};\n");
