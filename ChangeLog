@@ -1,3 +1,6 @@
+Wed Oct 27 22:32:33 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-sql.c: Various mdb-sql improvements
+
 Sun Oct 24 23:07:16 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* configure.in:
 	* src/gmdb2/Makefile.am:
