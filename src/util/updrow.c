@@ -20,6 +20,7 @@
 
 #include "mdbtools.h"
 
+int bind_column(MdbTableDef *table, char *colname, unsigned char *data, int *len);
 void read_to_row(MdbTableDef *table, char *sargname);
 
 int
@@ -90,6 +91,7 @@ MdbColumn *col;
 	printf("column %d\n",found);
 	mdb_bind_column(table, found, data);
 	mdb_bind_len(table, found, len);
+	return 0;
 }
 void read_to_row(MdbTableDef *table, char *sargname)
 {

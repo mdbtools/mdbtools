@@ -37,10 +37,10 @@ MdbColumnProp prop;
 MdbHandle *mdb = entry->mdb;
 
 	entry->props = g_array_new(FALSE,FALSE,sizeof(MdbColumnProp));
-	len = mdb_get_int16(mdb,start);
+	len = mdb_pg_get_int16(mdb,start);
 	pos = start + 6;
 	while (pos < start+len) {
-		tmp = mdb_get_int16(mdb,pos); /* length of string */
+		tmp = mdb_pg_get_int16(mdb,pos); /* length of string */
 		pos += 2;
 		cplen = tmp > MDB_MAX_OBJ_NAME ? MDB_MAX_OBJ_NAME : tmp;
 		g_memmove(prop.name,&mdb->pg_buf[pos],cplen);
@@ -65,23 +65,23 @@ int end;
 
 	fprintf(stdout,"\n data\n");
 	fprintf(stdout,"-------\n");
-	len = mdb_get_int16(mdb,start);
+	len = mdb_pg_get_int16(mdb,start);
 	fprintf(stdout,"length = %3d\n",len);
 	pos = start + 6;
 	end = start + len;
 	while (pos < end) {
 		fprintf(stdout,"pos = %3d\n",pos);
 		start = pos;
-		tmp = mdb_get_int16(mdb,pos); /* length of field */
+		tmp = mdb_pg_get_int16(mdb,pos); /* length of field */
 		pos += 2;
-		col_type = mdb_get_int16(mdb,pos); /* ??? */
+		col_type = mdb_pg_get_int16(mdb,pos); /* ??? */
 		pos += 2;
 		col_num = 0;
 		if (col_type) {
-			col_num = mdb_get_int16(mdb,pos); 
+			col_num = mdb_pg_get_int16(mdb,pos); 
 			pos += 2;
 		}
-		val_len = mdb_get_int16(mdb,pos);
+		val_len = mdb_pg_get_int16(mdb,pos);
 		pos += 2;
 		fprintf(stdout,"length = %3d %04x %2d %2d ",tmp, col_type, col_num, val_len);
 		for (i=0;i<val_len;i++) {
@@ -110,13 +110,13 @@ int rowid = entry->kkd_rowid;
 
 
 	mdb_read_pg(mdb, entry->kkd_pg);
-	rows = mdb_get_int16(mdb,8);
+	rows = mdb_pg_get_int16(mdb,8);
 	fprintf(stdout,"number of rows = %d\n",rows);
-	kkd_start = mdb_get_int16(mdb,10+rowid*2);
+	kkd_start = mdb_pg_get_int16(mdb,10+rowid*2);
 	fprintf(stdout,"kkd start = %d %04x\n",kkd_start,kkd_start);
 	kkd_end = mdb->fmt->pg_size;
 	for (i=0;i<rows;i++) {
-		tmp = mdb_get_int16(mdb, 10+i*2);
+		tmp = mdb_pg_get_int16(mdb, 10+i*2);
 		if (tmp < mdb->fmt->pg_size &&
 		    tmp > kkd_start &&
 		    tmp < kkd_end) {
@@ -126,8 +126,8 @@ int rowid = entry->kkd_rowid;
 	fprintf(stdout,"kkd end = %d %04x\n",kkd_end,kkd_end);
 	pos = kkd_start + 4; /* 4 = K K D \0 */
 	while (pos < kkd_end) {
-		tmp = mdb_get_int16(mdb,pos);
-		row_type = mdb_get_int16(mdb,pos+4);
+		tmp = mdb_pg_get_int16(mdb,pos);
+		row_type = mdb_pg_get_int16(mdb,pos+4);
 		fprintf(stdout,"row size = %3d type = 0x%02x\n",tmp,row_type);
 		if (row_type==0x80)  {
 			fprintf(stdout,"\nColumn Properties\n");

@@ -127,10 +127,10 @@ int lastchar;
 			return mdb_test_int(node, (int)((char *)buf)[0]);
 			break;
 		case MDB_INT:
-			return mdb_test_int(node, _mdb_get_int16(buf, 0));
+			return mdb_test_int(node, mdb_get_int16(buf, 0));
 			break;
 		case MDB_LONGINT:
-			return mdb_test_int(node, _mdb_get_int32(buf, 0));
+			return mdb_test_int(node, mdb_get_int32(buf, 0));
 			break;
 		case MDB_TEXT:
 			if (IS_JET4(mdb)) {

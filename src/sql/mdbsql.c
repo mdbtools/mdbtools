@@ -401,8 +401,10 @@ MdbSQLSarg *sql_sarg;
 	g_ptr_array_free(sql->columns,TRUE);
 	g_ptr_array_free(sql->tables,TRUE);
 	g_ptr_array_free(sql->sargs,TRUE);
-	mdb_close(sql->mdb);	
-	mdb_free_handle(sql->mdb);	
+	if (sql->mdb) {
+		mdb_close(sql->mdb);	
+		mdb_free_handle(sql->mdb);	
+	}
 }
 void mdb_sql_reset(MdbSQL *sql)
 {

@@ -135,7 +135,7 @@ gchar *tmpbuf;
 			continue;
 		}
 
-		pidx->num_rows = _mdb_get_int32(mdb->alt_pg_buf, 
+		pidx->num_rows = mdb_get_int32(mdb->alt_pg_buf, 
 				fmt->tab_cols_start_offset +
 				(i*fmt->tab_ridx_entry_size));
 
@@ -227,13 +227,13 @@ int lastchar;
 
 	switch (col->col_type) {
 		case MDB_BYTE:
-			return mdb_test_int(sarg, mdb_get_byte(mdb, offset));
+			return mdb_test_int(sarg, mdb_pg_get_byte(mdb, offset));
 			break;
 		case MDB_INT:
-			return mdb_test_int(sarg, mdb_get_int16(mdb, offset));
+			return mdb_test_int(sarg, mdb_pg_get_int16(mdb, offset));
 			break;
 		case MDB_LONGINT:
-			return mdb_test_int(sarg, mdb_get_int32(mdb, offset));
+			return mdb_test_int(sarg, mdb_pg_get_int32(mdb, offset));
 			break;
 		case MDB_TEXT:
 			strncpy(tmpbuf, &mdb->pg_buf[offset],255);
@@ -359,7 +359,7 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndexChain *chain)
 		//printf("finding next on pg %lu\n", ipg->pg);
 		if (!mdb_index_find_next_on_page(mdb, ipg))
 			return 0;
-		pg = mdb_get_int24_msb(mdb, ipg->offset + ipg->len - 3);
+		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 3);
 		//printf("Looking at pg %lu at %lu %d\n", pg, ipg->offset, ipg->len);
 		ipg->offset += ipg->len;
 
@@ -444,7 +444,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 				return 0;
 		}
 		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
-		*pg = mdb_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
+		*pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 
 		passed = mdb_index_test_sargs(mdb, idx, ipg->offset, ipg->len);
 

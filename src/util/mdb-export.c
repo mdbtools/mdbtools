@@ -23,7 +23,26 @@
 #include "dmalloc.h"
 #endif
 
+#undef MDB_BIND_SIZE
+#define MDB_BIND_SIZE 200000
+
 #define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
+void
+print_col(gchar *col_val, int quote_text, int col_type)
+{
+	gchar *s;
+
+	if (quote_text && is_text_type(col_type)) {
+		fprintf(stdout,"\"");
+		for (s=col_val;*s;s++) {
+			if (*s=='"') fprintf(stdout,"\"\"");
+			else fprintf(stdout,"%c",*s);
+		}
+		fprintf(stdout,"\"");
+	} else {
+		fprintf(stdout,"%s",col_val);
+	}
+}
 int
 main(int argc, char **argv)
 {
@@ -38,7 +57,6 @@ char *delimiter = ",";
 char header_row = 1;
 char quote_text = 1;
 int  opt;
-char *s;
 
 	while ((opt=getopt(argc, argv, "HQd:"))!=-1) {
 		switch (opt) {
@@ -102,30 +120,25 @@ char *s;
 			}
 
 			while(mdb_fetch_row(table)) {
-				if (quote_text && is_text_type(col->col_type)) {
-					fprintf(stdout,"\"");
-					for (s=bound_values[0];*s;s++) {
-						if (*s=='"') fprintf(stdout,"\"\"");
-						else fprintf(stdout,"%c",*s);
-					}
-					fprintf(stdout,"\"");
-					/* fprintf(stdout,"\"%s\"",bound_values[0]); */
-				} else {
-					fprintf(stdout,"%s",bound_values[0]);
+				col=g_ptr_array_index(table->columns,0);
+				if (col->col_type == MDB_OLE) {
+					mdb_ole_read(mdb, col, bound_values[0], MDB_BIND_SIZE);	
 				}
-        		for (j=1;j<table->num_cols;j++) {
+
+				print_col(bound_values[0], 
+					quote_text, 
+					col->col_type);
+
+        			for (j=1;j<table->num_cols;j++) {
 					col=g_ptr_array_index(table->columns,j);
-					if (quote_text && is_text_type(col->col_type)) {
-						fprintf(stdout,"%s",delimiter);
-						fprintf(stdout,"\"");
-						for (s=bound_values[j];*s;s++) {
-							if (*s=='"') fprintf(stdout,"\"\"");
-							else fprintf(stdout,"%c",*s);
-						}
-						fprintf(stdout,"\"");
-					} else {
-						fprintf(stdout,"%s%s",delimiter,bound_values[j]);
+					if (col->col_type == MDB_OLE) {
+						if (col->cur_value_len)
+						mdb_ole_read(mdb, col, bound_values[j], MDB_BIND_SIZE);	
 					}
+					fprintf(stdout,"%s",delimiter);
+					print_col(bound_values[j], 
+						quote_text, 
+						col->col_type);
 				}
 				fprintf(stdout,"\n");
 			}

@@ -28,7 +28,7 @@ mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start
 {
 	int pgnum, i, bitn;
 
-	pgnum = _mdb_get_int32(map,1);
+	pgnum = mdb_get_int32(map,1);
 	/* the first 5 bytes of the usage map mean something */
 	for (i=5;i<map_sz;i++) {
 		for (bitn=0;bitn<8;bitn++) {
@@ -49,7 +49,7 @@ mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start
 	pgnum = 0;
 	//printf("map size %ld\n", table->map_sz);
 	for (i=1;i<map_sz-1;i+=4) {
-		map_pg = _mdb_get_int32(map, i);
+		map_pg = mdb_get_int32(map, i);
 		//printf("loop %d pg %ld %02x%02x%02x%02x\n",i, map_pg,table->usage_map[i],table->usage_map[i+1],table->usage_map[i+2],table->usage_map[i+3]);
 
 		if (!map_pg) continue;

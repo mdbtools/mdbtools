@@ -101,7 +101,7 @@ int byte_num, bit_num;
 int eod, len; /* end of data */
 
 	if (IS_JET4(mdb)) {
-		num_cols = mdb_get_int16(mdb, row_start);
+		num_cols = mdb_pg_get_int16(mdb, row_start);
 	} else {
 		num_cols = mdb->pg_buf[row_start];
 	}
@@ -140,7 +140,7 @@ int eod, len; /* end of data */
 
 	/* find the end of data pointer */
 	if (IS_JET4(mdb)) {
-		eod = mdb_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
+		eod = mdb_pg_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
 	} else {
 		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
 	}
@@ -181,7 +181,7 @@ int eod, len; /* end of data */
 						row_end - 
 						bitmask_sz - 
 						var_cols_found * 2 - 2 - 1;
-					next_col = mdb_get_int16(mdb, var_entry_pos);
+					next_col = mdb_pg_get_int16(mdb, var_entry_pos);
 					len = next_col - col_start;
 				} else {
 					var_entry_pos = 
@@ -268,9 +268,9 @@ mdb_pg_get_freespace(MdbHandle *mdb)
 MdbFormatConstants *fmt = mdb->fmt;
 int rows, free_start, free_end;
 
-	rows = mdb_get_int16(mdb, fmt->row_count_offset);
+	rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
 	free_start = fmt->row_count_offset + 2 + (rows * 2);
-        free_end = mdb_get_int16(mdb, (fmt->row_count_offset + rows * 2)) -1;
+        free_end = mdb_pg_get_int16(mdb, (fmt->row_count_offset + rows * 2)) -1;
 #if MDB_DEBUG_WRITE
 	printf("free space left on page = %d\n", free_end - free_start);
 #endif
@@ -332,11 +332,11 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 
 
 	new_pg = mdb_new_data_pg(entry);
-	num_rows = mdb_get_int16(mdb, fmt->row_count_offset);
+	num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
 	pos = mdb->fmt->pg_size;
 
 	for (i=0;i<num_rows;i++) {
-		row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
+		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
 		row_end = mdb_find_end_of_row(mdb, i);
 		row_size = row_end - row_start + 1;
 		pos -= row_size;
@@ -378,7 +378,7 @@ int old_row_size, new_row_size, delta, num_fields;
 		fprintf(stderr, "File is not open for writing\n");
 		return 0;
 	}
-	row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + ((table->cur_row-1)*2)); 
+	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + ((table->cur_row-1)*2)); 
 	row_end = mdb_find_end_of_row(mdb, table->cur_row-1);
 	old_row_size = row_end - row_start;
 
@@ -443,14 +443,14 @@ int i, pos;
 #endif
 	new_pg = mdb_new_data_pg(entry);
 
-	num_rows = mdb_get_int16(mdb, fmt->row_count_offset);
+	num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
 	_mdb_put_int16(new_pg, fmt->row_count_offset, num_rows);
 
 	pos = mdb->fmt->pg_size;
 
 	/* rows before */
 	for (i=0;i<row;i++) {
-		row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
+		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
 		row_end = mdb_find_end_of_row(mdb, i);
 		row_size = row_end - row_start + 1;
 		pos -= row_size;
@@ -465,7 +465,7 @@ int i, pos;
 	
 	/* rows after */
 	for (i=row+1;i<num_rows;i++) {
-		row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
+		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
 		row_end = mdb_find_end_of_row(mdb, i);
 		row_size = row_end - row_start + 1;
 		pos -= row_size;

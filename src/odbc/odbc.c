@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.9 2003/01/15 02:02:09 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.10 2003/04/29 17:55:20 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -1058,7 +1058,7 @@ int i;
 	}
 	
 	strcpy(rgbValue,
-		mdb_col_to_string(mdb, col->cur_value_start, col->col_type, 
+		mdb_col_to_string(mdb, mdb->pg_buf, col->cur_value_start, col->col_type, 
 		col->cur_value_len));
 	//*((char *)&rgbValue[col->cur_value_len])='\0';
 	*pcbValue = col->cur_value_len;

@@ -74,8 +74,6 @@ int ret;
 MdbHandle *_mdb_open(char *filename, gboolean writable)
 {
 MdbHandle *mdb;
-int key[] = {0x86, 0xfb, 0xec, 0x37, 0x5d, 0x44, 0x9c, 0xfa, 0xc6, 0x5e, 0x28, 0xe6, 0x13, 0xb6};
-int j,pos;
 int bufsize;
 MdbFile *f;
 
@@ -113,27 +111,12 @@ MdbFile *f;
 		fprintf(stderr,"Couldn't read first page.\n");
 		return NULL;
 	}
-	f->jet_version = mdb_get_int32(mdb, 0x14);
+	f->jet_version = mdb_pg_get_int32(mdb, 0x14);
 	if (IS_JET4(mdb)) {
 		mdb->fmt = &MdbJet4Constants;
 	} else {
 		mdb->fmt = &MdbJet3Constants;
 	}
-
-	/* get the db encryption key and xor it back to clear text */
-	f->db_key = mdb_get_int32(mdb, 0x3e);
-	f->db_key ^= 0xe15e01b9;
-
-
-	/* get the db password located at 0x42 bytes into the file */
-	for (pos=0;pos<14;pos++) {
-		j = mdb_get_int32(mdb,0x42+pos);
-		j ^= key[pos];
-		if ( j != 0)
-			f->db_passwd[pos] = j;
-		else
-			f->db_passwd[pos] = '\0';
-        }
 
 	return mdb;
 }
@@ -231,7 +214,12 @@ char tmpbuf[MDB_PGSIZE];
 	memcpy(mdb->pg_buf,mdb->alt_pg_buf, MDB_PGSIZE);
 	memcpy(mdb->alt_pg_buf,tmpbuf,MDB_PGSIZE);
 }
-unsigned char mdb_get_byte(MdbHandle *mdb, int offset)
+/* really stupid, just here for consistancy */
+unsigned char mdb_get_byte(unsigned char *buf, int offset)
+{
+	return buf[offset];
+}
+unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 {
 unsigned char c;
 
@@ -240,25 +228,25 @@ unsigned char c;
 	return c;
 }
 int 
-_mdb_get_int16(unsigned char *buf, int offset)
+mdb_get_int16(unsigned char *buf, int offset)
 {
 	return buf[offset+1]*256+buf[offset];
 }
 int 
-mdb_get_int16(MdbHandle *mdb, int offset)
+mdb_pg_get_int16(MdbHandle *mdb, int offset)
 {
 int           i;
 
 	if (offset < 0 || offset+2 > mdb->fmt->pg_size) return -1;
 
-	i = _mdb_get_int16(mdb->pg_buf, offset);
+	i = mdb_get_int16(mdb->pg_buf, offset);
 
 	mdb->cur_pos+=2;
 	return i;
 	
 }
 gint32 
-mdb_get_int24_msb(MdbHandle *mdb, int offset)
+mdb_pg_get_int24_msb(MdbHandle *mdb, int offset)
 {
 gint32 l;
 unsigned char *c;
@@ -272,21 +260,31 @@ unsigned char *c;
 	mdb->cur_pos+=3;
 	return l;
 }
-gint32 mdb_get_int24(MdbHandle *mdb, int offset)
+gint32
+mdb_get_int24(unsigned char *buf, int offset)
 {
-gint32 l;
+gint32 l = 0;
 unsigned char *c;
 
-	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
-	c = &mdb->pg_buf[offset];
+	c = &buf[offset];
+
 	l =c[2]; l<<=8;
 	l+=c[1]; l<<=8;
 	l+=c[0];
 
+	return l;
+}
+gint32 mdb_pg_get_int24(MdbHandle *mdb, int offset)
+{
+	guint32 l;
+
+	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
+
+	l = mdb_get_int24(mdb->pg_buf, offset);
 	mdb->cur_pos+=3;
 	return l;
 }
-long _mdb_get_int32(unsigned char *buf, int offset)
+long mdb_get_int32(unsigned char *buf, int offset)
 {
 long l;
 unsigned char *c;
@@ -299,18 +297,18 @@ unsigned char *c;
 
 	return l;
 }
-long mdb_get_int32(MdbHandle *mdb, int offset)
+long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 {
 long l;
 
 	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
-	l = _mdb_get_int32(mdb->pg_buf, offset);
+	l = mdb_get_int32(mdb->pg_buf, offset);
 	mdb->cur_pos+=4;
 	return l;
 }
 float 
-mdb_get_single(MdbHandle *mdb, int offset)
+mdb_get_single(unsigned char *buf, int offset)
 {
 #ifdef WORDS_BIGENDIAN
 	float f2;
@@ -319,9 +317,8 @@ mdb_get_single(MdbHandle *mdb, int offset)
 #endif
 	float f;
 
-       if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
-       memcpy(&f, &mdb->pg_buf[offset], 4);
+       memcpy(&f, &buf[offset], 4);
 
 #ifdef WORDS_BIGENDIAN
        f2 = f;
@@ -330,12 +327,19 @@ mdb_get_single(MdbHandle *mdb, int offset)
                *(((unsigned char *)&f2)+sizeof(f)-1-i);
        }
 #endif
-       mdb->cur_pos+=4;
        return f;
+}
+float 
+mdb_pg_get_single(MdbHandle *mdb, int offset)
+{
+       if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
+
+       mdb->cur_pos+=4;
+       return mdb_get_single(mdb->pg_buf, offset);
 }
 
 double 
-mdb_get_double(MdbHandle *mdb, int offset)
+mdb_get_double(unsigned char *buf, int offset)
 {
 #ifdef WORDS_BIGENDIAN
 	double d2;
@@ -344,9 +348,8 @@ mdb_get_double(MdbHandle *mdb, int offset)
 #endif
 	double d;
 
-	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
 
-	memcpy(&d, &mdb->pg_buf[offset], 8);
+	memcpy(&d, &buf, 8);
 
 #ifdef WORDS_BIGENDIAN
 	d2 = d;
@@ -355,9 +358,15 @@ mdb_get_double(MdbHandle *mdb, int offset)
 		*(((unsigned char *)&d2)+sizeof(d)-1-i);
 	}
 #endif
-	mdb->cur_pos+=8;
 	return d;
 
+}
+double 
+mdb_pg_get_double(MdbHandle *mdb, int offset)
+{
+	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
+	mdb->cur_pos+=8;
+	return mdb_get_double(mdb->pg_buf, offset);
 }
 int 
 mdb_set_pos(MdbHandle *mdb, int pos)
