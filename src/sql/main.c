@@ -52,13 +52,14 @@ int parse(char *buf)
 	g_input_ptr = buf;
 	if (yyparse()) {
 		fprintf(stderr, "Couldn't parse SQL\n");
+		mdb_sql_reset(g_sql);
 		return 1;
 	} else {
 		return 0;
 	}
 }
 
-main()
+main(int argc, char **argv)
 {
 char *s;
 char prompt[20];
@@ -69,6 +70,9 @@ int done = 0;
 
 	/* initialize the SQL engine */
 	g_sql = mdb_sql_init();
+	if (argc>1) {
+		mdb_sql_open(g_sql, argv[1]);
+	}
 
 	/* give the buffer an initial size */
 	bufsz = 4096;
@@ -86,6 +90,10 @@ int done = 0;
 			line = 0;
 			mybuf[0]='\0';
 		} else {
+			while (strlen(mybuf) + strlen(s) > bufsz) {
+				bufsz *= 2;
+				mybuf = (char *) realloc(mybuf, bufsz);
+			}
 			add_history(s);
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */

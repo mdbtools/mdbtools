@@ -66,9 +66,10 @@ MdbSarg sarg;
 
 	mdb_read_columns(table);
 
-	sarg.op = MDB_GTEQ;
-	sarg.value.i = 11070;
-	mdb_add_sarg_by_name(table, "OrderID", &sarg);
+	sarg.op = MDB_EQUAL;
+	// sarg.value.i = 11070;
+	strcpy(sarg.value.s, "Reggiani Caseifici");
+	mdb_add_sarg_by_name(table, "ShipName", &sarg);
 
 	mdb_rewind_table(table);
 			

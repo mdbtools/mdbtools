@@ -1,6 +1,11 @@
 #include "mdbsql.h"
 #include <stdarg.h>
 
+#ifdef HAVE_WORDEXP_H
+#define HAVE_WORDEXP
+#include <wordexp.h>
+#endif
+
 mdb_sql_error(char *fmt, ...)
 {
 va_list ap;
@@ -49,13 +54,36 @@ MdbSQLTable *t;
 	return t;
 }
 
+MdbHandle *mdb_sql_close(MdbSQL *sql)
+{
+	if (sql->mdb) {
+		mdb_close(sql->mdb);
+		mdb_free_handle(sql->mdb);
+		sql->mdb = NULL;
+	} else {
+		mdb_sql_error("Not connected.");
+	}
+}
+
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 {
 int fail = 0;
-	if (!(sql->mdb = mdb_open(db_name))) {
-		if (!strstr(db_name, ".mdb")) {
-			char *tmpstr = (char *) malloc(strlen(db_name)+5);
-			strcpy(tmpstr,db_name);
+char *db_namep = db_name;
+
+#ifdef HAVE_WORDEXP
+wordexp_t words;
+
+	if (wordexp(db_name, &words, 0)==0) {
+		if (words.we_wordc>0) 
+			db_namep = words.we_wordv[0];
+	}
+	
+#endif
+
+	if (!(sql->mdb = mdb_open(db_namep))) {
+		if (!strstr(db_namep, ".mdb")) {
+			char *tmpstr = (char *) malloc(strlen(db_namep)+5);
+			strcpy(tmpstr,db_namep);
 			strcat(tmpstr,".mdb");
 			if (!(sql->mdb = mdb_open(tmpstr))) {
 				fail++;
@@ -68,17 +96,31 @@ int fail = 0;
 	if (fail) {
 		mdb_sql_error("Unable to locate database %s", db_name);
 	}
+
+#ifdef HAVE_WORDEXP
+	wordfree(&words);
+#endif	
+
 	return sql->mdb;
-	
 }
 int mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 {
 MdbSQLSarg *sql_sarg;
+int lastchar;
 
 	sql_sarg = mdb_sql_alloc_sarg();
 	sql_sarg->col_name = g_strdup(col_name);
 	sql_sarg->sarg->op = op;
-	sql_sarg->sarg->value.i = atoi(constant);
+	/* FIX ME -- we should probably just be storing the ascii value until the 
+	** column definition can be checked for validity
+	*/
+	if (constant[0]=='\'') {
+		lastchar = strlen(constant) > 256 ? 256 : strlen(constant);
+		strncpy(sql_sarg->sarg->value.s, &constant[1], lastchar - 2);
+		sql_sarg->sarg->value.s[lastchar - 1]='\0';
+	} else {
+		sql_sarg->sarg->value.i = atoi(constant);
+	}
 	g_ptr_array_add(sql->sargs, sql_sarg);
 	sql->num_sargs++;
 }
@@ -236,6 +278,73 @@ MdbHandle *mdb = sql->mdb;
 	print_break (30,1);
 	fprintf(stdout,"\n");
 }
+void mdb_sql_describe_table(MdbSQL *sql)
+{
+MdbTableDef *table = NULL;
+MdbSQLTable *sql_tab;
+MdbCatalogEntry entry;
+MdbHandle *mdb = sql->mdb;
+MdbColumn *col;
+int i;
+char colsize[11];
+
+	if (!mdb) {
+		mdb_sql_error("You must connect to a database first");
+		return;
+	}
+
+	sql_tab = g_ptr_array_index(sql->tables,0);
+
+	mdb_read_catalog(mdb, MDB_TABLE);
+
+	for (i=0;i<mdb->num_catalog;i++) {
+		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
+		if (entry.object_type == MDB_TABLE &&
+			!strcasecmp(entry.object_name,sql_tab->name)) {
+				table = mdb_read_table(&entry);
+				break;
+		}
+	}
+	if (!table) {
+		mdb_sql_error("%s is not a table in this database", sql_tab->name);
+		/* the column and table names are no good now */
+		mdb_sql_reset(sql);
+		return;
+	}
+
+	mdb_read_columns(table);
+
+	print_break (30,1);
+	print_break (20,0);
+	print_break (10,0);
+	fprintf(stdout,"\n");
+	print_value ("Column Name",30,1);
+	print_value ("Type",20,0);
+	print_value ("Size",10,0);
+	fprintf(stdout,"\n");
+	print_break (30,1);
+	print_break (20,0);
+	print_break (10,0);
+	fprintf(stdout,"\n");
+
+     for (i=0;i<table->num_cols;i++) {
+          col = g_ptr_array_index(table->columns,i);
+    
+		print_value (col->name,30,1);
+		print_value (mdb_get_coltype_string(mdb->default_backend, col->col_type),20,0);
+		sprintf(colsize,"%d",col->col_size);
+		print_value (colsize,10,0);
+		fprintf(stdout,"\n");
+     }
+	print_break (30,1);
+	print_break (20,0);
+	print_break (10,0);
+	fprintf(stdout,"\n");
+
+	/* the column and table names are no good now */
+	mdb_sql_reset(sql);
+
+}
 void mdb_sql_select(MdbSQL *sql)
 {
 int i,j;
@@ -261,7 +370,7 @@ int found = 0;
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
 		if (entry.object_type == MDB_TABLE &&
-			!strcmp(entry.object_name,sql_tab->name)) {
+			!strcasecmp(entry.object_name,sql_tab->name)) {
 				table = mdb_read_table(&entry);
 				break;
 		}
@@ -289,7 +398,7 @@ int found = 0;
 		found=0;
 		for (j=0;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
-			if (!strcmp(sqlcol->name, col->name)) {
+			if (!strcasecmp(sqlcol->name, col->name)) {
 				bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
 				bound_values[i][0] = '\0';
 				/* bind the column to its listed (SQL) position */
@@ -309,7 +418,6 @@ int found = 0;
 	/* now add back the sargs */
 	for (i=0;i<sql->num_sargs;i++) {
 		sql_sarg=g_ptr_array_index(sql->sargs,i);
-		fprintf(stdout,"Sarg for %s\n",sql_sarg->col_name);
 		mdb_add_sarg_by_name(table,sql_sarg->col_name, sql_sarg->sarg);
 	}
 	

@@ -196,6 +196,31 @@ column to require more than one byte (if the sum of the lengths of columns is
 greater than 255).  I have no idea how this is represented in the data as I
 have not looked at tables large enough for this to occur yet. 
 
+Indices
+-------
+
+Indices are not completely understood but here is what we know.
+
+On the page pointed to by the table definition a series of records start at
+byte offset 0xf8.
+
+The record generally begins with 0x7f or 0x80.  0x80 is the one's complement of 0x7f and all text data in the index would then need to be negated.  The reason
+for this negation is unknown, although I suspect it has to do with descending
+order.
+
+Access stored an 'alphabetic sort order' version of the text key columns in the index.  Basically this means that upper and lower case characters A-Z are merged and start at 0x60. Digits are 0x56 through 0x5f. Once converted into this 
+(non-ascii) character set, the text value is able to be sorted in 'alphabetic'
+order.  A text column will end with a NULL (0x00 or 0xff if negated).  
+
+Beyond the key columns is stored a 3 byte page number and 1 byte row number.
+
+So to search the index, you need to convert your value into the alphabetic 
+character set, compare against each index entry, and on successful comparison
+follow the page and row number to the data.  Because text data is managled 
+during this conversion there is no 'covered querys' possible (a query that can
+be satisfied by reading the index, without descending to the leaf page to read
+the data).
+
 KKD Records
 -----------
 

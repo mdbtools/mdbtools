@@ -19,6 +19,7 @@ ac_cv_header_fcntl_h=${ac_cv_header_fcntl_h=yes}
 ac_cv_header_limits_h=${ac_cv_header_limits_h=yes}
 ac_cv_header_stdc=${ac_cv_header_stdc=no}
 ac_cv_header_unistd_h=${ac_cv_header_unistd_h=yes}
+ac_cv_header_wordexp_h=${ac_cv_header_wordexp_h=yes}
 ac_cv_lib_fl_yywrap=${ac_cv_lib_fl_yywrap=yes}
 ac_cv_lib_ibs_main=${ac_cv_lib_ibs_main=no}
 ac_cv_lib_mdb_mdb_free_handle=${ac_cv_lib_mdb_mdb_free_handle=yes}

@@ -76,6 +76,7 @@ enum {
 	MDB_LT,
 	MDB_GTEQ,
 	MDB_LTEQ,
+	MDB_LIKE,
 	MDB_ISNULL,
 	MDB_NOTNULL
 };

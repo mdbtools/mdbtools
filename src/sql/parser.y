@@ -11,7 +11,9 @@ MdbSQL *g_sql;
 }
 
 %token NAME PATH NUMBER STRING
-%token SELECT FROM WHERE CONNECT TO LIST TABLES WHERE AND
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND
+%token DESCRIBE TABLE
+%token LTEQ GTEQ LIKE
 
 %%
 
@@ -21,6 +23,12 @@ query:
 		}
 	|	CONNECT TO database { 
 			mdb_sql_open(g_sql, $3.name); free($3.name); 
+		}
+	|	DISCONNECT { 
+			mdb_sql_close(g_sql);
+		}
+	|	DESCRIBE TABLE table { 
+			mdb_sql_describe_table(g_sql); 
 		}
 	|	LIST TABLES { 
 			mdb_sql_listtables(g_sql); 
@@ -54,6 +62,9 @@ operator:
 	'='	{ $$.ival = MDB_EQUAL; }
 	| '>'	{ $$.ival = MDB_GT; }
 	| '<'	{ $$.ival = MDB_LT; }
+	| LTEQ	{ $$.ival = MDB_LTEQ; }
+	| GTEQ	{ $$.ival = MDB_GTEQ; }
+	| LIKE	{ $$.ival = MDB_LIKE; }
 	;
 constant:
 	NUMBER { $$.name = $1.name; }

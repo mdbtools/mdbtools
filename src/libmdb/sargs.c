@@ -19,6 +19,36 @@
 
 #include "mdbtools.h"
 
+int mdb_test_string(MdbSarg *sarg, char *s)
+{
+int rc;
+
+	if (sarg->op == MDB_LIKE) {
+		return likecmp(s,sarg->value.s);
+	}
+	rc = strncmp(sarg->value.s, s, 255);
+	switch (sarg->op) {
+		case MDB_EQUAL:
+			if (rc==0) return 1;
+			break;
+		case MDB_GT:
+			if (rc<0) return 1;
+			break;
+		case MDB_LT:
+			if (rc>0) return 1;
+			break;
+		case MDB_GTEQ:
+			if (rc<=0) return 1;
+			break;
+		case MDB_LTEQ:
+			if (rc>=0) return 1;
+			break;
+		default:
+			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_string() for operator %d\n",sarg->op);
+			break;
+	}
+	return 0;
+}
 int mdb_test_int(MdbSarg *sarg, gint32 i)
 {
 	switch (sarg->op) {
@@ -45,6 +75,9 @@ int mdb_test_int(MdbSarg *sarg, gint32 i)
 }
 int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSarg *sarg, int offset, int len)
 {
+char tmpbuf[256];
+int lastchar;
+
 	switch (col->col_type) {
 		case MDB_BYTE:
 			return mdb_test_int(sarg, mdb_get_byte(mdb, offset));
@@ -55,6 +88,11 @@ int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSarg *sarg, int offset, int
 		case MDB_LONGINT:
 			return mdb_test_int(sarg, mdb_get_int32(mdb, offset));
 			break;
+		case MDB_TEXT:
+			strncpy(tmpbuf, &mdb->pg_buf[offset],255);
+			lastchar = len > 255 ? 255 : len;
+			tmpbuf[lastchar]='\0';
+			return mdb_test_string(sarg, tmpbuf);
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
 			break;
@@ -95,7 +133,7 @@ int i;
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index (table->columns, i);
-		if (!strcmp(col->name,colname)) {
+		if (!strcasecmp(col->name,colname)) {
 			return mdb_add_sarg(col, in_sarg);
 		}
 	}

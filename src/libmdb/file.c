@@ -65,6 +65,17 @@ int j,pos;
 	return mdb;
 }
 
+void mdb_close(MdbHandle *mdb)
+{
+	if (mdb->fd > 0) {
+		close(mdb->fd);
+		if (mdb->filename) {
+			free(mdb->filename);
+			mdb->filename = NULL;
+		}
+	}
+}
+
 /* 
 ** mdb_read a wrapper for read that bails if anything is wrong 
 */

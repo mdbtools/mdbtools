@@ -10,18 +10,24 @@ extern MdbSQL *g_sql;
 select	{ return SELECT; }
 from		{ return FROM; }
 connect	{ return CONNECT; }
+disconnect	{ return DISCONNECT; }
 to		{ return TO; }
 list		{ return LIST; }
 where		{ return WHERE; }
 and		{ return AND; }
 tables	{ return TABLES; }
+table	{ return TABLE; }
+describe	{ return DESCRIBE; }
+(<=)		{ return LTEQ; }
+(>=)		{ return GTEQ; }
+like		{ return LIKE; }
 [ \t\r]	;
 [A-z][A-z0-9]*		{ yylval.name = strdup(yytext); return NAME; }
 '.*'			{ yylval.name = strdup(yytext); return STRING; }
 ([0-9]+|([0-9]*\.[0-9+)([eE][-+]?[0-9]+)?) { 
 				yylval.name = strdup(yytext); return NUMBER; 
 			}
-(\/?[A-z0-9\.]+)+		{ yylval.name = strdup(yytext); return PATH; }
+~?(\/?[A-z0-9\.]+)+		{ yylval.name = strdup(yytext); return PATH; }
 .	{ return yytext[0]; }
 %%
 
