@@ -658,7 +658,6 @@ unsigned int i;
 MdbColumn *col;
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
 MdbField fields[256];
 unsigned char row_buffer[4096];
 int old_row_size, new_row_size, delta;
@@ -789,7 +788,6 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	unsigned char key_hash[256];
 	unsigned char iflag;
 	int keycol;
-	int i;
 
 	new_pg = mdb_new_leaf_pg(entry);
 

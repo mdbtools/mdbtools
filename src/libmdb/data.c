@@ -232,7 +232,6 @@ int ret;
 int mdb_read_row(MdbTableDef *table, unsigned int row)
 {
 	MdbHandle *mdb = table->entry->mdb;
-	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *col;
 	unsigned int i;
 	int rc;
@@ -650,7 +649,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		return text;
 	} else {
 		/* multi-page memo field */
-		int tmpoff = 0;
+		guint32 tmpoff = 0;
 		char *tmp;
 
 		memo_len &= 0x3fffffff;

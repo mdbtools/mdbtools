@@ -157,11 +157,10 @@ mdb_sql_close(MdbSQL *sql)
 
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 {
-int fail = 0;
-char *db_namep = db_name;
+	char *db_namep = db_name;
 
 #ifdef HAVE_WORDEXP
-wordexp_t words;
+	wordexp_t words;
 
 	if (wordexp(db_name, &words, 0)==0) {
 		if (words.we_wordc>0) 
@@ -520,7 +519,6 @@ void mdb_sql_listtables(MdbSQL *sql)
 	MdbHandle *mdb = sql->mdb;
 	MdbField fields[1];
 	unsigned char row_buffer[MDB_PGSIZE];
-	unsigned char *new_pg;
 	int row_size;
 	MdbTableDef *ttable;
 	gchar tmpstr[100];
@@ -574,7 +572,6 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	MdbField fields[3];
 	char tmpstr[256];
 	unsigned char row_buffer[MDB_PGSIZE];
-	unsigned char *new_pg;
 	int row_size;
 	gchar col_name[100], col_type[100], col_size[100];
 	int tmpsiz;

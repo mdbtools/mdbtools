@@ -130,8 +130,7 @@ mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 int 
 mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field)
 {
-char tmpbuf[256];
-int lastchar;
+	char tmpbuf[256];
 
 	if (node->op == MDB_ISNULL) {
 		if (field->is_null) return 0;

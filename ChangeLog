@@ -1,6 +1,10 @@
 Sun Mar 13 15:22:11 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-export.c:
 	* src/util/mdb-ver.c: Fix a couple of leaks
+	* src/libmdb/data.c:
+	* src/libmdb/sargs.c:
+	* src/libmdb/write.c:
+	* src/sql/mdbsql.c: Remove some unused variables
 
 Sat Mar 12 23:25:48 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
