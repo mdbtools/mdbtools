@@ -1,3 +1,8 @@
+Fri Mar 11 21:32:19 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* HACKING:
+	* src/libmdb/data.c:
+	* src/libmdb/iconv.c: Fix some issues with mdb_memo_to_string
+
 Sun Mar  6 22:09:09 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c: Fix memory leak
 	* include/mdbtools.h:

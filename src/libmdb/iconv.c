@@ -18,6 +18,7 @@
  */
 
 #include "mdbtools.h"
+#include "errno.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
@@ -69,7 +70,7 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 	//printf("1 len_in %d len_out %d\n",len_in, len_out);
 	while (1) {
 		iconv(mdb->iconv_in, &in_ptr, &len_in, &out_ptr, &len_out);
-		if (!len_in) break;
+		if ((!len_in) || (errno == E2BIG)) break;
 		/* Don't bail if impossible conversion is encountered */
 		in_ptr += (IS_JET4(mdb)) ? 2 : 1;
 		len_in -= (IS_JET4(mdb)) ? 2 : 1;

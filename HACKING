@@ -199,16 +199,16 @@ Each memo column (or other long binary data) in a row
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
-| ???? | 2 bytes | memo_len    | Total length of the memo                 |
-| ???? | 2 bytes | bitmask     | See values                               |
+| ???? | 3 bytes | memo_len    | Total length of the memo                 |
+| ???? | 1 bytes | bitmask     | See values                               |
 | ???? | 4 bytes | lval_dp     | Data pointer to LVAL page (if needed)    |
 | 0x00 | 4 bytes | unknown     |                                          |
 +------+---------+-------------+------------------------------------------+
 Values for the bitmask:
 
-0x8000= the memo is in a string at the end of this header (memo_len bytes)
-0x4000= the memo is in a unique LVAL page in a record type 1
-0x0000= the memo is in n LVAL pages in a record type 2
+0x80 = the memo is in a string at the end of this header (memo_len bytes)
+0x40 = the memo is in a unique LVAL page in a record type 1
+0x00 = the memo is in n LVAL pages in a record type 2
 
 If the memo is in a LVAL page, we use row_id of lval_dp to find the row.
 offset_start of memo = (int16*) LVAL_page[offset_num_rows + (row_id * 2) + 2]

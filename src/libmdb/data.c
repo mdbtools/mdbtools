@@ -605,8 +605,7 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 }
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
-	guint16 memo_len;
-	guint16 memo_flags;
+	guint32 memo_len;
 	guint32 row_start, pg_row;
 	guint32 len;
 	char *buf;
@@ -618,21 +617,22 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	} 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, start, start + MDB_MEMO_OVERHEAD);
+	buffer_dump(mdb->pg_buf, start, start + MDB_MEMO_OVERHEAD - 1);
 #endif
 
-	/* The 16 bit integer at offset 0 is the length of the memo field.
+	/* The 32 bit integer at offset 0 is the length of the memo field
+	 *   with some flags in the high bits.
 	 * The 32 bit integer at offset 4 contains page and row information.
 	 */
-	memo_len = mdb_pg_get_int16(mdb, start);
-	memo_flags = mdb_pg_get_int16(mdb, start+2);
+	memo_len = mdb_pg_get_int32(mdb, start);
 
-	if (memo_flags & 0x8000) {
+	if (memo_len & 0x80000000) {
 		/* inline memo field */
 		mdb_unicode2ascii(mdb, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
 			size - MDB_MEMO_OVERHEAD, text, MDB_BIND_SIZE);
 		return text;
-	} else if (memo_flags & 0x4000) {
+	} else if (memo_len & 0x40000000) {
+		/* single-page memo field */
 		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
 #if MDB_DEBUG
 		printf("Reading LVAL page %06x\n", pg_row >> 8);
@@ -644,20 +644,24 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 #if MDB_DEBUG
 		printf("row num %d start %d len %d\n",
 			pg_row & 0xff, row_start, len);
-		buffer_dump(mdb->pg_buf, row_start, row_start + len);
+		buffer_dump(buf, row_start, row_start + len - 1);
 #endif
 		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;
-	} else { /* if (memo_flags == 0x0000) { */
+	} else {
+		/* multi-page memo field */
+		int tmpoff = 0;
 		char *tmp;
+
+		memo_len &= 0x3fffffff;
+		tmp = (char *) g_malloc(memo_len);
 		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
-#if MDB_DEBUG
-		printf("Reading LVAL page %06x\n", pg_row >> 8);
-#endif
-		tmp = (char *) g_malloc(MDB_BIND_SIZE);
-		tmp[0] = '\0';
 		do {
+#if MDB_DEBUG
+			printf("Reading LVAL page %06x\n", pg_row >> 8);
+#endif
 			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
+				g_free(tmp);
 				strcpy(text, "");
 				return text;
 			}
@@ -665,14 +669,16 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			printf("row num %d start %d len %d\n",
 				pg_row & 0xff, row_start, len);
 #endif
-			strncat(tmp, buf + row_start + 4, 
-				strlen(tmp) + len - 4 > MDB_BIND_SIZE ?
-				MDB_BIND_SIZE - strlen(tmp) : len - 4);
-
-			/* find next lval page */
-			pg_row = mdb_get_int32(mdb->pg_buf, row_start);
-		} while ((pg_row >> 8));
-		mdb_unicode2ascii(mdb, tmp, strlen(tmp), text, MDB_BIND_SIZE);
+			if (tmpoff + len - 4 > memo_len) {
+				break;
+			}
+			memcpy(tmp + tmpoff, buf + row_start + 4, len - 4);
+			tmpoff += len - 4;
+		} while (( pg_row = mdb_get_int32(buf, row_start) ));
+		if (tmpoff < memo_len) {
+			fprintf(stderr, "Warning: incorrect memo length\n");
+		}
+		mdb_unicode2ascii(mdb, tmp, tmpoff, text, MDB_BIND_SIZE);
 		g_free(tmp);
 		return text;
 /*
