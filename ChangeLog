@@ -1,3 +1,6 @@
+Sat Nov 27 12:16:08 CST 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/odbc/odbc.c: Update ascii2unicode conversion calls
+
 Fri Nov 26 00:10:58 EST 2004	Brian Bruns <brian@bruns.com>
 	* include/mdbtools.h:
 	* src/gmdb2/table_def.c:
