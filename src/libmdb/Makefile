@@ -1,7 +1,7 @@
 # Generated automatically from Makefile.in by configure.
-# Makefile.in generated automatically by automake 1.4 from Makefile.am
+# Makefile.in generated automatically by automake 1.4-p5 from Makefile.am
 
-# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# Copyright (C) 1994, 1995-8, 1999, 2001 Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -62,6 +62,7 @@ host_triplet = i686-pc-linux-gnu
 AS = @AS@
 CC = gcc
 DLLTOOL = @DLLTOOL@
+HAVE_GNOME = 
 LD = /usr/bin/ld
 LEX = flex
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -94,7 +95,7 @@ libmdb_la_LDFLAGS =
 libmdb_la_LIBADD = 
 libmdb_la_OBJECTS =  catalog.lo mem.lo file.lo kkd.lo table.lo data.lo \
 dump.lo backend.lo money.lo sargs.lo index.lo like.lo
-CFLAGS = -g -O2 -DUNIXODBC -DSQL
+CFLAGS = -g -O2 -DUNIXODBC -DSQL -DHAVE_GNOME
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

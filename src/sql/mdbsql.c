@@ -476,6 +476,24 @@ int i, j;
 		}
 	}
 }
+void mdbsql_bind_len(MdbSQL *sql, int colnum, int *len_ptr)
+{
+MdbTableDef *table = sql->cur_table;
+MdbSQLColumn *sqlcol;
+MdbColumn *col;
+int i, j;
+
+	/* sql columns are traditionally 1 based, so decrement colnum */
+	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
+	for (j=0;j<table->num_cols;j++) {
+		col=g_ptr_array_index(table->columns,j);
+		if (!strcasecmp(sqlcol->name, col->name)) {
+			/* bind the column length to its listed (SQL) position */
+			mdb_bind_len(table, j+1, len_ptr);
+			break;
+		}
+	}
+}
 void mdbsql_bind_all(MdbSQL *sql)
 {
 int i;

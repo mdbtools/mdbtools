@@ -396,7 +396,7 @@ static int GetNextItem (FILE* stream, char** name, char** value)
    s = fgets (line, max_line, stream);
    if (s == NULL)
    {
-      perror ("fgets");
+      //perror ("fgets");
       return 0;
    }
    /*

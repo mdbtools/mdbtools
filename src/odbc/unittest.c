@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.5 2002/01/24 12:34:13 brianb Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.6 2002/04/09 01:19:26 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -168,6 +168,7 @@ int i;
 		long   sAge  = 1023;
 		long   cbAge = sizeof(long);
 		UCHAR  szCol1[60];
+		SQLINTEGER length;
 
 		printf("excecuting first statement\n");
 		retcode = SQLExecute(hstmt);         
@@ -185,7 +186,7 @@ int i;
 				szSqlState, szErrorMsg);
 			exit(1);
 		}		
-		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, 60, NULL);
+		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, 60, &length);
 		//SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
 	
 		/* Execute statement with first row. */
@@ -194,7 +195,7 @@ int i;
 		while ((retcode = SQLFetch(hstmt)) == SQL_SUCCESS)
 		{
 			i++;
-			printf("%d: szCol1 = %s\n",i,szCol1);
+			printf("%d: szCol1 = %s (%d)\n",i,szCol1, length);
 		}
 		if (retcode != SQL_NO_DATA_FOUND)
 		{

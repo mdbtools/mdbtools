@@ -35,6 +35,13 @@ MdbColumn *col;
 	col=g_ptr_array_index(table->columns, col_num - 1);
 	col->bind_ptr = bind_ptr;
 }
+void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr)
+{
+MdbColumn *col;
+
+	col=g_ptr_array_index(table->columns, col_num - 1);
+	col->len_ptr = len_ptr;
+}
 int mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
 int row_start, row_end, i;
@@ -88,6 +95,7 @@ static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 }
 static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
+int ret;
 	//if (!strcmp("Name",col->name)) {
 		//printf("start %d %d\n",start, len);
 	//}
@@ -102,10 +110,14 @@ static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int le
 		if (len) {
 			strcpy(col->bind_ptr, 
 				mdb_col_to_string(mdb, start, col->col_type, len));
-			return col->col_size;
 		} else {
 			strcpy(col->bind_ptr,  "");
 		}
+		ret = strlen(col->bind_ptr);
+		if (col->len_ptr) {
+			*col->len_ptr = ret;
+		}
+		return ret;
 	}
 	return 0;
 }

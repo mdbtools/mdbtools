@@ -62,6 +62,7 @@ host_triplet = i686-pc-linux-gnu
 AS = @AS@
 CC = gcc
 DLLTOOL = @DLLTOOL@
+HAVE_GNOME = 
 LD = /usr/bin/ld
 LEX = flex
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -116,7 +117,7 @@ unittest_OBJECTS =  unittest.o
 unittest_DEPENDENCIES =  libmdbodbc.la ../libmdb/libmdb.la \
 ../sql/libmdbsql.la
 unittest_LDFLAGS = 
-CFLAGS = -g -O2 -DUNIXODBC -DSQL
+CFLAGS = -g -O2 -DUNIXODBC -DSQL -DHAVE_GNOME
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
