@@ -1,3 +1,13 @@
+Thu Aug 19 07:50:56 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/data.c:
+	* src/libmdb/map.c: Factorizing usage map functions
+
+Wed Aug 18 23:31:34 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* doc/reference/libmdb/libmdb-sections.txt:
+	* include/mdbtools.h:
+	* src/libmdb/file.c:
+	* src/libmdb/stats.c: Tidy up stats interface
+
 Tue Aug 17 22:46:13 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix and simplify usage map handling
 	* HACKING: Minor documentation corrections
