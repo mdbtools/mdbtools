@@ -469,6 +469,7 @@ extern int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
 extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
 extern void mdb_index_hash_text(guchar *text, guchar *hash);
 extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
+extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
 
 /* stats.c */
 extern void mdb_stats_on(MdbHandle *mdb);

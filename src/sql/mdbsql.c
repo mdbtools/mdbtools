@@ -527,6 +527,27 @@ int vlen;
 	}
 	fprintf(stdout,"|");
 }
+static gchar *
+convert_to_ucs2(MdbHandle *mdb, gchar *text)
+{
+	gchar *tmpstr;
+	int i;
+
+	tmpstr = (gchar *) g_malloc((strlen(text)+1)*2);
+	if (IS_JET4(mdb)) {
+		/* sloppily convert to UCS2-LE */
+		for (i=0;i<strlen(text);i++) {
+			tmpstr[i*2]=text[i];
+			tmpstr[i*2+1]=0;
+		}
+		tmpstr[i*2]=0;
+		tmpstr[i*2+1]=0;
+	} else {
+		strcpy(tmpstr, text);
+	}
+	/* caller is responsible for freeing returned value */
+	return tmpstr;
+}
 void mdb_sql_listtables(MdbSQL *sql)
 {
 	int i;
@@ -536,9 +557,11 @@ void mdb_sql_listtables(MdbSQL *sql)
 	unsigned char row_buffer[4096];
 	unsigned char *new_pg;
 	int row_size;
-	MdbTableDef *ttable, *table = NULL;
-	MdbColumn *col, tcol;
+	MdbTableDef *ttable;
+	MdbColumn tcol;
 	MdbSQLColumn *sqlcol;
+	gchar *tmpstr;
+	int tmpsiz;
 
 	if (!mdb) {
 		mdb_sql_error("You must connect to a database first");
@@ -570,8 +593,10 @@ void mdb_sql_listtables(MdbSQL *sql)
      		if (entry->object_type == MDB_TABLE) {
        			if (strncmp (entry->object_name, "MSys", 4)) {
           			//col = g_ptr_array_index(table->columns,0);
-   				fields[0].value = entry->object_name;
-   				fields[0].siz = strlen(entry->object_name); 
+				tmpstr = convert_to_ucs2(mdb, entry->object_name);
+				tmpsiz = IS_JET4(mdb) ? strlen(entry->object_name)*2 : strlen(entry->object_name);
+   				fields[0].value = tmpstr;
+   				fields[0].siz = tmpsiz;
    				fields[0].is_fixed = 0;
    				fields[0].is_null = 0;
    				fields[0].start = 0;
@@ -580,6 +605,7 @@ void mdb_sql_listtables(MdbSQL *sql)
 				row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
 				mdb_add_row_to_pg(ttable,row_buffer, row_size);
 				ttable->num_rows++;
+				g_free(tmpstr);
 			}
 		}
 	}
@@ -596,12 +622,13 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	MdbColumn *col, tcol;
 	MdbSQLColumn *sqlcol;
 	int i;
-	char colsize[11];
 	MdbField fields[4];
 	char tmpstr[256];
 	unsigned char row_buffer[4096];
 	unsigned char *new_pg;
 	int row_size;
+	gchar *col_name, *col_type, *col_size;
+	int tmpsiz;
 
 	if (!mdb) {
 		mdb_sql_error("You must connect to a database first");
@@ -668,25 +695,31 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
      for (i=0;i<table->num_cols;i++) {
 
-          col = g_ptr_array_index(table->columns,i);
-   		fields[0].value = col->name; 
-   		fields[0].siz = strlen(col->name); 
+        col = g_ptr_array_index(table->columns,i);
+		col_name = convert_to_ucs2(mdb, col->name);
+		tmpsiz = IS_JET4(mdb) ? strlen(col->name)*2 : strlen(col->name);
+   		fields[0].value = col_name;
+   		fields[0].siz = tmpsiz;
    		fields[0].is_fixed = 0;
    		fields[0].is_null = 0;
    		fields[0].start = 0;
    		fields[0].colnum = 0;
 
 		strcpy(tmpstr, mdb_get_coltype_string(mdb->default_backend, col->col_type));
-   		fields[1].value = tmpstr; 
-   		fields[1].siz = strlen(tmpstr); 
+		col_type = convert_to_ucs2(mdb, tmpstr);
+		tmpsiz = IS_JET4(mdb) ? strlen(tmpstr)*2 : strlen(tmpstr);
+   		fields[1].value = col_type; 
+   		fields[1].siz = tmpsiz; 
    		fields[1].is_fixed = 0;
    		fields[1].is_null = 0;
    		fields[1].start = 0;
    		fields[1].colnum = 1;
 
-		sprintf(colsize,"%d",col->col_size);
-   		fields[2].value = colsize; 
-   		fields[2].siz = strlen(colsize); 
+		sprintf(tmpstr,"%d",col->col_size);
+		col_size = convert_to_ucs2(mdb, tmpstr);
+		tmpsiz = IS_JET4(mdb) ? strlen(tmpstr)*2 : strlen(tmpstr);
+   		fields[2].value = col_size; 
+   		fields[2].siz = tmpsiz;
    		fields[2].is_fixed = 0;
    		fields[2].is_null = 0;
    		fields[2].start = 0;
@@ -694,6 +727,9 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
 		row_size = mdb_pack_row(ttable, row_buffer, 3, fields);
 		mdb_add_row_to_pg(ttable,row_buffer, row_size);
+		g_free(col_name);
+		g_free(col_type);
+		g_free(col_size);
 		ttable->num_rows++;
      }
 
