@@ -69,6 +69,17 @@ enum {
 	MDB_REPID = 0x0f
 };
 
+/* SARG operators */
+enum {
+	MDB_EQUAL = 1,
+	MDB_GT,
+	MDB_LT,
+	MDB_GTEQ,
+	MDB_LTEQ,
+	MDB_ISNULL,
+	MDB_NOTNULL
+};
+
 /* hash to store registered backends */
 GHashTable	*mdb_backends;
 
@@ -129,8 +140,21 @@ typedef struct {
 	int		col_size;
 	void		*bind_ptr;
 	GHashTable	*properties;
+	int		num_sargs;
+	GPtrArray	*sargs;
 	unsigned char   is_fixed;
 } MdbColumn;
+
+typedef union {
+	int	i;
+	double	d;
+	char	s[256];
+} MdbAny;
+
+typedef struct {
+	int	op;
+	MdbAny	value;
+} MdbSarg;
 
 /* mem.c */
 extern void mdb_init();

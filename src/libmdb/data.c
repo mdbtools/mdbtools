@@ -20,6 +20,8 @@
 #include "mdbtools.h"
 
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
+static int _mdb_attempt_bind(MdbHandle *mdb, 
+	MdbColumn *col, unsigned char isnull, int offset, int len);
 
 #define MDB_DEBUG 0
 
@@ -92,7 +94,7 @@ int mdb_read_row(MdbTableDef *table, int row)
 {
 MdbHandle *mdb = table->entry->mdb;
 MdbColumn *col;
-int i, j;
+int i, j, rc;
 int num_cols, var_cols, fixed_cols;
 int row_start, row_end;
 int fixed_cols_found, var_cols_found;
@@ -102,6 +104,7 @@ int eod; /* end of data */
 int delflag, lookupflag;
 int bitmask_sz;
 unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
+unsigned char isnull;
 
 	row_start = mdb_get_int16(mdb, 10+(row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
@@ -157,13 +160,10 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		col = g_ptr_array_index(table->columns,j);
 		if (mdb_is_fixed_col(col) &&
 		    ++fixed_cols_found <= fixed_cols) {
-			if (col->col_type == MDB_BOOL) {
-				mdb_xfer_bound_bool(mdb, col, mdb_is_null(null_mask, j+1));
-			} else if (mdb_is_null(null_mask, j+1)) {
-				mdb_xfer_bound_data(mdb, 0, col, 0);
-			} else {
-				mdb_xfer_bound_data(mdb,row_start + col_start, col, col->col_size);
-			}
+			isnull = mdb_is_null(null_mask, j+1); 
+			rc = _mdb_attempt_bind(mdb, col, isnull,
+				row_start + col_start, col->col_size);
+			if (!rc) return 0;
 			col_start += col->col_size;
 		}
 	}
@@ -208,17 +208,32 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 					- var_cols_found 
 					- 1 - num_of_jumps ] - col_start;
 
-			if (col->col_type == MDB_BOOL) {
-				mdb_xfer_bound_bool(mdb, col, mdb_is_null(null_mask, j+1));
-			} else if (mdb_is_null(null_mask, j+1)) {
-				mdb_xfer_bound_data(mdb, 0, col, 0);
-			} else {
-				mdb_xfer_bound_data(mdb,row_start + col_start, col, len);
-			}
+			isnull = mdb_is_null(null_mask, j+1); 
+			rc = _mdb_attempt_bind(mdb, col, isnull,
+				row_start + col_start, len);
+			if (!rc) return 0;
 			col_start += len;
 		}
 	}
 
+	return 1;
+}
+static int _mdb_attempt_bind(MdbHandle *mdb, 
+	MdbColumn *col, 
+	unsigned char isnull, 
+	int offset, 
+	int len)
+{
+	if (col->col_type == MDB_BOOL) {
+		mdb_xfer_bound_bool(mdb, col, isnull);
+	} else if (isnull) {
+		mdb_xfer_bound_data(mdb, 0, col, 0);
+	} else {
+		if (!mdb_test_sargs(mdb, col, offset, len)) {
+			return 0;
+		}
+		mdb_xfer_bound_data(mdb, offset, col, len);
+	}
 	return 1;
 }
 int mdb_read_next_dpg(MdbTableDef *table)
@@ -242,6 +257,7 @@ int mdb_fetch_row(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
 int rows;
+int rc;
 
 	if (table->num_rows==0)
 		return 0;
@@ -253,18 +269,19 @@ int rows;
 		mdb_read_next_dpg(table);
 	}
 
-	rows = mdb_get_int16(mdb,8);
+	do { 
+		rows = mdb_get_int16(mdb,8);
 
-	/* if at end of page, find a new page */
-	if (table->cur_row >= rows) {
-		table->cur_row=0;
-		if (!mdb_read_next_dpg(table)) return 0;
-	}
+		/* if at end of page, find a new page */
+		if (table->cur_row >= rows) {
+			table->cur_row=0;
+			if (!mdb_read_next_dpg(table)) return 0;
+		}
 
-	mdb_read_row(table, 
-		table->cur_row);
+		rc = mdb_read_row(table, table->cur_row);
+		table->cur_row++;
+	} while (!rc);
 
-	table->cur_row++;
 	return 1;
 }
 void mdb_data_dump(MdbTableDef *table)
