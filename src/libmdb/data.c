@@ -434,37 +434,37 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	}
 	return 1;
 }
-int 
-mdb_read_next_dpg_by_map0(MdbTableDef *table)
+static int
+mdb_read_next_dpg0(MdbTableDef *table)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
-	unsigned int pgnum, i, bitn;
+	unsigned int pgnum, i;
+	unsigned char *usage_bitmap;
+	unsigned int usage_bitlen;
 
 	pgnum = mdb_get_int32(table->usage_map,1);
 	/* the first 5 bytes of the usage map mean something */
-	for (i=5;i<table->map_sz;i++) {
-		for (bitn=0;bitn<8;bitn++) {
-			if (table->usage_map[i] & 1 << bitn && pgnum > table->cur_phys_pg) {
-				table->cur_phys_pg = pgnum;
-				if (!mdb_read_pg(mdb, pgnum)) {
-					return 0;
-				} else {
-					return pgnum;
-				}
-			}
-			pgnum++;
+	usage_bitmap = table->usage_map + 5;
+	usage_bitlen = (table->map_sz - 5) * 8;
+	for (i=table->cur_phys_pg-pgnum+1; i<usage_bitlen; i++) {
+		if (usage_bitmap[i/8] & (1 << (i%8))) {
+			table->cur_phys_pg = pgnum + i;
+			return (mdb_read_pg(mdb, table->cur_phys_pg))
+				? table->cur_phys_pg : 0;
 		}
 	}
 	/* didn't find anything */
 	return 0;
 }
-int 
-mdb_read_next_dpg_by_map1(MdbTableDef *table)
+static int
+mdb_read_next_dpg1(MdbTableDef *table)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
-	guint32 pgnum, i, j, bitn, map_pg, map_ind, offset, bit_offset;
+	guint32 i, map_pg, map_ind, max_map_pgs, offset;
+	unsigned char *usage_bitmap;
+	unsigned int usage_bitlen = (mdb->fmt->pg_size - 4) * 8;
 
 	/*
 	* table->cur_phys_pg will tell us where to (re)start the scan
@@ -475,19 +475,17 @@ mdb_read_next_dpg_by_map1(MdbTableDef *table)
 	* offset gives us a page offset into the bitmap (must be converted
 	* to bytes and bits).
 	*/
-	pgnum = table->cur_phys_pg + 1; 
-	map_ind = pgnum / ((mdb->fmt->pg_size - 4) * 8);
-	offset = pgnum % ((mdb->fmt->pg_size - 4) * 8);
-	bit_offset = offset % 8;
-		
+	max_map_pgs = (table->map_sz - 1) / 4;
+	map_ind = (table->cur_phys_pg + 1) / usage_bitlen;
+	offset = (table->cur_phys_pg + 1) % usage_bitlen;
+
 	//printf("map size %ld\n", table->map_sz);
-	for (i = 4 * map_ind + 1;i < table->map_sz-1; i += 4) {
-		map_pg = mdb_get_int32(table->usage_map, i);
+	for (; map_ind<max_map_pgs; map_ind++) {
+		map_pg = mdb_get_int32(table->usage_map, (map_ind*4)+1);
 		//printf("loop %d pg %ld %02x%02x%02x%02x\n",i, map_pg,table->usage_map[i],table->usage_map[i+1],table->usage_map[i+2],table->usage_map[i+3]);
 
-		/* if the usage_map entry is empty, skip it, but advance the page counter */
+		/* if the usage_map entry is empty, skip it */
 		if (!map_pg) {
-			pgnum += (mdb->fmt->pg_size - 4) * 8;
 			continue;
 		}
 
@@ -498,24 +496,13 @@ mdb_read_next_dpg_by_map1(MdbTableDef *table)
 
 		//printf("reading page %ld\n",map_pg);
 		
-		/* first time through, start j, bitn based on the starting offset
-		 * after that, reset offset to 0 to start at the beginning of the page/byte
-		 */
-
-		for (j=4 + offset;j<mdb->fmt->pg_size;j++) {
-			for (bitn=bit_offset;bitn<8;bitn++) {
-				if (mdb->alt_pg_buf[j] & 1 << bitn && pgnum > table->cur_phys_pg) {
-					table->cur_phys_pg = pgnum;
-					if (!mdb_read_pg(mdb, pgnum)) {
-						return 0;
-					} else {
-						//printf("page found at %04x %d\n",pgnum, pgnum);
-						return pgnum;
-					}
-				}
-				pgnum++;
+		usage_bitmap = mdb->alt_pg_buf + 4;
+		for (i=offset; i<usage_bitlen; i++) {
+			if (usage_bitmap[i/8] & (1 << (i%8))) {
+				table->cur_phys_pg = map_ind*usage_bitlen + i;
+				return (mdb_read_pg(mdb, table->cur_phys_pg))
+					? table->cur_phys_pg : 0;
 			}
-			bit_offset = 0;
 		}
 		offset = 0;
 	}
@@ -534,11 +521,11 @@ guint32 pg;
 #ifndef SLOW_READ
 	map_type = table->usage_map[0];
 	if (map_type==0) {
-		pg = mdb_read_next_dpg_by_map0(table);
+		pg = mdb_read_next_dpg0(table);
 		//printf("Next dpg = %lu\n", pg);
 		return pg;
 	} else if (map_type==1) {
-		pg = mdb_read_next_dpg_by_map1(table);
+		pg = mdb_read_next_dpg1(table);
 		//printf("Next dpg = %lu\n", pg);
 		return pg;
 	} else {
