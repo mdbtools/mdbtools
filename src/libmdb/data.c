@@ -1023,12 +1023,12 @@ static int trim_trailing_zeros(char * buff, int n)
 				
 char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
 {
-/* FIX ME -- not thread safe */
-static char text[MDB_BIND_SIZE];
-time_t t;
-int i, n;
-float tf;
-double td;
+	/* FIX ME -- not thread safe */
+	static char text[MDB_BIND_SIZE];
+	time_t t;
+	int i, n;
+	float tf;
+	double td;
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -1087,9 +1087,13 @@ double td;
 			return text;
 		break;
 		case MDB_SDATETIME:
-			t = (long int)((mdb_get_double(buf, start) - 25569.0) * 86400.0);
-			strftime(text, MDB_BIND_SIZE, date_fmt,
-				(struct tm*)gmtime(&t));
+			td = mdb_get_double(mdb, start);
+			if (td > 1) {
+				t = (long int)((td - 25569.0) * 86400.0);
+			} else {
+				t = (long int)(td * 86400.0);
+			}
+			strftime(text, MDB_BIND_SIZE, date_fmt, (struct tm*)gmtime(&t));
 			return text;
 
 		break;
