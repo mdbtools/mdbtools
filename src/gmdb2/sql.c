@@ -17,6 +17,9 @@
  */
 #include "gmdb.h"
 
+#include <gtk/gtkmessagedialog.h>
+#include <libgnome/gnome-i18n.h>
+
 #if SQL
 
 typedef struct GMdbSQLWindow {
@@ -58,7 +61,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 {
 	gchar *file_path;
 	GladeXML *sql_xml;
-	GtkWidget *filesel;
+	GtkWidget *filesel, *dlg;
 	FILE *outfile;
 	int i;
 	int need_headers = 0;
@@ -68,7 +71,6 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	gchar lineterm[5];
 	gchar *str, *buf;
 	int rows=0, n_columns;
-	char msg[100];
 	GtkWidget *treeview;
 	GtkTreeViewColumn *col;
 	GList *glist;
@@ -88,7 +90,11 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	file_path = gmdb_export_get_filepath(xml);
 
 	if ((outfile=fopen(file_path, "w"))==NULL) {
-		gnome_warning_dialog("Unable to Open File!");
+		dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Unable to open file."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		return;
 	}
 
@@ -129,8 +135,11 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 
 	fclose(outfile);
 	gtk_widget_destroy(filesel);
-	sprintf(msg,"%d Rows exported successfully.\n", rows);
-	gnome_ok_dialog(msg);
+	dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+	    _("%d rows successfully exported."), rows);
+	gtk_dialog_run (GTK_DIALOG (dlg));
+	gtk_widget_destroy (dlg);
 }
 void
 gmdb_sql_write_cb(GtkWidget *w, GladeXML *xml)
@@ -407,7 +416,11 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	_mdb_sql(sql);
 	if (yyparse()) {
 		/* end unsafe */
-		gnome_warning_dialog("Couldn't parse SQL");
+		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Couldn't parse SQL."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		mdb_sql_reset(sql);
 		return;
 	}
@@ -418,7 +431,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	for (i=0;i<sql->num_columns;i++) 
 		gtypes[i]=G_TYPE_STRING;
 
-	store = (GtkTreeStore *) gtk_tree_view_get_model(treeview);
+	store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 	if (store) {
 		i=0;
 		while (column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), i)) {
@@ -645,7 +658,11 @@ gmdb_sql_save_query(GladeXML *xml, gchar *file_path)
 	gchar *buf;
 
 	if (!(out=fopen(file_path, "w"))) {
-		gnome_warning_dialog("Unable to open file.");
+		GtkWidget* dlg = gtk_message_dialog_new (NULL,
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Unable to open file."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		return;
 	}
 	textview = glade_xml_get_widget(xml, "sql_textview");
@@ -668,7 +685,11 @@ gmdb_sql_load_query(GladeXML *xml, gchar *file_path)
 	int len;
 
 	if (!(in=fopen(file_path, "r"))) {
-		gnome_warning_dialog("Unable to open file.");
+		GtkWidget* dlg = gtk_message_dialog_new (NULL,
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Unable to open file."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		return;
 	}
 	textview = glade_xml_get_widget(xml, "sql_textview");
@@ -708,7 +729,11 @@ GtkTreeIter *iter2;
 void
 gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 {
-	gnome_ok_dialog("SQL support was not built in.\nRun configure with the --enable-sql option.");
+	GtkWidget* dlg = gtk_message_dialog_new (gtk_widget_get_toplevel (w),
+	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
+	    _("SQL support was not built.\nRun configure with the --enable-sql option."));
+	gtk_dialog_run (GTK_DIALOG (dlg));
+	gtk_widget_destroy (dlg);
 }
 
 #endif

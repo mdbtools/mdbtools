@@ -16,7 +16,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "gmdb.h"
+
 #include <glade/glade.h>
+#include <gtk/gtkmessagedialog.h>
+#include <libgnome/gnome-i18n.h>
+
 extern GtkWidget *app;
 extern MdbHandle *mdb;
 
@@ -329,7 +333,11 @@ gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
 		page = atol(gtk_entry_get_text(GTK_ENTRY(entry)));
 	}
 	if (page>gmdb_get_max_page(mdb) || page<0) {
-		gnome_warning_dialog("Page entered is outside valid page range.");
+		GtkWidget* dlg = gtk_message_dialog_new (gtk_widget_get_toplevel (w),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Page entered is outside valid page range."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 	}
 
 	/* add to the navigation list */

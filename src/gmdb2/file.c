@@ -16,7 +16,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "gmdb.h"
+
 #include <mdbtools.h>
+#include <gtk/gtkmessagedialog.h>
+#include <libgnome/gnome-i18n.h>
+#include <libgnome/gnome-config.h>
 
 GtkWidget *file_selector;
 MdbHandle *mdb;
@@ -109,7 +113,11 @@ gmdb_file_open(gchar *file_path)
 	gmdb_reset_widgets();
 	mdb = mdb_open(file_path, MDB_NOFLAGS);
 	if (!mdb) {
-		gnome_warning_dialog("Unable to open file.");
+		GtkWidget* dlg = gtk_message_dialog_new (NULL,
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Unable to open file."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		return;
 	}
 	mdb_set_default_backend(mdb, "access");

@@ -25,6 +25,8 @@ GtkWidget *gmdb_table_def_new(MdbCatalogEntry *entry);
 GtkWidget *gmdb_table_export_new(MdbCatalogEntry *entry);
 void gmdb_table_export(MdbCatalogEntry *entry) ;
 
+void gmdb_table_export_populate_dialog(GladeXML *xml);
+
 void gmdb_file_select_cb(GtkWidget *w, gpointer data);
 void gmdb_file_open_cb(GtkWidget *w, gpointer data);
 void gmdb_file_close_cb(GtkWidget *w, gpointer data);
@@ -44,6 +46,9 @@ void gmdb_table_add_tab(GtkWidget *notebook);
 void gmdb_debug_tab_new(GtkWidget *notebook);
 void gmdb_debug_new_cb(GtkWidget *w, gpointer *data);
 void gmdb_debug_set_dissect_cb(GtkWidget *w, GladeXML *xml);
+
+void gmdb_sql_save_query(GladeXML *xml, gchar *file_path);
+void gmdb_sql_save_as_cb(GtkWidget *w, GladeXML *xml);
 
 unsigned long gmdb_prefs_get_maxrows();
 

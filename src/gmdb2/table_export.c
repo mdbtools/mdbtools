@@ -17,6 +17,10 @@
  */
 #include "gmdb.h"
 
+#include <gtk/gtkmessagedialog.h>
+#include <libgnome/gnome-i18n.h>
+#include <libgnome/gnome-help.h>
+
 extern GtkWidget *app;
 extern MdbHandle *mdb;
 GladeXML *exportwin_xml;
@@ -157,10 +161,9 @@ gchar quotechar;
 gchar lineterm[5];
 gchar *str;
 int rows=0;
-char msg[100];
-GtkWidget *exportwin;
 
-	
+	GtkWidget *exportwin, *dlg;
+
 	gmdb_export_get_delimiter(exportwin_xml, delimiter, 10);
 	gmdb_export_get_lineterm(exportwin_xml, lineterm, 5);
 	need_quote = gmdb_export_get_quote(exportwin_xml);
@@ -170,7 +173,11 @@ GtkWidget *exportwin;
 
 	// printf("file path %s\n",file_path);
 	if ((outfile=fopen(file_path, "w"))==NULL) {
-		gnome_warning_dialog("Unable to Open File!");
+		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Unable to open file."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		return;
 	}
 
@@ -216,8 +223,11 @@ GtkWidget *exportwin;
 	fclose(outfile);
 	exportwin = glade_xml_get_widget (exportwin_xml, "export_dialog");
 	gtk_widget_destroy(exportwin);
-	sprintf(msg,"%d Rows exported successfully.\n", rows);
-	gnome_ok_dialog(msg);
+	dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
+	    _("%d rows successfully exported."), rows);
+	gtk_dialog_run (GTK_DIALOG (dlg));
+	gtk_widget_destroy (dlg);
 }
 void gmdb_table_export(MdbCatalogEntry *entry) 
 {

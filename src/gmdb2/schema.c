@@ -17,6 +17,10 @@
  */
 #include "gmdb.h"
 
+#include <gtk/gtkmessagedialog.h>
+#include <libgnome/gnome-i18n.h>
+#include <libgnome/gnome-help.h>
+
 extern GtkWidget *app;
 extern MdbHandle *mdb;
 
@@ -44,13 +48,17 @@ gchar quotechar;
 gchar lineterm[5];
 gchar *str;
 int rows=0;
-char msg[100];
 char            *the_relation;
 
-	
+	GtkWidget *dlg;
+
 	printf("file path %s\n",file_path);
 	if ((outfile=fopen(file_path, "w"))==NULL) {
-		gnome_warning_dialog("Unable to Open File!");
+		GtkWidget* dlg = gtk_message_dialog_new (NULL,
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    _("Unable to open file."));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
 		return;
 	}
 	mdb_set_default_backend(mdb,backend);
@@ -113,8 +121,11 @@ char            *the_relation;
  	}
 
 	fclose(outfile);
-	sprintf(msg,"Schema exported successfully.\n");
-	gnome_ok_dialog(msg);
+	dlg = gtk_message_dialog_new (NULL,
+	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+	    _("Schema exported successfully."));
+	gtk_dialog_run (GTK_DIALOG (dlg));
+	gtk_widget_destroy (dlg);
 }
 void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)

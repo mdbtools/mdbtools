@@ -1,3 +1,12 @@
+Sat Nov 13 20:33:42 EST 2004	Brian Bruns <brian@bruns.com>
+	* src/gmdb2/gmdb.h: remove redeclaration errors
+	* src/gmdb2/sql.c: fix compiler warnings
+	* src/gmdb2/debug.c:
+	* src/gmdb2/file.c:
+	* src/gmdb2/schema.c:
+	* src/gmdb2/sql.c:
+	* src/gmdb2/table_export.c: patch #1038578 from Filip Van Raemdonck
+
 Wed Oct 27 22:32:33 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-sql.c: Various mdb-sql improvements
 
