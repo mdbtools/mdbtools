@@ -54,7 +54,7 @@ main(int argc, char **argv)
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
-	col_num = mdb_bind_column_by_name(table, argv[optind+2], buf, &len);
+	col_num = mdb_bind_column_by_name(table, argv[optind+2], buf, NULL);
 	mdb_bind_column_by_name(table, "Name", name, NULL);
 
 	while(mdb_fetch_row(table)) {
