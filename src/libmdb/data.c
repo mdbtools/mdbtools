@@ -33,25 +33,22 @@ MdbColumn *col;
 }
 int mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
-int rows, row_start, row_end, i;
+int row_start, row_end, i;
 
-	rows = mdb_get_int16(mdb,8);
-	if (row==0) 
-		row_end = mdb->pg_size - 1; /* end of page */
-	else {
-		row_end = mdb_get_int16(mdb, (10 + (row-1) * 2)) - 1;
+	/* Search the previous "row start" values for the first non-deleted one.
+	 * If we don't find one, then the end of the page is the correct value.
+	 */
+	for (i = row - 1; i >= 0; i--) {
+		row_start = mdb_get_int16(mdb, (10 + i * 2));
+		if (!(row_start & 0x8000)) {
+			break;
+		}
+	}
 
-		for (i = row - 1; i > 0; i--) {
-			row_start = mdb_get_int16(mdb, (10 + i * 2));
-			if (!(row_start & 0x8000)) {
-				break;
-			}
-		}
-		if (i == 0) {
-			row_end = mdb->pg_size - 1;
-		} else {
-			row_end = row_start - 1;
-		}
+	if (i == -1) {
+		row_end = mdb->pg_size - 1;
+	} else {
+		row_end = row_start - 1;
 	}
 
 	return row_end;
@@ -108,8 +105,7 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		delflag ? "[delflag]" : "");
 #endif	
 	if (delflag || lookupflag) {
-		row_end = row_start-1;
-		return 0;
+		return -1;
 	}
 
 #if MDB_DEBUG
@@ -181,7 +177,7 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		}
 	}
 
-	row_end = row_start-1;
+	return 0;
 }
 int mdb_read_next_dpg(MdbTableDef *table)
 {
@@ -223,8 +219,14 @@ int rows;
 		if (!mdb_read_next_dpg(table)) return 0;
 	}
 
-	mdb_read_row(table, 
-		table->cur_row);
+	/* Skip over any deleted rows.
+	 *  mdb_read_row() returns -1 on deleted rows.
+	 *  mdb_read_row() returns 0 on actual rows.
+	 */
+	while(mdb_read_row(table,
+		table->cur_row)) {
+		table->cur_row++;
+	}
 
 	table->cur_row++;
 	return 1;
