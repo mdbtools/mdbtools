@@ -47,6 +47,13 @@ enum {
 	MDB_UNKNOWN_0A,
 	MDB_UNKNOWN_0B
 };
+enum {
+	MDB_INT = 0x03,
+	MDB_LONGINT = 0x04,
+	MDB_SDATETIME = 0x08,
+	MDB_TEXT = 0x0a,
+	MDB_HYPERLINK = 0x0c
+};
 
 typedef struct {
 	int           fd;

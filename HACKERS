@@ -93,8 +93,8 @@ Column Definition
 -----------------
 
 The second and third bytes of each catalog entry store a 16 bit page pointer to 
-a column definition, including name, type, size and possibly more.  I haven't 
-fully figured this out so what follows is rough.  
+a column definition, including name, type, size, number of datarows, a pointer 
+to the first data page, and possibly more.  I haven't fully figured this out so what follows is rough.  
 
 The header to table definition pages start look something like this:
 
@@ -103,13 +103,27 @@ The header to table definition pages start look something like this:
 | 0x01 | 1 byte  | Unknown                                                |
 | 'VC' | 2 bytes | ???                                                    |
 | 0x00 | 4 bytes | Unknown                                                |
-| ???? | 2 bytes | appears to be a length of the data                     |
-| 0x00 |10 bytes | ???                                                    |
+| ???? | 4 bytes | appears to be a length of the data                     |
+| ???? | 4 bytes | number of rows of data in this table                   |
+| 0x00 | 4 bytes | ???                                                    |
 | 0x4e | 1 byte  | ???                                                    |
-| ???? | 2 bytes | ranges from 1 to 3ish                                  |
-| ???? | 2 bytes | ranges from 1 to 3ish                                  |
-| ???? | 1 byte  | number of columns in table                             |
+| ???? | 2 bytes | generally same as # of cols but not always             |
+| ???? | 2 bytes | ???                                                    |
+| ???? | 2 bytes | number of columns in table                             |
+| ???? | 4 bytes | number of data pages in table                          |
+| ???? | 4 bytes | number of data pages in table (repeat)                 |
+| 0x00 | 1 byte  | ???                                                    |
+| ???? | 2 bytes | page number of first datapage for table                |
+| ???? | 2 bytes | ???                                                    |
+| ???? | 2 bytes | page number of first datapage for table                |
+| 0x00 | 1 byte  | ???                                                    |
 +-------------------------------------------------------------------------+
+| Iterate for the 2 x number of datapages                                 |
++-------------------------------------------------------------------------+
+| ???? | 4 bytes | number of rows in table                                |
+| ???? | 4 bytes | ???                                                    |
++-------------------------------------------------------------------------+
+
 The next few bytes are somewhat of a mystery right now, but around 0x2B from 
 the start of the page (though not always) begins a series of 18 byte records
 one for each column present.  It's format is as follows:
