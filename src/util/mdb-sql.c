@@ -152,7 +152,7 @@ run_query(MdbSQL *sql, char *mybuf)
 	if (!parse(sql, mybuf) && sql->cur_table) {
 		if (showplan) {
 			table = sql->cur_table;
-			if (tabl->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
+			if (table->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
 			if (sql->cur_table->strategy == MDB_TABLE_SCAN)
 				printf("Table scanning %s\n", table->name);
 			else 
