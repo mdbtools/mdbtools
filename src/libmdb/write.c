@@ -112,7 +112,7 @@ mdb_crack_row4(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
 	unsigned int i;
 
 	for (i=0; i<row_var_cols+1; i++) {
-		var_col_offsets[i] = mdb_pg_get_int16(mdb,
+		var_col_offsets[i] = mdb_get_int16(mdb->pg_buf,
 			row_end - bitmask_sz - 3 - (i*2));
 	}
 }
@@ -180,7 +180,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	}
 
 	if (IS_JET4(mdb)) {
-		row_cols = mdb_pg_get_int16(mdb, row_start);
+		row_cols = mdb_get_int16(mdb->pg_buf, row_start);
 		col_count_size = 2;
 	} else {
 		row_cols = pg_buf[row_start];
@@ -192,7 +192,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 
 	/* read table of variable column locations */
 	row_var_cols = IS_JET4(mdb) ?
-		mdb_pg_get_int16(mdb, row_end - bitmask_sz - 1) :
+		mdb_get_int16(mdb->pg_buf, row_end - bitmask_sz - 1) :
 		pg_buf[row_end - bitmask_sz];
 	var_col_offsets = (unsigned int *)g_malloc((row_var_cols+1)*sizeof(int));
 	if (table->num_var_cols > 0) {
@@ -434,9 +434,9 @@ mdb_pg_get_freespace(MdbHandle *mdb)
 	int rows, free_start, free_end;
 	int row_count_offset = mdb->fmt->row_count_offset;
 
-	rows = mdb_pg_get_int16(mdb, row_count_offset);
+	rows = mdb_get_int16(mdb->pg_buf, row_count_offset);
 	free_start = row_count_offset + 2 + (rows * 2);
-        free_end = mdb_pg_get_int16(mdb, row_count_offset + (rows * 2));
+	free_end = mdb_get_int16(mdb->pg_buf, row_count_offset + (rows * 2));
 	mdb_debug(MDB_DEBUG_WRITE,"free space left on page = %d", free_end - free_start);
 	return (free_end - free_start);
 }
@@ -617,7 +617,7 @@ mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_siz
 	} else {  /* is not a temp table */
 		new_pg = mdb_new_data_pg(entry);
 
-		num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
+		num_rows = mdb_get_int16(mdb->pg_buf, fmt->row_count_offset);
 		pos = fmt->pg_size;
 
 		/* copy existing rows */
@@ -729,7 +729,7 @@ int i, pos;
 	mdb_debug(MDB_DEBUG_WRITE,"updating row %d on page %lu", row, (unsigned long) table->cur_phys_pg);
 	new_pg = mdb_new_data_pg(entry);
 
-	num_rows = mdb_pg_get_int16(mdb, rco);
+	num_rows = mdb_get_int16(mdb->pg_buf, rco);
 	_mdb_put_int16(new_pg, rco, num_rows);
 
 	pos = pg_size;

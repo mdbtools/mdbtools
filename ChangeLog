@@ -1,6 +1,10 @@
 Tue Mar 22 07:01:37 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/extras/mdb-dump.c:
 	* src/libmdb/data.c: Clean up some warnings
+	* src/libmdb/file.c:
+	* src/libmdb/kkd.c:
+	* src/libmdb/table.c:
+	* src/libmdb/write.c: Replace a few mdb_pg_get_int's with mdb_get_int's
 
 Sat Mar 19 06:34:00 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/Makefile.am:

@@ -77,22 +77,23 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	int len, row_start, pg_row;
-	char *buf;
+	char *buf, *pg_buf = mdb->pg_buf;
 
 	mdb_read_pg(mdb, entry->table_pg);
-	if (mdb->pg_buf[0] != 0x02)  /* not a valid table def page */
+	if (pg_buf[0] != 0x02)  /* not a valid table def page */
 		return NULL;
 	table = mdb_alloc_tabledef(entry);
 
-	len = mdb_pg_get_int16(mdb,8);
+	len = mdb_get_int16(pg_buf, 8);
 
-	table->num_rows = mdb_pg_get_int32(mdb, fmt->tab_num_rows_offset);
-	table->num_var_cols = mdb_pg_get_int16(mdb, fmt->tab_num_cols_offset-2);
-	table->num_cols = mdb_pg_get_int16(mdb, fmt->tab_num_cols_offset);
-	table->num_idxs = mdb_pg_get_int32(mdb, fmt->tab_num_idxs_offset); 
-	table->num_real_idxs = mdb_pg_get_int32(mdb, fmt->tab_num_ridxs_offset); 
+	table->num_rows = mdb_get_int32(pg_buf, fmt->tab_num_rows_offset);
+	table->num_var_cols = mdb_get_int16(pg_buf, fmt->tab_num_cols_offset-2);
+	table->num_cols = mdb_get_int16(pg_buf, fmt->tab_num_cols_offset);
+	table->num_idxs = mdb_get_int32(pg_buf, fmt->tab_num_idxs_offset);
+	table->num_real_idxs = mdb_get_int32(pg_buf, fmt->tab_num_ridxs_offset);
+
 	/* grab a copy of the usage map */
-	pg_row = mdb_pg_get_int32(mdb, fmt->tab_usage_map_offset);
+	pg_row = mdb_get_int32(pg_buf, fmt->tab_usage_map_offset);
 	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
 	table->usage_map = g_memdup(buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
@@ -101,13 +102,13 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		pg_row >> 8, pg_row & 0xff, row_start, table->map_sz);
 
 	/* grab a copy of the free space page map */
-	pg_row = mdb_pg_get_int32(mdb, fmt->tab_free_map_offset);
+	pg_row = mdb_get_int32(pg_buf, fmt->tab_free_map_offset);
 	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz));
 	table->free_usage_map = g_memdup(buf + row_start, table->freemap_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
-	table->first_data_pg = mdb_pg_get_int16(mdb, fmt->tab_first_dpg_offset);
+	table->first_data_pg = mdb_get_int16(pg_buf, fmt->tab_first_dpg_offset);
 
 	return table;
 }
@@ -135,7 +136,7 @@ int
 read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
 {
 	if (*cur_pos + offset >= mdb->fmt->pg_size) {
-		mdb_read_pg(mdb, mdb_pg_get_int32(mdb,4));
+		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
 		*cur_pos = 8 - (mdb->fmt->pg_size - (*cur_pos));
 		return 1;
 	}
@@ -175,7 +176,7 @@ read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len)
 	} else {
 		int half = mdb->fmt->pg_size - *cur_pos;
 		memcpy(buf, &mdb->pg_buf[*cur_pos], half);
-		mdb_read_pg(mdb, mdb_pg_get_int32(mdb,4));
+		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
 		memcpy(buf + half, &mdb->pg_buf[8], len - half);
 		*cur_pos = 8 - half;
 		return 1;

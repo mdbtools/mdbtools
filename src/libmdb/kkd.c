@@ -29,7 +29,7 @@
 **       KKD structures.
 */
 
-GArray *mdb_get_column_props(MdbCatalogEntry *entry, int start)
+static GArray *mdb_get_column_props(MdbCatalogEntry *entry, int start)
 {
 int pos, cnt=0;
 int len, tmp, cplen;
@@ -53,7 +53,7 @@ MdbHandle *mdb = entry->mdb;
 	return entry->props;
 }
 
-GHashTable *mdb_get_column_def(MdbCatalogEntry *entry, int start)
+static GHashTable *mdb_get_column_def(MdbCatalogEntry *entry, int start)
 {
 GHashTable *hash = NULL;
 MdbHandle *mdb = entry->mdb;
@@ -110,13 +110,13 @@ int rowid = entry->kkd_rowid;
 
 
 	mdb_read_pg(mdb, entry->kkd_pg);
-	rows = mdb_pg_get_int16(mdb,8);
+	rows = mdb_get_int16(mdb->pg_buf, 8);
 	fprintf(stdout,"number of rows = %d\n",rows);
-	kkd_start = mdb_pg_get_int16(mdb,10+rowid*2);
+	kkd_start = mdb_get_int16(mdb->pg_buf, 10+rowid*2);
 	fprintf(stdout,"kkd start = %d %04x\n",kkd_start,kkd_start);
 	kkd_end = mdb->fmt->pg_size;
 	for (i=0;i<rows;i++) {
-		tmp = mdb_pg_get_int16(mdb, 10+i*2);
+		tmp = mdb_get_int16(mdb->pg_buf, 10+i*2);
 		if (tmp < mdb->fmt->pg_size &&
 		    tmp > kkd_start &&
 		    tmp < kkd_end) {
