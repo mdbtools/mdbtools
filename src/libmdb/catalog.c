@@ -138,7 +138,7 @@ int next_pg, next_pg_off;
 		if (mdb->pg_buf[0]==0x01 && 
 		mdb->pg_buf[1]==0x01 &&
 		mdb_get_int32(mdb,4)==2) {
-			fprintf(stderr,"cat page %d\n", next_pg);
+			/* fprintf(stderr,"cat page %d\n", next_pg); */
 			rows = mdb_catalog_rows(mdb);
 			for (i=0;i<rows;i++) {
 				if (mdb->pg_buf[11 + 2 * i] & 0x40) continue;

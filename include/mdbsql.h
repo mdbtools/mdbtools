@@ -12,6 +12,9 @@ typedef struct {
 	GPtrArray *tables;
 	int num_sargs;
 	GPtrArray *sargs;
+	MdbTableDef *cur_table;
+	/* FIX ME */
+	char *bound_values[256];
 } MdbSQL;
 
 typedef struct {

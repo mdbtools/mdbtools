@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.1 2001/07/10 22:36:20 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.2 2001/07/24 11:00:01 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -49,6 +49,8 @@ static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
+
+extern MdbSQL *g_sql;
 
 static void LogError (const char* error)
 {
@@ -562,12 +564,26 @@ SQLRETURN SQL_API SQLError(
 static SQLRETURN SQL_API _SQLExecute( SQLHSTMT hstmt)
 {
 struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
 int ret;
    
    fprintf(stderr,"query = %s\n",stmt->query);
    _odbc_fix_literals(stmt);
 
-   	return SQL_SUCCESS;
+   /* calls to yyparse would need to be serialized for thread safety */
+
+   /* begin unsafe */
+   g_input_ptr = stmt->query;
+   g_sql = env->sql;
+   if (yyparse()) {
+   /* end unsafe */
+        LogError("Couldn't parse SQL\n");
+        mdb_sql_reset(env->sql);
+        return SQL_ERROR;
+   } else {
+        return SQL_SUCCESS;
+   }
 }
 
 SQLRETURN SQL_API SQLExecDirect(
@@ -1040,3 +1056,4 @@ static SQLSMALLINT _odbc_get_client_type(int srv_type)
 	switch (srv_type) {
 	}
 }
+

@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.1 2001/07/10 22:36:20 brianb Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.2 2001/07/24 11:00:01 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -43,7 +43,6 @@ SQLRETURN   retcode;
 HENV        henv;
 HDBC        hdbc;
 SQLHSTMT    hstmt;
-
 
 static void printStatementError(HSTMT hstmt, char *msg)
 {

@@ -20,6 +20,8 @@
 #include "mdbsql.h"
 #include <stdarg.h>
 
+void mdb_dump_results(MdbSQL *sql);
+
 #ifdef HAVE_WORDEXP_H
 #define HAVE_WORDEXP
 #include <wordexp.h>
@@ -384,7 +386,6 @@ MdbCatalogEntry entry;
 MdbHandle *mdb = sql->mdb;
 MdbTableDef *table = NULL;
 MdbSQLTable *sql_tab;
-char *bound_values[256]; 
 MdbColumn *col;
 MdbSQLColumn *sqlcol;
 MdbSQLSarg *sql_sarg;
@@ -431,10 +432,10 @@ int found = 0;
 		for (j=0;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
 			if (!strcasecmp(sqlcol->name, col->name)) {
-				bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
-				bound_values[i][0] = '\0';
+				sql->bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
+				sql->bound_values[i][0] = '\0';
 				/* bind the column to its listed (SQL) position */
-				mdb_bind_column(table, j+1, bound_values[i]);
+				mdb_bind_column(table, j+1, sql->bound_values[i]);
 				sqlcol->disp_size = mdb_col_disp_size(col);
 				found=1;
 				break;
@@ -452,7 +453,15 @@ int found = 0;
 		sql_sarg=g_ptr_array_index(sql->sargs,i);
 		mdb_add_sarg_by_name(table,sql_sarg->col_name, sql_sarg->sarg);
 	}
-	
+	sql->cur_table = table;
+	mdb_dump_results(sql);
+}
+
+void mdb_dump_results(MdbSQL *sql)
+{
+int j;
+MdbSQLColumn *sqlcol;
+
 	/* print header */
 	for (j=0;j<sql->num_columns;j++) {
 		sqlcol = g_ptr_array_index(sql->columns,j);
@@ -471,10 +480,10 @@ int found = 0;
 	fprintf(stdout,"\n");
 
 	/* print each row */
-	while(mdb_fetch_row(table)) {
+	while(mdb_fetch_row(sql->cur_table)) {
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			print_value(bound_values[j],sqlcol->disp_size,!j);
+			print_value(sql->bound_values[j],sqlcol->disp_size,!j);
 		}
 		fprintf(stdout,"\n");
 	}
@@ -488,7 +497,7 @@ int found = 0;
 	fprintf(stdout,"\n");
 	/* clean up */
 	for (j=0;j<sql->num_columns;j++) {
-		if (bound_values[j]) free(bound_values[j]);
+		if (sql->bound_values[j]) free(sql->bound_values[j]);
 	}
 
 	/* the column and table names are no good now */
