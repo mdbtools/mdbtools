@@ -32,7 +32,7 @@
 
 static int multiply_byte(unsigned char *product, int num, unsigned char *multiplier);
 static int do_carry(unsigned char *product);
-static char *array_to_string(unsigned char *array, int unsigned scale, char *s);
+static char *array_to_string(unsigned char *array, int unsigned scale, int neg);
 
 /**
  * mdb_money_to_string
