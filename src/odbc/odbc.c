@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.13 2004/03/06 05:13:28 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.14 2004/03/06 23:59:54 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -57,6 +57,45 @@ static char lastError[_MAX_ERROR_LEN+1];
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
+
+typedef struct {
+	SQLCHAR *type_name;
+	SQLSMALLINT data_type;
+	SQLINTEGER column_size;
+	SQLCHAR *literal_prefix;
+	SQLCHAR *literal_suffix;
+	SQLCHAR *create_params;
+	SQLSMALLINT nullable;
+	SQLSMALLINT case_sensitive;
+	SQLSMALLINT searchable;
+	SQLSMALLINT unsigned_attribute;
+	SQLSMALLINT fixed_prec_scale;
+	SQLSMALLINT auto_unique_value;
+	SQLCHAR *local_type_name;
+	SQLSMALLINT minimum_scale;
+	SQLSMALLINT maximum_scale;
+	SQLSMALLINT sql_data_type;
+	SQLSMALLINT sql_datetime_sub;
+	SQLSMALLINT num_prec_radix;
+	SQLSMALLINT interval_precision;
+} TypeInfo;
+
+TypeInfo type_info[] = {
+	{"text", SQL_VARCHAR, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_VARCHAR, NULL, NULL, NULL},
+	{"memo", SQL_VARCHAR, 4096, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 4096, SQL_VARCHAR, NULL, NULL, NULL},
+	{"text", SQL_CHAR, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_CHAR, NULL, NULL, NULL},
+	{"numeric", SQL_NUMERIC, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_NUMERIC, NULL, NULL, NULL},
+	{"numeric", SQL_DECIMAL, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_DECIMAL, NULL, NULL, NULL},
+	{"long integer", SQL_INTEGER, 4, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_TRUE, NULL, 0, 4, SQL_INTEGER, NULL, NULL, NULL},
+	{"integer", SQL_SMALLINT, 4, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_TRUE, NULL, 0, 4, SQL_SMALLINT, NULL, NULL, NULL},
+	{"integer", SQL_SMALLINT, 4, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_TRUE, NULL, 0, 4, SQL_SMALLINT, NULL, NULL, NULL},
+	{"single", SQL_REAL, 4, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_TRUE, NULL, 0, 4, SQL_REAL, NULL, NULL, NULL},
+	{"double", SQL_DOUBLE, 8, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_TRUE, NULL, 0, 8, SQL_FLOAT, NULL, NULL, NULL},
+	{"datetime", SQL_DATETIME, 8, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_TRUE, NULL, 0, 8, SQL_DATETIME, NULL, NULL, NULL}
+};
+
+#define NUM_TYPE_INFO_COLS 19
+#define MAX_TYPE_INFO 11
 
 /* The SQL engine is presently non-reenterrant and non-thread safe.  
    See _SQLExecute for details.
@@ -423,7 +462,7 @@ static SQLRETURN SQL_API _SQLAllocEnv(
 struct _henv *env;
 
 	TRACE("_SQLAllocEnv");
-     env = (SQLHENV) malloc(sizeof(struct _henv));
+     env = (SQLHENV) g_malloc(sizeof(struct _henv));
      memset(env,'\0',sizeof(struct _henv));
 	*phenv=env;
 	env->sql = mdb_sql_init();
@@ -446,7 +485,7 @@ struct _hstmt *stmt;
 	TRACE("_SQLAllocStmt");
 	dbc = (struct _hdbc *) hdbc;
 
-     stmt = (SQLHSTMT) malloc(sizeof(struct _hstmt));
+     stmt = (SQLHSTMT) g_malloc(sizeof(struct _hstmt));
      memset(stmt,'\0',sizeof(struct _hstmt));
 	stmt->hdbc=hdbc;
 	*phstmt = stmt;
@@ -469,10 +508,8 @@ SQLRETURN SQL_API SQLBindCol(
     SQLINTEGER         cbValueMax,
     SQLINTEGER FAR    *pcbValue)
 {
-struct _hstmt *stmt = (struct _hstmt *) hstmt;
-struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-struct _henv *env = (struct _henv *) dbc->henv;
-struct _sql_bind_info *cur, *prev, *newitem;
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _sql_bind_info *cur, *prev, *newitem;
 
 	TRACE("SQLBindCol");
 	/* find available item in list */
@@ -494,7 +531,7 @@ struct _sql_bind_info *cur, *prev, *newitem;
 		newitem->column_number = icol;
 		newitem->column_bindtype = fCType;
    		newitem->column_bindlen = cbValueMax;
-   		newitem->column_lenbind = pcbValue;
+   		newitem->column_lenbind = (int *)pcbValue;
    		newitem->varaddr = (char *) rgbValue;
 		/* if there's no head yet */
 		if (! stmt->bind_head) {
@@ -564,14 +601,14 @@ SQLRETURN SQL_API SQLDescribeCol(
     SQLSMALLINT FAR   *pibScale,
     SQLSMALLINT FAR   *pfNullable)
 {
-int cplen, namelen, i;
-struct _hstmt *stmt = (struct _hstmt *) hstmt;
-struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-struct _henv *env = (struct _henv *) dbc->henv;
-MdbSQL *sql = env->sql;
-MdbSQLColumn *sqlcol;
-MdbColumn *col;
-MdbTableDef *table;
+	int namelen, i;
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+	struct _henv *env = (struct _henv *) dbc->henv;
+	MdbSQL *sql = env->sql;
+	MdbSQLColumn *sqlcol;
+	MdbColumn *col;
+	MdbTableDef *table;
 
 	TRACE("SQLDescribeCol");
 	if (icol<1 || icol>sql->num_columns) {
@@ -617,15 +654,14 @@ SQLRETURN SQL_API SQLColAttributes(
     SQLSMALLINT FAR   *pcbDesc,
     SQLINTEGER FAR    *pfDesc)
 {
-int cplen, len = 0;
-int namelen, i;
-struct _hstmt *stmt;
-struct _hdbc *dbc;
-struct _henv *env;
-MdbSQL *sql;
-MdbSQLColumn *sqlcol;
-MdbColumn *col;
-MdbTableDef *table;
+	int namelen, i;
+	struct _hstmt *stmt;
+	struct _hdbc *dbc;
+	struct _henv *env;
+	MdbSQL *sql;
+	MdbSQLColumn *sqlcol;
+	MdbColumn *col;
+	MdbTableDef *table;
 
 	TRACE("SQLColAttributes");
 	stmt = (struct _hstmt *) hstmt;
@@ -731,10 +767,10 @@ SQLRETURN SQL_API SQLError(
 
 static SQLRETURN SQL_API _SQLExecute( SQLHSTMT hstmt)
 {
-struct _hstmt *stmt = (struct _hstmt *) hstmt;
-struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-struct _henv *env = (struct _henv *) dbc->henv;
-int ret;
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+	struct _henv *env = (struct _henv *) dbc->henv;
+
 	TRACE("_SQLExecute");
    
    /* fprintf(stderr,"query = %s\n",stmt->query); */
@@ -762,13 +798,12 @@ SQLRETURN SQL_API SQLExecDirect(
     SQLCHAR FAR       *szSqlStr,
     SQLINTEGER         cbSqlStr)
 {
-struct _hstmt *stmt = (struct _hstmt *) hstmt;
-int ret;
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 
 	TRACE("SQLExecDirect");
-   strcpy(stmt->query, szSqlStr);
+	strcpy(stmt->query, szSqlStr);
 
-   return _SQLExecute(hstmt);
+	return _SQLExecute(hstmt);
 }
 
 SQLRETURN SQL_API SQLExecute(
@@ -854,8 +889,8 @@ static SQLRETURN SQL_API _SQLFreeConnect(
 
 	TRACE("_SQLFreeConnect");
 
-   FreeConnectParams (dbc->params);
-   free (dbc);
+   FreeConnectParams(dbc->params);
+   g_free(dbc);
 
    return SQL_SUCCESS;
 }
@@ -883,15 +918,15 @@ static SQLRETURN SQL_API _SQLFreeStmt(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       fOption)
 {
-struct _hstmt *stmt=(struct _hstmt *)hstmt;
+	struct _hstmt *stmt=(struct _hstmt *)hstmt;
 
 	TRACE("_SQLFreeStmt");
-   if (fOption==SQL_DROP) {
-   	free (hstmt);
-   } else if (fOption==SQL_CLOSE) {
-   } else {
-   }
-   return SQL_SUCCESS;
+	if (fOption==SQL_DROP) {
+		g_free(stmt);
+	} else if (fOption==SQL_CLOSE) {
+	} else {
+	}
+	return SQL_SUCCESS;
 }
 SQLRETURN SQL_API SQLFreeStmt(
     SQLHSTMT           hstmt,
@@ -1029,17 +1064,15 @@ SQLRETURN SQL_API SQLGetData(
     SQLINTEGER         cbValueMax,
     SQLINTEGER FAR    *pcbValue)
 {
-struct _hstmt *stmt;
-struct _hdbc *dbc;
-struct _henv *env;
-unsigned char *src;
-int srclen;
-MdbSQL *sql;
-MdbHandle *mdb;
-MdbSQLColumn *sqlcol;
-MdbColumn *col;
-MdbTableDef *table;
-int i;
+	struct _hstmt *stmt;
+	struct _hdbc *dbc;
+	struct _henv *env;
+	MdbSQL *sql;
+	MdbHandle *mdb;
+	MdbSQLColumn *sqlcol;
+	MdbColumn *col;
+	MdbTableDef *table;
+	int i;
 
 	TRACE("SQLGetData");
 	stmt = (struct _hstmt *) hstmt;
@@ -1081,7 +1114,6 @@ SQLRETURN SQL_API SQLGetFunctions(
     SQLUSMALLINT       fFunction,
     SQLUSMALLINT FAR  *pfExists)
 {
-int i;
 
 	TRACE("SQLGetFunctions");
 	switch (fFunction) {
@@ -1226,15 +1258,82 @@ SQLRETURN SQL_API SQLGetTypeInfo(
     SQLHSTMT           hstmt,
     SQLSMALLINT        fSqlType)
 {
-struct _hstmt *stmt;
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+	struct _henv *env = (struct _henv *) dbc->henv;
+	MdbTableDef *ttable;
+	MdbSQL *sql = env->sql;
+	MdbHandle *mdb = sql->mdb;
+	unsigned char *new_pg;
+	int row_size;
+	unsigned char *row_buffer[MDB_PGSIZE];
+	unsigned char *tmpstr[MDB_BIND_SIZE];
+	int i, tmpsiz;
+	MdbField fields[NUM_TYPE_INFO_COLS];
 
 	TRACE("SQLGetStmtOption");
 	stmt = (struct _hstmt *) hstmt;
-	if (!fSqlType) {
-   		strcpy(stmt->query, "SELECT * FROM typeinfo");
-	} else {
-			sprintf(stmt->query, "SELECT * FROM typeinfo WHERE SQL_DATA_TYPE = %d", fSqlType);
+	
+	ttable = mdb_create_temp_table(mdb, "#typeinfo");
+	mdb_sql_add_temp_col(sql, ttable, 0, "TYPE_NAME", MDB_TEXT, 30, 0);
+	mdb_sql_add_temp_col(sql, ttable, 1, "DATA_TYPE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 2, "COLUMN_SIZE", MDB_LONGINT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 3, "LITERAL_PREFIX", MDB_TEXT, 30, 0);
+	mdb_sql_add_temp_col(sql, ttable, 4, "LITERAL_SUFFIX", MDB_TEXT, 30, 0);
+	mdb_sql_add_temp_col(sql, ttable, 5, "CREATE_PARAMS", MDB_TEXT, 30, 0);
+	mdb_sql_add_temp_col(sql, ttable, 6, "NULLABLE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 7, "CASE_SENSITIVE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 8, "SEARCHABLE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 9, "UNSIGNED_ATTRIBUTE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 10, "FIXED_PREC_SCALE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 11, "AUTO_UNIQUE_VALUE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 12, "LOCAL_TYPE_NAME", MDB_TEXT, 30, 0);
+	mdb_sql_add_temp_col(sql, ttable, 13, "MINIMUM_SCALE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 14, "MAXIMUM_SCALE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 15, "SQL_DATA_TYPE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 16, "SQL_DATETIME_SUB", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 17, "NUM_PREC_RADIX", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 18, "INTERVAL_PRECISION", MDB_INT, 0, 1);
+
+	/* blank out the pg_buf */
+	new_pg = mdb_new_data_pg(ttable->entry);
+	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
+	g_free(new_pg);
+
+	for (i=0; i<MAX_TYPE_INFO; i++) {
+		if (!fSqlType || fSqlType == type_info[i].data_type) {
+			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].type_name, 0, 100, tmpstr);
+			mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
+			mdb_fill_temp_field(&fields[1],&type_info[i].data_type, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[2],&type_info[i].column_size, sizeof(SQLINTEGER), 0,0,0,1);
+			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].literal_prefix, 0, 100, tmpstr);
+			mdb_fill_temp_field(&fields[3], tmpstr, tmpsiz, 0,0,0,0);
+			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].literal_suffix, 0, 100, tmpstr);
+			mdb_fill_temp_field(&fields[4], tmpstr, tmpsiz, 0,0,0,0);
+			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].create_params, 0, 100, tmpstr);
+			mdb_fill_temp_field(&fields[5], tmpstr, tmpsiz, 0,0,0,0);
+			mdb_fill_temp_field(&fields[6],&type_info[i].nullable, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[7],&type_info[i].case_sensitive, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[8],&type_info[i].searchable, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[9],&type_info[i].unsigned_attribute, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[10],&type_info[i].fixed_prec_scale, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[11],&type_info[i].auto_unique_value, sizeof(SQLSMALLINT), 0,0,0,1);
+			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].local_type_name, 0, 100, tmpstr);
+			mdb_fill_temp_field(&fields[12], tmpstr, tmpsiz, 0,0,0,0);
+			mdb_fill_temp_field(&fields[13],&type_info[i].minimum_scale, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[14],&type_info[i].maximum_scale, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[15],&type_info[i].sql_data_type, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[16],&type_info[i].sql_datetime_sub, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[17],&type_info[i].num_prec_radix, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[18],&type_info[i].interval_precision, sizeof(SQLSMALLINT), 0,0,0,1);
+
+			row_size = mdb_pack_row(ttable, row_buffer, NUM_TYPE_INFO_COLS, fields);
+			mdb_add_row_to_pg(ttable,row_buffer, row_size);
+			ttable->num_rows++;
+		}
 	}
+	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
+	sql->cur_table = ttable;
 	
 	/* return _SQLExecute(hstmt); */
 	return SQL_SUCCESS;

@@ -527,27 +527,6 @@ int vlen;
 	}
 	fprintf(stdout,"|");
 }
-static gchar *
-convert_to_ucs2(MdbHandle *mdb, gchar *text)
-{
-	gchar *tmpstr;
-	int i;
-
-	tmpstr = (gchar *) g_malloc((strlen(text)+1)*2);
-	if (IS_JET4(mdb)) {
-		/* sloppily convert to UCS2-LE */
-		for (i=0;i<strlen(text);i++) {
-			tmpstr[i*2]=text[i];
-			tmpstr[i*2+1]=0;
-		}
-		tmpstr[i*2]=0;
-		tmpstr[i*2+1]=0;
-	} else {
-		strcpy(tmpstr, text);
-	}
-	/* caller is responsible for freeing returned value */
-	return tmpstr;
-}
 void mdb_sql_listtables(MdbSQL *sql)
 {
 	int i;
@@ -558,8 +537,6 @@ void mdb_sql_listtables(MdbSQL *sql)
 	unsigned char *new_pg;
 	int row_size;
 	MdbTableDef *ttable;
-	MdbColumn tcol;
-	MdbSQLColumn *sqlcol;
 	gchar tmpstr[100];
 	int tmpsiz;
 
@@ -570,16 +547,7 @@ void mdb_sql_listtables(MdbSQL *sql)
 	mdb_read_catalog (mdb, MDB_TABLE);
 
 	ttable = mdb_create_temp_table(mdb, "#listtables");
-
-	memset(&tcol,0,sizeof(MdbColumn));
-	strcpy(tcol.name, "Tables");
-	tcol.col_size = 30;
-	tcol.col_type = MDB_TEXT;
-	tcol.is_fixed = 0;
-	mdb_temp_table_add_col(ttable, &tcol);
-	mdb_sql_add_column(sql, "Tables");
-	sqlcol = g_ptr_array_index(sql->columns,0);
-	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+	mdb_sql_add_temp_col(sql, ttable, 0, "Tables", MDB_TEXT, 30, 0);
 
 	/* blank out the pg_buf */
 	new_pg = mdb_new_data_pg(ttable->entry);
@@ -594,13 +562,7 @@ void mdb_sql_listtables(MdbSQL *sql)
        			if (strncmp (entry->object_name, "MSys", 4)) {
           			//col = g_ptr_array_index(table->columns,0);
 				tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, tmpstr);
-   				fields[0].value = tmpstr;
-   				fields[0].siz = tmpsiz;
-   				fields[0].is_fixed = 0;
-   				fields[0].is_null = 0;
-   				fields[0].start = 0;
-   				fields[0].colnum = 0;
-
+				mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
 				row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
 				mdb_add_row_to_pg(ttable,row_buffer, row_size);
 				ttable->num_rows++;
@@ -611,18 +573,31 @@ void mdb_sql_listtables(MdbSQL *sql)
 	sql->cur_table = ttable;
 
 }
+int
+mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, int col_type, int col_size, int is_fixed)
+{
+	MdbColumn tcol;
+	MdbSQLColumn *sqlcol;
+
+	mdb_fill_temp_col(&tcol, name, col_size, col_type, is_fixed);
+	mdb_temp_table_add_col(ttable, &tcol);
+	mdb_sql_add_column(sql, name);
+	sqlcol = g_ptr_array_index(sql->columns,col_num);
+	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+
+	return 0;
+}
 void mdb_sql_describe_table(MdbSQL *sql)
 {
 	MdbTableDef *ttable, *table = NULL;
 	MdbSQLTable *sql_tab;
 	MdbCatalogEntry *entry;
 	MdbHandle *mdb = sql->mdb;
-	MdbColumn *col, tcol;
-	MdbSQLColumn *sqlcol;
+	MdbColumn *col;
 	int i;
 	MdbField fields[4];
 	char tmpstr[256];
-	unsigned char row_buffer[4096];
+	unsigned char row_buffer[MDB_PGSIZE];
 	unsigned char *new_pg;
 	int row_size;
 	gchar col_name[100], col_type[100], col_size[100];
@@ -656,35 +631,9 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
 	ttable = mdb_create_temp_table(mdb, "#describe");
 
-	memset(&tcol,0,sizeof(MdbColumn));
-	strcpy(tcol.name, "Column Name");
-	tcol.col_size = 30;
-	tcol.col_type = MDB_TEXT;
-	tcol.is_fixed = 0;
-	mdb_temp_table_add_col(ttable, &tcol);
-	mdb_sql_add_column(sql, "Column Name");
-	sqlcol = g_ptr_array_index(sql->columns,0);
-	sqlcol->disp_size = mdb_col_disp_size(&tcol);
-
-	memset(&tcol,0,sizeof(MdbColumn));
-	strcpy(tcol.name, "Type");
-	tcol.col_size = 20;
-	tcol.col_type = MDB_TEXT;
-	tcol.is_fixed = 0;
-	mdb_temp_table_add_col(ttable, &tcol);
-	mdb_sql_add_column(sql, "Type");
-	sqlcol = g_ptr_array_index(sql->columns,1);
-	sqlcol->disp_size = mdb_col_disp_size(&tcol);
-
-	memset(&tcol,0,sizeof(MdbColumn));
-	strcpy(tcol.name, "Size");
-	tcol.col_size = 10;
-	tcol.col_type = MDB_TEXT;
-	tcol.is_fixed = 0;
-	mdb_temp_table_add_col(ttable, &tcol);
-	mdb_sql_add_column(sql, "Size");
-	sqlcol = g_ptr_array_index(sql->columns,2);
-	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+	mdb_sql_add_temp_col(sql, ttable, 0, "Column Name", MDB_TEXT, 30, 0);
+	mdb_sql_add_temp_col(sql, ttable, 1, "Type", MDB_TEXT, 20, 0);
+	mdb_sql_add_temp_col(sql, ttable, 2, "Size", MDB_TEXT, 10, 0);
 
 	/* blank out the pg_buf */
 	new_pg = mdb_new_data_pg(ttable->entry);
@@ -695,30 +644,15 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
         col = g_ptr_array_index(table->columns,i);
 		tmpsiz = mdb_ascii2unicode(mdb, col->name, 0, 100, col_name);
-   		fields[0].value = col_name;
-   		fields[0].siz = tmpsiz;
-   		fields[0].is_fixed = 0;
-   		fields[0].is_null = 0;
-   		fields[0].start = 0;
-   		fields[0].colnum = 0;
+		mdb_fill_temp_field(&fields[0],col_name, tmpsiz, 0,0,0,0);
 
 		strcpy(tmpstr, mdb_get_coltype_string(mdb->default_backend, col->col_type));
 		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, 100, col_type);
-   		fields[1].value = col_type; 
-   		fields[1].siz = tmpsiz; 
-   		fields[1].is_fixed = 0;
-   		fields[1].is_null = 0;
-   		fields[1].start = 0;
-   		fields[1].colnum = 1;
+		mdb_fill_temp_field(&fields[1],col_type, tmpsiz, 0,0,0,1);
 
 		sprintf(tmpstr,"%d",col->col_size);
 		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, 100, col_size);
-   		fields[2].value = col_size; 
-   		fields[2].siz = tmpsiz;
-   		fields[2].is_fixed = 0;
-   		fields[2].is_null = 0;
-   		fields[2].start = 0;
-   		fields[2].colnum = 2;
+		mdb_fill_temp_field(&fields[2],tmpstr, tmpsiz, 0,0,0,2);
 
 		row_size = mdb_pack_row(ttable, row_buffer, 3, fields);
 		mdb_add_row_to_pg(ttable,row_buffer, row_size);

@@ -28,6 +28,25 @@
  * commands like "list tables" and "describe table"
  */
 
+void
+mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed)
+{
+	memset(tcol,0,sizeof(MdbColumn));
+	strcpy(tcol->name, col_name);
+	tcol->col_size = col_size;
+	tcol->col_type = col_type;
+	tcol->is_fixed = is_fixed;
+}
+void
+mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int colnum)
+{
+   	field->value = value;
+   	field->siz = siz;
+   	field->is_fixed = is_fixed;
+   	field->is_null = is_null;
+   	field->start = start;
+   	field->colnum = colnum;
+}
 MdbTableDef *
 mdb_create_temp_table(MdbHandle *mdb, char *name)
 {

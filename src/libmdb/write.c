@@ -145,8 +145,6 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	/* find the end of data pointer */
 	eod = mdb_pg_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
 
-	col_start = 2;
-
 	/* actual cols on this row */
 	fixed_cols_found = 0;
 	var_cols_found = 0;

@@ -1,3 +1,11 @@
+Sat Mar  6 18:10:20 EST 2004	Brian Bruns <brian@bruns.com>
+	* include/mdbsql.h:
+	* src/libmdb/worktable.c:
+	* src/sql/mdbsql.c: introduced convience functions for building temp tables
+	* src/libmdb/write.c: remove dead statement
+	* src/libmdb/iconv.c: check for null string in mdb_ascii2unicode
+	* src/odbc/odbc.c: implement SQLGetTypeInfo bug #903498
+
 Fri Mar  5 23:24:04 EST 2004	Brian Bruns <brian@bruns.com>
 	* configure.in: AC_SUBST on ODBCINSTLIB
 	* include/mdbtools.h: 

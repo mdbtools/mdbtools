@@ -45,6 +45,8 @@ mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, int len, char 
 {
 	int i = 0;
 
+	if (!buf) return 0;
+
 	if (IS_JET3(mdb)) {
 		strncpy(dest, &buf[offset], len);
 		dest[len]='\0';

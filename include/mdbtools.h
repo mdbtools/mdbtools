@@ -436,6 +436,7 @@ extern void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr);
 extern int mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern int mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void mdb_set_date_fmt(const char *);
+extern int mdb_read_row(MdbTableDef *table, int row);
 
 /* dump.c */
 extern void buffer_dump(const unsigned char* buf, int start, int end);
@@ -499,6 +500,8 @@ extern MdbProperties *mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kk
 /* worktable.c */
 extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
 extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
+extern void mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed);
+extern void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int column);
 
 /* options.c */
 extern int mdb_get_option(unsigned long optnum);
