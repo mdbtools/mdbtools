@@ -97,7 +97,6 @@ rm -rf $RPM_BUILD_ROOT
 %files gui
 %defattr (-,root,root)
 %{_bindir}/gmdb2
-%{_datadir}/gmdb/pixmaps/*
 %{_datadir}/gmdb/glade/*
 %{_datadir}/gnome/help/gmdb/C/*
 %{_datadir}/gnome/help/gmdb/C/figures/*
