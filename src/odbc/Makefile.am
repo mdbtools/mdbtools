@@ -9,7 +9,7 @@ MDBSOURCES     =    backend.c index.c money.c catalog.c kkd.c sargs.c \
 
 bin_PROGRAMS	=	unittest 
 lib_LTLIBRARIES	=	libmdbodbc.la
-AM_CPPFLAGS	=	-I ../../include $(GLIB_CFLAGS) $(ODBC_CFLAGS)
+AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS) $(ODBC_CFLAGS)
 libmdbodbc_la_SOURCES=	odbc.c connectparams.c
 libmdbodbc_la_LIBADD=	$(patsubst %, $(SQLDIR)/%, \
 				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
