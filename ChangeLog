@@ -1,3 +1,8 @@
+Sun Sep 12 14:03:10 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/write.c:
+	* src/libmdb/worktable.c: Temp table improvements
+
 Wed Sep  8 22:24:29 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING: Small format documentation correction
 	* include/mdbtools.h:

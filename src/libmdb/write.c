@@ -329,7 +329,9 @@ mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 	for (i=0;i<num_fields;i++) {
 		if (fields[i].is_fixed) {
 			fields[i].offset = pos;
-			memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
+			if (!fields[i].is_null) {
+				memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
+			}
 			pos += fields[i].siz;
 		}
 	}
@@ -383,7 +385,9 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 	for (i=0;i<num_fields;i++) {
 		if (fields[i].is_fixed) {
 			fields[i].offset = pos;
-			memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
+			if (!fields[i].is_null) {
+				memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
+			}
 			pos += fields[i].siz;
 		}
 	}
@@ -440,6 +444,19 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 int
 mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int unsigned num_fields, MdbField *fields)
 {
+	if (table->is_temp_table) {
+		unsigned int i;
+		for (i=0; i<num_fields; i++) {
+			MdbColumn *c = g_ptr_array_index(table->columns, i);
+			fields[i].is_null = (fields[i].value) ? 0 : 1;
+			fields[i].colnum = i;
+			fields[i].is_fixed = c->is_fixed;
+			if ((c->col_type != MDB_TEXT)
+			 && (c->col_type != MDB_MEMO)) {
+				fields[i].siz = c->col_size;
+			}
+		}
+	}
 	if (IS_JET4(table->entry->mdb)) {
 		return mdb_pack_row4(table, row_buffer, num_fields, fields);
 	} else {

@@ -517,6 +517,7 @@ extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
 extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
 extern void mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed);
 extern void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int column);
+extern void mdb_temp_columns_end(MdbTableDef *table);
 
 /* options.c */
 extern int mdb_get_option(unsigned long optnum);

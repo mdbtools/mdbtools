@@ -33,8 +33,12 @@ mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, i
 {
 	memset(tcol,0,sizeof(MdbColumn));
 	strcpy(tcol->name, col_name);
-	tcol->col_size = col_size;
 	tcol->col_type = col_type;
+	if ((col_type == MDB_TEXT) || (col_type == MDB_MEMO)) {
+		tcol->col_size = col_size;
+	} else {
+		tcol->col_size = mdb_col_fixed_size(tcol);
+	}
 	tcol->is_fixed = is_fixed;
 }
 void
@@ -75,4 +79,21 @@ mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col)
 		col->var_col_num = table->num_var_cols++;
 	g_ptr_array_add(table->columns, g_memdup(col, sizeof(MdbColumn)));
 	table->num_cols++;
+}
+/*
+ * Should be called after setting up all temp table columns
+ */
+void mdb_temp_columns_end(MdbTableDef *table)
+{
+	MdbColumn *col;
+	unsigned int i;
+	unsigned int start = 0;
+
+	for (i=0; i<table->num_cols; i++) {
+		col = g_ptr_array_index(table->columns, i);
+		if (col->is_fixed) {
+			col->fixed_offset = start;
+			start += col->col_size;
+		}
+	}
 }
