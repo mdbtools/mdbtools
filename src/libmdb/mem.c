@@ -19,16 +19,16 @@
 
 #include "mdbtools.h"
 
-MDB_HANDLE *mdb_alloc_handle()
+MdbHandle *mdb_alloc_handle()
 {
-MDB_HANDLE *mdb;
+MdbHandle *mdb;
 
-	mdb = (MDB_HANDLE *) malloc(sizeof(MDB_HANDLE));
-	memset(mdb, '\0', sizeof(MDB_HANDLE));
+	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
+	memset(mdb, '\0', sizeof(MdbHandle));
 
 	return mdb;	
 }
-void mdb_free_handle(MDB_HANDLE *mdb)
+void mdb_free_handle(MdbHandle *mdb)
 {
 	if (!mdb) return;	
 
@@ -36,10 +36,10 @@ void mdb_free_handle(MDB_HANDLE *mdb)
 	if (mdb->catalog) mdb_free_catalog(mdb);
 	free(mdb);
 }
-void mdb_free_catalog(MDB_HANDLE *mdb)
+void mdb_free_catalog(MdbHandle *mdb)
 {
 GList *l;
-MDB_CATALOG_ENTRY *entryp;
+MdbCatalogEntry *entryp;
 
 	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
 		entryp = l->data;

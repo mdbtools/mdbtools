@@ -19,9 +19,9 @@
 
 #include "mdbtools.h"
 
-MDB_HANDLE *mdb_open(char *filename)
+MdbHandle *mdb_open(char *filename)
 {
-MDB_HANDLE *mdb;
+MdbHandle *mdb;
 
 	mdb = mdb_alloc_handle();
 	mdb->filename = (char *) malloc(strlen(filename)+1);
@@ -39,7 +39,7 @@ MDB_HANDLE *mdb;
 /* 
 ** mdb_read a wrapper for read that bails if anything is wrong 
 */
-size_t mdb_read_pg(MDB_HANDLE *mdb, unsigned long pg)
+size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 {
 size_t len;
 off_t offset = pg * MDB_PGSIZE;
@@ -62,7 +62,7 @@ struct stat status;
 	}
 	return len;
 }
-int mdb_get_int16(MDB_HANDLE *mdb, int offset)
+int mdb_get_int16(MdbHandle *mdb, int offset)
 {
 unsigned char *c;
 int           i;
@@ -75,7 +75,7 @@ int           i;
 	return i;
 	
 }
-long mdb_get_int32(MDB_HANDLE *mdb, int offset)
+long mdb_get_int32(MdbHandle *mdb, int offset)
 {
 long l;
 unsigned char *c;
@@ -90,14 +90,14 @@ unsigned char *c;
 	mdb->cur_pos+=4;
 	return l;
 }
-int mdb_set_pos(MDB_HANDLE *mdb, int pos)
+int mdb_set_pos(MdbHandle *mdb, int pos)
 {
 	if (pos<0 || pos >= MDB_PGSIZE) return 0;
 
 	mdb->cur_pos=pos;
 	return pos;
 }
-int mdb_get_pos(MDB_HANDLE *mdb)
+int mdb_get_pos(MdbHandle *mdb)
 {
 	return mdb->cur_pos;
 }

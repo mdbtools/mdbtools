@@ -25,7 +25,78 @@
 **       KKD structures.
 */
 
-void mdb_kkd_dump(MDB_HANDLE *mdb, int rowid)
+GArray *mdb_get_column_props(MdbCatalogEntry *entry, int start)
+{
+int i, j=0, pos, cnt=0;
+int len, tmp, cplen;
+MdbColumnProp prop;
+char name[MDB_MAX_OBJ_NAME+1];
+MdbHandle *mdb = entry->mdb;
+
+	entry->props = g_array_new(FALSE,FALSE,sizeof(MdbColumnProp));
+	len = mdb_get_int16(mdb,start);
+	pos = start + 6;
+	while (pos < start+len) {
+		tmp = mdb_get_int16(mdb,pos); /* length of string */
+		pos += 2;
+		cplen = tmp > MDB_MAX_OBJ_NAME ? MDB_MAX_OBJ_NAME : tmp;
+		g_memmove(prop.name,&mdb->pg_buf[pos],cplen);
+		prop.name[cplen]='\0';
+		pos += tmp; 
+		g_array_append_val(entry->props, prop.name);
+		cnt++;
+	}
+	entry->num_props = cnt;
+	return entry->props;
+}
+
+GHashTable *mdb_get_column_def(MdbCatalogEntry *entry, int start)
+{
+GHashTable *hash;
+MdbHandle *mdb = entry->mdb;
+MdbColumnProp prop;
+int tmp, pos, col_num, val_len, i;
+int len, col_type;
+unsigned char c;
+int end;
+
+	fprintf(stdout,"\n data\n");
+	fprintf(stdout,"-------\n");
+	len = mdb_get_int16(mdb,start);
+	fprintf(stdout,"length = %3d\n",len);
+	pos = start + 6;
+	end = start + len;
+	while (pos < end) {
+		fprintf(stdout,"pos = %3d\n",pos);
+		start = pos;
+		tmp = mdb_get_int16(mdb,pos); /* length of field */
+		pos += 2;
+		col_type = mdb_get_int16(mdb,pos); /* ??? */
+		pos += 2;
+		col_num = 0;
+		if (col_type) {
+			col_num = mdb_get_int16(mdb,pos); 
+			pos += 2;
+		}
+		val_len = mdb_get_int16(mdb,pos);
+		pos += 2;
+		fprintf(stdout,"length = %3d %04x %2d %2d ",tmp, col_type, col_num, val_len);
+		for (i=0;i<val_len;i++) {
+			c = mdb->pg_buf[pos+i];
+			if (isprint(c))
+				fprintf(stdout,"  %c",c);
+			else 
+				fprintf(stdout," %02x",c);
+
+		}
+		pos = start + tmp; 
+		prop = g_array_index(entry->props,MdbColumnProp,col_num);
+		fprintf(stdout," Property %s",prop.name); 
+		fprintf(stdout,"\n");
+	}
+	return hash;
+}
+void mdb_kkd_dump(MdbCatalogEntry *entry)
 {
 int rows;
 int kkd_start, kkd_end;
@@ -34,7 +105,13 @@ int len;
 int col_type, col_num, val_len;
 int start;
 unsigned char c;
+MdbColumnProp prop;
+char name[MDB_MAX_OBJ_NAME+1];
+MdbHandle *mdb = entry->mdb;
+int rowid = entry->kkd_rowid;
 
+
+	mdb_read_pg(mdb, entry->kkd_pg);
 	rows = mdb_get_int16(mdb,8);
 	fprintf(stdout,"number of rows = %d\n",rows);
 	kkd_start = mdb_get_int16(mdb,10+rowid*2);
@@ -54,87 +131,21 @@ unsigned char c;
 		tmp = mdb_get_int16(mdb,pos);
 		row_type = mdb_get_int16(mdb,pos+4);
 		fprintf(stdout,"row size = %3d type = 0x%02x\n",tmp,row_type);
-		if (row_type==0x80) hdrpos = pos;
+		if (row_type==0x80)  {
+			fprintf(stdout,"\nColumn Properties\n");
+			fprintf(stdout,"-----------------\n");
+			mdb_get_column_props(entry,pos);
+			for (i=0;i<entry->num_props;i++) {
+				prop = g_array_index(entry->props,MdbColumnProp,i);
+				fprintf(stdout,"%3d %s\n",i,prop.name); 
+			}
+		}
 		if (row_type==0x01) datapos = pos;
 		pos += tmp;
 	}
 	
-	if (hdrpos) {
-		j=0;
-		fprintf(stdout,"\nheaders\n");
-		fprintf(stdout,"-------\n");
-		len = mdb_get_int16(mdb,hdrpos);
-		pos = hdrpos + 6;
-		while (pos < hdrpos+len) {
-			fprintf(stdout,"%3d ",j++);
-			tmp = mdb_get_int16(mdb,pos); /* length of string */
-			pos += 2;
-			for (i=0;i<tmp;i++) 
-				fprintf(stdout,"%c",mdb->pg_buf[pos+i]);
-			fprintf(stdout,"\n");
-			pos += tmp; 
-		}
-	}
 	if (datapos) {
-		fprintf(stdout,"\n data\n");
-		fprintf(stdout,"-------\n");
-		len = mdb_get_int16(mdb,datapos);
-		pos = datapos + 6;
-		while (pos < datapos+len) {
-			start = pos;
-			tmp = mdb_get_int16(mdb,pos); /* length of field */
-			pos += 2;
-			col_type = mdb_get_int16(mdb,pos); /* ??? */
-			pos += 2;
-			col_num = 0;
-			if (col_type) {
-				col_num = mdb_get_int16(mdb,pos); 
-				pos += 2;
-			}
-			val_len = mdb_get_int16(mdb,pos);
-			pos += 2;
-			fprintf(stdout,"length = %3d %04x %2d %2d ",tmp, col_type, col_num, val_len);
-			for (i=0;i<val_len;i++) {
-				c = mdb->pg_buf[pos+i];
-				if (isprint(c))
-					fprintf(stdout,"  %c",c);
-				else 
-					fprintf(stdout," %02x",c);
-	
-			}
-			fprintf(stdout,"\n");
-			pos = start + tmp; 
-		}
+		mdb_get_column_def(entry, datapos);
 	}
-}
-main(int argc, char **argv)
-{
-int rows;
-int i;
-unsigned char buf[2048];
-MDB_HANDLE *mdb;
-MDB_CATALOG_ENTRY entry;
-
-
-	if (argc<2) {
-		fprintf(stderr,"Usage: prtable <file> <table>\n");
-		exit(1);
-	}
-	
-	mdb = mdb_open(argv[1]);
-
-	mdb_read_pg(mdb, MDB_CATALOG_PG);
-	rows = mdb_catalog_rows(mdb);
-
-	for (i=0;i<rows;i++) {
-  		if (mdb_catalog_entry(mdb, i, &entry)) {
-			if (!strcmp(entry.object_name,argv[2])) {
-				mdb_read_pg(mdb, entry.kkd_pg);
-				mdb_kkd_dump(mdb, entry.kkd_rowid);
-  			}
-		}
-	}
-
-	mdb_free_handle(mdb);
 }
 

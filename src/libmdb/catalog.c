@@ -42,7 +42,7 @@ static char *type_name[] = {"Form",
 	}
 }
 
-MDB_CATALOG_ENTRY *mdb_catalog_entry(MDB_HANDLE *mdb, int rowid, MDB_CATALOG_ENTRY *entry)
+MdbCatalogEntry *mdb_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry)
 {
 int offset;
 int rows;
@@ -64,9 +64,10 @@ for (j=offset;j<offset+32;j++)
 fprintf(stdout,"\n");
 */
 
-	memset(entry, '\0', sizeof(MDB_CATALOG_ENTRY));
+	memset(entry, '\0', sizeof(MdbCatalogEntry));
 	entry->object_type = mdb->pg_buf[offset+0x09];
 	j=0;
+	entry->mdb = mdb;
 	for (i=offset+31;isprint(mdb->pg_buf[i]);i++) {
 		if (j<=MDB_MAX_OBJ_NAME) {
 			entry->object_name[j++]=mdb->pg_buf[i];
@@ -78,15 +79,15 @@ fprintf(stdout,"\n");
 
 	return entry;
 }
-int mdb_catalog_rows(MDB_HANDLE *mdb)
+int mdb_catalog_rows(MdbHandle *mdb)
 {
 	return mdb_get_int16(mdb, 0x08);
 }
-GList *mdb_read_catalog(MDB_HANDLE *mdb, int obj_type)
+GList *mdb_read_catalog(MdbHandle *mdb, int obj_type)
 {
 int i;
 int rows;
-MDB_CATALOG_ENTRY entry;
+MdbCatalogEntry entry;
 gpointer data;
 
 	mdb_read_pg(mdb, MDB_CATALOG_PG);
@@ -94,26 +95,28 @@ gpointer data;
 	mdb_free_catalog(mdb);
 	for (i=0;i<rows;i++) {
 		if (mdb_catalog_entry(mdb, i, &entry)) {
-			data = g_memdup(&entry,sizeof(MDB_CATALOG_ENTRY));
+			data = g_memdup(&entry,sizeof(MdbCatalogEntry));
 			mdb->catalog = g_list_append(mdb->catalog, data);
 		}
 	}
 	return (mdb->catalog);
 }
-void mdb_dump_catalog(MDB_HANDLE *mdb, int obj_type)
+void mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
 int rows;
 GList *l;
-MDB_CATALOG_ENTRY *entryp;
+MdbCatalogEntry *entryp;
 
 	mdb_read_catalog(mdb, obj_type);
 	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
                 entryp = l->data;
-		fprintf(stdout,"Type: %-15s Name: %-30s KKD pg: %04x row: %2d\n",
+		if (obj_type==-1 || entryp->object_type==obj_type) {
+			fprintf(stdout,"Type: %-15s Name: %-30s KKD pg: %04x row: %2d\n",
 			mdb_get_objtype_string(entryp->object_type),
 			entryp->object_name,
 			entryp->kkd_pg,
 			entryp->kkd_rowid);
+		}
         }
 	return;
 }

@@ -28,7 +28,7 @@ short digit;
 struct stat status;
 int rows, cur, off;
 unsigned char buf[2048];
-MDB_HANDLE *mdb;
+MdbHandle *mdb;
 
 
 	if (argc<2) {

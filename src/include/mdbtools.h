@@ -56,25 +56,38 @@ typedef struct {
 	unsigned int  cur_pos;
 	unsigned char pg_buf[MDB_PGSIZE];
 	GList         *catalog;
-} MDB_HANDLE; 
+} MdbHandle; 
 
 typedef struct {
+	MdbHandle	*mdb;
 	char           object_name[MDB_MAX_OBJ_NAME+1];
 	int            object_type;
 	unsigned long  kkd_pg;
 	unsigned int   kkd_rowid;
-} MDB_CATALOG_ENTRY;
+	int		num_props;
+	GArray		*props;
+	GArray		*columns;
+} MdbCatalogEntry;
+
+typedef struct {
+	char		name[MDB_MAX_OBJ_NAME+1];
+} MdbColumnProp;
+
+typedef struct {
+	char		name[MDB_MAX_OBJ_NAME+1];
+	GHashTable	*properties;
+} MdbColumn;
 
 /* mem.c */
-extern MDB_HANDLE *mdb_alloc_handle();
-extern void mdb_free_handle(MDB_HANDLE *mdb);
-extern void mdb_free_catalog(MDB_HANDLE *mdb);
+extern MdbHandle *mdb_alloc_handle();
+extern void mdb_free_handle(MdbHandle *mdb);
+extern void mdb_free_catalog(MdbHandle *mdb);
 
-extern size_t mdb_read_pg(MDB_HANDLE *mdb, unsigned long pg);
-extern int    mdb_get_int16(MDB_HANDLE *mdb, int offset);
-extern long   mdb_get_int32(MDB_HANDLE *mdb, int offset);
-extern MDB_HANDLE *mdb_open(char *filename);
-extern void   mdb_catalog_dump(MDB_HANDLE *mdb, int obj_type);
-extern int mdb_catalog_rows(MDB_HANDLE *mdb);
-extern MDB_CATALOG_ENTRY *mdb_get_catalog_entry(MDB_HANDLE *mdb, int rowid, MDB_CATALOG_ENTRY *entry);
+extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
+extern int    mdb_get_int16(MdbHandle *mdb, int offset);
+extern long   mdb_get_int32(MdbHandle *mdb, int offset);
+extern MdbHandle *mdb_open(char *filename);
+extern void   mdb_catalog_dump(MdbHandle *mdb, int obj_type);
+extern int mdb_catalog_rows(MdbHandle *mdb);
+extern MdbCatalogEntry *mdb_get_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry);
 #endif /* _mdbtools_h_ */

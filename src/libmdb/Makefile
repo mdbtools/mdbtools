@@ -2,7 +2,7 @@
 CC = gcc
 
 INC = -I ../include `glib-config --cflags`
-OBJS = catalog.o mem.o file.o 
+OBJS = catalog.o mem.o file.o kkd.o
 
 all: libmdb
 
