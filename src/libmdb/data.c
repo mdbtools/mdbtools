@@ -25,7 +25,6 @@
 #include "dmalloc.h"
 #endif
 
-#define MDB_DEBUG_OLE 0
 #define OFFSET_MASK 0x1fff
 
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
@@ -692,9 +691,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 
 	ole_len = mdb_get_int16(ole_ptr, 0);
 	ole_flags = mdb_get_int16(ole_ptr, 2);
-#if MDB_DEBUG_OLE
-		printf("ole len = %d ole flags = %08x\n", ole_len, ole_flags);
-#endif
+	mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %08x", ole_len, ole_flags);
 
 	col->chunk_size = chunk_size;
 
@@ -714,9 +711,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 	} else if (ole_flags == 0x4000) {
 		col->cur_blob_row = ((char *)ole_ptr)[4];
 		col->cur_blob_pg = mdb_get_int24(ole_ptr, 5);
-#if MDB_DEBUG_OLE
-		printf("ole row = %d ole pg = %ld\n", col->cur_blob_row, col->cur_blob_pg);
-#endif
+		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld", col->cur_blob_row, col->cur_blob_pg);
 		if(mdb_read_alt_pg(mdb, col->cur_blob_pg) != mdb->fmt->pg_size) {
 			/* Failed to read */
 			return 0;
@@ -726,14 +721,11 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		row_stop = mdb_find_end_of_row(mdb, col->cur_blob_row);
 		row_start = mdb_pg_get_int16(mdb, 10 + col->cur_blob_row * 2);
 		len = row_stop - row_start + 1;
-#if MDB_DEBUG_OLE
-		printf("start %d stop %d len %d\n", row_start, row_stop, len);
-#endif
+		mdb_debug(MDB_DEBUG_OLE,"start %d stop %d len %d", row_start, row_stop, len);
 		if (col->bind_ptr) {
 			memcpy(col->bind_ptr, &mdb->pg_buf[row_start], len);
-#if MDB_DEBUG_OLE
-			buffer_dump(col->bind_ptr, 0, 16);
-#endif
+			if (mdb_get_option(MDB_DEBUG_OLE))
+				buffer_dump(col->bind_ptr, 0, 16);
 		}
 		/* make sure to swap page back */
 		mdb_swap_pgbuf(mdb);
@@ -794,9 +786,7 @@ guint16 len, cur;
 		ole_row = mdb->pg_buf[start+4];
 		
 		lval_pg = mdb_pg_get_int24(mdb, start+5);
-#if MDB_DEBUG_OLE
-		printf("Reading LVAL page %06x\n", lval_pg);
-#endif
+		mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", lval_pg);
 		if(mdb_read_alt_pg(mdb, lval_pg) != mdb->fmt->pg_size) {
 			/* Failed to read */
 			return 0;
@@ -809,9 +799,7 @@ guint16 len, cur;
 			row_stop = mdb->fmt->pg_size - 1;
 		}
 		row_start = mdb_pg_get_int16(mdb, 10 + ole_row * 2);
-#if MDB_DEBUG_OLE
-			printf("row num %d row start %d row stop %d\n", ole_row, row_start, row_stop);
-#endif
+		mdb_debug(MDB_DEBUG_OLE,"row num %d row start %d row stop %d", ole_row, row_start, row_stop);
 			len = row_stop - row_start;
 			if (dest) memcpy(dest, &mdb->pg_buf[row_start], len);
 			/* make sure to swap page back */
@@ -820,9 +808,7 @@ guint16 len, cur;
 		} else if (ole_flags == 0x0000) {
 			ole_row = mdb->pg_buf[start+4];
 			lval_pg = mdb_pg_get_int24(mdb, start+5);
-#if MDB_DEBUG_OLE
-			printf("Reading LVAL page %06x\n", lval_pg);
-#endif
+			mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", lval_pg);
 		/* swap the alt and regular page buffers, so we can call get_int16 */
 		mdb_swap_pgbuf(mdb);
 		cur=0;
@@ -837,9 +823,7 @@ guint16 len, cur;
 				row_stop = mdb->fmt->pg_size - 1;
 			}
 			row_start = mdb_pg_get_int16(mdb, 10 + ole_row * 2);
-#if MDB_DEBUG_OLE
-		printf("row num %d row start %d row stop %d\n", ole_row, row_start, row_stop);
-#endif
+			mdb_debug(MDB_DEBUG_OLE,"row num %d row start %d row stop %d", ole_row, row_start, row_stop);
 			len = row_stop - row_start;
 			if (dest) 
 				memcpy(&dest[cur], &mdb->pg_buf[row_start+4], 

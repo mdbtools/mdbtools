@@ -25,7 +25,6 @@
 #include "dmalloc.h"
 #endif
 
-#define MDB_DEBUG_WRITE 0
 
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
@@ -187,7 +186,7 @@ MdbColumn *col;
 int i, j;
 int var_cols = 0, fixed_cols = 0, num_cols, totcols = 0;
 int var_cols_found, fixed_cols_found, var_entry_pos;
-int col_start, next_col;
+int col_start;
 unsigned char *nullmask;
 int bitmask_sz;
 int byte_num, bit_num;
@@ -393,9 +392,7 @@ int rows, free_start, free_end;
 	rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
 	free_start = fmt->row_count_offset + 2 + (rows * 2);
         free_end = mdb_pg_get_int16(mdb, (fmt->row_count_offset + rows * 2)) -1;
-#if MDB_DEBUG_WRITE
-	printf("free space left on page = %d\n", free_end - free_start);
-#endif
+	mdb_debug(MDB_DEBUG_WRITE,"free space left on page = %d", free_end - free_start);
 	return (free_end - free_start + 1);
 }
 unsigned char *
@@ -435,9 +432,7 @@ mdb_update_indexes(MdbTableDef *table, int num_fields, MdbField *fields, guint32
 	
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
-#if MDB_DEBUG_WRITE
-		fprintf(stderr,"Updating %s (%d).\n", idx->name, idx->index_type);
-#endif
+		mdb_debug(MDB_DEBUG_WRITE,"Updating %s (%d).", idx->name, idx->index_type);
 		if (idx->index_type==1) {
 			mdb_update_index(table, idx, num_fields, fields, pgnum, rownum);
 		}
@@ -513,9 +508,9 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 		return 0;
 	}
 	new_row_size = mdb_pack_row(table, row_buffer, num_fields, fields);
-#if MDB_DEBUG_WRITE
-	buffer_dump(row_buffer, 0, new_row_size-1);
-#endif
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		buffer_dump(row_buffer, 0, new_row_size-1);
+	}
 	pgnum = mdb_map_find_next_freepage(table, new_row_size);
 	if (!pgnum) {
 		fprintf(stderr, "Unable to allocate new page.\n");
@@ -524,11 +519,11 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 
 	rownum = mdb_add_row_to_pg(table, row_buffer, new_row_size);
 
-#if MDB_DEBUG_WRITE
-	buffer_dump(mdb->pg_buf, 0, 39);
-	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
-	fprintf(stdout, "writing page %d\n", pgnum);
-#endif
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		buffer_dump(mdb->pg_buf, 0, 39);
+		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+	}
+	mdb_debug(MDB_DEBUG_WRITE, "writing page %d", pgnum);
 	if (!mdb_write_pg(mdb, pgnum)) {
 		fprintf(stderr, "write failed! exiting...\n");
 		exit(1);
@@ -608,10 +603,9 @@ int old_row_size, new_row_size, delta, num_fields;
 
 	row_start &= 0x0FFF; /* remove flags */
 
-#if MDB_DEBUG_WRITE
-	printf("page %lu row %d start %d end %d\n", (unsigned long) table->cur_phys_pg, table->cur_row-1, row_start, row_end);
-	buffer_dump(mdb->pg_buf, row_start, row_end);
-#endif
+	mdb_debug(MDB_DEBUG_WRITE,"page %lu row %d start %d end %d", (unsigned long) table->cur_phys_pg, table->cur_row-1, row_start, row_end);
+	if (mdb_get_option(MDB_DEBUG_LIKE))
+		buffer_dump(mdb->pg_buf, row_start, row_end);
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
@@ -622,11 +616,11 @@ int old_row_size, new_row_size, delta, num_fields;
 	}
 	num_fields = mdb_crack_row(table, row_start, row_end, fields);
 
-#if MDB_DEBUG_WRITE
-	for (i=0;i<num_fields;i++) {
-		printf("col %d %d start %d siz %d\n", i, fields[i].colnum, fields[i].start, fields[i].siz);
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		for (i=0;i<num_fields;i++) {
+			printf("col %d %d start %d siz %d\n", i, fields[i].colnum, fields[i].start, fields[i].siz);
+		}
 	}
-#endif
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
 		if (col->bind_ptr) {
@@ -637,9 +631,8 @@ int old_row_size, new_row_size, delta, num_fields;
 	}
 
 	new_row_size = mdb_pack_row(table, row_buffer, num_fields, fields);
-#if MDB_DEBUG_WRITE
-	buffer_dump(row_buffer, 0, new_row_size-1);
-#endif
+	if (mdb_get_option(MDB_DEBUG_WRITE)) 
+		buffer_dump(row_buffer, 0, new_row_size-1);
 	delta = new_row_size - old_row_size;
 	if ((mdb_pg_get_freespace(mdb) - delta) < 0) {
 		fprintf(stderr, "No space left on this page, update will not occur\n");
@@ -660,11 +653,11 @@ guint16 num_rows;
 int row_start, row_end, row_size;
 int i, pos;
 
-#if MDB_DEBUG_WRITE
-	buffer_dump(mdb->pg_buf, 0, 39);
-	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
-	printf("updating row %d on page %lu\n", row, (unsigned long) table->cur_phys_pg);
-#endif
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		buffer_dump(mdb->pg_buf, 0, 39);
+		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+	}
+	mdb_debug(MDB_DEBUG_WRITE,"updating row %d on page %lu", row, (unsigned long) table->cur_phys_pg);
 	new_pg = mdb_new_data_pg(entry);
 
 	num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
@@ -703,10 +696,10 @@ int i, pos;
 	g_free(new_pg);
 
 	_mdb_put_int16(mdb->pg_buf, 2, mdb_pg_get_freespace(mdb));
-#if MDB_DEBUG_WRITE
-	buffer_dump(mdb->pg_buf, 0, 39);
-	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
-#endif
+	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+		buffer_dump(mdb->pg_buf, 0, 39);
+		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+	}
 	/* drum roll, please */
 	if (!mdb_write_pg(mdb, table->cur_phys_pg)) {
 		fprintf(stderr, "write failed! exiting...\n");

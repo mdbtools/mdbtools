@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -103,6 +104,14 @@ typedef enum {
 	MDB_LEAF_SCAN,
 	MDB_INDEX_SCAN
 } MdbStrategy;
+
+enum {
+	MDB_DEBUG_LIKE = 0x0001,
+	MDB_DEBUG_WRITE = 0x0002,
+	MDB_DEBUG_USAGE = 0x0004,
+	MDB_DEBUG_OLE = 0x0008,
+	MDB_USE_INDEX = 0x0010
+};
 
 #define mdb_is_logical_op(x) (x == MDB_OR || \
 				x == MDB_AND || \
@@ -250,6 +259,8 @@ typedef struct {
 	int		col_prec;
 	int		col_scale;
 	MdbProperties	*props;
+	int fixed_offset;
+	int var_col_num;
 } MdbColumn;
 
 typedef struct _mdbsargtree {
@@ -478,5 +489,9 @@ extern MdbProperties *mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kk
 /* worktable.c */
 extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
 extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
+
+/* options.c */
+extern int mdb_get_option(unsigned long optnum);
+void mdb_debug(int klass, char *fmt, ...);
 
 #endif /* _mdbtools_h_ */

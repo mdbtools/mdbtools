@@ -8,6 +8,12 @@ Sun Feb 15 07:37:19 EST 2004	Brian Bruns	<brian@bruns.com>
 	add data page dissector for jet4
 	* src/libmdb/data.c: merge patch for bug #688655, check negative values on datetime
 	* src/libmdb/money.c: increase MAXPRECISION to 20
+	* src/libmdb/options.c: new file
+	* src/libmdb/table.c: 
+	* src/libmdb/data.c: 
+	* src/libmdb/write.c: 
+	* src/libmdb/like.c: 
+	* src/libmdb/index.c: convert to use mdb_get_option/mdb_debug
 
 Sat Feb 14 14:41:00 EST 2004	Brian Bruns <brian@bruns.com>
 	* include/.cvsignore: add mdbver.h

@@ -854,13 +854,8 @@ void
 mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table)
 {
 	int i;
-	int use_index=0;
-	char *s;
 
-	if ((s=getenv("MDBOPTS"))) {
-		if (!strcmp(s, "use_index")) use_index++;
-	}
-	if (use_index && mdb_choose_index(table, &i) == MDB_INDEX_SCAN) {
+	if (mdb_get_option(MDB_USE_INDEX) && mdb_choose_index(table, &i) == MDB_INDEX_SCAN) {
 		table->strategy = MDB_INDEX_SCAN;
 		table->scan_idx = g_ptr_array_index (table->indices, i);
 		table->chain = g_malloc0(sizeof(MdbIndexChain));

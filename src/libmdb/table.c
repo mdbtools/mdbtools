@@ -23,7 +23,6 @@
 #include "dmalloc.h"
 #endif
 
-#define MDB_DEBUG_USAGE 0
 
 static gint mdb_col_comparer(MdbColumn *a, MdbColumn *b)
 {
@@ -76,14 +75,11 @@ mdb_read_table(MdbCatalogEntry *entry)
 	table->map_sz = row_end - row_start + 1;
 	table->usage_map = malloc(table->map_sz);
 	memcpy(table->usage_map, &mdb->pg_buf[row_start], table->map_sz);
-#if MDB_DEBUG_USAGE
-	buffer_dump(mdb->pg_buf, row_start, row_end);
-#endif
+	if (mdb_get_option(MDB_DEBUG_USAGE)) 
+		buffer_dump(mdb->pg_buf, row_start, row_end);
 	/* swap back */
 	mdb_swap_pgbuf(mdb);
-#if MDB_DEBUG_USAGE
-	printf ("usage map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1), rownum, row_start, row_end);
-#endif
+	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld rownum %d start %d end %d", mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1), rownum, row_start, row_end);
 
 
 	/* now grab the free space page map */
@@ -99,9 +95,7 @@ mdb_read_table(MdbCatalogEntry *entry)
 	memcpy(table->free_usage_map, &mdb->pg_buf[row_start], table->freemap_sz);
 	mdb_swap_pgbuf(mdb);
 #endif
-#if MDB_DEBUG_USAGE
-	printf ("free map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1), rownum, row_start, row_end);
-#endif
+	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1), rownum, row_start, row_end);
 
 	table->first_data_pg = mdb_pg_get_int16(mdb, fmt->tab_first_dpg_offset);
 
