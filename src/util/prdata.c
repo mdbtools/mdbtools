@@ -20,16 +20,13 @@
 
 #include "mdbtools.h"
 
+int
 main(int argc, char **argv)
 {
-int rows;
 int i;
-unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;
-GList *l;
-
 
 	if (argc<2) {
 		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);

@@ -58,7 +58,7 @@ mdb_read_indices(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
 MdbIndex idx, *pidx;
-int len, i, j;
+int i, j;
 int idx_num, key_num, col_num;
 int cur_pos;
 int name_sz;
@@ -127,6 +127,7 @@ int name_sz;
 		cur_pos += 4;
 		pidx->flags = mdb->pg_buf[cur_pos++];
 	}
+	return NULL;
 }
 void
 mdb_index_hash_text(guchar *text, guchar *hash)
@@ -147,8 +148,8 @@ mdb_index_swap_int32(guint32 l)
 	unsigned char *c, *c2;
 	guint32 l2;
 
-	c = &l;
-	c2 = &l2;
+	c = (unsigned char *) &l;
+	c2 = (unsigned char *) &l2;
 	c2[0]=c[3];
 	c2[1]=c[2];
 	c2[2]=c[1];
@@ -156,9 +157,10 @@ mdb_index_swap_int32(guint32 l)
 
 	return l2;
 }
-void mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
+void 
+mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 {
-	guint32 cache_int;
+	//guint32 cache_int;
 	unsigned char *c;
 
 	switch (col->col_type) {
@@ -169,7 +171,7 @@ void mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		case MDB_LONGINT:
 		idx_sarg->value.i = mdb_index_swap_int32(sarg->value.i);
 		//cache_int = sarg->value.i * -1;
-		c = &(idx_sarg->value.i);
+		c = (unsigned char *) &(idx_sarg->value.i);
 		c[0] |= 0x80;
 		//printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
 		break;	
@@ -181,6 +183,33 @@ void mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		break;	
 	}
 }
+int 
+mdb_index_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSarg *sarg, int offset, int len)
+{
+char tmpbuf[256];
+int lastchar;
+
+	switch (col->col_type) {
+		case MDB_BYTE:
+			return mdb_test_int(sarg, mdb_get_byte(mdb, offset));
+			break;
+		case MDB_INT:
+			return mdb_test_int(sarg, mdb_get_int16(mdb, offset));
+			break;
+		case MDB_LONGINT:
+			return mdb_test_int(sarg, mdb_get_int32(mdb, offset));
+			break;
+		case MDB_TEXT:
+			strncpy(tmpbuf, &mdb->pg_buf[offset],255);
+			lastchar = len > 255 ? 255 : len;
+			tmpbuf[lastchar]='\0';
+			return mdb_test_string(sarg, tmpbuf);
+		default:
+			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
+			break;
+	}
+	return 1;
+}
 int
 mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 {
@@ -189,6 +218,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 	MdbTableDef *table = idx->table;
 	MdbSarg *idx_sarg;
 	MdbSarg *sarg;
+	MdbSargNode node;
 	int c_offset = 0, c_len;
 
 	for (i=0;i<idx->num_keys;i++) {
@@ -220,9 +250,12 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 
 		for (j=0;j<col->num_sargs;j++) {
 			sarg = g_ptr_array_index (col->idx_sarg_cache, j);
-			if (!mdb_test_sarg(mdb, col, sarg, offset + c_offset, c_len)) {
-			/* sarg didn't match, no sense going on */
-			return 0;
+			/* XXX - kludge */
+			node.op = sarg->op;
+			node.value = sarg->value;
+			if (!mdb_test_sarg(col, &node, &mdb->pg_buf[offset + c_offset], c_len)) {
+				/* sarg didn't match, no sense going on */
+				return 0;
 			}
 		}
 	}
@@ -300,7 +333,7 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndexChain *chain)
 		 */
 		chain->cur_depth++;
 		if (chain->cur_depth > MDB_MAX_INDEX_DEPTH) {
-			fprintf(stderr,"Error! maximum index depth of %d exceeded.  This is probably due to a programming bug, If you are confident that your indexes really are this deep, adjust MDB_MAX_INDEX_DEPTH in mdbtools.h and recompile.\n");
+			fprintf(stderr,"Error! maximum index depth of %d exceeded.  This is probably due to a programming bug, If you are confident that your indexes really are this deep, adjust MDB_MAX_INDEX_DEPTH in mdbtools.h and recompile.\n", MDB_MAX_INDEX_DEPTH);
 			exit(1);
 		}
 		newipg = &(chain->pages[chain->cur_depth - 1]);
@@ -403,7 +436,7 @@ int i;
 	for (i=0;i<idx->num_keys;i++) {
 		marker = mdb->pg_buf[cur_pos++];
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
-		printf("column %d coltype %d col_size %d (%d)\n",i,col->col_type, mdb_col_fixed_size(col), col->col_size);
+		//printf("column %d coltype %d col_size %d (%d)\n",i,col->col_type, mdb_col_fixed_size(col), col->col_size);
 	}
 }
 void 
@@ -427,4 +460,146 @@ mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
 			);
 	}
 	mdb_index_walk(table, idx);
+}
+int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
+{
+	int i;
+	MdbColumn *col;
+	MdbSarg *sarg;
+	int not_all_equal = 0;
+
+	if (!idx->num_keys) return 0;
+	if (idx->num_keys > 1) {
+		for (i=0;i<idx->num_keys;i++) {
+			col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
+			sarg = g_ptr_array_index (col->sargs, 0);
+			if (!sarg || sarg->op != MDB_EQUAL) not_all_equal++;
+		}
+	}
+
+	col=g_ptr_array_index(table->columns,idx->key_col_num[0]-1);
+	/* 
+	 * if this is the first key column and there are no sargs,
+	 * then this index is useless.
+	 */
+	if (!col->num_sargs) return 0;
+
+	sarg = g_ptr_array_index (col->sargs, 0);
+
+	/*
+	 * a like with a wild card first is useless as a sarg */
+	if (sarg->op == MDB_LIKE && sarg->value.s[0]=='%')
+		return 0;
+
+	/*
+	 * this needs a lot of tweaking.
+	 */
+	if (idx->flags & MDB_IDX_UNIQUE) {
+		if (idx->num_keys == 1) {
+			//printf("op is %d\n", sarg->op);
+			switch (sarg->op) {
+				case MDB_EQUAL:
+					return 1; break;
+				case MDB_LIKE:
+					return 4; break;
+				case MDB_ISNULL:
+					return 12; break;
+				default:
+					return 8; break;
+			}
+		} else {
+			switch (sarg->op) {
+				case MDB_EQUAL:
+					if (not_all_equal) return 2; 
+					else return 1;
+					break;
+				case MDB_LIKE:
+					return 6; break;
+				case MDB_ISNULL:
+					return 12; break;
+				default:
+					return 9; break;
+			}
+		}
+	} else {
+		if (idx->num_keys == 1) {
+			switch (sarg->op) {
+				case MDB_EQUAL:
+					return 2; break;
+				case MDB_LIKE:
+					return 5; break;
+				case MDB_ISNULL:
+					return 12; break;
+				default:
+					return 10; break;
+			}
+		} else {
+			switch (sarg->op) {
+				case MDB_EQUAL:
+					if (not_all_equal) return 3; 
+					else return 2;
+					break;
+				case MDB_LIKE:
+					return 7; break;
+				case MDB_ISNULL:
+					return 12; break;
+				default:
+					return 11; break;
+			}
+		}
+	}
+	return 0;
+}
+MdbStrategy 
+mdb_choose_index(MdbTableDef *table, int *choice)
+{
+	int i;
+	MdbIndex *idx;
+	int cost = 0;
+	int least = 99;
+
+	*choice = -1;
+	for (i=0;i<table->num_idxs;i++) {
+		idx = g_ptr_array_index (table->indices, i);
+		cost = mdb_index_compute_cost(table, idx);
+		//printf("cost for %s is %d\n", idx->name, cost);
+		if (cost && cost < least) {
+			least = cost;
+			*choice = i;
+		}
+	}
+	/* and the winner is: *choice */
+	if (!least) return MDB_TABLE_SCAN;
+	return MDB_INDEX_SCAN;
+}
+void
+mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table)
+{
+	int i;
+	int use_index=0;
+	char *s;
+
+	if (s=getenv("MDBOPTS")) {
+		if (!strcmp(s, "use_index")) use_index++;
+	}
+	if (use_index && mdb_choose_index(table, &i) == MDB_INDEX_SCAN) {
+		table->strategy = MDB_INDEX_SCAN;
+		table->scan_idx = g_ptr_array_index (table->indices, i);
+		table->chain = g_malloc0(sizeof(MdbIndexChain));
+		table->mdbidx = mdb_clone_handle(mdb);
+		mdb_read_pg(table->mdbidx, table->scan_idx->first_pg);
+		//printf("best index is %s\n",table->scan_idx->name);
+	}
+}
+void 
+mdb_index_scan_free(MdbTableDef *table)
+{
+	if (table->chain) {
+		g_free(table->chain);
+		table->chain = NULL;
+	}
+	if (table->mdbidx) {
+		mdb_close(table->mdbidx);
+		table->mdbidx = NULL;
+	}
 }

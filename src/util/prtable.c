@@ -20,14 +20,12 @@
 
 #include "mdbtools.h"
 
+int
 main(int argc, char **argv)
 {
-int rows;
 int i;
-unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
-GList *l;
 int found = 0;
 
 

@@ -18,8 +18,9 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
-int likecmp(char *s, char *r)
+int mdb_like_cmp(char *s, char *r)
 {
 int i, ret;
 
@@ -32,13 +33,13 @@ int i, ret;
 			}
 		case '_':
 			/* skip one character */
-			return likecmp(&s[1],&r[1]);
+			return mdb_like_cmp(&s[1],&r[1]);
 		case '%':
 			/* skip any number of characters */
 			/* the strlen(s)+1 is important so the next call can */
 			/* if there are trailing characters */
 			for(i=0;i<strlen(s)+1;i++) {
-				if (likecmp(&s[i],&r[1])) {
+				if (mdb_like_cmp(&s[i],&r[1])) {
 					return 1;
 				}
 			}
@@ -50,7 +51,7 @@ int i, ret;
 			if (strncmp(s,r,i)) {
 				return 0;
 			} else {
-				ret = likecmp(&s[i],&r[i]);
+				ret = mdb_like_cmp(&s[i],&r[i]);
 				return ret;
 			}
 	}

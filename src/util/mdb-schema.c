@@ -20,9 +20,10 @@
 
 #include "mdbtools.h"
 
+int
 main (int argc, char **argv)
 {
-int   i, j, k;
+int   i, k;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;

@@ -27,6 +27,7 @@ void mdb_dump_results(MdbSQL *sql);
 #include <wordexp.h>
 #endif
 
+void
 mdb_sql_error(char *fmt, ...)
 {
 va_list ap;
@@ -58,6 +59,8 @@ MdbSQL *sql;
 	sql->columns = g_ptr_array_new();
 	sql->tables = g_ptr_array_new();
 	sql->sargs = g_ptr_array_new();
+	sql->sarg_tree = NULL;
+	sql->sarg_stack = NULL;
 
 	return sql;
 }
@@ -88,7 +91,8 @@ MdbSQLTable *t;
 	return t;
 }
 
-MdbHandle *mdb_sql_close(MdbSQL *sql)
+void
+mdb_sql_close(MdbSQL *sql)
 {
 	if (sql->mdb) {
 		mdb_close(sql->mdb);
@@ -137,14 +141,162 @@ wordexp_t words;
 
 	return sql->mdb;
 }
-int mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
+MdbSargNode *
+mdb_sql_alloc_node()
 {
-MdbSQLSarg *sql_sarg;
-int lastchar;
+	MdbSargNode *node;
+
+	node = g_malloc0(sizeof(MdbSargNode));
+
+	return node;
+}
+void
+mdb_sql_free_tree(MdbSargNode *tree)
+{
+
+	if (tree->left) mdb_sql_free_tree(tree->left);
+	if (tree->right) mdb_sql_free_tree(tree->right);
+	g_free(tree);
+}
+void
+mdb_sql_push_node(MdbSQL *sql, MdbSargNode *node)
+{
+	sql->sarg_stack = g_list_append(sql->sarg_stack, node);
+	/*
+	 * Tree builds from bottom to top, so we should be left with
+	 * the correct tree root when done
+	 */
+	sql->sarg_tree = node;
+}
+MdbSargNode *
+mdb_sql_pop_node(MdbSQL *sql)
+{
+	GList *glist;
+	MdbSargNode *node;
+
+	glist = g_list_last(sql->sarg_stack);
+	if (!glist) return NULL;
+	
+	node = glist->data;
+#if 0
+	if (node->op==MDB_EQUAL) 
+		printf("popping %d\n", node->value.i);
+	else
+		printf("popping %s\n", node->op == MDB_OR ? "OR" : "AND");
+#endif
+	sql->sarg_stack = g_list_remove(sql->sarg_stack, node);
+	return node;
+}
+
+void 
+mdb_sql_add_not(MdbSQL *sql)
+{
+	MdbSargNode *node, *left;
+
+	left = mdb_sql_pop_node(sql);
+	if (!left) {
+		mdb_sql_error("parse error near 'NOT'");
+		mdb_sql_reset(sql);
+		return;
+	}
+	node = mdb_sql_alloc_node();
+	node->op = MDB_NOT;
+	node->left = left;
+	mdb_sql_push_node(sql, node);
+}
+void 
+mdb_sql_add_or(MdbSQL *sql)
+{
+	MdbSargNode *node, *left, *right;
+
+	left = mdb_sql_pop_node(sql);
+	right = mdb_sql_pop_node(sql);
+	if (!left || !right) {
+		mdb_sql_error("parse error near 'OR'");
+		mdb_sql_reset(sql);
+		return;
+	}
+	node = mdb_sql_alloc_node();
+	node->op = MDB_OR;
+	node->left = left;
+	node->right = right;
+	mdb_sql_push_node(sql, node);
+}
+void 
+mdb_sql_add_and(MdbSQL *sql)
+{
+	MdbSargNode *node, *left, *right;
+
+	left = mdb_sql_pop_node(sql);
+	right = mdb_sql_pop_node(sql);
+	if (!left || !right) {
+		mdb_sql_error("parse error near 'AND'");
+		mdb_sql_reset(sql);
+		return;
+	}
+	node = mdb_sql_alloc_node();
+	node->op = MDB_AND;
+	node->left = left;
+	node->right = right;
+	mdb_sql_push_node(sql, node);
+}
+void 
+mdb_sql_dump_node(MdbSargNode *node, int level)
+{
+	int i;
+	int mylevel = level+1;
+
+	if (!level) 
+		printf("root  ");
+	for (i=0;i<mylevel;i++) printf("--->");
+	switch (node->op) {
+		case MDB_OR: 
+			printf(" or\n"); 
+			break;
+		case MDB_AND: 
+			printf(" and\n"); 
+			break;
+		case MDB_NOT: 
+			printf(" not\n"); 
+			break;
+		case MDB_LT: 
+			printf(" < %d\n", node->value.i); 
+			break;
+		case MDB_GT: 
+			printf(" < %d\n", node->value.i); 
+			break;
+		case MDB_LIKE: 
+			printf(" like %s\n", node->value.s); 
+			break;
+		case MDB_EQUAL: 
+			printf(" = %d\n", node->value.i); 
+			break;
+	}
+	if (node->left) {
+		printf("left  ");
+		mdb_sql_dump_node(node->left, mylevel);
+	}
+	if (node->right) {
+		printf("right ");
+		mdb_sql_dump_node(node->right, mylevel);
+	}
+}
+int 
+mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
+{
+	MdbSQLSarg *sql_sarg;
+	int lastchar;
+	MdbSargNode *node;
+
+	node = mdb_sql_alloc_node();
+	node->op = op;
+	/* stash the column name until we finish with the grammar */
+	node->parent = (void *) g_strdup(col_name);
 
 	sql_sarg = mdb_sql_alloc_sarg();
 	sql_sarg->col_name = g_strdup(col_name);
 	sql_sarg->sarg->op = op;
+
 	/* FIX ME -- we should probably just be storing the ascii value until the 
 	** column definition can be checked for validity
 	*/
@@ -152,19 +304,27 @@ int lastchar;
 		lastchar = strlen(constant) > 256 ? 256 : strlen(constant);
 		strncpy(sql_sarg->sarg->value.s, &constant[1], lastchar - 2);
 		sql_sarg->sarg->value.s[lastchar - 1]='\0';
+		strncpy(node->value.s, &constant[1], lastchar - 2);;
+		node->value.s[lastchar - 1]='\0';
 	} else {
 		sql_sarg->sarg->value.i = atoi(constant);
+		node->value.i = atoi(constant);
 	}
 	g_ptr_array_add(sql->sargs, sql_sarg);
 	sql->num_sargs++;
+
+	mdb_sql_push_node(sql, node);
+
+	return 0;
 }
-int mdb_sql_all_columns(MdbSQL *sql)
+void
+mdb_sql_all_columns(MdbSQL *sql)
 {
 	sql->all_columns=1;	
 }
 int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 {
-MdbSQLColumn *c, *cp;
+MdbSQLColumn *c;
 
 	c = mdb_sql_alloc_column();
 	c->name = g_strdup(column_name);
@@ -218,6 +378,12 @@ MdbSQLSarg *sql_sarg;
 		if (sql_sarg->col_name) g_free(sql_sarg->col_name);
 		if (sql_sarg->sarg) g_free(sql_sarg->sarg);
 	}
+	if (sql->sarg_tree) {
+		mdb_sql_free_tree(sql->sarg_tree);
+		sql->sarg_tree = NULL;
+	}
+	g_list_free(sql->sarg_stack);
+	sql->sarg_stack = NULL;
 	g_ptr_array_free(sql->columns,TRUE);
 	g_ptr_array_free(sql->tables,TRUE);
 	g_ptr_array_free(sql->sargs,TRUE);
@@ -230,6 +396,7 @@ MdbSQLTable *t;
 MdbSQLSarg *sql_sarg;
 
 	if (sql->cur_table) {
+		mdb_index_scan_free(sql->cur_table);
 		mdb_free_tabledef(sql->cur_table);
 		sql->cur_table = NULL;
 	}
@@ -246,6 +413,12 @@ MdbSQLSarg *sql_sarg;
 		if (sql_sarg->col_name) g_free(sql_sarg->col_name);
 		if (sql_sarg->sarg) g_free(sql_sarg->sarg);
 	}
+	if (sql->sarg_tree) {
+		mdb_sql_free_tree(sql);
+		sql->sarg_tree = NULL;
+	}
+	g_list_free(sql->sarg_stack);
+	sql->sarg_stack = NULL;
 	g_ptr_array_free(sql->columns,TRUE);
 	g_ptr_array_free(sql->tables,TRUE);
 	g_ptr_array_free(sql->sargs,TRUE);
@@ -382,7 +555,26 @@ char colsize[11];
 	/* the column and table names are no good now */
 	mdb_sql_reset(sql);
 }
-void mdb_sql_select(MdbSQL *sql)
+
+int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
+{
+	MdbTableDef *table = data;
+	int i;
+	MdbColumn *col;
+
+	if (!mdb_is_relational_op(node->op)) return 0;
+
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!strcmp(col->name, (char *)node->parent)) {
+			node->col = col;
+			break;
+		}
+	}
+	return 0;
+}
+void 
+mdb_sql_select(MdbSQL *sql)
 {
 int i,j;
 MdbCatalogEntry *entry;
@@ -391,7 +583,6 @@ MdbTableDef *table = NULL;
 MdbSQLTable *sql_tab;
 MdbColumn *col;
 MdbSQLColumn *sqlcol;
-MdbSQLSarg *sql_sarg;
 int found = 0;
 
 	if (!mdb) {
@@ -418,6 +609,7 @@ int found = 0;
 		return;
 	}
 	mdb_read_columns(table);
+	mdb_read_indices(table);
 	mdb_rewind_table(table);
 
 	if (sql->all_columns) {
@@ -448,14 +640,29 @@ int found = 0;
 		}
 	}
 
+#if 0
 	/* now add back the sargs */
 	for (i=0;i<sql->num_sargs;i++) {
 		sql_sarg=g_ptr_array_index(sql->sargs,i);
-		mdb_add_sarg_by_name(table,sql_sarg->col_name, sql_sarg->sarg);
+		//mdb_add_sarg_by_name(table,sql_sarg->col_name, sql_sarg->sarg);
 	}
+#endif
+	/* 
+	 * resolve column names to MdbColumn structs
+	 */
+	if (sql->sarg_tree) {
+		mdb_sql_walk_tree(sql->sarg_tree, mdb_sql_find_sargcol, table);
+		mdb_sql_walk_tree(sql->sarg_tree, mdb_find_indexable_sargs, NULL);
+	}
+	/* 
+	 * move the sarg_tree.  
+	 * XXX - this won't work when we implement joins 
+	 */
+	table->sarg_tree = sql->sarg_tree;
+	sql->sarg_tree = NULL;
 
 	sql->cur_table = table;
-
+	mdb_index_scan_init(mdb, table);
 }
 
 void mdbsql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
@@ -463,7 +670,7 @@ void mdbsql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
 MdbTableDef *table = sql->cur_table;
 MdbSQLColumn *sqlcol;
 MdbColumn *col;
-int i, j;
+int j;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
@@ -481,7 +688,7 @@ void mdbsql_bind_len(MdbSQL *sql, int colnum, int *len_ptr)
 MdbTableDef *table = sql->cur_table;
 MdbSQLColumn *sqlcol;
 MdbColumn *col;
-int i, j;
+int j;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);

@@ -138,7 +138,8 @@ MdbHandle *mdb_open(char *filename)
 	return _mdb_open(filename, FALSE);
 }
 
-void mdb_close(MdbHandle *mdb)
+void 
+mdb_close(MdbHandle *mdb)
 {
 	if (mdb->f) {
 		mdb->f->refs--;
@@ -173,7 +174,11 @@ size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 {
 size_t len;
 
+	if (pg && mdb->cur_pg == pg) return mdb->fmt->pg_size;
+
 	len = _mdb_read_pg(mdb, mdb->pg_buf, pg);
+	//fprintf(stderr, "read page %d type %02x\n", pg, mdb->pg_buf[0]);
+	mdb->cur_pg = pg;
 	/* kan - reset the cur_pos on a new page read */
 	mdb->cur_pos = 0; /* kan */
 	return len;

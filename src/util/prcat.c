@@ -18,16 +18,10 @@
 
 #include "mdbtools.h"
 
+int
 main(int argc, char **argv)
 {
-off_t offset=0;
-int   fd, i, j;
-char  xdigit;
-short digit;
-struct stat status;
-int rows, cur, off;
-unsigned char buf[2048];
-MdbHandle *mdb;
+	MdbHandle *mdb;
 
 
 	if (argc<2) {

@@ -21,11 +21,10 @@
 #include "mdbtools.h"
 
 #define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
+int
 main(int argc, char **argv)
 {
-int rows;
 int i, j;
-unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;

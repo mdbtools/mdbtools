@@ -23,9 +23,9 @@
 
 #include "mdbtools.h"
 
+int
 main (int argc, char **argv)
 {
-int rows;
 int i,  j;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;

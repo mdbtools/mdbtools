@@ -112,10 +112,11 @@ int did_first;
 
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
-char buf[100];
+	static char buf[100];
+
         if (col_type > 0x10) {
                 // return NULL;
-					sprintf(buf,"type %04x", col_type);
+		sprintf(buf,"type %04x", col_type);
                 return buf;
         } else {
                 return backend->types_table[col_type];
@@ -167,11 +168,12 @@ MdbBackend *backend;
 	}
 }
 
-static void do_first (MdbHandle *mdb) 
+static void 
+do_first (MdbHandle *mdb) 
 {
-int   i, j, k;
-static char text[255];
-    mdb_read_catalog (mdb, MDB_TABLE);
+	int   i, k;
+
+	mdb_read_catalog (mdb, MDB_TABLE);
 
     /* loop over each entry in the catalog */
     for (i=0; i < mdb->num_catalog; i++) {

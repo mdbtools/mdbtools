@@ -18,15 +18,14 @@
 
 #include "mdbtools.h"
 
+int
 main(int argc, char **argv)
 {
-int rows;
-int i;
-unsigned char buf[2048];
-MdbHandle *mdb;
-MdbCatalogEntry entry;
 
 #if 0
+	int i;
+	MdbCatalogEntry entry;
+
 	if (argc<2) {
 		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);
 		exit(1);

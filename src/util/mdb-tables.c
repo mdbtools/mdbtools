@@ -20,13 +20,12 @@
 
 #include "mdbtools.h"
 
+int
 main (int argc, char **argv)
 {
-int   i, j, k;
+int   i;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
-MdbTableDef *table;
-MdbColumn *col;
 char *delimiter = NULL;
 int line_break=0;
 int skip_sys=1;

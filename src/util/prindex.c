@@ -22,9 +22,10 @@
 extern char idx_to_text[];
 
 void walk_index(MdbHandle *mdb, MdbIndex *idx);
+
+int
 main(int argc, char **argv)
 {
-int rows;
 int i, j;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
@@ -84,6 +85,7 @@ page_name(int page_type)
 		case 0x03: return "Index"; break;
 		case 0x04: return "Index Leaf"; break;
 		case 0x05: return "Page Usage"; break;
+		default: return "Unknown";
 	}
 }
 void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char *idxrow, int len)
@@ -94,7 +96,7 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 	int row_start, row_end;
 	MdbColumn *col;
 	guchar buf[256], key[256];
-	int elem, pos;
+	int elem;
 	MdbTableDef *table = idx->table; 
 	
 	fmt = mdb->fmt;
@@ -127,7 +129,6 @@ void
 walk_index(MdbHandle *mdb, MdbIndex *idx)
 {
 	int start, len;
-	unsigned char byte;
 	guint32 pg;
 	guint16 row;
 	MdbHandle *mdbidx;

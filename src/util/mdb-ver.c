@@ -20,21 +20,11 @@
 
 #include "mdbtools.h"
 
+int
 main(int argc, char **argv)
 {
-int rows;
-int i, j;
-unsigned char buf[2048];
 MdbHandle *mdb;
-MdbCatalogEntry entry;
-MdbTableDef *table;
-MdbColumn *col;
 /* doesn't handle tables > 256 columns.  Can that happen? */
-char *bound_values[256]; 
-char *delimiter = ",";
-char header_row = 1;
-char quote_text = 1;
-int  opt;
 
 	/* 
 	** optind is now the position of the first non-option arg, 

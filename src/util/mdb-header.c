@@ -29,6 +29,7 @@ void copy_header (FILE *f)
  fprintf (f, "/******************************************************************/\n");
 }
 
+int
 main (int argc, char **argv)
 {
 int   i, j, k;

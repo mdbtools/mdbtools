@@ -27,6 +27,7 @@ char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
 char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
+int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
 
 
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
@@ -155,21 +156,23 @@ int ret;
 }
 int mdb_read_row(MdbTableDef *table, int row)
 {
-MdbHandle *mdb = table->entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
-MdbColumn *col;
-int i, j, rc;
-int num_cols, var_cols, fixed_cols;
-int row_start, row_end;
-int fixed_cols_found, var_cols_found;
-int col_start, len, next_col;
-int num_of_jumps=0, jumps_used=0;
-int eod; /* end of data */
-int delflag, lookupflag;
-int bitmask_sz;
-int col_ptr, deleted_columns=0;
-unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
-unsigned char isnull;
+	MdbHandle *mdb = table->entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
+	MdbColumn *col;
+	int i, j, rc;
+	int num_cols, var_cols, fixed_cols;
+	int row_start, row_end;
+	int fixed_cols_found, var_cols_found;
+	int col_start, len, next_col;
+	int num_of_jumps=0, jumps_used=0;
+	int eod; /* end of data */
+	int delflag, lookupflag;
+	int bitmask_sz;
+	int col_ptr, deleted_columns=0;
+	unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
+	unsigned char isnull;
+	MdbField fields[256];
+	int num_fields;
 
 	row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
@@ -184,6 +187,13 @@ unsigned char isnull;
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
 #endif	
+	num_fields = mdb_crack_row(table, row_start, row_end, &fields);
+	if (!mdb_test_sargs(table, &fields, num_fields)) return 0;
+	for (i=0; i < num_fields; i++) {
+		//col = g_ptr_array_index (table->columns, fields[i].colnum - 1);
+		//rc = _mdb_attempt_bind(mdb, col, fields[i].is_null,
+			//row_start + col_start, col->col_size);
+	}
 	//if (!table->noskip_del && (delflag || lookupflag)) {
 	if (!table->noskip_del && delflag) {
 		row_end = row_start-1;
@@ -357,9 +367,9 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	} else if (isnull) {
 		mdb_xfer_bound_data(mdb, 0, col, 0);
 	} else {
-		if (!mdb_test_sargs(mdb, col, offset, len)) {
-			return 0;
-		}
+		//if (!mdb_test_sargs(mdb, col, offset, len)) {
+			//return 0;
+		//}
 		mdb_xfer_bound_data(mdb, offset, col, len);
 	}
 	return 1;
@@ -395,7 +405,6 @@ mdb_read_next_dpg_by_map1(MdbTableDef *table)
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
 guint32 pgnum, i, j, bitn, map_pg;
-unsigned char map_byte;
 
 	pgnum = 0;
 	//printf("map size %ld\n", table->map_sz);
@@ -468,6 +477,7 @@ MdbHandle *mdb = table->entry->mdb;
 MdbFormatConstants *fmt = mdb->fmt;
 int rows;
 int rc;
+guint32 pg;
 
 	if (table->num_rows==0)
 		return 0;
@@ -476,18 +486,28 @@ int rc;
 	if (!table->cur_pg_num) {
 		table->cur_pg_num=1;
 		table->cur_row=0;
-		mdb_read_next_dpg(table);
+		if (table->strategy!=MDB_INDEX_SCAN) 
+			if (!mdb_read_next_dpg(table)) return 0;
 	}
 
-	do { 
-		rows = mdb_get_int16(mdb,fmt->row_count_offset);
-
-		/* if at end of page, find a new page */
-		if (table->cur_row >= rows) {
-			table->cur_row=0;
-
-			if (!mdb_read_next_dpg(table)) {
+	do {
+		if (table->strategy==MDB_INDEX_SCAN) {
+		
+			if (!mdb_index_find_next(table->mdbidx, table->scan_idx, table->chain, &pg, &(table->cur_row))) {
+				mdb_index_scan_free(table);
 				return 0;
+			}
+			mdb_read_pg(mdb, pg);
+		} else {
+			rows = mdb_get_int16(mdb,fmt->row_count_offset);
+
+			/* if at end of page, find a new page */
+			if (table->cur_row >= rows) {
+				table->cur_row=0;
+	
+				if (!mdb_read_next_dpg(table)) {
+					return 0;
+				}
 			}
 		}
 
@@ -500,9 +520,7 @@ int rc;
 }
 void mdb_data_dump(MdbTableDef *table)
 {
-MdbHandle *mdb = table->entry->mdb;
-int i, j, pg_num;
-int rows;
+int i, j;
 char *bound_values[MDB_MAX_COLS]; 
 
 	for (i=0;i<table->num_cols;i++) {
@@ -524,6 +542,7 @@ int mdb_is_fixed_col(MdbColumn *col)
 {
 	return col->is_fixed;
 }
+#if 0
 static char *mdb_data_to_hex(MdbHandle *mdb, char *text, int start, int size) 
 {
 int i;
@@ -535,6 +554,7 @@ int i;
 
 	return text;
 }
+#endif
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 {
 guint16 ole_len;
@@ -751,20 +771,21 @@ int i;
 			return text;
 #endif
 }
-char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
+char *
+mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
 {
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
 char tmpbuf[MDB_BIND_SIZE];
 char mask[20];
-gint32 l, whole, fraction;
+gint32 l;
 
 	l = mdb->pg_buf[start+16] * 256 * 256 * 256 +
 		mdb->pg_buf[start+15] * 256 * 256 +
 		mdb->pg_buf[start+14] * 256 +
 		mdb->pg_buf[start+13];
 
-	sprintf(mask,"%%0%ldld",prec);
+	sprintf(mask,"%%0%dld",prec);
 	sprintf(tmpbuf,mask,l);
 	//strcpy(text, tmpbuf);
 	//return text;
@@ -776,21 +797,14 @@ gint32 l, whole, fraction;
 		strcat(text,".");
 		strcat(text,&tmpbuf[strlen(tmpbuf)-scale]);
 	}
-/*
-		for (i=0;i<size;i++) {
-				fprintf(stdout, "%c %02x ", isprint(mdb->pg_buf[start+i]) ? mdb->pg_buf[start+i] : '.', mdb->pg_buf[start+i]);
-			} 
-			fprintf(stdout, "\n");
-*/
-		return text;
+	return text;
 }
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
-char tmpbuf[10];
 time_t t;
-int i,j;
+int i;
 
 	switch (datatype) {
 		case MDB_BOOL:

@@ -227,7 +227,8 @@ int i;
 	}
 
 	/* EOD */
-	row_buffer[pos++] = pos;
+	row_buffer[pos] = pos;
+	pos++;
 
 	for (i=num_fields-1;i>=num_fields - var_cols;i--) {
 		row_buffer[pos++] = fields[i].offset % 256;
@@ -295,7 +296,7 @@ int old_row_size, new_row_size, delta, num_fields;
 	row_start &= 0x0FFF; /* remove flags */
 
 #if MDB_DEBUG_WRITE
-	printf("page %lu row %d start %d end %d\n", table->cur_phys_pg, table->cur_row-1, row_start, row_end);
+	printf("page %lu row %d start %d end %d\n", (unsigned long) table->cur_phys_pg, table->cur_row-1, row_start, row_end);
 	buffer_dump(mdb->pg_buf, row_start, row_end);
 #endif
 
@@ -333,6 +334,7 @@ int old_row_size, new_row_size, delta, num_fields;
 	}
 	/* do it! */
 	mdb_replace_row(table, table->cur_row-1, row_buffer, new_row_size);
+	return 0;
 }
 int 
 mdb_replace_row(MdbTableDef *table, int row, unsigned char *new_row, int new_row_size)
@@ -348,7 +350,7 @@ int i, pos;
 #if MDB_DEBUG_WRITE
 	buffer_dump(mdb->pg_buf, 0, 39);
 	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
-	printf("updating row %d on page %lu\n", row, table->cur_phys_pg);
+	printf("updating row %d on page %lu\n", row, (unsigned long) table->cur_phys_pg);
 #endif
 	new_pg = (unsigned char *) g_malloc0(fmt->pg_size);
 	g_free(new_pg);
@@ -400,5 +402,5 @@ int i, pos;
 		fprintf(stderr, "write failed! exiting...\n");
 		exit(1);
 	}
-
+	return 0;
 }

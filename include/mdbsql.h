@@ -16,6 +16,8 @@ typedef struct {
 	int num_sargs;
 	GPtrArray *sargs;
 	MdbTableDef *cur_table;
+	MdbSargNode *sarg_tree;
+	GList *sarg_stack;
 	/* FIX ME */
 	char *bound_values[256];
 } MdbSQL;
@@ -50,7 +52,7 @@ MdbSQLColumn *mdb_sql_alloc_column();
 MdbSQLTable *mdb_sql_alloc_table();
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name);
 int mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant);
-int mdb_sql_all_columns(MdbSQL *sql);
+void mdb_sql_all_columns(MdbSQL *sql);
 int mdb_sql_add_column(MdbSQL *sql, char *column_name);
 int mdb_sql_add_table(MdbSQL *sql, char *table_name);
 void mdb_sql_dump(MdbSQL *sql);

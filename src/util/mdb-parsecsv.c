@@ -21,6 +21,8 @@
 /* generates an array of type FOO */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define FILENAMESIZE 128
 #define BUFFERSIZE 4096
@@ -36,6 +38,7 @@ void copy_header (FILE *f)
  fprintf (f, "/******************************************************************/\n");
 }
 
+int
 main (int argc, char **argv)
 {
   char txt_filename [FILENAMESIZE];

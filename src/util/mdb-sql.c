@@ -33,6 +33,8 @@ int headers = 1;
 int footers = 1;
 int pretty_print = 1;
 char *delimiter;
+int showplan = 0;
+int noexec = 0;
 
 #ifndef HAVE_READLINE
 char *readline(char *prompt)
@@ -88,15 +90,78 @@ do_set_cmd(MdbSQL *sql, char *s)
 		} else {
 			printf("Unknown stats option %s\n", level2);
 		}
+	} else if (!strcmp(level1,"showplan")) {
+		level2 = strtok(NULL, " \t");
+		if (!strcmp(level2,"on")) {
+			showplan=1;
+		} else if (!strcmp(level2,"off")) {
+			showplan=0;
+		} else {
+			printf("Unknown showplan option %s\n", level2);
+		}
+	} else if (!strcmp(level1,"noexec")) {
+		level2 = strtok(NULL, " \t");
+		if (!strcmp(level2,"on")) {
+			noexec=1;
+		} else if (!strcmp(level2,"off")) {
+			noexec=0;
+		} else {
+			printf("Unknown showplan option %s\n", level2);
+		}
 	} else {
 		printf("Unknown set command %s\n", level1);
 	}
 }
 
+int
+read_file(char *s, int line, int *bufsz, char *mybuf)
+{
+	char *fname;
+	FILE *in;
+	char buf[256];
+	int cursz = 0;	
+	int lines = 0;	
+
+	fname = s;
+	while (*fname && *fname==' ') fname++;
+
+	if (! (in = fopen(fname, "r"))) {
+		fprintf(stderr,"Unable to open file %s\n", fname);
+		mybuf[0]=0;
+		return 0;
+	}
+	while (fgets(buf, 255, in)) {
+		cursz += strlen(buf) + 1;
+		if (cursz > (*bufsz)) {
+			(*bufsz) *= 2;
+			mybuf = (char *) realloc(mybuf, *bufsz);
+		}	
+		strcat(mybuf, buf);
+		add_history(buf);
+		strcat(mybuf, "\n");
+		lines++;
+		printf("%d => %s",line+lines, buf);
+	}
+	return lines;
+}
 void 
 run_query(MdbSQL *sql, char *mybuf)
 {
+	MdbTableDef *table;
+
 	if (!parse(sql, mybuf) && sql->cur_table) {
+		if (showplan) {
+			table = sql->cur_table;
+			if (tabl->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
+			if (sql->cur_table->strategy == MDB_TABLE_SCAN)
+				printf("Table scanning %s\n", table->name);
+			else 
+				printf("Index scanning %s using %s\n", table->name, table->scan_idx->name);
+		}
+		if (noexec) {
+			mdb_sql_reset(sql);
+			return;
+		}
 		mdbsql_bind_all(sql);
 		if (pretty_print)
 			dump_results_pp(sql);
@@ -233,6 +298,7 @@ void myexit(int r)
 	free(delimiter);
 	exit(r);
 }
+int
 main(int argc, char **argv)
 {
 char *s;
@@ -303,6 +369,8 @@ FILE *in = NULL, *out = NULL;
 	} else {
 		sprintf(prompt,"1 => ");
 		s=readline(prompt);
+		if (!strcmp(s,"exit") || !strcmp(s,"quit") || !strcmp(s,"bye"))
+			done = 1;
 	}
 	while (!done) {
 		if (line==1 && !strncmp(s,"set ", 4)) {
@@ -315,6 +383,8 @@ FILE *in = NULL, *out = NULL;
 		} else if (!strcmp(s,"reset")) {
 			line = 0;
 			mybuf[0]='\0';
+		} else if (!strncmp(s,":r",2)) {
+			line += read_file(&s[2], line, &bufsz, mybuf);
 		} else {
 			while (strlen(mybuf) + strlen(s) > bufsz) {
 				bufsz *= 2;
@@ -346,6 +416,8 @@ FILE *in = NULL, *out = NULL;
 	mdb_sql_exit(sql);	
 
 	myexit(0);
+
+	return 0; /* make gcc -Wall happy */
 }
 #else
 int main(int argc, char **argv)

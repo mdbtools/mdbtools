@@ -22,15 +22,13 @@
 
 void dump_ole(MdbTableDef *table, char *colname, char *sargname);
 
+int
 main(int argc, char **argv)
 {
-int rows;
 int i;
-unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;
-GList *l;
 char *dot, *colname, *tabname;
 char *sargname = NULL;
 

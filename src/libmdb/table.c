@@ -233,14 +233,13 @@ int coln;
 MdbIndex *idx;
 MdbHandle *mdb = entry->mdb;
 int i,bitn;
-int pgnum;
+guint32 pgnum;
 
 	table = mdb_read_table(entry);
 	fprintf(stdout,"definition page     = %lu\n",entry->table_pg);
 	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
 	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
 	fprintf(stdout,"number of indices   = %d\n",table->num_real_idxs);
-	fprintf(stdout,"first data page     = %lu\n",table->first_data_pg);
 
 	mdb_read_columns(table);
 	mdb_read_indices(table);
@@ -259,7 +258,7 @@ int pgnum;
 		mdb_index_dump(table, idx);
 	}
 	if (table->usage_map) {
-		printf("pages reserved by this object\n",pgnum);
+		printf("pages reserved by this object\n");
 		pgnum = _mdb_get_int32(table->usage_map,1);
 		/* the first 5 bytes of the usage map mean something */
 		coln = 0;
@@ -267,7 +266,7 @@ int pgnum;
 			for (bitn=0;bitn<8;bitn++) {
 				if (table->usage_map[i] & 1 << bitn) {
 					coln++;
-					printf("%6ld ",pgnum);
+					printf("%6lu ",(long unsigned) pgnum);
 					if (coln==10) {
 						printf("\n");
 						coln = 0;

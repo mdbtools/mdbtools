@@ -26,9 +26,8 @@ static MdbSQL *g_sql;
 
 	if (sql) {
 		g_sql = sql;
-	} else {
-		return g_sql;
 	}
+	return g_sql;
 }
 
 %}
@@ -42,7 +41,7 @@ static MdbSQL *g_sql;
 
 
 %token <name> IDENT NAME PATH STRING NUMBER 
-%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND OR NOT
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE
 
@@ -51,6 +50,11 @@ static MdbSQL *g_sql;
 %type <ival> operator
 
 %%
+
+stmt:
+	query
+	| error { yyclearin; mdb_sql_reset(_mdb_sql(NULL)); }
+	;
 
 query:
 	SELECT column_list FROM table where_clause {
@@ -76,8 +80,11 @@ where_clause:
 	;
 
 sarg_list:
-	sarg
-	| sarg AND sarg_list
+	sarg 
+	| '(' sarg_list ')'
+	| NOT sarg_list { mdb_sql_add_not(_mdb_sql(NULL)); }
+	| sarg_list OR sarg_list { mdb_sql_add_or(_mdb_sql(NULL)); }
+	| sarg_list AND sarg_list { mdb_sql_add_and(_mdb_sql(NULL)); }
 	;
 
 sarg:
@@ -109,6 +116,7 @@ constant:
 database:
 	PATH
 	|	NAME 
+	;
 
 table:
 	NAME { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }

@@ -240,6 +240,26 @@ Choose <menuchoice> <guimenu>Tools</guimenu> <guimenuitem>Debug Window </guimenu
 		</orderedlist>
 	 </sect2>	 
   </sect1>
+<!-- ============= Preferences Window ============================= -->
+  <sect1 id="gmdb-prefs"> 
+	<title>Preferences</title>
+	<para>To view or set Preferences choose 
+		<menuchoice> <guimenu>Edit</guimenu> <guimenuitem>Preferences</guimenuitem> </menuchoice> from the menu.</para>
+	<sect2 id="gmdb-prefs-maxrows">
+	<title>Maximum Rows to Display</title>
+	<para>This option limits the number of rows that will be returned when
+	<orderedlist>
+		<listitem>Clicking the <guilabel>Data</guilabel> button on the <guilabel>Tables</guilabel> tab window, or</listitem>
+		<listitem>Running a SQL select in the <guilabel>Query Window</guilabel></listitem>
+	</orderedlist>
+	</para>
+	<para>
+	By extension, this also affects the number of rows saved when saving the results of a SQL query.</para>
+	<para>
+		If no value is set, the default number of rows displayed is 1,000.  This option may be disabled by setting the value to 0, but be warned that attempting to display a large number of rows will result in an increased delay proportional to the number of rows.
+	</para>
+	</sect2>
+  </sect1>
 <!-- ============= Tables Window ============================= -->
   <sect1 id="gmdb-tables"> 
 	 <title>Table Actions</title>
@@ -307,4 +327,92 @@ Click on the <guibutton>Export</guibutton> button from the right hand side of th
 	<para>Checking the <guilabel>Include Headers</guilabel> box will write a single row at the top of the file with the names of the columns.</para>
  	</sect2>
  </sect1>
+  <sect1 id="gmdb-sql-main"> 
+	 <title>Query Window</title>
+	<para>To open the SQL query window choose <menuchoice> <guimenu>Tools</guimenu> <guimenuitem>SQL Window </guimenuitem> </menuchoice></para>
+<!-- ==== Figure ==== -->
+		<figure id="gmdb-sql-window"> 
+		  <title>&app; Query Window</title>
+		  <screenshot> 
+			 <mediaobject> 
+				<imageobject> 
+				  <imagedata fileref="figures/gmdb2_sql_window.png" format="PNG"/>
+					 </imageobject>
+				<textobject> <phrase>Screenshot of the gmdb2 query window.</phrase>
+				</textobject> </mediaobject>
+		  </screenshot>
+		</figure>
+<!-- ==== End of Figure ==== -->
+		<para>The <application>&app;</application> Query window contains the following
+		  elements: </para>
+		<variablelist> 
+		  <varlistentry> <term>Menubar. </term> 
+			 <listitem> 
+				<para>The menus on the menubar contain all of the commands you need
+				  to work with SQL queries and their results in <application>&app;</application>.</para>
+			</listitem>
+		</varlistentry>
+		  <varlistentry> <term>Toolbar. </term> 
+			 <listitem> 
+				<para> The toolbar contains a subset of the commands that you can
+				  access from the menubar.</para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Table List. </term> 
+			 <listitem> 
+				<para> The table list contains a list of tables for the current database that can be dragged into the query editor.</para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Query Editor. </term> 
+			 <listitem> 
+				<para> The query editor is a text editing window where you can write your SQL select.</para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Recent Queries List. </term> 
+			 <listitem> 
+				<para> The recent queries list can be used to bring a previously run query back into the query editor.</para>
+			 </listitem>
+		  </varlistentry>
+		  <varlistentry> <term>Results Window. </term> 
+			 <listitem> 
+				<para> The results window shows the results of the last SQL query executed.</para>
+			 </listitem>
+		  </varlistentry>
+		</variablelist>
+<!-- ============= To Open a New Query Window  ============================= -->
+	<sect2 id="gmdb-sql-new">
+		<title>To Open a New Query Window</title>
+		<para>To open a new query window, choose 
+		  <menuchoice> <guimenu>Query</guimenu> <guimenuitem>New</guimenuitem>
+			 </menuchoice>
+		</para>
+	</sect2>
+<!-- ============= To Load a Query from File ============================= -->
+	<sect2 id="gmdb-sql-open">
+		<title>To Load a Query from a File</title>
+		<para>To load a query from a text file, choose 
+		  <menuchoice> <guimenu>Query</guimenu> <guimenuitem>Open</guimenuitem>
+			 </menuchoice>
+		</para>
+	</sect2>
+<!-- ============= To Save a Query to File ============================= -->
+	<sect2 id="gmdb-sql-save">
+		<title>To Save a Query to a File</title>
+		<para>To save the current query to a text file, choose 
+		  <menuchoice> <guimenu>Query</guimenu> <guimenuitem>Save</guimenuitem>
+			 </menuchoice>
+		</para>
+		<para>
+		The active file can be found in the title bar of the window.  If this is not the desired file, choose the <guilabel>Save As</guilabel> menu item.
+		</para>
+	</sect2>
+<!-- ============= To Save a Query from File As ============================= -->
+	<sect2 id="gmdb-sql-saveas">
+		<title>To Load a Query from a File</title>
+		<para>To load a query from a text file, choose 
+		  <menuchoice> <guimenu>Query</guimenu> <guimenuitem>Open</guimenuitem>
+			 </menuchoice>
+		</para>
+	</sect2>
+  </sect1>
 </article>

@@ -36,6 +36,18 @@ gmdb_prefs_get_maxrows()
 
 /* callbacks */
 void
+gmdb_prefs_help_cb(GtkWidget *w, gpointer data)
+{
+	GError *error = NULL;
+
+	gnome_help_display("gmdb.xml", "gmdb-prefs", &error);
+	if (error != NULL) {
+		g_warning (error->message);
+		g_error_free (error);
+	}
+}
+
+void
 gmdb_prefs_save_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWidget *entry;
@@ -82,6 +94,10 @@ gmdb_prefs_new()
 	g_signal_connect (G_OBJECT (button), "clicked",
 		G_CALLBACK (gmdb_prefs_save_cb), prefswin_xml);
 
+	button = glade_xml_get_widget (prefswin_xml, "help_button");
+	g_signal_connect (G_OBJECT (button), "clicked",
+		G_CALLBACK (gmdb_prefs_help_cb), prefswin_xml);
+
 	str = gnome_config_get_string("/gmdb/prefs/maxrows");
 	if (!str || !strlen(str)) {
 		str = "1000";
@@ -89,4 +105,7 @@ gmdb_prefs_new()
 		gnome_config_sync();
 	}
 	gtk_entry_set_text(GTK_ENTRY(entry), str);
+
+	prefswin = glade_xml_get_widget (prefswin_xml, "prefs_dialog");
+	return prefswin;
 }
