@@ -81,6 +81,7 @@ int bit_num = (col_num - 1) % 8;
 ** value*/
 static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 {
+	col->cur_value_len = value;
 	if (col->bind_ptr) {
 		strcpy(col->bind_ptr,  value ? "0" : "1");
 	}
@@ -90,6 +91,13 @@ static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int le
 	//if (!strcmp("Name",col->name)) {
 		//printf("start %d %d\n",start, len);
 	//}
+	if (len) {
+		col->cur_value_start = start;
+		col->cur_value_len = len;
+	} else {
+		col->cur_value_start = 0;
+		col->cur_value_len = 0;
+	}
 	if (col->bind_ptr) {
 		if (len) {
 			strcpy(col->bind_ptr, 
@@ -114,6 +122,7 @@ int num_of_jumps=0, jumps_used=0;
 int eod; /* end of data */
 int delflag, lookupflag;
 int bitmask_sz;
+int col_ptr, deleted_columns=0;
 unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 unsigned char isnull;
 
@@ -210,11 +219,17 @@ unsigned char isnull;
                num_of_jumps++;
        }
 	if (mdb->jet_version==MDB_VER_JET4) {
-		eod = mdb_get_int16(mdb, row_end - 2 - var_cols*2 -bitmask_sz - num_of_jumps - 1);
-		col_start = mdb_get_int16(mdb, row_end - bitmask_sz - 2 - num_of_jumps - 1);
+		col_ptr = row_end - 2 - bitmask_sz - num_of_jumps - 1;
+		eod = mdb_get_int16(mdb, col_ptr - var_cols*2);
+		col_start = mdb_get_int16(mdb, col_ptr);
 	} else {
-		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz-num_of_jumps];
-		col_start = mdb->pg_buf[row_end-bitmask_sz-1-num_of_jumps];
+		col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
+		if (mdb->pg_buf[col_ptr]==0xFF) {
+			col_ptr--;
+			deleted_columns++;
+		}
+		eod = mdb->pg_buf[col_ptr - var_cols];
+		col_start = mdb->pg_buf[col_ptr];
 	}
 
 
@@ -243,8 +258,7 @@ unsigned char isnull;
 				len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
 					- 2 - 1 - num_of_jumps * 2] - col_start;
 			} else {
-				len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found
-					- 1 - num_of_jumps ] - col_start;
+				len=mdb->pg_buf[col_ptr - var_cols_found ] - col_start;
 			}
 			if (len<0)
 				len+=256;

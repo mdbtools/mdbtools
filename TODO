@@ -1,6 +1,15 @@
 Things to Do
 ------------
 
+file format:
+
+. how does global allocation map work?
+. export VB script
+. re-examine KKD records for form design (OLE streams?)
+. write support
+
+libmdb:
+
 . Complete the list of datatypes
 . Straighten out which functions in libmdb are meant to be used and which   
   ones should be static.
@@ -9,4 +18,32 @@ Things to Do
 . Need a way to express logical relationships between sargs (tree)
 . Add support for index scanning when using sargs
 . Use allocation maps to read tables, should be more efficient
-. Figure out why we get unresolved symbols when ODBC driver load by DM
+. write support
+
+utils:
+
+. need program to unpack VBA script to file
+. Access forms to glade converter ?
+
+SQL Engine:
+
+. SQL Engine does not handle uppercase keywords
+. Joins
+. OR clauses using sarg trees from above
+. insert/updates
+. bogus column name in where clause not caught
+
+ODBC:
+
+. Figure out why we get unresolved symbols when ODBC driver load by DM (iODBC 
+  only?)
+. Boolean not working
+. many unimplemented funtions
+
+GMDB:
+
+. Finish debug dissectors
+. Export schema not implemented
+. Printing not implemented
+. Test for SQL engine and pop up message when not present.
+. Export needs finishing

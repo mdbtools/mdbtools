@@ -2,13 +2,12 @@ This is mdbtools version 0.4
 
 This software is still beta so don't expect too much.
 
-For the rest of you, read the HACKING file for a description of where the code 
-stands and what has been gleened of the file format.
+If you are interested in helping, read the HACKING file for a description of 
+where the code stands and what has been gleened of the file format.
 
 The initial goal of these tools is to be able to extract data structures and 
 data from mdb files.  This goal will of course expand over time as the file 
-format becomes more well understood.  Also in the plans is a Gtk+ browser for 
-MDB files and a ODBC/SQL frontend.
+format becomes more well understood.  
 
 Files in libmdb are licensed under LGPL and the utilities under the GPL, see 
 COPYING.LIB and COPYING files respectively.

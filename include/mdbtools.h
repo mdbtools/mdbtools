@@ -185,6 +185,8 @@ typedef struct {
 	unsigned char   is_fixed;
 	int		query_order;
 	int		col_num;
+	int		cur_value_start;
+	int 	cur_value_len;
 } MdbColumn;
 
 typedef union {

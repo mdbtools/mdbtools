@@ -1,3 +1,7 @@
+Tue Apr  2 21:02:13 EST 2002	Brian Bruns <camber@ais.org>
+
+	* src/libmdb/data.c: ignore 0xff in row offset table (Don Badrak)
+
 Wed Mar 20 22:49:33 EST 2002	Brian Bruns	<camber@ais.org>
 
 	* include/mdbtools.h: increased page size for 2048 to 4096

@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.4 2002/01/24 12:34:13 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.5 2002/04/03 23:02:54 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -527,12 +527,19 @@ SQLRETURN SQL_API SQLColAttributes(
     SQLINTEGER FAR    *pfDesc)
 {
 int cplen, len = 0;
+int namelen, i;
 struct _hstmt *stmt;
 struct _hdbc *dbc;
+struct _henv *env;
+MdbSQL *sql;
+MdbSQLColumn *sqlcol;
+MdbColumn *col;
+MdbTableDef *table;
 
 	stmt = (struct _hstmt *) hstmt;
 	dbc = (struct _hdbc *) stmt->hdbc;
-
+	env = (struct _henv *) dbc->henv;
+	sql = env->sql;
 
 	/* dont check column index for these */
 	switch(fDescType) {
@@ -541,17 +548,38 @@ struct _hdbc *dbc;
 			break;
 	}
 
+	if (icol<1 || icol>sql->num_columns) {
+		return SQL_ERROR;
+	}
+
+	/* find the column */
+	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
+	table = sql->cur_table;
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!strcasecmp(sqlcol->name, col->name)) {
+			break;
+          	}
+	}
+
 	switch(fDescType) {
 		case SQL_COLUMN_NAME:
+		case SQL_COLUMN_LABEL:
+			namelen = MIN(cbDescMax,strlen(sqlcol->name));
+			strncpy(rgbDesc, sqlcol->name, namelen);
+			*((char *)&rgbDesc[namelen])='\0';
 			break;
 		case SQL_COLUMN_TYPE:
+			*pcbDesc = SQL_CHAR;
 			break;
 		case SQL_COLUMN_LENGTH:
 			break;
-		case SQL_COLUMN_DISPLAY_SIZE:
-			switch(_odbc_get_client_type(1)) {
+		//case SQL_COLUMN_DISPLAY_SIZE:
+		case SQL_DESC_DISPLAY_SIZE:
+			switch(_odbc_get_client_type(col->col_type)) {
 				case SQL_CHAR:
 				case SQL_VARCHAR:
+					*pfDesc = col->col_size;	
 					break;
 				case SQL_INTEGER:
 					*pfDesc = 8;
@@ -561,6 +589,9 @@ struct _hdbc *dbc;
 					break;
 				case SQL_TINYINT:
 					*pfDesc = 4;
+					break;
+				default:
+					//fprintf(stderr,"\nUnknown type %d\n", _odbc_get_client_type(col->col_type));
 					break;
 			}
 			break;
@@ -657,6 +688,7 @@ struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
 struct _henv *env = (struct _henv *) dbc->henv;
 
 	if (mdb_fetch_row(env->sql->cur_table)) {
+		stmt->row_affected++;
 		return SQL_SUCCESS;
 	} else {
 		return SQL_NO_DATA_FOUND;
@@ -765,7 +797,7 @@ SQLRETURN SQL_API SQLPrepare(
     SQLCHAR FAR       *szSqlStr,
     SQLINTEGER         cbSqlStr)
 {
-   struct _hstmt *stmt=(struct _hstmt *)hstmt;
+struct _hstmt *stmt=(struct _hstmt *)hstmt;
 
    if (cbSqlStr!=SQL_NTS) {
 	strncpy(stmt->query, szSqlStr, cbSqlStr);
@@ -781,6 +813,9 @@ SQLRETURN SQL_API SQLRowCount(
     SQLHSTMT           hstmt,
     SQLINTEGER FAR    *pcrow)
 {
+struct _hstmt *stmt=(struct _hstmt *)hstmt;
+
+	*pcrow = stmt->row_affected;
 	return SQL_SUCCESS;
 }
 
@@ -845,10 +880,41 @@ SQLRETURN SQL_API SQLGetData(
     SQLINTEGER FAR    *pcbValue)
 {
 struct _hstmt *stmt;
+struct _hdbc *dbc;
+struct _henv *env;
 unsigned char *src;
 int srclen;
+MdbSQL *sql;
+MdbHandle *mdb;
+MdbSQLColumn *sqlcol;
+MdbColumn *col;
+MdbTableDef *table;
+int i;
 
 	stmt = (struct _hstmt *) hstmt;
+	dbc = (struct _hdbc *) stmt->hdbc;
+	env = (struct _henv *) dbc->henv;
+	sql = env->sql;
+	mdb = sql->mdb;
+
+	if (icol<1 || icol>sql->num_columns) {
+		return SQL_ERROR;
+	}
+
+	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
+	table = sql->cur_table;
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!strcasecmp(sqlcol->name, col->name)) {
+			break;
+		}
+	}
+	
+	strcpy(rgbValue,
+		mdb_col_to_string(mdb, col->cur_value_start, col->col_type, 
+		col->cur_value_len));
+	//*((char *)&rgbValue[col->cur_value_len])='\0';
+	*pcbValue = col->cur_value_len;
 	return 0;
 }
 
@@ -1100,20 +1166,30 @@ static int _odbc_get_server_type(int clt_type)
 static SQLSMALLINT _odbc_get_client_type(int srv_type)
 {
 	switch (srv_type) {
-		MDB_BOOL:
+		case MDB_BOOL:
 			return SQL_BIT;
-		MDB_BYTE:
+			break;
+		case MDB_BYTE:
 			return SQL_TINYINT;
-		MDB_INT:
+			break;
+		case MDB_INT:
 			return SQL_SMALLINT;
-		MDB_LONGINT:
+			break;
+		case MDB_LONGINT:
 			return SQL_INTEGER;
-		MDB_FLOAT:
+			break;
+		case MDB_FLOAT:
 			return SQL_FLOAT;
-		MDB_DOUBLE:
+			break;
+		case MDB_DOUBLE:
 			return SQL_DOUBLE;
-		MDB_TEXT:
+			break;
+		case MDB_TEXT:
 			return SQL_VARCHAR;
+			break;
+		default:
+			// fprintf(stderr,"Unknown type %d\n",srv_type);
+			break;
 	}
 }
 

@@ -14,7 +14,7 @@ mdb-tables -- a simple dump of table names to be used with shell scripts
 mdb-header -- generates a C header to be used in exporting mdb data to a C prog.
 mdb-parsecvs -- generates a C program given a CSV file made with mdb-export
 mdb-sql    -- if --enable-sql is specified, a simple SQL engine (also used by 
-              ODBC).
+              ODBC and gmdb).
 
 And some utilities useful for debugging:
 
@@ -23,6 +23,6 @@ prkkd      -- dump of information about design view data given the offset to it.
 prtable    -- dump of a table definition.
 prdata     -- dump of the data given a table name.
 
-Once MDB Tools has been compiled, libmdb.a will be in the src/libmdb directory
-and the utility programs will be in the src/util directory.
-
+Once MDB Tools has been compiled, libmdb.[so|a] will be in the src/libmdb 
+directory and the utility programs will be in the src/util directory.
+You can then run 'make install' as root to install (to /usr/local by default).

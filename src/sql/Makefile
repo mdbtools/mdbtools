@@ -70,7 +70,7 @@ MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
 ODBC = 
-ODBC_INC = 
+ODBC_INC = /usr/local/include
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
@@ -96,7 +96,7 @@ libmdbsql_la_LIBADD =
 libmdbsql_la_OBJECTS =  mdbsql.lo parser.lo lexer.lo
 LEX_OUTPUT_ROOT = lex.yy
 LEXLIB = -lfl
-CFLAGS = -g -O2 -DSQL
+CFLAGS = -g -O2 -DUNIXODBC -DSQL
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)

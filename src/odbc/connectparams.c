@@ -160,12 +160,12 @@ void SetConnectString (ConnectParams* params, const gchar* connectString)
        * remove trailing spaces from name
        */
       end = strlen (name) - 1;
-      while (end > 0 && name[end] == ' ')
+      while (end > 0 && isspace(name[end]))
 	 name[end--] = '\0';
       /*
        * remove leading spaces from value
        */
-      while (*value == ' ')
+      while (isspace(*value))
 	 value++;
 
       if (g_hash_table_lookup_extended (params->table, name, &key, &oldvalue))
@@ -239,7 +239,7 @@ gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
     * Skip over any leading spaces
     */
    q++;
-   while (*q == ' ')
+   while (isspace(*q))
      q++;
    /*
     * Copy the DSN value to a buffer
@@ -410,7 +410,7 @@ static int GetNextItem (FILE* stream, char** name, char** value)
    if ((token = strtok (line, equals)) == NULL) return 0;
 
    len = strlen (token);
-   while (len > 0 && token[len-1] == ' ')
+   while (len > 0 && isspace(token[len-1]))
    {
       len--;
       token[len] = '\0';
@@ -421,7 +421,7 @@ static int GetNextItem (FILE* stream, char** name, char** value)
     */
    token = strtok (NULL, equals);
    if (token == NULL) return 0;
-   while (*token && token[0] == ' ')
+   while (*token && isspace(token[0]))
       token++;
 
    *value = token;
