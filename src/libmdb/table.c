@@ -339,8 +339,10 @@ guint32 pgnum;
 	}
 	if (table->usage_map) {
 		printf("pages reserved by this object\n");
-		printf("usage map pg %lu\n", table->map_base_pg);
-		printf("free map pg %lu\n", table->freemap_base_pg);
+		printf("usage map pg %" G_GUINT32_FORMAT "\n",
+			table->map_base_pg);
+		printf("free map pg %" G_GUINT32_FORMAT "\n",
+			table->freemap_base_pg);
 		pgnum = mdb_get_int32(table->usage_map,1);
 		/* the first 5 bytes of the usage map mean something */
 		coln = 0;
@@ -348,10 +350,12 @@ guint32 pgnum;
 			for (bitn=0;bitn<8;bitn++) {
 				if (table->usage_map[i] & 1 << bitn) {
 					coln++;
-					printf("%6lu ",(long unsigned) pgnum);
+					printf("%6" G_GUINT32_FORMAT, pgnum);
 					if (coln==10) {
 						printf("\n");
 						coln = 0;
+					} else {
+						printf(" ");
 					}
 				}
 				pgnum++;

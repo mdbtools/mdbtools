@@ -107,43 +107,43 @@ int
 prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields, char *delim)
 {
 	MdbColumn *col;
-	char delims[20];
-	char *s;
-	unsigned int file_cols;
+	char **sarray, *s;
+	unsigned int i;
 
 	/*
 	 * pull apart the row and turn it into something respectable
 	 */
-	sprintf(delims, "%c\n", delim[0]);
-	s = strtok(line, delims);
-	file_cols = 0;
-	do {
-		if (file_cols >= table->num_cols) {
+	g_strdelimit(line, delim, '\n');
+	sarray = g_strsplit (line, "\n", 0);
+	for (i=0; (s = sarray[i]); i++) {
+		if (i >= table->num_cols) {
 			fprintf(stderr, "Number of columns in file exceeds number in table.\n");
+			g_strfreev(sarray);
 			return 0;
 		}
 		if (s[0]=='"' && s[strlen(s)-1]=='"') {
 			s[strlen(s)-1] = '\0';
-			s++;
+			memmove(s+1, s, strlen(s));
 		}
 		printf("field = %s\n", s);
-		col = g_ptr_array_index (table->columns, file_cols);
-		if (convert_field(col, s, &fields[file_cols])) {
-			fprintf(stderr, "Format error in column %d\n", file_cols+1);
+		col = g_ptr_array_index (table->columns, i);
+		if (convert_field(col, s, &fields[i])) {
+			fprintf(stderr, "Format error in column %d\n", i+1);
+			g_strfreev(sarray);
 			return 0;
 		}
-		file_cols++;
-	} while (s = strtok(NULL, delims));		
+	}
+	g_strfreev(sarray);
 
 	/*
 	 * verify number of columns in table against number in row
 	 */
-	if (file_cols < table->num_cols) {
-		fprintf(stderr, "Row has %d columns, but table has %d\n", file_cols, table->num_cols);
-		free_values(fields, file_cols);
+	if (i < table->num_cols) {
+		fprintf(stderr, "Row has %d columns, but table has %d\n", i, table->num_cols);
+		free_values(fields, i);
 		return 0;
 	}
-	return file_cols;
+	return i;
 }
 int
 main(int argc, char **argv)
@@ -156,9 +156,8 @@ main(int argc, char **argv)
 	int num_fields;
 	/* doesn't handle tables > 256 columns.  Can that happen? */
 	int  opt;
-	char *s;
 	FILE *in;
-	char *delimiter = NULL;
+	char delimiter[2] = ",";
 	char header_rows = 0;
 
 	while ((opt=getopt(argc, argv, "H:d:"))!=-1) {
@@ -167,14 +166,11 @@ main(int argc, char **argv)
 			header_rows = atol(optarg);
 		break;
 		case 'd':
-			delimiter = (char *) g_strdup(optarg);
+			delimiter[0] = optarg[0];
 		break;
 		default:
 		break;
 		}
-	}
-	if (!delimiter) {
-		delimiter = (char *) g_strdup(",");
 	}
 	
 	/* 
@@ -229,7 +225,6 @@ main(int argc, char **argv)
 	}
 
 	mdb_free_tabledef(table);
-	g_free(delimiter);
 	fclose(in);
 	mdb_close(mdb);
 	mdb_exit();

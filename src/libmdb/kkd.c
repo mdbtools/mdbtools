@@ -55,7 +55,7 @@ MdbHandle *mdb = entry->mdb;
 
 GHashTable *mdb_get_column_def(MdbCatalogEntry *entry, int start)
 {
-GHashTable *hash;
+GHashTable *hash = NULL;
 MdbHandle *mdb = entry->mdb;
 MdbColumnProp prop;
 int tmp, pos, col_num, val_len, i;

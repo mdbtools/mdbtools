@@ -1,3 +1,12 @@
+Sat Jul 17 02:47:16 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/data.c:
+	* src/libmdb/kkd.c:
+	* src/libmdb/like.c:
+	* src/libmdb/table.c:
+	* src/libmdb/write.c:
+	* src/util/mdb-import.c: Warnings fixes and better use of GLib
+
 Fri Jul  9 07:47:27 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbsql.h:
 	* include/mdbtools.h:

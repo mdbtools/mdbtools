@@ -642,7 +642,8 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fi
 
 	mdb_index_find_row(mdb, idx, chain, pgnum, rownum);
 	printf("chain depth = %d\n", chain->cur_depth);
-	printf("pg = %lu\n", chain->pages[chain->cur_depth-1].pg);
+	printf("pg = %" G_GUINT32_FORMAT "\n",
+		chain->pages[chain->cur_depth-1].pg);
 	//mdb_copy_index_pg(table, idx, &chain->pages[chain->cur_depth-1]);
 	mdb_add_row_to_leaf_pg(table, idx, &chain->pages[chain->cur_depth-1], idx_fields);
 	
@@ -915,7 +916,8 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 		mdb_index_swap_n(&mdb->pg_buf[ipg->offset + 1], col->col_size, key_hash);
 		key_hash[col->col_size - 1] &= 0x7f;
 		printf("length = %d\n", ipg->len);
-		printf("iflag = %d pg = %lu row = %d\n", iflag, pg, row);
+		printf("iflag = %d pg = %" G_GUINT32_FORMAT
+			" row = %" G_GUINT16_FORMAT "\n", iflag, pg, row);
 		buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset + ipg->len - 1);
 		buffer_dump(mdb->pg_buf, ipg->offset + 1, ipg->offset + col->col_size);
 		buffer_dump(key_hash, 0, col->col_size - 1);

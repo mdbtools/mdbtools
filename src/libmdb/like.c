@@ -38,7 +38,8 @@
  */
 int mdb_like_cmp(char *s, char *r)
 {
-int i, ret;
+	unsigned int i;
+	int ret;
 
 	mdb_debug(MDB_DEBUG_LIKE, "comparing %s and %s", s, r);
 	switch (r[0]) {

@@ -30,7 +30,7 @@
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
-char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
+static char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
 
 static char date_fmt[64] = "%x %X";
@@ -137,7 +137,7 @@ mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 }
 static int mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
-int ret;
+	int ret = 0;
 	if (len) {
 		col->cur_value_start = start;
 		col->cur_value_len = len;
@@ -168,17 +168,18 @@ int ret;
 		col->cur_value_len = 0;
 	}
 	if (col->bind_ptr) {
-		if (len) {
-//fprintf(stdout,"len %d size %d\n",len, col->col_size);
-			if (col->col_type == MDB_NUMERIC) {
-				strcpy(col->bind_ptr, 
-				mdb_num_to_string(mdb, start, col->col_type, col->col_prec, col->col_scale));
-			} else {
-				strcpy(col->bind_ptr, 
-				mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len));
-			}
+		if (!len) {
+			strcpy(col->bind_ptr, "");
+		} else if (col->col_type == MDB_NUMERIC) {
+			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
+			char *str = mdb_num_to_string(mdb, start, col->col_type,
+				col->col_prec, col->col_scale);
+			strcpy(col->bind_ptr, str);
+			g_free(str);
 		} else {
-			strcpy(col->bind_ptr,  "");	
+			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
+			strcpy(col->bind_ptr,
+			mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len));
 		}
 		ret = strlen(col->bind_ptr);
 		if (col->len_ptr) {
@@ -188,7 +189,7 @@ int ret;
 	}
 	return 0;
 }
-int mdb_read_row(MdbTableDef *table, int row)
+int mdb_read_row(MdbTableDef *table, unsigned int row)
 {
 	MdbHandle *mdb = table->entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
@@ -436,9 +437,9 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 int 
 mdb_read_next_dpg_by_map0(MdbTableDef *table)
 {
-MdbCatalogEntry *entry = table->entry;
-MdbHandle *mdb = entry->mdb;
-int pgnum, i, bitn;
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
+	unsigned int pgnum, i, bitn;
 
 	pgnum = mdb_get_int32(table->usage_map,1);
 	/* the first 5 bytes of the usage map mean something */
@@ -951,8 +952,7 @@ guint16 len;
 			len = row_stop - row_start;
 			strncat(text, &mdb->pg_buf[row_start+4], 
 				strlen(text) + len - 4 > MDB_BIND_SIZE ?
-				MDB_BIND_SIZE - strlen(text) :
-				len - 4);
+				MDB_BIND_SIZE - strlen(text) : len - 4);
 
 			/* find next lval page */
 			memo_row = mdb->pg_buf[row_start];
@@ -968,31 +968,19 @@ guint16 len;
 */
 	}
 }
-char *
+static char *
 mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
 {
-/* FIX ME -- not thread safe */
-static char text[MDB_BIND_SIZE];
-char tmpbuf[MDB_BIND_SIZE];
-char mask[20];
-gint32 l;
+	char *text;
+	gint32 l;
 
-	l = mdb->pg_buf[start+16] * 256 * 256 * 256 +
-		mdb->pg_buf[start+15] * 256 * 256 +
-		mdb->pg_buf[start+14] * 256 +
-		mdb->pg_buf[start+13];
+	memcpy(&l, mdb->pg_buf+start+13, 4);
 
-	sprintf(mask,"%%0%dld",prec);
-	sprintf(tmpbuf,mask,l);
-	//strcpy(text, tmpbuf);
-	//return text;
-	if (!scale) {
-		strcpy(text,tmpbuf);
-	} else {
-		memset(text,0,sizeof(text));
-		strncpy(text,tmpbuf,prec-scale);
-		strcat(text,".");
-		strcat(text,&tmpbuf[strlen(tmpbuf)-scale]);
+	text = (char *) g_malloc(prec+2);
+	sprintf(text, "%0*" G_GINT32_FORMAT, prec, GINT32_FROM_LE(l));
+	if (scale) {
+		memmove(text+prec-scale, text+prec-scale+1, scale+1);
+		text[prec-scale] = '.';
 	}
 	return text;
 }

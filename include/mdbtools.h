@@ -320,7 +320,7 @@ typedef struct {
 	char	name[MDB_MAX_OBJ_NAME+1];
 	unsigned int    num_cols;
 	GPtrArray	*columns;
-	int	num_rows;
+	unsigned int    num_rows;
 	int	index_start;
 	unsigned int    num_real_idxs;
 	unsigned int    num_idxs;
@@ -332,11 +332,11 @@ typedef struct {
 	int  noskip_del;  /* don't skip deleted rows */
 	/* object allocation map */
 	guint32  map_base_pg;
-	int  map_sz;
+	unsigned int  map_sz;
 	unsigned char *usage_map;
 	/* pages with free space left */
 	guint32  freemap_base_pg;
-	int  freemap_sz;
+	unsigned int  freemap_sz;
 	unsigned char *free_usage_map;
 	/* query planner */
 	MdbSargNode *sarg_tree;
@@ -442,7 +442,7 @@ extern void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr);
 extern int mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern int mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void mdb_set_date_fmt(const char *);
-extern int mdb_read_row(MdbTableDef *table, int row);
+extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
 extern void buffer_dump(const unsigned char* buf, int start, int end);
