@@ -32,7 +32,7 @@ GList *l;
 
 
 	if (argc<2) {
-		fprintf(stderr,"Usage: prtable <file> <table>\n");
+		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);
 		exit(1);
 	}
 	

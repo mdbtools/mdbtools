@@ -117,6 +117,7 @@ extern MdbHandle *mdb_open(char *filename);
 extern void   mdb_catalog_dump(MdbHandle *mdb, int obj_type);
 extern int mdb_catalog_rows(MdbHandle *mdb);
 extern MdbCatalogEntry *mdb_get_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry);
+extern char *mdb_get_objtype_string(int obj_type);
 
 /* table.c */
 extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);

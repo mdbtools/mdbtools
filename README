@@ -11,13 +11,15 @@ The initial goal of these tools is to be able to extract data structures and
 data from mdb files.  This goal may of course expand over time as the file 
 format becomes more well understood (if it ever does).
 
-To install type 'make' and hope it works :-)
+To install type 'make' in the src directory and hope it works :-)
 
 This will build three executables:
 
 mdb-dump  -- a simple hex dump utility that I've been using to look at mdb files
-prcat     -- print the catalog table from an mdb file (try offset 9000).
-prkkd     -- prints some info about a KKD record given the offset to it.
+prcat     -- print the catalog table from an mdb file,
+prkkd     -- prints some info about design view data given the offset to it.
+prtable   -- prints some info about a table definition.
+prdata    -- prints a dump of the data given a table name.
 
 
 Check out http://mdbtools.sourceforge.net for CVS, mailing list and similar.
