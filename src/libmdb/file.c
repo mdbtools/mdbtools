@@ -43,8 +43,10 @@ int j,pos;
 	mdb->jet_version = mdb_get_int32(mdb, 0x14);
 	if (mdb->jet_version == MDB_VER_JET4) {
 		mdb->pg_size = 4096;
+		mdb->row_count_offset = 0x0c;
 	} else {
 		mdb->pg_size = 2048;
+		mdb->row_count_offset = 0x08;
 	}
 
 	/* get the db encryption key and xor it back to clear text */

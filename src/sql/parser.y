@@ -1,4 +1,22 @@
 %{
+/* MDB Tools - A library for reading MS Access database file
+ * Copyright (C) 2000 Brian Bruns
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ */
 #include "mdbsql.h"
 
 MdbSQL *g_sql;
@@ -10,10 +28,16 @@ MdbSQL *g_sql;
 	int ival;
 }
 
-%token NAME PATH NUMBER STRING
+
+
+%token <name> NAME PATH STRING NUMBER 
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE
+
+%type <name> database
+%type <name> constant
+%type <ival> operator
 
 %%
 
@@ -22,7 +46,7 @@ query:
 			mdb_sql_select(g_sql);	
 		}
 	|	CONNECT TO database { 
-			mdb_sql_open(g_sql, $3.name); free($3.name); 
+			mdb_sql_open(g_sql, $3); free($3); 
 		}
 	|	DISCONNECT { 
 			mdb_sql_close(g_sql);
@@ -47,28 +71,28 @@ sarg_list:
 
 sarg:
 	NAME operator constant	{ 
-				mdb_sql_add_sarg(g_sql, $1.name, $2.ival, $3.name);
-				free($1.name);
-				free($3.name);
+				mdb_sql_add_sarg(g_sql, $1, $2, $3);
+				free($1);
+				free($3);
 				}
 	| constant operator NAME {
-				mdb_sql_add_sarg(g_sql, $3.name, $2.ival, $1.name);
-				free($1.name);
-				free($3.name);
+				mdb_sql_add_sarg(g_sql, $3, $2, $1);
+				free($1);
+				free($3);
 				}
 	;
 
 operator:
-	'='	{ $$.ival = MDB_EQUAL; }
-	| '>'	{ $$.ival = MDB_GT; }
-	| '<'	{ $$.ival = MDB_LT; }
-	| LTEQ	{ $$.ival = MDB_LTEQ; }
-	| GTEQ	{ $$.ival = MDB_GTEQ; }
-	| LIKE	{ $$.ival = MDB_LIKE; }
+	'='	{ $$ = MDB_EQUAL; }
+	| '>'	{ $$ = MDB_GT; }
+	| '<'	{ $$ = MDB_LT; }
+	| LTEQ	{ $$ = MDB_LTEQ; }
+	| GTEQ	{ $$ = MDB_GTEQ; }
+	| LIKE	{ $$ = MDB_LIKE; }
 	;
 constant:
-	NUMBER { $$.name = $1.name; }
-	| STRING { $$.name = $1.name; }
+	NUMBER { $$ = $1; }
+	| STRING { $$ = $1; }
 	;
 
 database:
@@ -76,7 +100,7 @@ database:
 	|	NAME 
 
 table:
-	NAME { mdb_sql_add_table(g_sql, $1.name); free($1.name); }
+	NAME { mdb_sql_add_table(g_sql, $1); free($1); }
 	;
 
 column_list:
@@ -86,7 +110,7 @@ column_list:
 	;
 	 
 column:
-	NAME { mdb_sql_add_column(g_sql, $1.name); free($1.name); }
+	NAME { mdb_sql_add_column(g_sql, $1); free($1); }
 	;
 
 %%

@@ -109,6 +109,8 @@ typedef struct {
 	char		db_passwd[14];
 	MdbBackend	*default_backend;
 	char			*backend_name;
+	/* offset to row count on data pages...version dependant */
+	guint16		row_count_offset; 
 } MdbHandle; 
 
 typedef struct {

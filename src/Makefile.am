@@ -1,4 +1,4 @@
-SUBDIRS	=	libmdb util extras sql
+SUBDIRS	=	libmdb sql util extras 
 
 DEFDIR	=	$(prefix)
 

@@ -1,7 +1,7 @@
 #define NAME 257
 #define PATH 258
-#define NUMBER 259
-#define STRING 260
+#define STRING 259
+#define NUMBER 260
 #define SELECT 261
 #define FROM 262
 #define WHERE 263

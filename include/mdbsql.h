@@ -17,6 +17,10 @@ typedef struct {
 typedef struct {
 	char *name;
 	int  disp_size;
+	void *bind_addr;   /* if !NULL then cp parameter to here */
+	int  bind_type;
+	int  *bind_len;
+	int  bind_max;
 } MdbSQLColumn;
 
 typedef struct {
@@ -28,6 +32,8 @@ typedef struct {
 	char *col_name;
 	MdbSarg *sarg;
 } MdbSQLSarg;
+
+char *g_input_ptr;
 
 #undef YY_INPUT
 #define YY_INPUT(b, r, ms) (r = mdb_sql_yyinput(b, ms));

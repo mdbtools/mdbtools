@@ -48,11 +48,12 @@ int offset;
 int rows;
 int i,j;
 
-	rows = mdb_get_int16(mdb, 8);
+	rows = mdb_get_int16(mdb, mdb->row_count_offset);
 
 	if (rowid < 0 || rowid > rows) return NULL;
 
-	offset = mdb_get_int16(mdb, 10 + 2 * rowid);
+	offset = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + 2 * rowid);
+	if (mdb->jet_version==MDB_VER_JET4) offset++;
 	/* 
 	** ??? this happens, don't know what it means 
 	*/
@@ -73,6 +74,7 @@ fprintf(stdout,"\n");
 		if (j<=MDB_MAX_OBJ_NAME) {
 			entry->object_name[j++]=mdb->pg_buf[i];
 		}
+		if (mdb->jet_version==MDB_VER_JET4) i++;
 	}
 	entry->object_name[j] = '\0';
 	entry->kkd_pg = mdb_get_int16(mdb,offset+31+strlen(entry->object_name)+7);
@@ -82,7 +84,7 @@ fprintf(stdout,"\n");
 }
 int mdb_catalog_rows(MdbHandle *mdb)
 {
-	return mdb_get_int16(mdb, 0x08);
+	return mdb_get_int16(mdb, mdb->row_count_offset);
 }
 GArray *mdb_read_catalog(MdbHandle *mdb, int obj_type)
 {

@@ -1,9 +1,9 @@
-bin_PROGRAMS	=	mdb-sql
+lib_LTLIBRARIES	=	libmdbsql.la
+libmdbsql_la_SOURCES=	mdbsql.c parser.y lexer.l
 INCLUDES	=	-I$(top_srcdir)/include `glib-config --cflags`
+LIBS	=	`glib-config --libs`
 LDADD	=	../libmdb/libmdb.la 
-LIBS	=	`glib-config --libs` $(READLINE_LIBS) @LEXLIB@
-mdb_sql_SOURCES	= mdbsql.c main.c parser.y lexer.l 
-YACC = yacc -d
+#YACC = yacc -d
 
 dist-hook:
 	rm -f $(distdir)/parser.c $(distdir)/parser.h $(distdir)/lexer.c

@@ -10,12 +10,6 @@ AM_PROG_LIBTOOL
 AM_PROG_LEX
 AC_PROG_YACC
 
-dnl Checks for libraries.
-dnl Replace `main' with a function in -libs:
-AC_CHECK_LIB(ibs, main)
-dnl Replace `main' with a function in -lmdb:
-AC_CHECK_LIB(mdb, mdb_free_handle)
-
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
@@ -45,4 +39,4 @@ LDFLAGS=$OLDLDFLAGS
 
 AC_SUBST(READLINE_LIBS)
 
-AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile)
+AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile)

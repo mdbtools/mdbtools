@@ -75,16 +75,17 @@ READLINE_LIBS =  -lncurses -lreadline
 VERSION = 0.3
 YACC = bison -y
 
-bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header prtable prcat prdata prkkd prdump
+bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql prtable prcat prdata prkkd prdump 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
+LIBS = `glib-config --libs` $(READLINE_LIBS) -lfl 
 LDADD = ../libmdb/libmdb.la 
-LIBS = `glib-config --libs`
+mdb_sql_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DHAVE_LIBMDB=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_WORDEXP_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
+DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_WORDEXP_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
 CPPFLAGS = 
 LDFLAGS = 
 mdb_export_SOURCES = mdb-export.c
@@ -117,6 +118,10 @@ mdb_header_OBJECTS =  mdb-header.o
 mdb_header_LDADD = $(LDADD)
 mdb_header_DEPENDENCIES =  ../libmdb/libmdb.la
 mdb_header_LDFLAGS = 
+mdb_sql_SOURCES = mdb-sql.c
+mdb_sql_OBJECTS =  mdb-sql.o
+mdb_sql_DEPENDENCIES =  ../libmdb/libmdb.la ../sql/libmdbsql.la
+mdb_sql_LDFLAGS = 
 prtable_SOURCES = prtable.c
 prtable_OBJECTS =  prtable.o
 prtable_LDADD = $(LDADD)
@@ -155,11 +160,11 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 TAR = gtar
 GZIP_ENV = --best
 DEP_FILES =  .deps/mdb-array.P .deps/mdb-export.P .deps/mdb-header.P \
-.deps/mdb-parsecsv.P .deps/mdb-schema.P .deps/mdb-tables.P \
-.deps/prcat.P .deps/prdata.P .deps/prdump.P .deps/prkkd.P \
-.deps/prtable.P
-SOURCES = mdb-export.c mdb-array.c mdb-schema.c mdb-tables.c mdb-parsecsv.c mdb-header.c prtable.c prcat.c prdata.c prkkd.c prdump.c
-OBJECTS = mdb-export.o mdb-array.o mdb-schema.o mdb-tables.o mdb-parsecsv.o mdb-header.o prtable.o prcat.o prdata.o prkkd.o prdump.o
+.deps/mdb-parsecsv.P .deps/mdb-schema.P .deps/mdb-sql.P \
+.deps/mdb-tables.P .deps/prcat.P .deps/prdata.P .deps/prdump.P \
+.deps/prkkd.P .deps/prtable.P
+SOURCES = mdb-export.c mdb-array.c mdb-schema.c mdb-tables.c mdb-parsecsv.c mdb-header.c mdb-sql.c prtable.c prcat.c prdata.c prkkd.c prdump.c
+OBJECTS = mdb-export.o mdb-array.o mdb-schema.o mdb-tables.o mdb-parsecsv.o mdb-header.o mdb-sql.o prtable.o prcat.o prdata.o prkkd.o prdump.o
 
 all: all-redirect
 .SUFFIXES:
@@ -252,6 +257,10 @@ mdb-parsecsv: $(mdb_parsecsv_OBJECTS) $(mdb_parsecsv_DEPENDENCIES)
 mdb-header: $(mdb_header_OBJECTS) $(mdb_header_DEPENDENCIES)
 	@rm -f mdb-header
 	$(LINK) $(mdb_header_LDFLAGS) $(mdb_header_OBJECTS) $(mdb_header_LDADD) $(LIBS)
+
+mdb-sql: $(mdb_sql_OBJECTS) $(mdb_sql_DEPENDENCIES)
+	@rm -f mdb-sql
+	$(LINK) $(mdb_sql_LDFLAGS) $(mdb_sql_OBJECTS) $(mdb_sql_LDADD) $(LIBS)
 
 prtable: $(prtable_OBJECTS) $(prtable_DEPENDENCIES)
 	@rm -f prtable

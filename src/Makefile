@@ -75,7 +75,7 @@ READLINE_LIBS =  -lncurses -lreadline
 VERSION = 0.3
 YACC = bison -y
 
-SUBDIRS = libmdb util extras sql
+SUBDIRS = libmdb sql util extras 
 
 DEFDIR = $(prefix)
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
