@@ -102,6 +102,7 @@ void mdb_sql_free_column(MdbSQLColumn *c)
 {
 	if (c->name) g_free(c->name);
 	g_free(c);
+	c = NULL;
 }
 MdbSQLColumn *mdb_sql_alloc_column()
 {
@@ -115,6 +116,7 @@ void mdb_sql_free_table(MdbSQLTable *t)
 {
 	if (t->name) g_free(t->name);
 	g_free(t);
+	t = NULL;
 }
 MdbSQLTable *mdb_sql_alloc_table()
 {
@@ -190,6 +192,7 @@ mdb_sql_free_tree(MdbSargNode *tree)
 	if (tree->left) mdb_sql_free_tree(tree->left);
 	if (tree->right) mdb_sql_free_tree(tree->right);
 	g_free(tree);
+	tree = NULL;
 }
 void
 mdb_sql_push_node(MdbSQL *sql, MdbSargNode *node)
@@ -451,7 +454,6 @@ MdbSQLTable *t;
 	}
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
-		sql->sarg_tree = NULL;
 	}
 	g_list_free(sql->sarg_stack);
 	sql->sarg_stack = NULL;
@@ -470,7 +472,6 @@ MdbSQLTable *t;
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
 		mdb_free_tabledef(sql->cur_table);
-		sql->cur_table = NULL;
 	}
 	if (sql->kludge_ttable_pg) {
 		g_free(sql->kludge_ttable_pg);
@@ -486,7 +487,6 @@ MdbSQLTable *t;
 	}
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
-		sql->sarg_tree = NULL;
 	}
 	g_list_free(sql->sarg_stack);
 	sql->sarg_stack = NULL;

@@ -59,6 +59,7 @@ mdb_free_props(MdbProperties *props)
 
 	if (props->name) g_free(props->name);
 	g_free(props);
+	props = NULL;
 }
 MdbProperties *
 mdb_alloc_props()

@@ -1,3 +1,8 @@
+Sat Apr 24 15:27:51 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/file.c:
+	* src/libmdb/props.c
+	* src/sql/mdbsql.c: Setting pointers to NULL after freeing
+
 Sat Apr 24 00:02:14 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/mem.c:
 	* src/libmdb/catalog.c: Setting various pointers to NULL after freeing.
