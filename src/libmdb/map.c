@@ -26,16 +26,16 @@
 static guint32 
 mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
-	unsigned int pgnum, i, bitn;
+	guint32 pgnum, i, usage_bitlen;
+	unsigned char *usage_bitmap;
 
-	pgnum = mdb_get_int32(map,1);
-	/* the first 5 bytes of the usage map mean something */
-	for (i=5;i<map_sz;i++) {
-		for (bitn=0;bitn<8;bitn++) {
-			if ((map[i] & (1 << bitn)) && (pgnum > start_pg)) {
-				return pgnum;
-			}
-			pgnum++;
+	pgnum = mdb_get_int32(map, 1);
+	usage_bitmap = map + 5;
+	usage_bitlen = (map_sz - 5) * 8;
+
+	for (i=start_pg-pgnum+1; i<usage_bitlen; i++) {
+		if (usage_bitmap[i/8] & (1 << (i%8))) {
+			return pgnum + i;
 		}
 	}
 	/* didn't find anything */
@@ -44,32 +44,42 @@ mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guin
 static int 
 mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
-	guint32 pgnum, i, j, bitn, map_pg;
+	guint32 map_ind, max_map_pgs, offset, usage_bitlen;
 
-	pgnum = 0;
-	//printf("map size %ld\n", table->map_sz);
-	for (i=1;i<map_sz-1;i+=4) {
-		map_pg = mdb_get_int32(map, i);
-		//printf("loop %d pg %ld %02x%02x%02x%02x\n",i, map_pg,table->usage_map[i],table->usage_map[i+1],table->usage_map[i+2],table->usage_map[i+3]);
+	/*
+	* start_pg will tell us where to (re)start the scan
+	* for the next data page.  each usage_map entry points to a
+	* 0x05 page which bitmaps (mdb->fmt->pg_size - 4) * 8 pages.
+	*
+	* map_ind gives us the starting usage_map entry
+	* offset gives us a page offset into the bitmap
+	*/
+	usage_bitlen = (mdb->fmt->pg_size - 4) * 8;
+	max_map_pgs = (map_sz - 1) / 4;
+	map_ind = (start_pg + 1) / usage_bitlen;
+	offset = (start_pg + 1) % usage_bitlen;
 
-		if (!map_pg) continue;
+	for (; map_ind<max_map_pgs; map_ind++) {
+		unsigned char *usage_bitmap;
+		guint32 i, map_pg;
 
+		if (!(map_pg = mdb_get_int32(map, (map_ind*4)+1))) {
+			continue;
+		}
 		if(mdb_read_alt_pg(mdb, map_pg) != mdb->fmt->pg_size) {
 			fprintf(stderr, "Oops! didn't get a full page at %d\n", map_pg);
 			exit(1);
 		} 
-		//printf("reading page %ld\n",map_pg);
-		for (j=4;j<mdb->fmt->pg_size;j++) {
-			for (bitn=0;bitn<8;bitn++) {
-				if (mdb->alt_pg_buf[j] & 1 << bitn && pgnum > start_pg) {
-					return pgnum;
-				}
-				pgnum++;
+
+		usage_bitmap = mdb->alt_pg_buf + 4;
+		for (i=offset; i<usage_bitlen; i++) {
+			if (usage_bitmap[i/8] & (1 << (i%8))) {
+				return map_ind*usage_bitlen + i;
 			}
 		}
+		offset = 0;
 	}
 	/* didn't find anything */
-	//printf("returning 0\n");
 	return 0;
 }
 guint32 
