@@ -48,19 +48,3 @@ void mdb_exit()
 {
 	mdb_remove_backends();
 }
-
-/* private function */
-MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)
-{
-	mdb->stats = g_malloc0(sizeof(MdbStatistics));
-	return mdb->stats;
-/* private function */
-}
-/* private function */
-void 
-mdb_free_stats(MdbHandle *mdb)
-{
-	if (!mdb->stats) return;
-	g_free(mdb->stats);
-	mdb->stats = NULL;
-}

@@ -2,6 +2,9 @@ Wed Jun 23 07:30:17 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c:
 	* src/libmdb/mem.c
 	* include/mdbtools.h: Move table and column functions to table.c
+	* src/libmdb/stats.c:
+	* src/libmdb/mem.c
+	* include/mdbtools.h: Move statistics functions to stats.c
 
 Tue Jun 22 22:02:02 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-schema.c: Fix a memory leak

@@ -382,8 +382,6 @@ typedef struct {
 /* mem.c */
 extern void mdb_init();
 extern void mdb_exit();
-extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
-extern void mdb_free_stats(MdbHandle *mdb);
 
 /* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -484,6 +482,8 @@ extern void mdb_free_indices(GPtrArray *indices);
 
 
 /* stats.c */
+extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
+extern void mdb_free_stats(MdbHandle *mdb);
 extern void mdb_stats_on(MdbHandle *mdb);
 extern void mdb_stats_off(MdbHandle *mdb);
 extern void mdb_dump_stats(MdbHandle *mdb);
