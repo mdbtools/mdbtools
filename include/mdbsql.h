@@ -46,6 +46,7 @@ char *g_input_ptr;
 #undef YY_INPUT
 #define YY_INPUT(b, r, ms) (r = mdb_sql_yyinput(b, ms));
 
+extern MdbSQL *_mdb_sql(MdbSQL *sql);
 extern MdbSQL *mdb_sql_init();
 extern MdbSQLSarg *mdb_sql_alloc_sarg();
 extern MdbSQLColumn *mdb_sql_alloc_column();
@@ -61,5 +62,6 @@ extern void mdb_sql_reset(MdbSQL *sql);
 extern void mdb_sql_listtables(MdbSQL *sql);
 extern void mdb_sql_select(MdbSQL *sql);
 extern void mdbsql_bind_all(MdbSQL *sql);
+extern void mdb_sql_dump_node(MdbSargNode *node, int level);
 
 #endif

@@ -26,6 +26,7 @@
 #endif
 
 #define MDB_DEBUG_OLE 0
+#define OFFSET_MASK 0x1fff
 
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
@@ -33,6 +34,13 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
 
+static char date_fmt[64] = "%x %X";
+
+void mdb_set_date_fmt(const char *fmt)
+{
+		date_fmt[63] = 0; 
+		strncpy(date_fmt, fmt, 63);
+}
 
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
 {
@@ -73,29 +81,31 @@ mdb_find_end_of_row(MdbHandle *mdb, int row)
 	MdbFormatConstants *fmt = mdb->fmt;
 	int row_end;
 
-	/* Search the previous "row start" values for the first non-deleted one.
+	/* Search the previous "row start" values for the first non-'lookupflag' one.
 	* If we don't find one, then the end of the page is the correct value.
 	*/
 #if 1
 	if (row==0) {
 		row_end = fmt->pg_size - 1;
 	} else {
-		row_end = (mdb_pg_get_int16(mdb, ((fmt->row_count_offset + 2) + (row - 1) * 2)) & 0x0FFF) - 1;
+		row_end = (mdb_pg_get_int16(mdb, ((fmt->row_count_offset + 2) + (row - 1) * 2)) & OFFSET_MASK) - 1;
 	}
 	return row_end;
 #else
+		int i, row_start;
+
+		/* if lookupflag is	not set, it's good (deleteflag is ok) */
         for (i = row - 1; i >= 0; i--) {
                 row_start = mdb_pg_get_int16(mdb, ((fmt->row_count_offset + 2) + i * 2));
                 if (!(row_start & 0x8000)) {
                         break;
                 }
         }
-        row_start &= 0x0FFF;
 
         if (i == -1) {
                 row_end = fmt->pg_size - 1;
         } else {
-                row_end = row_start - 1;
+                row_end = (row_start & OFFSET_MASK) - 1;
         }
 	return row_end;
 #endif
@@ -195,13 +205,16 @@ int mdb_read_row(MdbTableDef *table, int row)
 	MdbField fields[256];
 	int num_fields;
 
+	if (table->num_rows <= row) 
+			return 0;
+
 	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
 
 	delflag = lookupflag = 0;
 	if (row_start & 0x8000) lookupflag++;
 	if (row_start & 0x4000) delflag++;
-	row_start &= 0x0FFF; /* remove flags */
+	row_start &= OFFSET_MASK; /* remove flags */
 #if MDB_DEBUG
 	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
 		row, row_start, row_end,
@@ -284,7 +297,7 @@ int mdb_read_row(MdbTableDef *table, int row)
 	}
 
 	/* if fixed columns add up to more than 256, we need a jump */
-       if (col_start >= 256) {
+       if (IS_JET3(mdb) && col_start >= 256) {
                num_of_jumps++;
                jumps_used++;
                row_start = row_start + col_start - (col_start % 256);
@@ -423,25 +436,48 @@ int pgnum, i, bitn;
 int 
 mdb_read_next_dpg_by_map1(MdbTableDef *table)
 {
-MdbCatalogEntry *entry = table->entry;
-MdbHandle *mdb = entry->mdb;
-guint32 pgnum, i, j, bitn, map_pg;
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
+	guint32 pgnum, i, j, bitn, map_pg, map_ind, offset, bit_offset;
 
-	pgnum = 0;
+	/*
+	* table->cur_phys_pg will tell us where to (re)start the scan
+	* for the next data page.  each usage_map entry points to a
+	* 0x05 page which bitmaps (mdb->fmt->pg_size - 4) * 8 pages.
+	*
+	* map_ind gives us the starting usage_map entry
+	* offset gives us a page offset into the bitmap (must be converted
+	* to bytes and bits).
+	*/
+	pgnum = table->cur_phys_pg + 1;
+	map_ind = pgnum / ((mdb->fmt->pg_size - 4) * 8);
+	offset = pgnum % ((mdb->fmt->pg_size - 4) * 8);
+	bit_offset = offset % 8;
+		
 	//printf("map size %ld\n", table->map_sz);
-	for (i=1;i<table->map_sz-1;i+=4) {
+	for (i = 4 * map_ind + 1;i < table->map_sz-1; i += 4) {
 		map_pg = mdb_get_int32(table->usage_map, i);
 		//printf("loop %d pg %ld %02x%02x%02x%02x\n",i, map_pg,table->usage_map[i],table->usage_map[i+1],table->usage_map[i+2],table->usage_map[i+3]);
 
-		if (!map_pg) continue;
+		/* if the usage_map entry is empty, skip it, but advance the page counter */
+		if (!map_pg) {
+			pgnum += (mdb->fmt->pg_size - 4) * 8;
+			continue;
+		}
 
 		if(mdb_read_alt_pg(mdb, map_pg) != mdb->fmt->pg_size) {
 			fprintf(stderr, "Oops! didn't get a full page at %d\n", map_pg);
 			exit(1);
 		} 
+
 		//printf("reading page %ld\n",map_pg);
-		for (j=4;j<mdb->fmt->pg_size;j++) {
-			for (bitn=0;bitn<8;bitn++) {
+		
+		/* first time through, start j, bitn based on the starting offset
+		 * after that, reset offset to 0 to start at the beginning of the page/byte
+		 */
+
+		for (j=4 + offset;j<mdb->fmt->pg_size;j++) {
+			for (bitn=bit_offset;bitn<8;bitn++) {
 				if (mdb->alt_pg_buf[j] & 1 << bitn && pgnum > table->cur_phys_pg) {
 					table->cur_phys_pg = pgnum;
 					if (!mdb_read_pg(mdb, pgnum)) {
@@ -453,7 +489,9 @@ guint32 pgnum, i, j, bitn, map_pg;
 				}
 				pgnum++;
 			}
+			bit_offset = 0;
 		}
+		offset = 0;
 	}
 	/* didn't find anything */
 	//printf("returning 0\n");
@@ -940,12 +978,26 @@ gint32 l;
 	}
 	return text;
 }
+
+static int trim_trailing_zeros(char * buff, int n)
+{
+	char * p = buff + n - 1;
+
+	while (p >= buff && *p == '0')
+		*p-- = '\0';
+
+	if (*p == '.')
+		*p = '\0';
+}
+				
 char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
 {
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
 time_t t;
-int i;
+int i, n;
+float tf;
+double td;
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -965,11 +1017,15 @@ int i;
 			return text;
 		break;
 		case MDB_FLOAT:
-			sprintf(text,"%f",mdb_get_single(buf, start));
+			tf = mdb_get_single(mdb, start);
+			n = sprintf(text,"%.*f",FLT_DIG - (int)ceil(log10(tf)), tf);
+			trim_trailing_zeros(text, n);
 			return text;
 		break;
 		case MDB_DOUBLE:
-			sprintf(text,"%f",mdb_get_double(buf, start));
+			td = mdb_get_double(mdb, start);
+			n = sprintf(text,"%.*f",DBL_DIG - (int)ceil(log10(td)), td);
+			trim_trailing_zeros(text, n);
 			return text;
 		break;
 		case MDB_TEXT:
@@ -1001,7 +1057,7 @@ int i;
 		break;
 		case MDB_SDATETIME:
 			t = (long int)((mdb_get_double(buf, start) - 25569.0) * 86400.0);
-			strftime(text, MDB_BIND_SIZE, "%x %X",
+			strftime(text, MDB_BIND_SIZE, date_fmt,
 				(struct tm*)gmtime(&t));
 			return text;
 

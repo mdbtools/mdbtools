@@ -29,6 +29,7 @@
 
 void dump_results(MdbSQL *sql);
 void dump_results_pp(MdbSQL *sql);
+int yyparse(void);
 
 #if SQL
 
@@ -46,7 +47,9 @@ char *buf, line[1000];
 int i = 0;
 
 	printf("%s",prompt);
-	fgets(line,1000,stdin);
+	if (! fgets(line,1000,stdin)) {
+		return NULL;
+	}
 	for (i=strlen(line);i>0;i--) {
 		if (line[i]=='\n') {
 			line[i]='\0';
@@ -58,7 +61,7 @@ int i = 0;
 
 	return buf;
 }
-add_history(char *s)
+void add_history(char *s)
 {
 }
 #endif
@@ -230,7 +233,7 @@ unsigned long row_count = 0;
 		else if (row_count==1)
 			fprintf(stdout, "1 Row retrieved\n");
 		else 
-			fprintf(stdout, "%d Rows retrieved\n", row_count);
+			fprintf(stdout, "%lu Rows retrieved\n", row_count);
 	}
 	mdb_sql_reset(sql);
 }
@@ -284,7 +287,7 @@ unsigned long row_count = 0;
 		else if (row_count==1)
 			fprintf(stdout, "1 Row retrieved\n");
 		else 
-			fprintf(stdout, "%d Rows retrieved\n", row_count);
+			fprintf(stdout, "%lu Rows retrieved\n", row_count);
 	}
 
 	/* clean up */
@@ -372,7 +375,8 @@ FILE *in = NULL, *out = NULL;
 	} else {
 		sprintf(prompt,"1 => ");
 		s=readline(prompt);
-		if (!strcmp(s,"exit") || !strcmp(s,"quit") || !strcmp(s,"bye"))
+		if (!s) done = 1;
+		if (s && (!strcmp(s,"exit") || !strcmp(s,"quit") || !strcmp(s,"bye")))
 			done = 1;
 	}
 	while (!done) {
@@ -398,7 +402,7 @@ FILE *in = NULL, *out = NULL;
 			/* preserve line numbering for the parser */
 			strcat(mybuf,"\n");
 		}
-		free(s);
+		if (s) free(s);
 		if (in) {
 			s=malloc(256);
 			if (!fgets(s, 256, in)) {
@@ -411,15 +415,16 @@ FILE *in = NULL, *out = NULL;
 		} else {
 			sprintf(prompt,"%d => ",++line);
 			s=readline(prompt);
+			if (!s) done = 1;
 		}
-		if (!strcmp(s,"exit") || !strcmp(s,"quit") || !strcmp(s,"bye")) {
+		if( s && (!strcmp(s,"exit") || !strcmp(s,"quit") || !strcmp(s,"bye"))) {
 			done = 1;
 		}
 	}
 	mdb_sql_exit(sql);	
 
 	free(mybuf);
-	free(s);
+	if (s) free(s);
 	myexit(0);
 
 	return 0; /* make gcc -Wall happy */

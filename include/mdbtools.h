@@ -138,7 +138,14 @@ GHashTable	*mdb_backends;
 typedef struct mdbindex MdbIndex;
 
 typedef struct {
-	char **types_table;
+	char *name;
+	unsigned char needs_length; /* or precision */
+	unsigned char needs_scale;
+	unsigned char needs_quotes;
+} MdbBackendType;
+		
+typedef struct {
+	 MdbBackendType *types_table;
 } MdbBackend;
 
 typedef struct {
@@ -400,12 +407,14 @@ extern void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr);
 extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
 extern int mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern int mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
+extern void mdb_set_date_fmt(const char *);
 
 /* dump.c */
 extern void buffer_dump(const unsigned char* buf, int start, int end);
 
 /* backend.c */
 extern char *mdb_get_coltype_string(MdbBackend *backend, int col_type);
+extern int  mdb_coltype_takes_length(MdbBackend *backend, int col_type);
 extern void mdb_init_backends();
 extern void mdb_register_backend(MdbBackend *backend, char *backend_name);
 extern int  mdb_set_default_backend(MdbHandle *mdb, char *backend_name);

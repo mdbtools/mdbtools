@@ -24,7 +24,7 @@
 #endif
 
 MdbFormatConstants MdbJet4Constants = {
-	4096, 0x0c, 12, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59
+	4096, 0x0c, 16, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59
 };
 MdbFormatConstants MdbJet3Constants = {
 	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39
@@ -364,7 +364,7 @@ mdb_get_double(unsigned char *buf, int offset)
 double 
 mdb_pg_get_double(MdbHandle *mdb, int offset)
 {
-	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
+	if (offset <0 || offset+8 > mdb->fmt->pg_size) return -1;
 	mdb->cur_pos+=8;
 	return mdb_get_double(mdb->pg_buf, offset);
 }

@@ -18,6 +18,7 @@
  */
 
 #include "mdbtools.h"
+#include <locale.h>
 
 #ifdef DMALLOC
 #include "dmalloc.h"

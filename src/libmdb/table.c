@@ -157,14 +157,14 @@ read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len)
 
 GPtrArray *mdb_read_columns(MdbTableDef *table)
 {
-MdbHandle *mdb = table->entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
-MdbColumn col, *pcol;
-int len, i,j;
-unsigned char low_byte, high_byte;
-int cur_col, cur_name;
-int name_sz;
-GSList	*slist = NULL;
+	MdbHandle *mdb = table->entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
+	MdbColumn col, *pcol;
+	int len, i,j;
+	unsigned char low_byte, high_byte;
+	int cur_col, cur_name;
+	int name_sz;
+	GSList	*slist = NULL;
 	
 	table->columns = g_ptr_array_new();
 
@@ -182,23 +182,28 @@ GSList	*slist = NULL;
 	buffer_dump(mdb->pg_buf, cur_col ,cur_col + 18); */
 #endif
 		memset(&col, 0, sizeof(col));
-		col.col_num = mdb->pg_buf[cur_col + fmt->col_num_offset];
 
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
 
+		read_pg_if(mdb, &cur_col, fmt->col_num_offset); // col_num_offset == 1
+		col.col_num = mdb->pg_buf[cur_col + fmt->col_num_offset];
+
+		/* FIXME: can this be right in Jet3 and Jet4? */
 		if (col.col_type == MDB_NUMERIC) {
+			read_pg_if(mdb, &cur_col, 11);
 			col.col_prec = mdb->pg_buf[cur_col + 11];
+			read_pg_if(mdb, &cur_col, 12);
 			col.col_scale = mdb->pg_buf[cur_col + 12];
 		}
 
-		read_pg_if(mdb, &cur_col, 13);
+		read_pg_if(mdb, &cur_col, fmt->col_fixed_offset); // col_fixed_offset == 13 or 15
 		col.is_fixed = mdb->pg_buf[cur_col + fmt->col_fixed_offset] & 
-			0x01 ? 1 : 0;
+				0x01 ? 1 : 0;
 		if (col.col_type != MDB_BOOL) {
-			read_pg_if(mdb, &cur_col, 17);
+			read_pg_if(mdb, &cur_col, fmt->col_size_offset); // col_size_offset == 16 or 23
 			low_byte = mdb->pg_buf[cur_col + fmt->col_size_offset];
-			read_pg_if(mdb, &cur_col, 18);
+			read_pg_if(mdb, &cur_col, fmt->col_size_offset + 1);
 			high_byte = mdb->pg_buf[cur_col + fmt->col_size_offset + 1];
 			col.col_size += high_byte * 256 + low_byte;
 		} else
@@ -239,13 +244,13 @@ GSList	*slist = NULL;
 				/* read the next pg */
 				mdb_read_pg(mdb, mdb_pg_get_int32(mdb,4)); 
 				cur_name = 8 - (fmt->pg_size - cur_name);
-				if (len % 2) cur_name++;
 				/* get the rest of the name */
-				for (j=0;j<len;j+=2) {
+				for (j=len;j<name_sz;j++) {
+					if (!(j%2))
+						pcol->name[j/2]	= mdb->pg_buf[cur_name + j];
 				}
-				memcpy(&pcol->name[len], &mdb->pg_buf[cur_name], name_sz - len);
 			}
-			pcol->name[name_sz]='\0';
+			pcol->name[name_sz/2]='\0';
 
 			cur_name += name_sz;
 		} else if (IS_JET3(mdb)) {

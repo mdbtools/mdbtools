@@ -46,19 +46,19 @@ print_col(gchar *col_val, int quote_text, int col_type)
 int
 main(int argc, char **argv)
 {
-int i, j;
-MdbHandle *mdb;
-MdbCatalogEntry *entry;
-MdbTableDef *table;
-MdbColumn *col;
-/* doesn't handle tables > 256 columns.  Can that happen? */
-char *bound_values[256]; 
-char *delimiter = ",";
-char header_row = 1;
-char quote_text = 1;
-int  opt;
+	int i, j;
+	MdbHandle *mdb;
+	MdbCatalogEntry *entry;
+	MdbTableDef *table;
+	MdbColumn *col;
+	/* doesn't handle tables > 256 columns.  Can that happen? */
+	char *bound_values[256]; 
+	char *delimiter = ",";
+	char header_row = 1;
+	char quote_text = 1;
+	int  opt;
 
-	while ((opt=getopt(argc, argv, "HQd:"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQd:D:"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -69,6 +69,9 @@ int  opt;
 		case 'd':
 			delimiter = (char *) malloc(strlen(optarg)+1);
 			strcpy(delimiter, optarg);
+		break;
+		case 'D':
+			mdb_set_date_fmt(optarg);
 		break;
 		default:
 		break;

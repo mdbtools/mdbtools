@@ -17,35 +17,47 @@
  */
 
 /* this utility dumps the schema for an existing database */
+#include <ctype.h>
 #include "mdbtools.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
 
+static char *santize_name(char *str, int santize);
+
 int
 main (int argc, char **argv)
 {
-int   i, k;
-MdbHandle *mdb;
-MdbCatalogEntry *entry;
-MdbTableDef *table;
-MdbColumn *col;
-char		*the_relation;
-char *tabname = NULL;
-int opt;
+	int   i, k;
+	MdbHandle *mdb;
+	MdbCatalogEntry *entry;
+	MdbTableDef *table;
+	MdbColumn *col;
+	char		*the_relation;
+	char *tabname = NULL;
+	char *namespace = "";
+	int s = 0;
+	int opt;
 
- if (argc < 2) {
-   fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
-   exit (1);
- }
+	if (argc < 2) {
+		fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
+		exit (1);
+	}
 
-  while ((opt=getopt(argc, argv, "T:"))!=-1) {
-     switch (opt) {
-       case 'T':
-         tabname = (char *) malloc(strlen(optarg)+1);
-         strcpy(tabname, optarg);
-         break;
+	while ((opt=getopt(argc, argv, "T:N:S:"))!=-1) {
+		switch (opt) {
+			case 'T':
+				tabname = (char *) malloc(strlen(optarg)+1);
+				strcpy(tabname, optarg);
+			break;
+			case 'N':
+				namespace = (char *) malloc(strlen(optarg)+1);
+				strcpy(namespace, optarg);
+			break;
+			case 'S':
+				s = 1;
+			break;
      }
   }
  
@@ -54,7 +66,7 @@ int opt;
  /* open the database */
 
  mdb = mdb_open (argv[optind]);
- if (argc - optind >2) {
+ if (argc - optind >= 2) {
 	if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
 		fprintf(stderr,"Invalid backend type\n");
 		mdb_exit();
@@ -86,10 +98,10 @@ int opt;
 	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
 	     {
 	       /* drop the table if it exists */
-	       fprintf (stdout, "DROP TABLE %s;\n", entry->object_name);
+	       fprintf (stdout, "DROP TABLE %s%s;\n", namespace, sanitize_name(entry->object_name,s));
 
 	       /* create the table */
-	       fprintf (stdout, "CREATE TABLE %s\n", entry->object_name);
+	       fprintf (stdout, "CREATE TABLE %s%s\n", sanitize_name(entry->object_name,s));
 	       fprintf (stdout, " (\n");
 	       	       
 	       table = mdb_read_table (entry);
@@ -99,15 +111,17 @@ int opt;
 
 	       /* loop over the columns, dumping the names and types */
 
-	       for (k = 0; k < table->num_cols; k++)
-		 {
-		   col = g_ptr_array_index (table->columns, k);
+		for (k = 0; k < table->num_cols; k++) {
+			col = g_ptr_array_index (table->columns, k);
 		   
-		   fprintf (stdout, "\t%s\t\t\t%s", col->name, 
-			    mdb_get_coltype_string (mdb->default_backend, col->col_type));
+			fprintf (stdout, "\t%s\t\t\t%s", sanitize_name(col->name,s), 
+				mdb_get_coltype_string (mdb->default_backend, col->col_type));
 		   
-		   if (col->col_size != 0)
-		     fprintf (stdout, " (%d)", col->col_size);
+			if (col->col_size != 0 && 
+				mdb_coltype_takes_length(mdb->default_backend, col->col_type)) {
+
+		    	fprintf (stdout, " (%d)", col->col_size);
+			}
 		   
 		   if (k < table->num_cols - 1)
 		     fprintf (stdout, ", \n");
@@ -115,7 +129,7 @@ int opt;
 		     fprintf (stdout, "\n");
 		 }
 
-	       fprintf (stdout, "\n);\n");
+	       fprintf (stdout, ");\n");
 	       fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
 	       fprintf (stdout, "\n");
 	     }
@@ -135,5 +149,24 @@ int opt;
  mdb_exit();
 
  exit(0);
+}
+
+static char *sanitize_name(char *str, int sanitize)
+{
+	static char namebuf[256];
+	char *p = namebuf;
+
+	if (!sanitize)
+		return str;
+		
+	while (*str) {
+		*p = isalnum(*str) ? *str : '_';
+		p++;
+		str++;
+	}
+	
+	*p = 0;
+										
+	return namebuf;
 }
 
