@@ -112,9 +112,8 @@ gchar *titles[256];
 		return;
     }
     for (i=0;i<sql->num_columns;i++) {
-        bound_data[i] = (char *) malloc(MDB_BIND_SIZE);
-        bound_data[i][0] = '\0';
-        mdbsql_bind_column(sql, i+1, bound_data[i]);
+        bound_data[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+        mdb_sql_bind_column(sql, i+1, bound_data[i]);
 		sqlcol = g_ptr_array_index(sql->columns,i);
 		titles[i] = sqlcol->name;
 	}
@@ -132,7 +131,7 @@ gchar *titles[256];
 
 	/* free the memory used to bind */
 	for (i=0;i<sql->num_columns;i++) {
-		free(bound_data[i]);
+		g_free(bound_data[i]);
 	}
 
 	mdb_sql_reset(sql);

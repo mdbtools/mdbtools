@@ -105,8 +105,7 @@ char msg[100];
 
 	for (i=0;i<table->num_cols;i++) {
 		/* bind columns */
-		bound_data[i] = (char *) malloc(MDB_BIND_SIZE);
-		bound_data[i][0] = '\0';
+		bound_data[i] = (char *) g_malloc0(MDB_BIND_SIZE);
 		mdb_bind_column(table, i+1, bound_data[i], NULL);
 
 		/* display column titles */
@@ -134,7 +133,7 @@ char msg[100];
 
 	/* free the memory used to bind */
 	for (i=0;i<table->num_cols;i++) {
-		free(bound_data[i]);
+		g_free(bound_data[i]);
 	}
 
 	fclose(outfile);

@@ -448,8 +448,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	renderer = gtk_cell_renderer_text_new(); 
 
 	for (i=0;i<sql->num_columns;i++) { 
-		bound_data[i] = (char *) malloc(MDB_BIND_SIZE); 
-		bound_data[i][0] = '\0';
+		bound_data[i] = (char *) g_malloc0(MDB_BIND_SIZE); 
         	mdb_sql_bind_column(sql, i+1, bound_data[i], NULL);
 		sqlcol = g_ptr_array_index(sql->columns,i);
 		column = gtk_tree_view_column_new_with_attributes(sqlcol->name, renderer, "text", i, NULL); 
@@ -472,7 +471,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 
 	/* free the memory used to bind */
 	for (i=0;i<sql->num_columns;i++) {
-		free(bound_data[i]);
+		g_free(bound_data[i]);
 	}
 
 	mdb_sql_reset(sql);

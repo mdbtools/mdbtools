@@ -389,11 +389,11 @@ GtkCTreeNode *node, *container;
 		int namelen;
 
 		namelen = fbuf[newbase];
-		tmpstr = malloc(namelen + 1);
+		tmpstr = g_malloc(namelen + 1);
 		strncpy(tmpstr, &fbuf[newbase+1], namelen);
 		tmpstr[namelen]=0;
 		snprintf(str, 100, "Column %d: %s", i+1, tmpstr);
-		free(tmpstr);
+		g_free(tmpstr);
 		node = gmdb_debug_add_item(dbug, container, str, newbase + 1, newbase + namelen);
 		newbase += namelen + 1;
 	}

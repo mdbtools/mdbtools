@@ -24,6 +24,14 @@ Thu Dec 30 19:26:01 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/gmdb/table_def.c:
 	* src/gmdb2/debug.c:
 	* src/gmdb2/table_def.c: Replace malloc/memset with g_malloc0
+	* src/gmdb/debug.c:
+	* src/gmdb/sql.c:
+	* src/gmdb/table_data.c:
+	* src/gmdb/table_export.c:
+	* src/gmdb2/debug.c:
+	* src/gmdb2/sql.c:
+	* src/gmdb2/table_data.c:
+	* src/gmdb2/table_export.c: Replace malloc/free with g_malloc/g_free
 
 Thu Dec 30 06:36:25 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h: Fix MdbSargTreeFunc's typedef
