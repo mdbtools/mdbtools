@@ -65,7 +65,7 @@ main(int argc, char **argv)
 
 void dump_ole(MdbTableDef *table, char *colname, char *sargname)
 {
-int i, found = 0;
+unsigned int i, found = 0;
 char ole_data[200000];
 int len;
 MdbColumn *col;

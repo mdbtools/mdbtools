@@ -23,7 +23,7 @@
 int
 main(int argc, char **argv)
 {
-int i;
+unsigned int i;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 int found = 0;

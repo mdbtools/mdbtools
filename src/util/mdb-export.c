@@ -49,7 +49,7 @@ print_col(gchar *col_val, int quote_text, int col_type)
 int
 main(int argc, char **argv)
 {
-	int j;
+	unsigned int j;
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	MdbColumn *col;

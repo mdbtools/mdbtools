@@ -197,7 +197,7 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 {
 	MdbHandle *newmdb;
 	MdbCatalogEntry *entry, *data;
-	int i;
+	unsigned int i;
 
 	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
 	newmdb->stats = NULL;

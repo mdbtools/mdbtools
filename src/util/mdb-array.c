@@ -30,7 +30,7 @@
 int
 main (int argc, char **argv)
 {
-int j;
+unsigned int j;
 MdbHandle *mdb;
 MdbTableDef *table;
 MdbColumn *col;

@@ -30,7 +30,7 @@ static void generate_table_schema(MdbCatalogEntry *entry, char *namespace, int s
 int
 main (int argc, char **argv)
 {
-	int   i;
+	unsigned int   i;
 	MdbHandle *mdb;
 	MdbCatalogEntry *entry;
 	char		*the_relation;
@@ -131,7 +131,7 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 {
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
-	int i;
+	unsigned int i;
 	MdbColumn *col;
 
 	/* make sure it's a table (may be redundant) */

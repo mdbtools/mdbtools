@@ -219,7 +219,7 @@ typedef struct {
 	unsigned int  cur_pos;
 	unsigned char pg_buf[MDB_PGSIZE];
 	unsigned char alt_pg_buf[MDB_PGSIZE];
-	int		num_catalog;
+	unsigned int  num_catalog;
 	GPtrArray	*catalog;
 	MdbBackend	*default_backend;
 	char		*backend_name;
@@ -318,17 +318,17 @@ typedef struct {
 typedef struct {
 	MdbCatalogEntry *entry;
 	char	name[MDB_MAX_OBJ_NAME+1];
-	int	num_cols;
+	unsigned int    num_cols;
 	GPtrArray	*columns;
 	int	num_rows;
 	int	index_start;
-	int	num_real_idxs;
-	int	num_idxs;
+	unsigned int    num_real_idxs;
+	unsigned int    num_idxs;
 	GPtrArray	*indices;
 	guint32	first_data_pg;
 	guint32	cur_pg_num;
 	guint32	cur_phys_pg;
-	int	cur_row;
+	unsigned int    cur_row;
 	int  noskip_del;  /* don't skip deleted rows */
 	/* object allocation map */
 	guint32  map_base_pg;
@@ -479,6 +479,7 @@ extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
 extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
 extern void mdb_free_indices(GPtrArray *indices);
+void mdb_index_page_reset(MdbIndexPage *ipg);
 
 
 /* stats.c */
@@ -495,7 +496,7 @@ extern int mdb_like_cmp(char *s, char *r);
 extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
 extern guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
 extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
-extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int num_fields, MdbField *fields);
+extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
 extern int mdb_replace_row(MdbTableDef *table, int row, unsigned char *new_row, int new_row_size);
 extern int mdb_pg_get_freespace(MdbHandle *mdb);
 extern int mdb_update_row(MdbTableDef *table);

@@ -109,7 +109,7 @@ prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields, char *delim)
 	MdbColumn *col;
 	char delims[20];
 	char *s;
-	int file_cols;
+	unsigned int file_cols;
 
 	/*
 	 * pull apart the row and turn it into something respectable

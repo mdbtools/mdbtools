@@ -259,8 +259,8 @@ MdbSarg *sarg;
 }
 int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg)
 {
-MdbColumn *col;
-int i;
+	MdbColumn *col;
+	unsigned int i;
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index (table->columns, i);

@@ -207,7 +207,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *pcol;
 	unsigned char *col;
-	int i, cur_pos, name_sz;
+	unsigned int i;
+	int cur_pos, name_sz;
 	
 	table->columns = g_ptr_array_new();
 
@@ -311,7 +312,7 @@ MdbColumn *col;
 int coln;
 MdbIndex *idx;
 MdbHandle *mdb = entry->mdb;
-int i,bitn;
+unsigned int i, bitn;
 guint32 pgnum;
 
 	table = mdb_read_table(entry);

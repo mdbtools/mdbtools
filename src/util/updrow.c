@@ -72,8 +72,8 @@ int len;
 
 int bind_column(MdbTableDef *table, char *colname, unsigned char *data, int *len)
 {
-int i, found = 0;
-MdbColumn *col;
+	unsigned int i, found = 0;
+	MdbColumn *col;
 
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
@@ -91,7 +91,7 @@ void read_to_row(MdbTableDef *table, char *sargname)
 {
 	static MdbSargNode sarg;
 	char *sargcol, *sargop, *sargval;
-	int i;
+	unsigned int i;
 	MdbColumn *col;
 
 

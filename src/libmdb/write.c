@@ -76,8 +76,8 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 static int 
 mdb_is_col_indexed(MdbTableDef *table, int colnum)
 {
-int i, j;
-MdbIndex *idx;
+	unsigned int i, j;
+	MdbIndex *idx;
 
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
@@ -93,7 +93,7 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbColumn *col;
-	int i;
+	unsigned int i;
 	int var_cols = 0, row_var_cols, fixed_cols = 0, row_fixed_cols, num_cols;
 	int var_cols_found, fixed_cols_found, var_entry_pos;
 	int col_start, next_col;
@@ -213,7 +213,7 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbColumn *col;
-	int i;
+	unsigned int i;
 	int var_cols = 0, fixed_cols = 0, num_cols;
 	int row_var_cols = 0, row_fixed_cols = 0;
 	int var_cols_found, fixed_cols_found, var_entry_pos;
@@ -439,7 +439,7 @@ mdb_pack_null_mask(unsigned char *buffer, int num_fields, MdbField *fields)
 /* fields must be ordered with fixed columns first, then vars, subsorted by 
  * column number */
 static int
-mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, int num_fields, MdbField *fields)
+mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields)
 {
 	unsigned int pos = 0;
 	unsigned int var_cols = 0;
@@ -487,11 +487,11 @@ mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, int num_fields, Mdb
 }
 
 static int
-mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, int num_fields, MdbField *fields)
+mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields)
 {
 	unsigned int pos = 0;
 	unsigned int var_cols = 0;
-	int i;
+	unsigned int i;
 
 	row_buffer[pos++] = num_fields;
 
@@ -518,8 +518,8 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, int num_fields, Mdb
 	row_buffer[pos] = pos;
 	pos++;
 
-	for (i=num_fields-1;i>=(int)(num_fields - var_cols);i--) {
-		row_buffer[pos++] = fields[i].offset % 256;
+	for (i=num_fields;i>num_fields-var_cols;i--) {
+		row_buffer[pos++] = fields[i-1].offset % 256;
 	}
 
 	row_buffer[pos++] = var_cols;
@@ -529,7 +529,7 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, int num_fields, Mdb
 	return pos;
 }
 int
-mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int num_fields, MdbField *fields)
+mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int unsigned num_fields, MdbField *fields)
 {
 	if (IS_JET4(table->entry->mdb)) {
 		return mdb_pack_row4(table, row_buffer, num_fields, fields);
@@ -581,7 +581,7 @@ mdb_new_data_pg(MdbCatalogEntry *entry)
 int
 mdb_update_indexes(MdbTableDef *table, int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum)
 {
-	int i;
+	unsigned int i;
 	MdbIndex *idx;
 	
 	for (i=0;i<table->num_idxs;i++) {
@@ -741,14 +741,15 @@ int
 mdb_update_row(MdbTableDef *table)
 {
 int row_start, row_end;
-int i;
+unsigned int i;
 MdbColumn *col;
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
 MdbFormatConstants *fmt = mdb->fmt;
 MdbField fields[256];
 unsigned char row_buffer[4096];
-int old_row_size, new_row_size, delta, num_fields;
+int old_row_size, new_row_size, delta;
+unsigned int num_fields;
 
 	if (!mdb->f->writable) {
 		fprintf(stderr, "File is not open for writing\n");

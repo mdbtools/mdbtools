@@ -69,7 +69,7 @@ mdb_read_indices(MdbTableDef *table)
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbIndex *pidx;
-	int i, j;
+	unsigned int i, j;
 	int idx_num, key_num, col_num;
 	int cur_pos, name_sz, idx2_sz, type_offset;
 	int index_start_pg = mdb->cur_pg;
@@ -827,7 +827,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 MdbStrategy 
 mdb_choose_index(MdbTableDef *table, int *choice)
 {
-	int i;
+	unsigned int i;
 	MdbIndex *idx;
 	int cost = 0;
 	int least = 99;

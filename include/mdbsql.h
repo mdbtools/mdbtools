@@ -9,9 +9,9 @@
 typedef struct {
 	MdbHandle *mdb;
 	int all_columns;
-	int num_columns;
+	unsigned int num_columns;
 	GPtrArray *columns;
-	int num_tables;
+	unsigned int num_tables;
 	GPtrArray *tables;
 	MdbTableDef *cur_table;
 	MdbSargNode *sarg_tree;

@@ -167,12 +167,12 @@ do_set_cmd(MdbSQL *sql, char *s)
 }
 
 int
-read_file(char *s, int line, int *bufsz, char *mybuf)
+read_file(char *s, int line, unsigned int *bufsz, char *mybuf)
 {
 	char *fname;
 	FILE *in;
 	char buf[256];
-	int cursz = 0;	
+	unsigned int cursz = 0;	
 	int lines = 0;	
 
 	fname = s;
@@ -252,12 +252,9 @@ int i;
 void
 dump_results(MdbSQL *sql)
 {
-	int j;
+	unsigned int j;
 	MdbSQLColumn *sqlcol;
 	unsigned long row_count = 0;
-	int rows, rc, i;
-	MdbHandle *mdb = sql->mdb;
-	MdbFormatConstants *fmt = mdb->fmt;
 
 	if (headers) {
 		for (j=0;j<sql->num_columns-1;j++) {
@@ -292,12 +289,14 @@ dump_results(MdbSQL *sql)
 void 
 dump_results_pp(MdbSQL *sql)
 {
-	int j;
+	unsigned int j;
 	MdbSQLColumn *sqlcol;
 	unsigned long row_count = 0;
+	/*
 	int rows, rc, i;
 	MdbHandle *mdb = sql->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
+	*/
 
 	/* print header */
 	if (headers) {
@@ -381,7 +380,7 @@ char *s;
 char prompt[20];
 int line = 1;
 char *mybuf;
-int bufsz = 4096;
+unsigned int bufsz = 4096;
 int done = 0;
 MdbSQL *sql;
 int opt;
@@ -475,7 +474,7 @@ char *histpath;
 		} else {
 			while (strlen(mybuf) + strlen(s) > bufsz) {
 				bufsz *= 2;
-				mybuf = (char *) realloc(mybuf, bufsz);
+				mybuf = (char *) g_realloc(mybuf, bufsz);
 			}
 			/* don't record blank lines */
 			if (strlen(s)) add_history(s);

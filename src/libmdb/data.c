@@ -54,7 +54,8 @@ MdbColumn *col;
 int
 mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr)
 {
-	int i, col_num = -1;
+	unsigned int i;
+	int col_num = -1;
 	MdbColumn *col;
 	
 	for (i=0;i<table->num_cols;i++) {
@@ -192,7 +193,8 @@ int mdb_read_row(MdbTableDef *table, int row)
 	MdbHandle *mdb = table->entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *col;
-	int i, rc;
+	unsigned int i;
+	int rc;
 	//int num_cols, var_cols, fixed_cols;
 	int row_start, row_end;
 	//int fixed_cols_found, var_cols_found;
@@ -563,7 +565,7 @@ mdb_fetch_row(MdbTableDef *table)
 {
 	MdbHandle *mdb = table->entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
-	int rows;
+	unsigned int rows;
 	int rc;
 	guint32 pg;
 

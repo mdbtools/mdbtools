@@ -35,7 +35,7 @@ void copy_header (FILE *f)
 int
 main (int argc, char **argv)
 {
-int   i, j, k;
+unsigned int   i, j, k;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;

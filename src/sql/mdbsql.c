@@ -407,9 +407,9 @@ MdbSQLTable *t;
 }
 void mdb_sql_dump(MdbSQL *sql)
 {
-int i;
-MdbSQLColumn *c;
-MdbSQLTable *t;
+	unsigned int i;
+	MdbSQLColumn *c;
+	MdbSQLTable *t;
 
 	for (i=0;i<sql->num_columns;i++) {
 		c = g_ptr_array_index(sql->columns,i);
@@ -422,9 +422,9 @@ MdbSQLTable *t;
 }
 void mdb_sql_exit(MdbSQL *sql)
 {
-int i;
-MdbSQLColumn *c;
-MdbSQLTable *t;
+	unsigned int i;
+	MdbSQLColumn *c;
+	MdbSQLTable *t;
 
 	for (i=0;i<sql->num_columns;i++) {
 		c = g_ptr_array_index(sql->columns,i);
@@ -448,9 +448,9 @@ MdbSQLTable *t;
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
-int i;
-MdbSQLColumn *c;
-MdbSQLTable *t;
+	unsigned int i;
+	MdbSQLColumn *c;
+	MdbSQLTable *t;
 
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
@@ -512,7 +512,7 @@ int vlen;
 }
 void mdb_sql_listtables(MdbSQL *sql)
 {
-	int i;
+	unsigned int i;
 	MdbCatalogEntry *entry;
 	MdbHandle *mdb = sql->mdb;
 	MdbField fields[1];
@@ -576,7 +576,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	MdbSQLTable *sql_tab;
 	MdbHandle *mdb = sql->mdb;
 	MdbColumn *col;
-	int i;
+	unsigned int i;
 	MdbField fields[3];
 	char tmpstr[256];
 	unsigned char row_buffer[MDB_PGSIZE];
@@ -641,7 +641,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 {
 	MdbTableDef *table = data;
-	int i;
+	unsigned int i;
 	MdbColumn *col;
 
 	if (!mdb_is_relational_op(node->op)) return 0;
@@ -659,7 +659,7 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 void 
 mdb_sql_select(MdbSQL *sql)
 {
-int i,j;
+unsigned int i,j;
 MdbHandle *mdb = sql->mdb;
 MdbTableDef *table = NULL;
 MdbSQLTable *sql_tab;
@@ -737,7 +737,7 @@ mdb_sql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
 MdbTableDef *table = sql->cur_table;
 MdbSQLColumn *sqlcol;
 MdbColumn *col;
-int j;
+unsigned int j;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
@@ -756,7 +756,7 @@ mdb_sql_bind_len(MdbSQL *sql, int colnum, int *len_ptr)
 MdbTableDef *table = sql->cur_table;
 MdbSQLColumn *sqlcol;
 MdbColumn *col;
-int j;
+unsigned int j;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
@@ -772,11 +772,10 @@ int j;
 void 
 mdb_sql_bind_all(MdbSQL *sql)
 {
-int i;
+	unsigned int i;
 
 	for (i=0;i<sql->num_columns;i++) {
-		sql->bound_values[i] = (char *) g_malloc(MDB_BIND_SIZE);
-		sql->bound_values[i][0] = '\0';
+		sql->bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
 		mdb_sql_bind_column(sql, i+1, sql->bound_values[i]);
 	}
 }
@@ -808,8 +807,8 @@ mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table)
 void 
 mdb_sql_dump_results(MdbSQL *sql)
 {
-int j;
-MdbSQLColumn *sqlcol;
+	unsigned int j;
+	MdbSQLColumn *sqlcol;
 
 	/* print header */
 	for (j=0;j<sql->num_columns;j++) {

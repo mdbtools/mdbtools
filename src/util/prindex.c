@@ -26,7 +26,7 @@ void walk_index(MdbHandle *mdb, MdbIndex *idx);
 int
 main(int argc, char **argv)
 {
-	int j;
+	unsigned int j;
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	MdbIndex *idx;

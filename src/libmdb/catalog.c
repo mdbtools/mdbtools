@@ -238,7 +238,7 @@ int next_pg, next_pg_off;
 void 
 mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
-	int i;
+	unsigned int i;
 	MdbCatalogEntry *entry;
 
 	mdb_read_catalog(mdb, obj_type);

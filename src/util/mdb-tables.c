@@ -78,7 +78,7 @@ get_obj_type(char *typename, int *ret)
 int
 main (int argc, char **argv)
 {
-	int   i;
+	unsigned int   i;
 	MdbHandle *mdb;
 	MdbCatalogEntry *entry;
 	char *delimiter = NULL;
