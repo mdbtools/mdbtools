@@ -52,9 +52,11 @@ The second byte is always 0x01 as far as I can tell.
 
 At some point in the file the page layout is apparently abandoned though the 
 very last 2K in the file again looks like a valid page.  The purpose of this
-non-paged region is so far unknown. Could be a corrupt db as well.  My current thinking is that this area is unallocated pages based on the GAM (global allocation map stored on page 0x01).
+non-paged region is so far unknown. Could be a corrupt db as well.  My current 
+thinking is that this area is unallocated pages based on the GAM (global 
+allocation map stored on page 0x01).
 
-Bytes after the first and second seemed to depend on the type of page, although bytes 4-7 seem to indicate a page type of some sort.  02 00 00 00 is found on all catalog pages.
+Bytes after the first and second seemed to depend on the type of page, although bytes 4-7 are pages pointers that refer to the parent (data pages) or a continuation page (table definition). 
 
 Pages seem to have two parts, a header and a data portion.  The header starts 
 at the front of the page and builds up.  The data is packed to the end of the 
@@ -145,7 +147,7 @@ The header of each Tdef page looks like this (8 bytes) :
 | 0x00 | 4 bytes | next_pg     | Next tdef page pointer (0 if none)       |
 +------+---------+-------------+------------------------------------------+
 
-Note: The tabledef is very long, so it can take many TDEF pages linked
+Note: The tabledef can be very long, so it can take many TDEF pages linked
 with the next_pg pointer.
 
 +-------------------------------------------------------------------------+

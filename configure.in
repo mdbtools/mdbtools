@@ -54,6 +54,28 @@ fi
 AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 
+dnl gnome check modified from gnome-db
+AC_MSG_CHECKING(for Gnome >= 1.2.0)
+if gnome-config --version > /dev/null 2>&1
+then
+        verstxt=`gnome-config --version`
+        vers=`echo "$verstxt" | sed -e "s/^gnome-libs //" | \
+                   awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+        if test "$vers" -ge 1002000
+        then
+                AC_MSG_RESULT(found)
+               CFLAGS="$CFLAGS -DHAVE_GNOME"
+          havegnome=true
+        else
+                AC_MSG_RESULT(not found)
+          havegnome=false
+        fi
+else
+     AC_MSG_RESULT(not found)
+     havegnome=false
+fi
+AM_CONDITIONAL(HAVE_GNOME, test x$havegnome = xtrue)
+AC_SUBST(HAVE_GNOME)
 
 dnl Checks for library functions.
 
@@ -73,4 +95,4 @@ LDFLAGS=$OLDLDFLAGS
 
 AC_SUBST(READLINE_LIBS)
 
-AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile)
+AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb/Makefile)

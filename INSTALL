@@ -26,3 +26,16 @@ prdata     -- dump of the data given a table name.
 Once MDB Tools has been compiled, libmdb.[so|a] will be in the src/libmdb 
 directory and the utility programs will be in the src/util directory.
 You can then run 'make install' as root to install (to /usr/local by default).
+
+
+Installation Options
+====================
+
+configure can be passed any of the following flags to turn on other 
+capabilities.
+
+--enable-sql     will cause the SQL engine to be built, you must have flex and 
+                 bison installed for this option.
+--with-unixodbc  specifies the location of the unixODBC driver manager and 
+                 causes the ODBC driver to be built.
+

@@ -178,7 +178,8 @@ typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];
 	int		col_type;
 	int		col_size;
-	void		*bind_ptr;
+	void	*bind_ptr;
+	int		*len_ptr;
 	GHashTable	*properties;
 	int		num_sargs;
 	GPtrArray	*sargs;

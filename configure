@@ -2225,12 +2225,42 @@ else
 fi
 
 
+echo $ac_n "checking for Gnome >= 1.2.0""... $ac_c" 1>&6
+echo "configure:2230: checking for Gnome >= 1.2.0" >&5
+if gnome-config --version > /dev/null 2>&1
+then
+        verstxt=`gnome-config --version`
+        vers=`echo "$verstxt" | sed -e "s/^gnome-libs //" | \
+                   awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+        if test "$vers" -ge 1002000
+        then
+                echo "$ac_t""found" 1>&6
+               CFLAGS="$CFLAGS -DHAVE_GNOME"
+          havegnome=true
+        else
+                echo "$ac_t""not found" 1>&6
+          havegnome=false
+        fi
+else
+     echo "$ac_t""not found" 1>&6
+     havegnome=false
+fi
+
+
+if test x$havegnome = xtrue; then
+  HAVE_GNOME_TRUE=
+  HAVE_GNOME_FALSE='#'
+else
+  HAVE_GNOME_TRUE='#'
+  HAVE_GNOME_FALSE=
+fi
+
 
 
 OLDLDFLAGS=$LDFLAGS
 
 echo $ac_n "checking for initscr in -lncurses""... $ac_c" 1>&6
-echo "configure:2234: checking for initscr in -lncurses" >&5
+echo "configure:2264: checking for initscr in -lncurses" >&5
 ac_lib_var=`echo ncurses'_'initscr | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -2238,7 +2268,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lncurses  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 2242 "configure"
+#line 2272 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -2249,7 +2279,7 @@ int main() {
 initscr()
 ; return 0; }
 EOF
-if { (eval echo configure:2253: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:2283: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -2274,7 +2304,7 @@ fi
 
 
 echo $ac_n "checking for add_history in -lreadline""... $ac_c" 1>&6
-echo "configure:2278: checking for add_history in -lreadline" >&5
+echo "configure:2308: checking for add_history in -lreadline" >&5
 ac_lib_var=`echo readline'_'add_history | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -2282,7 +2312,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lreadline  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 2286 "configure"
+#line 2316 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -2293,7 +2323,7 @@ int main() {
 add_history()
 ; return 0; }
 EOF
-if { (eval echo configure:2297: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:2327: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -2437,7 +2467,7 @@ done
 ac_given_srcdir=$srcdir
 ac_given_INSTALL="$INSTALL"
 
-trap 'rm -fr `echo "src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo "src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb/Makefile" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -2508,6 +2538,9 @@ s%@ODBC_INC@%$ODBC_INC%g
 s%@SQL_TRUE@%$SQL_TRUE%g
 s%@SQL_FALSE@%$SQL_FALSE%g
 s%@SQL@%$SQL%g
+s%@HAVE_GNOME_TRUE@%$HAVE_GNOME_TRUE%g
+s%@HAVE_GNOME_FALSE@%$HAVE_GNOME_FALSE%g
+s%@HAVE_GNOME@%$HAVE_GNOME%g
 s%@READLINE_LIBS@%$READLINE_LIBS%g
 
 CEOF
@@ -2550,7 +2583,7 @@ EOF
 
 cat >> $CONFIG_STATUS <<EOF
 
-CONFIG_FILES=\${CONFIG_FILES-"src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile"}
+CONFIG_FILES=\${CONFIG_FILES-"src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb/Makefile"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then
