@@ -243,7 +243,6 @@ GnomeProgram *program;
 		NULL);
 	//gnome_init ("gmdb", "0.2", argc, argv);
 	//app = gnome_app_new ("gmdb", "Gnome-MDB File Viewer");
-
 	glade_init();
 
 	/* load the interface */
@@ -255,7 +254,7 @@ GnomeProgram *program;
 	gtk_signal_connect (GTK_OBJECT (gmdb), "delete_event",
 		GTK_SIGNAL_FUNC (delete_event), NULL);
 
-	gmdb_load_icons(mainwin_xml);
+	//gmdb_load_icons(mainwin_xml);
 
 	if (argc>1) {
 		gmdb_file_open(argv[1]);

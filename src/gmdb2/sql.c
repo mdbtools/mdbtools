@@ -460,9 +460,10 @@ long row, maxrow;
 void
 gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 {
-GtkTargetEntry src;
-GtkWidget *mi, *but, *combo;
-GladeXML *sqlwin_xml;
+	GtkTargetEntry src;
+	GtkWidget *mi, *but, *combo;
+	GladeXML *sqlwin_xml;
+	GValue value = {0, };
 
 	/* load the interface */
 	sqlwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql.glade", NULL, NULL);
@@ -571,6 +572,12 @@ GladeXML *sqlwin_xml;
 	gtk_signal_connect( GTK_OBJECT(textview), "drag_data_received",
 		GTK_SIGNAL_FUNC(gmdb_sql_dnd_datareceived_cb), sqlwin_xml);
 	
+	//but =  glade_xml_get_widget(sqlwin_xml, "results_button");
+	//g_value_init(&value, G_TYPE_STRING);
+	//g_value_set_static_string(&value, GMDB_ICONDIR "stock_export.png");
+	//g_object_set_property(G_OBJECT (but), "file" , &value);
+	//g_value_unset (&value);
+
 	gtk_widget_grab_focus(GTK_WIDGET(textview));
 }
 

@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.8 2003/01/07 02:24:35 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.9 2003/01/15 02:02:09 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -51,8 +51,8 @@ static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
 
-#define TRACE(x) fprintf(stderr,"Function %s\n", x);
-//#define TRACE(x)
+//#define TRACE(x) fprintf(stderr,"Function %s\n", x);
+#define TRACE(x)
 
 /* The SQL engine is presently non-reenterrant and non-thread safe.  
    See _SQLExecute for details.

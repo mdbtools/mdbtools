@@ -6,7 +6,7 @@ LIBS =	-rdynamic $(GNOME_LIBS) @LEXLIB@
 INCLUDES	=	-I$(top_srcdir)/include \
 	$(GNOME_CFLAGS) \
         -DDATADIR=\""$(datadir)"\"                      \
-        -DGMDB_ICONDIR=\""$(datadir)/gmdb/pixmaps/"\"        \
+        -DGMDB_ICONDIR=\""$(datadir)/gmdb/glade/"\"        \
         -DGMDB_GLADEDIR=\""$(datadir)/gmdb/glade/"\" 
 
 #LDADD	=	../libmdb/libmdb.la 
