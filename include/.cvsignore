@@ -1,5 +1,5 @@
 Makefile
 Makefile.in
-config.h.in
 config.h
+config.h.in
 stamp-h1

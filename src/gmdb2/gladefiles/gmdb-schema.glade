@@ -47,7 +47,7 @@
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="response_id">-6</property>
-	      <signal name="clicked" handler="gmdb_schema_export_cb" object="schema_dialog" last_modification_time="Sun, 29 Dec 2002 21:00:13 GMT"/>
+	      <signal name="clicked" handler="gtk_widget_destroy" object="schema_dialog" last_modification_time="Mon, 12 Jan 2004 18:40:24 GMT"/>
 	    </widget>
 	  </child>
 

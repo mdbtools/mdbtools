@@ -1,3 +1,10 @@
+Mon Feb  9 14:53:19 EST 2004	Brian Bruns <brian@bruns.com>
+
+	* src/util/mdb-export.c: reorganized a bit, added header text and options from patch #857342
+	* src/util/mdb-export.c: added -I option from patch #857342
+	* src/gmdb2/gladefiles/gmdb-schema.glade: fix close button
+	* src/sql/lexer.l: allow negative numbers
+
 Sun Feb  8 13:02:56 EST 2004	Brian Bruns <brian@bruns.com>
 
 	* doc/faq.html: update email addy
