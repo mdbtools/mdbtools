@@ -116,6 +116,7 @@ prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields, char *delim)
 	g_strdelimit(line, delim, '\n');
 	sarray = g_strsplit (line, "\n", 0);
 	for (i=0; (s = sarray[i]); i++) {
+		if (!strlen(s)) continue;
 		if (i >= table->num_cols) {
 			fprintf(stderr, "Number of columns in file exceeds number in table.\n");
 			g_strfreev(sarray);
@@ -143,7 +144,7 @@ prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields, char *delim)
 		free_values(fields, i);
 		return 0;
 	}
-	return i;
+	return i-1;
 }
 int
 main(int argc, char **argv)

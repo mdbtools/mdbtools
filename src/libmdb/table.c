@@ -271,25 +271,24 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	for (i=0;i<table->num_cols;i++) {
 		pcol = g_ptr_array_index(table->columns, i);
 
+		char *tmp_buf;
 		if (IS_JET4(mdb)) {
-			char *tmp_buf;
 			name_sz = read_pg_if_16(mdb, &cur_pos);
 			cur_pos += 2;
-			tmp_buf = (char *) g_malloc(name_sz);
-			read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
-			mdb_unicode2ascii(mdb, tmp_buf, 0, name_sz, pcol->name, name_sz);
-			g_free(tmp_buf);
-			cur_pos += name_sz;
 		} else if (IS_JET3(mdb)) {
 			read_pg_if(mdb, &cur_pos, 0);
 			name_sz = mdb->pg_buf[cur_pos];
 			cur_pos++;
-			read_pg_if_n(mdb, pcol->name, &cur_pos, name_sz);
-			pcol->name[name_sz]='\0';
-			cur_pos += name_sz;
 		} else {
 			fprintf(stderr,"Unknown MDB version\n");
+			continue;
 		}
+		tmp_buf = (char *) g_malloc(name_sz);
+		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
+		mdb_unicode2ascii(mdb, tmp_buf, 0, name_sz, pcol->name, name_sz);
+		g_free(tmp_buf);
+		cur_pos += name_sz;
+
 	}
 
 	/* Sort the columns by col_num */

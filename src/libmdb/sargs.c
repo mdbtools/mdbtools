@@ -154,13 +154,7 @@ int lastchar;
 			return mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
 			break;
 		case MDB_TEXT:
-			if (IS_JET4(mdb)) {
-				mdb_unicode2ascii(mdb, field->value, 0, field->siz, tmpbuf, 256);
-			} else {
-				strncpy(tmpbuf, field->value, 255);
-				lastchar = field->siz > 255 ? 255 : field->siz;
-				tmpbuf[lastchar]='\0';
-			}
+			mdb_unicode2ascii(mdb, field->value, 0, field->siz, tmpbuf, 256);
 			return mdb_test_string(node, tmpbuf);
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);

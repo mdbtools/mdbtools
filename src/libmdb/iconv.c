@@ -35,7 +35,8 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int l
         len_in = len;
         len_out = dest_sz;
 
-	if (in_ptr[0]==0xff && in_ptr[1]==0xfe) {
+
+	if (buf[offset]==0xff && buf[offset+1]==0xfe) {
 		len_in -= 2;
         	in_ptr += 2;
                 ret = iconv(mdb->iconv_compress, (char **)&in_ptr, &len_in, (char **)&out_ptr, &len_out);
@@ -111,16 +112,23 @@ void mdb_iconv_init(MdbHandle *mdb)
 		iconv_code="UTF-8";
 	}
 
+
 #ifdef HAVE_ICONV
         if (IS_JET4(mdb)) {
                 mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
                 mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
                 mdb->iconv_compress = iconv_open(iconv_code, "ISO8859-1");
         } else {
-                /* XXX - need to determine character set from file */
-                mdb->iconv_out = iconv_open("ISO8859-1", iconv_code);
-                mdb->iconv_in = iconv_open(iconv_code, "ISO8859-1");
-                mdb->iconv_compress = (iconv_t)-1;
+                /* ToDO - need to determine character set from file */
+		/* But according to MS kb289525 and kb202427, there is not such info in jet3 db */
+		char *jet3_iconv_code;
+
+		/* check environment variable */
+		if (!(jet3_iconv_code=(char *)getenv("MDB_JET3_CHARSET"))) {
+			jet3_iconv_code="ISO8859-1";
+		}
+                mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
+                mdb->iconv_in = iconv_open(iconv_code, jet3_iconv_code);
         }
 #endif
 }
@@ -129,6 +137,8 @@ void mdb_iconv_close(MdbHandle *mdb)
 #ifdef HAVE_ICONV
         if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
         if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
-        if (mdb->iconv_compress != (iconv_t)-1) iconv_close(mdb->iconv_compress);
+	if (IS_JET4(mdb)) {
+        	if (mdb->iconv_compress != (iconv_t)-1) iconv_close(mdb->iconv_compress);
+	}
 #endif
 }

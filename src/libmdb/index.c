@@ -104,18 +104,15 @@ mdb_read_indices(MdbTableDef *table)
 		if (IS_JET4(mdb)) {
 			name_sz=read_pg_if_16(mdb, &cur_pos);
 			cur_pos += 2;
-			tmpbuf = g_malloc(name_sz);
-			read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
-			cur_pos += name_sz;
-			mdb_unicode2ascii(mdb, tmpbuf, 0, name_sz, pidx->name, name_sz); 
-			g_free(tmpbuf);
 		} else {
 			read_pg_if(mdb, &cur_pos, 0);
 			name_sz=mdb->pg_buf[cur_pos++];
-			read_pg_if_n(mdb, pidx->name, &cur_pos, name_sz);
-			cur_pos += name_sz;
-			pidx->name[name_sz]='\0';		
 		}
+		tmpbuf = g_malloc(name_sz);
+		read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
+		cur_pos += name_sz;
+		mdb_unicode2ascii(mdb, tmpbuf, 0, name_sz, pidx->name, name_sz); 
+		g_free(tmpbuf);
 		//fprintf(stderr, "index name %s\n", pidx->name);
 	}
 
@@ -180,6 +177,9 @@ mdb_index_hash_text(guchar *text, guchar *hash)
 	}
 	hash[strlen(text)]=0;
 }
+/*
+ * reverse the order of the column for hashing
+ */
 void
 mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest)
 {
@@ -321,6 +321,7 @@ mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 	start = ipg->idx_starts[elem++];
 
 	while (start) {
+		fprintf(stdout, "elem %d is %d\n", elem, ipg->idx_starts[elem]);
 		len = ipg->idx_starts[elem] - start;
 		fprintf(stdout, "len is %d\n", len);
 		for (i=0; i < len; i++) {

@@ -634,12 +634,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			pg_row & 0xff, row_start, len);
 		buffer_dump(mdb->pg_buf, row_start, row_start + len);
 #endif
-		if (IS_JET3(mdb)) {
-			strncpy(text, buf + row_start, len);
-			text[len]='\0';
-		} else {
-			mdb_unicode2ascii(mdb, buf, row_start, len, text, MDB_BIND_SIZE);
-		}
+		mdb_unicode2ascii(mdb, buf, row_start, len, text, MDB_BIND_SIZE);
 		return text;
 	} else { /* if (memo_flags == 0x0000) { */
 		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
@@ -742,18 +737,7 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 			if (size<0) {
 				return "";
 			}
-			if (IS_JET4(mdb)) {
-/*
-				for (i=0;i<size;i++) {
-					fprintf(stdout, "%c %02x ", mdb->pg_buf[start+i], mdb->pg_buf[start+i]);
-				} 
-				fprintf(stdout, "\n");
-*/
-				mdb_unicode2ascii(mdb, mdb->pg_buf, start, size, text, MDB_BIND_SIZE);
-			} else {
-				strncpy(text, &buf[start], size);
-				text[size]='\0';
-			}
+			mdb_unicode2ascii(mdb, mdb->pg_buf, start, size, text, MDB_BIND_SIZE);
 			return text;
 		break;
 		case MDB_SDATETIME:

@@ -1,3 +1,13 @@
+Wed Dec  1 18:18:02 EST 2004	Brian Bruns <brian@bruns.com>
+	* src/libmdb/data.c: 
+	* src/libmdb/iconv.c:
+	* src/libmdb/index.c:
+	* src/libmdb/sargs.c:
+	* src/libmdb/table.c: patch from Wind Li for iconv on jet3
+	* src/libmdb/write.c: write out leaf page with added index entry, not quite working yet (bitmap not written correctly and key hash value wrong) but closer.
+	* src/util/mdb-import.c: temporary kludge for problems caused by using g_strsplit() and friends
+
+
 Wed Dec  1 00:33:38 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c:
 	* src/libmdb/iconv.c:

@@ -27,7 +27,7 @@
 
 
 //static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
-static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields);
+static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields, guint32 pgnum, guint16 rownum);
 
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
@@ -46,6 +46,24 @@ _mdb_put_int32(unsigned char *buf, guint32 offset, guint32 value)
 	buf[offset+2] = value % 256;
 	value /= 256;
 	buf[offset+3] = value % 256;
+}
+void
+_mdb_put_int24(unsigned char *buf, guint32 offset, guint32 value)
+{
+	buf[offset] = value % 256;
+	value /= 256;
+	buf[offset+1] = value % 256;
+	value /= 256;
+	buf[offset+2] = value % 256;
+}
+void
+_mdb_put_int24_msb(unsigned char *buf, guint32 offset, guint32 value)
+{
+	buf[offset+2] = value % 256;
+	value /= 256;
+	buf[offset+1] = value % 256;
+	value /= 256;
+	buf[offset] = value % 256;
 }
 ssize_t
 mdb_write_pg(MdbHandle *mdb, unsigned long pg)
@@ -572,7 +590,7 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, Mdb
 	printf("pg = %" G_GUINT32_FORMAT "\n",
 		chain->pages[chain->cur_depth-1].pg);
 	//mdb_copy_index_pg(table, idx, &chain->pages[chain->cur_depth-1]);
-	mdb_add_row_to_leaf_pg(table, idx, &chain->pages[chain->cur_depth-1], idx_fields);
+	mdb_add_row_to_leaf_pg(table, idx, &chain->pages[chain->cur_depth-1], idx_fields, pgnum, rownum);
 	
 	return 1;
 }
@@ -814,7 +832,7 @@ int i, pos;
 	return 0;
 }
 static int
-mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields) 
+mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields, guint32 pgnum, guint16 rownum) 
 /*,  guint32 pgnum, guint16 rownum) 
 static int
 mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
@@ -829,6 +847,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	unsigned char key_hash[256];
 	unsigned char iflag;
 	int keycol;
+	int i;
 
 	new_pg = mdb_new_leaf_pg(entry);
 
@@ -860,18 +879,42 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 		row = mdb->pg_buf[ipg->offset + ipg->len - 1];
 		iflag = mdb->pg_buf[ipg->offset];
+
+		/* turn the key hash back into a value */
 		mdb_index_swap_n(&mdb->pg_buf[ipg->offset + 1], col->col_size, key_hash);
 		key_hash[col->col_size - 1] &= 0x7f;
+
 		printf("length = %d\n", ipg->len);
+		printf("offset = %d\n", ipg->offset);
 		printf("iflag = %d pg = %" G_GUINT32_FORMAT
 			" row = %" G_GUINT16_FORMAT "\n", iflag, pg, row);
 		buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset + ipg->len - 1);
 		buffer_dump(mdb->pg_buf, ipg->offset + 1, ipg->offset + col->col_size);
 		buffer_dump(key_hash, 0, col->col_size - 1);
+
+		memcpy(&new_pg[ipg->offset], &mdb->pg_buf[ipg->offset], ipg->len);
 		ipg->offset += ipg->len;
 		ipg->len = 0;
+
 		row++;
 	}
+	//_mdb_put_int16(new_pg, mdb->fmt->row_count_offset, row);
+	/* free space left */
+	_mdb_put_int16(new_pg, 2, mdb->fmt->pg_size - ipg->offset);
+	printf("offset = %d\n", ipg->offset);
+
+	mdb_index_swap_n(idx_fields[0].value, col->col_size, key_hash);
+	new_pg[ipg->offset] = 0x7f;
+	memcpy(&new_pg[ipg->offset + 1], key_hash, col->col_size);
+	_mdb_put_int24_msb(new_pg, ipg->offset + 5, pgnum);
+	new_pg[ipg->offset + 8] = rownum;
+	printf("row %d offset %d\n", row, ipg->offset);
+	ipg->idx_starts[row++] = ipg->offset + ipg->len;
+	//ipg->idx_starts[row] = ipg->offset + ipg->len;
+	buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
+	mdb_index_pack_bitmap(mdb, ipg);
+	buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
 	g_free(new_pg);
 
 	return ipg->len;
