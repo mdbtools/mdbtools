@@ -426,16 +426,13 @@ int found = 0;
 			sql->num_columns++;
 		}
 	}
+	/* verify all specified columns exist in this table */
 	for (i=0;i<sql->num_columns;i++) {
 		sqlcol = g_ptr_array_index(sql->columns,i);
 		found=0;
 		for (j=0;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
 			if (!strcasecmp(sqlcol->name, col->name)) {
-				sql->bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
-				sql->bound_values[i][0] = '\0';
-				/* bind the column to its listed (SQL) position */
-				mdb_bind_column(table, j+1, sql->bound_values[i]);
 				sqlcol->disp_size = mdb_col_disp_size(col);
 				found=1;
 				break;
@@ -453,11 +450,40 @@ int found = 0;
 		sql_sarg=g_ptr_array_index(sql->sargs,i);
 		mdb_add_sarg_by_name(table,sql_sarg->col_name, sql_sarg->sarg);
 	}
+
 	sql->cur_table = table;
-	mdb_dump_results(sql);
+
 }
 
-void mdb_dump_results(MdbSQL *sql)
+void mdbsql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
+{
+MdbTableDef *table = sql->cur_table;
+MdbSQLColumn *sqlcol;
+MdbColumn *col;
+int i, j;
+
+	/* sql columns are traditionally 1 based, so decrement colnum */
+	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
+	for (j=0;j<table->num_cols;j++) {
+		col=g_ptr_array_index(table->columns,j);
+		if (!strcasecmp(sqlcol->name, col->name)) {
+			/* bind the column to its listed (SQL) position */
+			mdb_bind_column(table, j+1, varaddr);
+			break;
+		}
+	}
+}
+void mdbsql_bind_all(MdbSQL *sql)
+{
+int i;
+
+	for (i=0;i<sql->num_columns;i++) {
+		sql->bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
+		sql->bound_values[i][0] = '\0';
+		mdbsql_bind_column(sql, i+1, sql->bound_values[i]);
+	}
+}
+void mdbsql_dump_results(MdbSQL *sql)
 {
 int j;
 MdbSQLColumn *sqlcol;

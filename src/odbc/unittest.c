@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.2 2001/07/24 11:00:01 brianb Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.3 2001/07/25 01:55:43 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -62,6 +62,8 @@ static void printStatementError(HSTMT hstmt, char *msg)
 
 int main()
 {
+int i;
+
 	retcode = SQLAllocEnv(&henv);
 	
 	if (SQLAllocConnect(henv, &hdbc) != SQL_SUCCESS)
@@ -117,15 +119,9 @@ int main()
 
 
 	retcode = SQLConnect(hdbc, 
-				   /*
-				   (UCHAR *)"SYBASE", SQL_NTS, 
-				   (UCHAR *)"ken", SQL_NTS,
-				   (UCHAR *)"asdfasdf", SQL_NTS);
-				   */
 				   (UCHAR *)"Northwind", SQL_NTS, 
 				   (UCHAR *)"", SQL_NTS,
 				   (UCHAR *)"", SQL_NTS);
-	/* sleep(600); */
 	if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO)
 	{
 		UCHAR  szSqlState[6];
@@ -159,53 +155,23 @@ int main()
 		exit(1);
 	}
 
-
-#if 0
-	retcode = SQLTables(hstmt, 
-						(unsigned char *) NULL, 0,
-						(unsigned char *) "%", 1,
-						(unsigned char *) "%", 1,
-						(unsigned char *) "VIEW,TABLE", 10);
-	if (! (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO))
-	{
-		printf("got table stuff\n");
-	}
-	else
-	{
-		printStatementError(hstmt, "SQLTable");
-	}
-#else
 	/* Prepare the SQL statement with parameter markers. */
 
 	retcode = SQLPrepare(hstmt,
- 	       (unsigned char *)"select ShipName from Orders where OrderID > 11000", 
+ 	       (unsigned char *)"select * from Shippers", 
 			SQL_NTS);
 			  
 	if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 	{
 		long   p1;
-	//	char   p2[256];
 		long   p1Len = sizeof(p1);
-	//	long   p2Len;
 		long   sAge  = 1023;
 		long   cbAge = sizeof(long);
 		UCHAR  szCol1[60];
 
-		SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 
-			             0, 0, szCol1, 0, &p1Len); 
-	
-//		p1Len = SQL_NULL_DATA; 
-		/* Execute statement with first row. */
-
-		p1 = 8192;
-//		p1[0] = '%';
-//		p1Len = 1;
-//		p2[0] = '%';
-//		p2Len = 1;
 		printf("excecuting first statement\n");
 		retcode = SQLExecute(hstmt);         
-		if (retcode != SQL_SUCCESS)
-		{
+		if (retcode != SQL_SUCCESS) {
 			UCHAR  szSqlState[6];
 			UCHAR  szErrorMsg[SQL_MAX_MESSAGE_LENGTH];
 			SDWORD dwNativeError;
@@ -219,23 +185,22 @@ int main()
 				szSqlState, szErrorMsg);
 			exit(1);
 		}		
+		SQLBindCol(hstmt, 2, SQL_CHAR, szCol1, 60, NULL);
+	
+		/* Execute statement with first row. */
+
+		i=0;
 		while ((retcode = SQLFetch(hstmt)) == SQL_SUCCESS)
 		{
-			// nop
-			printf("szCol1 = %s\n",szCol1);
+			i++;
+			printf("%d: szCol1 = %s\n",i,szCol1);
 		}
 		if (retcode != SQL_NO_DATA_FOUND)
 		{
 			printStatementError(hstmt, "problem with SQLFetch");
 			exit(1);
 		}
-		
-
-	     /*
-		SQLCloseCursor(hstmt);
-	     */
 	}		
-#endif
 	printf("Done\n");
 
 	return 1;

@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.2 2001/07/24 11:00:01 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.3 2001/07/25 01:55:43 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -413,11 +413,13 @@ SQLRETURN SQL_API SQLBindCol(
     SQLINTEGER         cbValueMax,
     SQLINTEGER FAR    *pcbValue)
 {
-   struct _hstmt *stmt;
+struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
 
-   stmt = (struct _hstmt *) hstmt;
+	mdbsql_bind_column(env->sql, icol, rgbValue);
 
-   return SQL_SUCCESS;
+	return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLCancel(
@@ -608,15 +610,15 @@ SQLRETURN SQL_API SQLExecute(
 SQLRETURN SQL_API SQLFetch(
     SQLHSTMT           hstmt)
 {
-int ret;
-int i;
-struct _hstmt *stmt;
-SQLINTEGER len=0;
-unsigned char *src;
-int srclen;
+struct _hstmt *stmt = (struct _hstmt *) hstmt;
+struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+struct _henv *env = (struct _henv *) dbc->henv;
 
-	stmt=(struct _hstmt *)hstmt;
-
+	if (mdb_fetch_row(env->sql->cur_table)) {
+		return SQL_SUCCESS;
+	} else {
+		return SQL_NO_DATA_FOUND;
+	}
 }
 
 SQLRETURN SQL_API SQLFreeHandle(    
