@@ -79,7 +79,7 @@ int col_start, len;
 int eod; /* end of data */
 int delflag, lookupflag;
 int bitmask_sz;
-unsigned char null_mask[8]; /* 256 columns max / 8 bits per byte */
+unsigned char null_mask[17]; /* 256 columns max / 8 bits per byte */
 
 	row_start = mdb_get_int16(mdb, 10+(row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
