@@ -95,12 +95,20 @@ GSList	*slist = NULL;
 	** column attributes 
 	*/
 	for (i=0;i<table->num_cols;i++) {
+#ifdef MDB_DEBUG
+	/* printf("column %d\n", i);
+	buffer_dump(mdb->pg_buf, cur_col ,cur_col + 18); */
+#endif
 		memset(&col, 0, sizeof(col));
 		col.col_num = mdb->pg_buf[cur_col + mdb->col_num_offset];
 
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
 
+		if (col.col_type == MDB_NUMERIC) {
+			col.col_prec = mdb->pg_buf[cur_col + 11];
+			col.col_scale = mdb->pg_buf[cur_col + 12];
+		}
 
 		read_pg_if(mdb, &cur_col, 13);
 		col.is_fixed = mdb->pg_buf[cur_col + mdb->col_fixed_offset] & 

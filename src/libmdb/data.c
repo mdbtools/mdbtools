@@ -18,12 +18,14 @@
  */
 
 #include "mdbtools.h"
+#include "time.h"
+#include "math.h"
 
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
+char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
 
-#define MDB_DEBUG 0
 
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
 {
@@ -44,7 +46,7 @@ MdbColumn *col;
 }
 int mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
-int row_start, row_end, i;
+int row_end;
 
 	/* Search the previous "row start" values for the first non-deleted one.
 	* If we don't find one, then the end of the page is the correct value.
@@ -92,6 +94,8 @@ static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 	if (col->bind_ptr) {
 		strcpy(col->bind_ptr,  value ? "0" : "1");
 	}
+
+	return 0;
 }
 static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
@@ -108,8 +112,14 @@ int ret;
 	}
 	if (col->bind_ptr) {
 		if (len) {
-			strcpy(col->bind_ptr, 
+//fprintf(stdout,"len %d size %d\n",len, col->col_size);
+			if (col->col_type == MDB_NUMERIC) {
+				strcpy(col->bind_ptr, 
+				mdb_num_to_string(mdb, start, col->col_type, col->col_prec, col->col_scale));
+			} else {
+				strcpy(col->bind_ptr, 
 				mdb_col_to_string(mdb, start, col->col_type, len));
+			}
 		} else {
 			strcpy(col->bind_ptr,  "");
 		}
@@ -129,7 +139,7 @@ int i, j, rc;
 int num_cols, var_cols, fixed_cols;
 int row_start, row_end;
 int fixed_cols_found, var_cols_found;
-int col_start, len;
+int col_start, len, next_col;
 int num_of_jumps=0, jumps_used=0;
 int eod; /* end of data */
 int delflag, lookupflag;
@@ -271,8 +281,24 @@ unsigned char isnull;
 				len=eod - col_start;
 		} else  {
 			if (mdb->jet_version==MDB_VER_JET4) {
-				len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
-					- 2 - 1 - num_of_jumps * 2] - col_start;
+				//next_col = mdb_get_int16(mdb, row_end - bitmask_sz - var_cols_found * 2 - 2 - 1) ;
+				next_col = mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 2] * 256 + 
+				mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 2 - 1] ;
+				len = next_col - col_start;
+				/* len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
+					- 2 - 1] - col_start;  */
+				//len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
+					//- 2 - 1 - num_of_jumps * 2] - col_start; 
+/*
+				fprintf(stdout, "found %d fix %d new pos %d new start %d old start %d\n", 
+					var_cols_found,
+					row_end - bitmask_sz - var_cols_found * 2
+               - 2 - 1,
+					row_end - bitmask_sz - var_cols_found * 2
+               - 2 - 1 - num_of_jumps * 2,
+					mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
+               - 2 - 1], col_start);
+*/
 			} else {
 				len=mdb->pg_buf[col_ptr - var_cols_found ] - col_start;
 			}
@@ -328,6 +354,8 @@ int mdb_rewind_table(MdbTableDef *table)
 	table->cur_pg_num=0;
 	table->cur_phys_pg=0;
 	table->cur_row=0;
+
+	return 0;
 }
 int mdb_fetch_row(MdbTableDef *table)
 {
@@ -399,21 +427,26 @@ guint16 row_start, row_stop;
 guint8 memo_row;
 guint32 lval_pg;
 guint16 len;
+int i;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return "";
 	} 
 
+#if MDB_DEBUG
+	buffer_dump(mdb->pg_buf, start, start + 12);
+#endif
+
 	memo_len = mdb_get_int16(mdb, start);
 	memo_flags = mdb_get_int16(mdb, start+2);
 
-	if (memo_flags == 0x8000) {
+	if (memo_flags & 0x8000) {
 		/* inline memo field */
 		strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
 			size - MDB_MEMO_OVERHEAD);
 		text[size - MDB_MEMO_OVERHEAD]='\0';
 		return text;
-	} else if (memo_flags == 0x4000) {
+	} else if (memo_flags & 0x4000) {
 		/* The 16 bit integer at offset 0 is the length of the memo field.
 		* The 24 bit integer at offset 5 is the page it is stored on.
 		*/
@@ -430,21 +463,35 @@ guint16 len;
 		/* swap the alt and regular page buffers, so we can call get_int16 */
 		mdb_swap_pgbuf(mdb);
 		if (memo_row) {
-			row_stop = mdb_get_int16(mdb, 10 + (memo_row - 1) * 2) & 0x0FFF;
+			row_stop = mdb_get_int16(mdb, mdb->row_count_offset + 2 + (memo_row - 1) * 2) & 0x0FFF;
 		} else {
 			row_stop = mdb->pg_size - 1;
 		}
-		row_start = mdb_get_int16(mdb, 10 + memo_row * 2);
+		row_start = mdb_get_int16(mdb, mdb->row_count_offset + 2 + memo_row * 2);
 #if MDB_DEBUG
 		printf("row num %d row start %d row stop %d\n", memo_row, row_start, row_stop);
+		buffer_dump(mdb->pg_buf,row_start, row_start + len);
 #endif
 		len = row_stop - row_start;
-		strncpy(text, &mdb->pg_buf[row_start], len);
-		text[len]='\0';
+		if (mdb->jet_version==MDB_VER_JET3) {
+			strncpy(text, &mdb->pg_buf[row_start], len);
+			text[len]='\0';
+		} else {
+			if (mdb->pg_buf[row_start]==0xff && 
+			   mdb->pg_buf[row_start+1]==0xfe) {
+				strncpy(text, &mdb->pg_buf[row_start+2], len-2);
+				text[len-2]='\0';
+			} else {
+				/* convert unicode to ascii, rather sloppily */
+				for (i=0;i<len;i+=2)
+					text[i/2] = mdb->pg_buf[row_start + i];
+				text[len/2]='\0';
+			}
+		}
 		/* make sure to swap page back */
 		mdb_swap_pgbuf(mdb);
 		return text;
-	} else if (memo_flags == 0x0000) {
+	} else { /* if (memo_flags == 0x0000) { */
 		memo_row = mdb->pg_buf[start+4];
 		lval_pg = mdb_get_int24(mdb, start+5);
 #if MDB_DEBUG
@@ -480,9 +527,11 @@ guint16 len;
 		/* make sure to swap page back */
 		mdb_swap_pgbuf(mdb);
 		return text;
+/*
 	} else {
 		fprintf(stderr,"Unhandled memo field flags = %04x\n", memo_flags);
 		return "";
+*/
 	}
 #if 0
 			strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD], 
@@ -491,12 +540,45 @@ guint16 len;
 			return text;
 #endif
 }
+char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
+{
+/* FIX ME -- not thread safe */
+static char text[MDB_BIND_SIZE];
+char tmpbuf[MDB_BIND_SIZE];
+char mask[20];
+gint32 l, whole, fraction;
+
+	l = mdb->pg_buf[start+16] * 256 * 256 * 256 +
+		mdb->pg_buf[start+15] * 256 * 256 +
+		mdb->pg_buf[start+14] * 256 +
+		mdb->pg_buf[start+13];
+
+	sprintf(mask,"%%0%ldld",prec);
+	sprintf(tmpbuf,mask,l);
+	//strcpy(text, tmpbuf);
+	//return text;
+	if (!scale) {
+		strcpy(text,tmpbuf);
+	} else {
+		memset(text,0,sizeof(text));
+		strncpy(text,tmpbuf,prec-scale);
+		strcat(text,".");
+		strcat(text,&tmpbuf[strlen(tmpbuf)-scale]);
+	}
+/*
+		for (i=0;i<size;i++) {
+				fprintf(stdout, "%c %02x ", isprint(mdb->pg_buf[start+i]) ? mdb->pg_buf[start+i] : '.', mdb->pg_buf[start+i]);
+			} 
+			fprintf(stdout, "\n");
+*/
+		return text;
+}
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
 time_t t;
-int i;
+int i,j;
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -508,7 +590,7 @@ int i;
 			return text;
 		break;
 		case MDB_INT:
-			sprintf(text,"%ld",mdb_get_int16(mdb, start));
+			sprintf(text,"%ld",(long)mdb_get_int16(mdb, start));
 			return text;
 		break;
 		case MDB_LONGINT:
@@ -563,6 +645,7 @@ int i;
 		case MDB_MONEY:
 			mdb_money_to_string(mdb, start, text);
 			return text;
+		case MDB_NUMERIC:
 		break;
 		default:
 			return "";

@@ -21,6 +21,7 @@
 #define _mdbtools_h_
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -29,13 +30,15 @@
 #include <string.h>
 #include <glib.h>
 
+#define MDB_DEBUG 0
+
 #define MDB_PGSIZE 4096
 #define MDB_MAX_OBJ_NAME 30
 #define MDB_MAX_COLS 256
 #define MDB_MAX_IDX_COLS 10
 #define MDB_CATALOG_PG 18
 #define MDB_MEMO_OVERHEAD 12
-#define MDB_BIND_SIZE 4096
+#define MDB_BIND_SIZE 65536
 
 enum {
 	MDB_VER_JET3 = 0,
@@ -67,7 +70,8 @@ enum {
 	MDB_TEXT = 0x0a,
 	MDB_OLE = 0x0b,
 	MDB_MEMO = 0x0c,
-	MDB_REPID = 0x0f
+	MDB_REPID = 0x0f,
+	MDB_NUMERIC = 0x10
 };
 
 /* SARG operators */
@@ -188,6 +192,9 @@ typedef struct {
 	int		col_num;
 	int		cur_value_start;
 	int 	cur_value_len;
+	/* numerics only */
+	int		col_prec;
+	int		col_scale;
 } MdbColumn;
 
 typedef union {
@@ -214,10 +221,12 @@ extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
 extern size_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
 extern unsigned char mdb_get_byte(MdbHandle *mdb, int offset);
 extern int    mdb_get_int16(MdbHandle *mdb, int offset);
+extern gint32   mdb_get_int24(MdbHandle *mdb, int offset);
 extern long   mdb_get_int32(MdbHandle *mdb, int offset);
 extern float  mdb_get_single(MdbHandle *mdb, int offset);
 extern double mdb_get_double(MdbHandle *mdb, int offset);
 extern MdbHandle *mdb_open(char *filename);
+extern void mdb_swap_pgbuf(MdbHandle *mdb);
 
 /* catalog.c */
 extern void mdb_catalog_dump(MdbHandle *mdb, int obj_type);
@@ -247,4 +256,6 @@ extern void mdb_register_backend(MdbBackend *backend, char *backend_name);
 extern int  mdb_set_default_backend(MdbHandle *mdb, char *backend_name);
 extern char *mdb_get_relationships(MdbHandle *mdb);
 
+/* sargs.c */
+int mdb_test_sargs(MdbHandle *mdb, MdbColumn *col, int offset, int len);
 #endif /* _mdbtools_h_ */

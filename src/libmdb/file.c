@@ -142,7 +142,7 @@ off_t offset = pg * mdb->pg_size;
 	} 
 	return len;
 }
-mdb_swap_pgbuf(MdbHandle *mdb)
+void mdb_swap_pgbuf(MdbHandle *mdb)
 {
 char tmpbuf[MDB_PGSIZE];
 

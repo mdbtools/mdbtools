@@ -40,7 +40,8 @@ char *mdb_access_types[] =
          "Memo/Hyperlink",
          "Unknown 0x0d",
          "Unknown 0x0e",
-  	"Replication ID"};
+  	"Replication ID",
+	"Numeric"};
 
 /*    Oracle data types */
 char *mdb_oracle_types[] = 
@@ -59,6 +60,7 @@ char *mdb_oracle_types[] =
          "CLOB",
          "Oracle_Unknown 0x0d",
          "Oracle_Unknown 0x0e",
+  "NUMBER",
   "NUMBER"};
 
 /*    Sybase/MSSQL data types */
@@ -78,7 +80,8 @@ char *mdb_sybase_types[] =
          "text",
          "Sybase_Unknown 0x0d",
          "Sybase_Unknown 0x0e",
-  	"Sybase_Replication ID"};
+  	"Sybase_Replication ID",
+	"numeric"};
 
 /*    Postgres data types */
 char *mdb_postgres_types[] =
@@ -97,7 +100,8 @@ char *mdb_postgres_types[] =
          "Postgres_Unknown 0x0c",
          "Postgres_Unknown 0x0d",
          "Postgres_Unknown 0x0e",
-    "Serial"};
+    "Serial",
+	 "Postgres_Unknown 0x10"};
 
 char *bound_values[MDB_MAX_COLS];
 char *relationships[4];
@@ -108,8 +112,11 @@ int did_first;
 
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
-        if (col_type > 0x0f) {
-                return NULL;
+char buf[100];
+        if (col_type > 0x10) {
+                // return NULL;
+					sprintf(buf,"type %04x", col_type);
+                return buf;
         } else {
                 return backend->types_table[col_type];
         }

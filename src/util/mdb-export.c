@@ -36,6 +36,7 @@ char *delimiter = ",";
 char header_row = 1;
 char quote_text = 1;
 int  opt;
+char *s;
 
 	while ((opt=getopt(argc, argv, "HQd:"))!=-1) {
 		switch (opt) {
@@ -100,14 +101,26 @@ int  opt;
 
 			while(mdb_fetch_row(table)) {
 				if (quote_text && is_text_type(col->col_type)) {
-					fprintf(stdout,"\"%s\"",bound_values[0]);
+					fprintf(stdout,"\"");
+					for (s=bound_values[0];*s;s++) {
+						if (*s=='"') fprintf(stdout,"\"\"");
+						else fprintf(stdout,"%c",*s);
+					}
+					fprintf(stdout,"\"");
+					/* fprintf(stdout,"\"%s\"",bound_values[0]); */
 				} else {
 					fprintf(stdout,"%s",bound_values[0]);
 				}
         		for (j=1;j<table->num_cols;j++) {
 					col=g_ptr_array_index(table->columns,j);
 					if (quote_text && is_text_type(col->col_type)) {
-						fprintf(stdout,"%s\"%s\"",delimiter,bound_values[j]);
+						fprintf(stdout,"%s",delimiter);
+						fprintf(stdout,"\"");
+						for (s=bound_values[j];*s;s++) {
+							if (*s=='"') fprintf(stdout,"\"\"");
+							else fprintf(stdout,"%c",*s);
+						}
+						fprintf(stdout,"\"");
 					} else {
 						fprintf(stdout,"%s%s",delimiter,bound_values[j]);
 					}
