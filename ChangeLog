@@ -1,3 +1,7 @@
+Sat Apr 24 21:39:10 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/file.c:
+	* src/libmdb/mem.c: Moving some NULL pointer tests
+
 Sat Apr 24 15:27:51 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c:
 	* src/libmdb/props.c

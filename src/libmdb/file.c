@@ -173,9 +173,7 @@ mdb_close(MdbHandle *mdb)
 {
 	if (mdb->f) {
 		mdb->f->refs--;
-		if (mdb->f->refs<=0) {
-			mdb_free_file(mdb->f);
-		}
+		mdb_free_file(mdb->f);
 	}
 	mdb_free_handle(mdb);
 }

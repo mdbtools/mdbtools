@@ -60,6 +60,7 @@ MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)
 void 
 mdb_free_stats(MdbHandle *mdb)
 {
+	if (!mdb->stats) return;
 	g_free(mdb->stats);
 	mdb->stats = NULL;
 }
@@ -78,6 +79,8 @@ void
 mdb_free_file(MdbFile *f)
 {
 	if (!f) return;	
+	if (f->refs > 0) return;
+
 	if (f->fd) close(f->fd);
 	if (f->filename) free(f->filename);
 	free(f);
@@ -98,9 +101,9 @@ void mdb_free_handle(MdbHandle *mdb)
 {
 	if (!mdb) return;	
 
-	if (mdb->stats) mdb_free_stats(mdb);
-	if (mdb->catalog) mdb_free_catalog(mdb);
-	if (mdb->f && mdb->f->refs<=0) mdb_free_file(mdb->f);
+	mdb_free_stats(mdb);
+	mdb_free_catalog(mdb);
+	mdb_free_file(mdb->f);
 	if (mdb->backend_name) free(mdb->backend_name);
 	free(mdb);
 	mdb = NULL;
@@ -114,6 +117,9 @@ void mdb_free_catalog(MdbHandle *mdb)
 {
 	unsigned int i;
 	MdbCatalogEntry *entry;
+
+	if (!mdb->catalog) return;
+
 	for (i=0; i<mdb->catalog->len; i++) {
 		entry = g_ptr_array_index(mdb->catalog, i);
 		g_free (entry);
