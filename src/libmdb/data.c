@@ -62,11 +62,12 @@ int delflag, lookupflag;
 	if (row_start & 0x8000) delflag++;
 	if (row_start & 0x4000) lookupflag++;
 	row_start &= 0x0FFF; /* remove flags */
+#if DEBUG
 	fprintf(stdout,"Pg %d Row %d bytes %d to %d %s %s\n", 
 		pg_num, row, row_start, row_end,
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
-	
+#endif	
 	if (delflag || lookupflag) {
 		row_end = row_start-1;
 		return 0;

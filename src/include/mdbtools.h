@@ -127,9 +127,9 @@ extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
 /* data.c */
 extern void mdb_data_dump(MdbTableDef *table);
 extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr);
-extern int mdb_rewind_table(MdbTableDef *table)
-extern int mdb_fetch_row(MdbTableDef *table)
-extern int mdb_is_fixed_col(MdbColumn *col)
+extern int mdb_rewind_table(MdbTableDef *table);
+extern int mdb_fetch_row(MdbTableDef *table);
+extern int mdb_is_fixed_col(MdbColumn *col);
 extern char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size);
 
 
