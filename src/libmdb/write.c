@@ -423,9 +423,11 @@ mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 	pos += 2;
 
 	/* Offsets of the variable-length columns */
-	for (i=num_fields; i>num_fields-var_cols; i--) {
-		row_buffer[pos++] = fields[i-1].offset & 0xff;
-		row_buffer[pos++] = (fields[i-1].offset >> 8) & 0xff;
+	for (i=num_fields; i>0; i--) {
+		if (!fields[i-1].is_fixed) {
+			row_buffer[pos++] = fields[i-1].offset & 0xff;
+			row_buffer[pos++] = (fields[i-1].offset >> 8) & 0xff;
+		}
 	}
 	/* Number of variable-length columns */
 	row_buffer[pos++] = var_cols & 0xff;
@@ -468,9 +470,13 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 	row_buffer[pos] = pos;
 	pos++;
 
-	for (i=num_fields;i>num_fields-var_cols;i--) {
-		row_buffer[pos++] = fields[i-1].offset % 256;
+	for (i=num_fields; i>0; i--) {
+		if (!fields[i-1].is_fixed) {
+			row_buffer[pos++] = fields[i-1].offset & 0xff;
+		}
 	}
+
+	/* FIXME: jump table goes here */
 
 	row_buffer[pos++] = var_cols;
 
