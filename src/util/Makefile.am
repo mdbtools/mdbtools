@@ -4,5 +4,5 @@ DEFS = @DEFS@ -DLOCALEDIR=\"$(localedir)\"
 AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LDADD	=	../libmdb/libmdb.la 
 if SQL
-mdb_sql_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la
+mdb_sql_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la $(LIBREADLINE)
 endif

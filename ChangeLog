@@ -1,3 +1,8 @@
+Mon Mar 28 21:31:36 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* acinclude.m4:
+	* src/util/Makefile.am: Only mdb-sql depends on readline
+
+Sun Mar 27 21:32:00 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c: Fix segfault on file-not-found
 
 Tue Mar 22 21:51:06 CST 2005	Jeff Smith <whydoubt@yahoo.com>
