@@ -189,8 +189,23 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
 
-		read_pg_if(mdb, &cur_col, fmt->col_num_offset); // col_num_offset == 1 or 5
+		read_pg_if(mdb, &cur_col, cur_col + fmt->col_num_offset); // col_num_offset == 1 or 5
 		col.col_num = mdb->pg_buf[cur_col + fmt->col_num_offset];
+
+		//fprintf(stdout,"----- column %d -----\n",col.col_num);
+		read_pg_if(mdb, &cur_col, fmt->tab_col_offset_var); // col_var == 3 or 7
+		low_byte = mdb->pg_buf[cur_col + fmt->tab_col_offset_var];
+		read_pg_if(mdb, &cur_col, fmt->tab_col_offset_var + 1); 
+		high_byte = mdb->pg_buf[cur_col + fmt->tab_col_offset_var + 1];
+		col.var_col_num = high_byte * 256 + low_byte;
+		//fprintf(stdout,"var column pos %d\n",col.var_col_num);
+
+		read_pg_if(mdb, &cur_col, fmt->tab_row_col_num_offset); // col_var == 5 or 9
+		low_byte = mdb->pg_buf[cur_col + fmt->tab_row_col_num_offset];
+		read_pg_if(mdb, &cur_col, fmt->tab_row_col_num_offset + 1); 
+		high_byte = mdb->pg_buf[cur_col + fmt->tab_row_col_num_offset + 1];
+		col.row_col_num = high_byte * 256 + low_byte;
+		//fprintf(stdout,"row column num %d\n",col.row_col_num);
 
 		/* FIXME: can this be right in Jet3 and Jet4? */
 		if (col.col_type == MDB_NUMERIC) {
@@ -203,6 +218,15 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if(mdb, &cur_col, fmt->col_fixed_offset); // col_fixed_offset == 13 or 15
 		col.is_fixed = mdb->pg_buf[cur_col + fmt->col_fixed_offset] & 
 				0x01 ? 1 : 0;
+
+		read_pg_if(mdb, &cur_col, fmt->tab_col_offset_fixed); // col_fixed_offset == 13 or 15
+		low_byte = mdb->pg_buf[cur_col + fmt->tab_col_offset_fixed];
+		read_pg_if(mdb, &cur_col, fmt->tab_col_offset_fixed + 1); 
+		high_byte = mdb->pg_buf[cur_col + fmt->tab_col_offset_fixed + 1];
+		col.fixed_offset = high_byte * 256 + low_byte;
+		//fprintf(stdout,"fixed column offset %d\n",col.fixed_offset);
+		//fprintf(stdout,"col type %s\n",col.is_fixed ? "fixed" : "variable");
+
 		if (col.col_type != MDB_BOOL) {
 			read_pg_if(mdb, &cur_col, fmt->col_size_offset); // col_size_offset == 16 or 23
 			low_byte = mdb->pg_buf[cur_col + fmt->col_size_offset];

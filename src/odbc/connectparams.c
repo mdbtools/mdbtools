@@ -1,5 +1,7 @@
 /* MDB Tools - A library for reading MS Access database file
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2004 Brian Bruns
+ *
+ * portions based on FreeTDS, Copyright (C) 1998-1999 Brian Bruns
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -24,6 +26,12 @@
 
 #include "connectparams.h"
 
+#if !HAVE_SQLGETPRIVATEPROFILESTRING
+
+/*
+ *  * Last resort place to check for INI file. This is usually set at compile time
+ *   * by build scripts.
+ *    */
 #ifndef SYS_ODBC_INI
 #define SYS_ODBC_INI "/etc/odbc.ini"
 #endif
@@ -444,4 +452,63 @@ static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
    return TRUE;
 }
 
+#endif /* !HAVE_SQLGETPRIVATEPROFILESTRING */
 
+#ifdef UNIXODBC
+
+/*
+ * Begin BIG Hack.
+ *  
+ * We need these from odbcinstext.h but it wants to 
+ * include <log.h> and <ini.h>, which are not in the 
+ * standard include path.  XXX smurph
+ * confirmed by unixODBC stuff, odbcinstext.h shouldn't be installed. freddy77
+ */
+#define     INI_MAX_LINE            1000
+#define     INI_MAX_OBJECT_NAME     INI_MAX_LINE
+#define     INI_MAX_PROPERTY_NAME   INI_MAX_LINE
+#define     INI_MAX_PROPERTY_VALUE  INI_MAX_LINE
+
+#define	ODBCINST_PROMPTTYPE_LABEL		0	/* readonly */
+#define	ODBCINST_PROMPTTYPE_TEXTEDIT	1
+#define	ODBCINST_PROMPTTYPE_LISTBOX		2
+#define	ODBCINST_PROMPTTYPE_COMBOBOX	3
+#define	ODBCINST_PROMPTTYPE_FILENAME	4
+#define	ODBCINST_PROMPTTYPE_HIDDEN	    5
+
+typedef struct tODBCINSTPROPERTY
+{
+	struct tODBCINSTPROPERTY *pNext;	/* pointer to next property, NULL if last property                                                                              */
+
+	char szName[INI_MAX_PROPERTY_NAME + 1];	/* property name                                                                                                                                                */
+	char szValue[INI_MAX_PROPERTY_VALUE + 1];	/* property value                                                                                                                                               */
+	int nPromptType;	/* PROMPTTYPE_TEXTEDIT, PROMPTTYPE_LISTBOX, PROMPTTYPE_COMBOBOX, PROMPTTYPE_FILENAME    */
+	char **aPromptData;	/* array of pointers terminated with a NULL value in array.                                                     */
+	char *pszHelp;		/* help on this property (driver setups should keep it short)                                                   */
+	void *pWidget;		/* CALLER CAN STORE A POINTER TO ? HERE                                                                                                 */
+	int bRefresh;		/* app should refresh widget ie Driver Setup has changed aPromptData or szValue                 */
+	void *hDLL;		/* for odbcinst internal use... only first property has valid one                                               */
+}
+ODBCINSTPROPERTY, *HODBCINSTPROPERTY;
+
+/* 
+ * End BIG Hack.
+ */
+
+int
+ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)
+{
+	hLastProperty->pNext = (HODBCINSTPROPERTY) malloc(sizeof(ODBCINSTPROPERTY));
+	hLastProperty = hLastProperty->pNext;
+	memset(hLastProperty, 0, sizeof(ODBCINSTPROPERTY));
+	hLastProperty->nPromptType = ODBCINST_PROMPTTYPE_FILENAME;
+	strncpy(hLastProperty->szName, "Database", INI_MAX_PROPERTY_NAME);
+	strncpy(hLastProperty->szValue, "", INI_MAX_PROPERTY_VALUE);
+	hLastProperty->pszHelp = (char *) strdup("Filename and Path of MDB file to connect to.\n"
+						 "Use the full path to the database file.");
+
+
+	return 1;
+}
+
+#endif

@@ -84,6 +84,11 @@ AM_CONDITIONAL(HAVE_ODBC, test x$odbc = xtrue)
 AC_SUBST(HAVE_ODBC)
 AC_SUBST(ODBC_INC)
 
+if test "x$odbc" = "xtrue"; then
+	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBCINSTLIB="-lodbcinst"
+	AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1, [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+fi
+
 dnl check for glib/gtk/gnome
 AM_PATH_GLIB_2_0(2.0.0)
 

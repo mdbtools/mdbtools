@@ -44,7 +44,7 @@ configure can be passed any of the following flags to turn on other
 capabilities.
 
 --enable-sql     will cause the SQL engine to be built, you must have flex 
-                 and bison installed for this option.
+                 and bison (or yacc) installed for this option.
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
                  causes the ODBC driver to be built.
 

@@ -65,9 +65,13 @@ load_options()
         	if (!strcmp(opt, "debug_write")) opts |= MDB_DEBUG_WRITE;
         	if (!strcmp(opt, "debug_usage")) opts |= MDB_DEBUG_USAGE;
         	if (!strcmp(opt, "debug_ole")) opts |= MDB_DEBUG_OLE;
+        	if (!strcmp(opt, "debug_row")) opts |= MDB_DEBUG_ROW;
         	if (!strcmp(opt, "debug_all")) {
 				opts |= MDB_DEBUG_LIKE;
 				opts |= MDB_DEBUG_WRITE;
+				opts |= MDB_DEBUG_USAGE;
+				opts |= MDB_DEBUG_OLE;
+				opts |= MDB_DEBUG_ROW;
 			}
 			opt = strtok(NULL,":");
 		} while (opt);

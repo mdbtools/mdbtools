@@ -22,8 +22,9 @@ The initial goal of these tools is to be able to extract data structures and
 data from mdb files.  This goal will of course expand over time as the file 
 format becomes more well understood.  
 
-Files in libmdb are licensed under LGPL and the utilities under the GPL, see 
-COPYING.LIB and COPYING files respectively.
+Files in libmdb, libmdbsql, and libmdbodbc are licensed under LGPL and the 
+utilities and gui program are under the GPL, see COPYING.LIB and COPYING files 
+respectively.
 
 To install see the INSTALL file
 
@@ -32,3 +33,6 @@ Check out http://mdbtools.sourceforge.net for CVS, mailing list and similar.
 Brian Bruns
 brian@bruns.com
 
+P.S. I, like many other free software authors enjoy receiving postcards from the
+places users of my software live.  So, if you enjoy the software and it has 
+helped you out, consider sending me one, eh?  Just email me for my postal address.

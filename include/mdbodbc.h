@@ -22,12 +22,25 @@
 #include <mdbtools.h>
 #include <mdbsql.h>
 
+#ifdef UNIXODBC
+#include <sql.h>
+#include <sqlext.h>
+#include <odbcinst.h>
+#elif defined(MDB_NO_DM)
+#include <sql.h>
+#include <sqlext.h>
+#else /* IODBC */
+#include "isql.h"
+#include "isqlext.h"
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 static char  rcsid_sql_h [ ] =
-         "$Id: mdbodbc.h,v 1.2 2002/04/09 01:18:17 brianb Exp $";
+         "$Id: mdbodbc.h,v 1.3 2004/03/04 21:25:09 brianb Exp $";
 static void *no_unused_sql_h_warn[]={rcsid_sql_h, no_unused_sql_h_warn};
 
 struct _henv {

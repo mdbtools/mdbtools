@@ -203,7 +203,7 @@ Notes:
 Each memo column (or other long binary data) in a row
 
 +-------------------------------------------------------------------------+
-| Memo Field Definition (12 bytes)
+| Memo Field Definition (12 bytes)                                        |
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
@@ -319,10 +319,13 @@ next_pg field.
 | Iterate for the number of num_cols (18 bytes per column)                |
 +-------------------------------------------------------------------------+
 | ???? | 1 byte  | col_type    | Column Type (see table below)            |
-| ???? | 2 bytes | col_num     | Column Number, (not always)              |
+| ???? | 2 bytes | col_pos     | Column Position, (counts deleted cols)   |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 4 bytes | ???         |                                          |
-| ???? | 4 bytes | ???         |                                          |
+| ???? | 2 bytes | ???         |                                          |
+| ???? | 1 byte  | precision   | precision if numeric column              |
+| ???? | 1 byte  | scale       | scale if numeric column                  |
+| ???? | 2 bytes | ???         |                                          |
 | ???? | 1 byte  | bitmask     | low order bit indicates variable columns |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
 | ???? | 2 bytes | col_len     | Length of the column (0 if memo)         |
@@ -396,8 +399,8 @@ next_pg field.
 | ???? | 4 bytes | unknown     | matches first unknown definition block   |
 | ???? | 2 bytes | col_num     | Column Number                            |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
-| ???? | 2 bytes | col_num     | Column Number (repeat)                   |
-| ???? | 4 bytes | ???         |                                          |
+| ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
+| ???? | 4 bytes | ???         | prec/scale? verify                       |
 | ???? | 1 byte  | bitmask     | low order bit indicates variable columns |
 | ???? | 1 byte  | ???         | seems to be 1 when variable len          |
 | 0000 | 4 bytes | ???         |                                          |
@@ -470,7 +473,7 @@ Column Type may be one of the following (not complete):
 Notes on deleted and added columns: (sort of Jet4 specific)
 
 If a fixed length column is deleted the offset_F field will contain the offsets 
-of the original row definition.  Thus is the number of columns on the row does 
+of the original row definition.  Thus if the number of columns on the row does 
 not match the number in the tdef, the offset_F field could be used to return 
 the proper data. Columns are never really deleted in the row data.  The deleted column will forever exist and be set to null for new rows. 
 
@@ -488,7 +491,7 @@ Page Usage Maps
 There are three uses for the page usage bitmaps.  There is a global page usage 
 stored on page 1 which tracks allocated pages throughout the database.  
 
-Tables store two page usage bitmaps.  One is straight map of which pages are 
+Tables store two page usage bitmaps.  One is a straight map of which pages are 
 owned by the table.  The second is a map of the pages owned by the table which 
 have free space on them (used for inserting data).
 

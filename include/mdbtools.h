@@ -110,7 +110,8 @@ enum {
 	MDB_DEBUG_WRITE = 0x0002,
 	MDB_DEBUG_USAGE = 0x0004,
 	MDB_DEBUG_OLE = 0x0008,
-	MDB_USE_INDEX = 0x0010
+	MDB_DEBUG_ROW = 0x0010,
+	MDB_USE_INDEX = 0x0020
 };
 
 #define mdb_is_logical_op(x) (x == MDB_OR || \
@@ -196,6 +197,9 @@ typedef struct {
 	guint16		col_num_offset;
 	guint16		tab_col_entry_size;
 	guint16         tab_free_map_offset;
+	guint16		tab_col_offset_var;
+	guint16		tab_col_offset_fixed;
+	guint16		tab_row_col_num_offset;
 } MdbFormatConstants; 
 
 typedef struct {
@@ -248,7 +252,9 @@ typedef struct {
 	GPtrArray	*idx_sarg_cache;
 	unsigned char   is_fixed;
 	int		query_order;
-	int		col_num;
+	/* col_num is the current column order, 
+	 * does not include deletes */
+	int		col_num;	
 	int		cur_value_start;
 	int 		cur_value_len;
 	/* MEMO/OLE readers */
@@ -259,8 +265,12 @@ typedef struct {
 	int		col_prec;
 	int		col_scale;
 	MdbProperties	*props;
-	int fixed_offset;
-	int var_col_num;
+	/* info needed for handling deleted/added columns */
+	int 		fixed_offset;
+	int 		var_col_num;
+	/* row_col_num is the row column number order, 
+	 * including deleted columns */
+	int		row_col_num;
 } MdbColumn;
 
 typedef struct _mdbsargtree {

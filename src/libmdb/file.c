@@ -40,13 +40,16 @@ typedef struct {
 	guint16		col_num_offset;
 	guint16		tab_col_entry_size;
 	guint16         tab_free_map_offset;
+	guint16         tab_col_offset_var;
+	guint16         tab_col_offset_fixed;
+	guint16         tab_row_col_num_offset;
 } MdbFormatConstants; 
 */
 MdbFormatConstants MdbJet4Constants = {
-	4096, 0x0c, 16, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59
+	4096, 0x0c, 16, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59, 7, 21, 9
 };
 MdbFormatConstants MdbJet3Constants = {
-	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39
+	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39, 3, 14, 5 /* not sure on 5, need to check */
 };
 
 static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);

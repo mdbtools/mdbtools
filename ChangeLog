@@ -1,3 +1,17 @@
+Thu Mar  4 15:30:21 EST 2004	Brian Bruns <brian@bruns.com>
+	* src/odbc/Makefile.am: add newer files to driver
+	* src/libmdb/options.c: add debug_row option
+	* src/libmdb/data.c: loop for num_cols (current columns definition) not num_fields (columns on row)
+	* src/libmdb/write.c: read deleted fixed columns correctly under jet4
+	* include/mdbtools.h:
+	* src/libmdb/file.c:
+	* src/libmdb/table.c: store fixed and variable offsets and postions from tdef in column structure.
+	* include/mdbodbc.h:
+	* src/odbc/connectparams.c: Add ODBCINSTGetProperties function for setup lib.
+	* configure.in: Add detection of SQLGetPrivateProfileString
+	* README: clarify LGPL covered files
+	* INSTALL: clarify yacc/bison 
+
 Sun Feb 15 07:37:19 EST 2004	Brian Bruns	<brian@bruns.com>
 	* HACKING: better description of Jet4 column deletion/addition
 	* src/gmdb2/gladefiles/gmdb-debug.glade: 

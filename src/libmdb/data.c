@@ -176,7 +176,7 @@ int ret;
 				mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len));
 			}
 		} else {
-			strcpy(col->bind_ptr,  "");
+			strcpy(col->bind_ptr,  "");	
 		}
 		ret = strlen(col->bind_ptr);
 		if (col->len_ptr) {
@@ -241,7 +241,8 @@ int mdb_read_row(MdbTableDef *table, int row)
 
 #if 1
 	/* take advantage of mdb_crack_row() to clean up binding */
-	for (i = 0; i < num_fields; i++) {
+	/* use num_cols instead of num_fields -- bsb 03/04/02 */
+	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index(table->columns,fields[i].colnum);
 		if (fields[i].is_fixed) {
 			rc = _mdb_attempt_bind(mdb, col, 
