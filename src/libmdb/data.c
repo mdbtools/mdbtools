@@ -192,6 +192,9 @@ int mdb_fetch_row(MdbTableDef *table)
 MdbHandle *mdb = table->entry->mdb;
 int rows;
 
+	if (table->num_rows==0)
+		return 0;
+
 	/* initialize */
 	if (!table->cur_pg_num) {
 		table->cur_pg_num=1;
