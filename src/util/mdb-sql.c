@@ -25,12 +25,11 @@
 #    include <readline/readline.h>
 #  elif defined(HAVE_READLINE_H)
 #    include <readline.h>
-#  else /* !defined(HAVE_READLINE_H) */
+#  else
+/* no readline.h */
 extern char *readline ();
-#  endif /* !defined(HAVE_READLINE_H) */
+#  endif
 char *cmdline = NULL;
-#else /* !defined(HAVE_READLINE_READLINE_H) */
-/* no readline */
 #endif /* HAVE_LIBREADLINE */
 
 #ifdef HAVE_READLINE_HISTORY
@@ -38,12 +37,12 @@ char *cmdline = NULL;
 #    include <readline/history.h>
 #  elif defined(HAVE_HISTORY_H)
 #    include <history.h>
-#  else /* !defined(HAVE_HISTORY_H) */
+#  else
+/* no history.h */
 extern void add_history ();
 extern int write_history ();
 extern int read_history ();
-#  endif /* defined(HAVE_READLINE_HISTORY_H) */
-/* no history */
+#  endif
 #endif /* HAVE_READLINE_HISTORY */
 
 #include <string.h>
@@ -66,7 +65,9 @@ char *delimiter;
 int showplan = 0;
 int noexec = 0;
 
+#ifdef HAVE_READLINE_HISTORY
 #define HISTFILE ".mdbhistory"
+#endif
 
 #ifndef HAVE_LIBREADLINE
 char *readline(char *prompt)
@@ -89,16 +90,6 @@ int i = 0;
 
 	return buf;
 }
-void add_history(char *s)
-{
-}
-void read_history(char *s)
-{
-}
-void write_history(char *s)
-{
-}
-
 #endif
 
 int parse(MdbSQL *sql, char *buf)
@@ -190,8 +181,10 @@ read_file(char *s, int line, unsigned int *bufsz, char *mybuf)
 			mybuf = (char *) realloc(mybuf, *bufsz);
 		}	
 		strcat(mybuf, buf);
+#ifdef HAVE_READLINE_HISTORY
 		/* don't record blank lines */
 		if (strlen(buf)) add_history(buf);
+#endif
 		strcat(mybuf, "\n");
 		lines++;
 		printf("%d => %s",line+lines, buf);
@@ -375,11 +368,13 @@ char *home = getenv("HOME");
 char *histpath;
 
 
+#ifdef HAVE_READLINE_HISTORY
 	if (home) {
 		histpath = (char *) g_strconcat(home, "/", HISTFILE, NULL);
 		read_history(histpath);
 		g_free(histpath);
 	}
+#endif
 	if (!isatty(fileno(stdin))) {
 		in = stdin;
 	}
@@ -462,8 +457,10 @@ char *histpath;
 				bufsz *= 2;
 				mybuf = (char *) g_realloc(mybuf, bufsz);
 			}
+#ifdef HAVE_READLINE_HISTORY
 			/* don't record blank lines */
 			if (strlen(s)) add_history(s);
+#endif
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */
 			strcat(mybuf,"\n");
@@ -494,11 +491,13 @@ char *histpath;
 	g_free(mybuf);
 	if (s) free(s);
 
+#ifdef HAVE_READLINE_HISTORY
 	if (home) {
 		histpath = (char *) g_strconcat(home, "/", HISTFILE, NULL);
 		write_history(histpath);
 		g_free(histpath);
 	}
+#endif
 
 	myexit(0);
 

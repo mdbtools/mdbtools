@@ -1,5 +1,5 @@
 bin_PROGRAMS	=	mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql mdb-ver mdb-prop mdb-import prtable prcat prdata prkkd prdump prole updrow prindex
-LIBS	=	$(GLIB_LIBS) $(READLINE_LIBS) @LEXLIB@ 
+LIBS	=	$(GLIB_LIBS) @LIBS@ @LEXLIB@ 
 DEFS = @DEFS@ -DLOCALEDIR=\"$(localedir)\"
 AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LDADD	=	../libmdb/libmdb.la 

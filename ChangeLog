@@ -1,3 +1,10 @@
+Sun Oct 24 23:07:16 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* configure.in:
+	* src/gmdb2/Makefile.am:
+	* src/libmdb/Makefile.am:
+	* src/util/Makefile.am:
+	* src/util/mdb-sql.c: Readline usage fixes
+
 Wed Oct 20 21:49:04 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/sql/mdbsql.c: Get rid of GLib 2.4+ call
 

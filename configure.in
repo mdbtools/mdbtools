@@ -168,8 +168,6 @@ dnl Checks for library functions.
 OLDLDFLAGS=$LDFLAGS
 
 VL_LIB_READLINE
-READLINE_LIBS=$vl_cv_lib_readline
-AC_SUBST(READLINE_LIBS)
 
 LDFLAGS=$OLDLDFLAGS
 
