@@ -57,6 +57,7 @@ void mdb_free_tabledef(MdbTableDef *table)
 {
 	if (!table) return;
 	mdb_free_columns(table->columns);
+	mdb_free_indices(table->indices);
 	g_free(table->usage_map);
 	g_free(table->free_usage_map);
 	g_free(table);

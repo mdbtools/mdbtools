@@ -1,3 +1,16 @@
+Wed Jun 23 23:19:43 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/table.c:
+	* src/util/mdb-array.c:
+	* src/util/mdb-check.c:
+	* src/util/mdb-header.c:
+	* src/util/mdb-import.c:
+	* src/util/mdb-prop.c:
+	* src/util/prdata.c:
+	* src/util/prindex.c:
+	* src/util/prole.c:
+	* src/util/sargtest.c:
+	* src/util/updrow.c: Fix some memory leaks
+
 Wed Jun 23 07:30:17 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/table.c:
 	* src/libmdb/mem.c

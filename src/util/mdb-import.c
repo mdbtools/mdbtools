@@ -237,6 +237,7 @@ main(int argc, char **argv)
 		mdb_insert_row(table, num_fields, fields);
 	}
 
+	mdb_free_tabledef(table);
 	g_free(delimiter);
 	fclose(in);
 	mdb_close(mdb);

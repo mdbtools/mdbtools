@@ -89,6 +89,7 @@ main(int argc, char **argv)
 		}
 	}
 
+	mdb_free_tabledef(table);
 	mdb_close(mdb);
 	mdb_exit();
 

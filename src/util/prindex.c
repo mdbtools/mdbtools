@@ -60,7 +60,7 @@ int found = 0;
 						walk_index(mdb, idx);
 					}
 				}
-
+				mdb_free_tabledef(table);
 
 				//mdb_table_dump(entry);
 				found++;

@@ -60,6 +60,7 @@ char *sargname = NULL;
 				table = mdb_read_table(entry);
 				mdb_read_columns(table);
 				dump_ole(table, colname, sargname);
+				mdb_free_tabledef(table);
 		}
 	}
 

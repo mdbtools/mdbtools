@@ -49,6 +49,7 @@ MdbTableDef *table;
 			!strcmp(entry->object_name,TABLE_NAME)) {
 				table = mdb_read_table(entry);
 				print_table(table);
+				mdb_free_tabledef(table);
 		}
 	}
 

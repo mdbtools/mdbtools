@@ -67,6 +67,7 @@ int len;
 				len = strlen(colval);
 				strcpy(data,colval);
 				mdb_update_row(table);
+				mdb_free_tabledef(table);
 		}
 	}
 

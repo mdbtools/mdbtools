@@ -120,6 +120,8 @@ int started;
 	   {
 	     g_free (bound_values [j]);
 	   }
+
+	 mdb_free_tabledef(table);
        }
    }
  

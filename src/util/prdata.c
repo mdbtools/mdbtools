@@ -45,6 +45,7 @@ MdbTableDef *table;
 				table = mdb_read_table(entry);
 				mdb_read_columns(table);
 				mdb_data_dump(table);
+				mdb_free_tabledef(table);
 		}
 	}
 

@@ -145,6 +145,8 @@ FILE *cfile;
 	       fprintf (typesfile, "\n} %s ;\n", entry->object_name);
 	       fprintf (typesfile, "\n");
 	       fprintf (cfile, "}\n\n");
+
+	       mdb_free_tabledef(table);
 	     }
 	 }
      }

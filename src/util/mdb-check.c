@@ -96,6 +96,8 @@ int opt;
 			fprintf(stdout,"Check 3: Checking for lost pages\n");
 			ret = dbcc_lost_pages(table);
 			//check_ret(table, ret);
+
+			mdb_free_tabledef(table);
 		}
 	}
    }
