@@ -69,8 +69,8 @@ void
 mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col)
 {
 	col->col_num = table->num_cols;
-	g_ptr_array_add(table->columns, g_memdup(col, sizeof(MdbColumn)));
 	if (!col->is_fixed)
-		table->num_var_cols++;
+		col->var_col_num = table->num_var_cols++;
+	g_ptr_array_add(table->columns, g_memdup(col, sizeof(MdbColumn)));
 	table->num_cols++;
 }
