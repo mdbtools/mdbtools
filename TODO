@@ -3,10 +3,12 @@ Things to Do
 
 . Complete the list of datatypes
 . Figure out how to properly determine fixed or variable length columns
-. Figure out how NULLs are stored in data rows
 . Figure out what happens for varchar columns starting at > 256
 . Modify mdb-schema utility support different backend databases
 . Modify mdb-export to handle different delimiters/options
-. Get autoconf working
+. Get automake working
 . Check out text file unixODBC driver to see if it can be adapted to use
   libmdb (it already has a SQL parser).
+. Straighten out which functions in libmdb are meant to be used and which ones
+  should be static.
+. Create an API reference for libmdb (maybe some man pages).

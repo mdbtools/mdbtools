@@ -19,7 +19,7 @@ LIBS =
 INSTALL= @INSTALL@
 
 PROGS = mdb-dump
-OBJS = dump.o
+OBJS = dump.o 
 
 all: $(PROGS)
 
@@ -31,3 +31,15 @@ mdb-dump: dump.o
 
 .c.o:
 	$(CC) -g -c $<
+
+install: 
+	@for prog in $(PROGS); do \
+	 echo "             copying $$prog to $(bindir)"; \
+	 cp $$prog $(bindir); \
+        done
+
+uninstall: 
+	@for prog in $(PROGS); do \
+	 echo "             removing $$prog from $(bindir)"; \
+	 rm -f $(bindir)/$$prog; \
+        done

@@ -17,6 +17,7 @@ CFLAGS = $(CPPFLAG) -g -O2
 LDFLAGS = 
 LIBS = 
 INSTALL= @INSTALL@
+LIBLIST = libmdb.a
 
 INC = -I ../include `glib-config --cflags`
 OBJS = catalog.o mem.o file.o kkd.o table.o data.o dump.o
@@ -31,3 +32,15 @@ clean:
 
 .c.o:
 	$(CC) -g -c $< $(INC)
+
+install:
+	@for lib in $(LIBLIST); do \
+	  echo "             copying $$lib to $(libdir)"; \
+          cp $$lib $(libdir); \
+	done
+
+uninstall:
+	@for lib in $(LIBLIST); do \
+	  echo "             copying $$lib to $(libdir)"; \
+          rm -f $(libdir)/$$lib; \
+	done
