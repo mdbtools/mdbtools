@@ -23,28 +23,92 @@
 #include "dmalloc.h"
 #endif
 
+struct type_struct {
+	char *name;
+	int value;
+} types[] = {
+	{ "form", MDB_FORM },
+   	{ "table", MDB_TABLE },
+   	{ "macro", MDB_MACRO },
+   	{ "systable", MDB_SYSTEM_TABLE },
+   	{ "report", MDB_REPORT },
+   	{ "query", MDB_QUERY },
+   	{ "linkedtable", MDB_LINKED_TABLE },
+   	{ "module", MDB_MODULE },
+   	{ "relationship", MDB_RELATIONSHIP },
+   	{ "dbprop", MDB_DATABASE_PROPERTY },
+   	{ "any", MDB_ANY },
+   	{ "all", MDB_ANY },
+   	{ NULL, 0 }
+};
+
+char *
+valid_types()
+{
+	static char ret[256]; /* be sure to allow for enough space if adding more */
+	int i = 0;	
+	
+	ret[0] = '\0';
+	while (types[i].name) {
+		strcat(ret, types[i].name);
+		strcat(ret, " ");
+		i++;
+	}
+	return ret;
+}
+int 
+get_obj_type(char *typename, int *ret)
+{
+	int i=0;
+	int found=0;
+
+	char *s = typename;
+
+	while (*s) { *s=tolower(*s); s++; }
+
+	while (types[i].name) {
+		if (!strcmp(types[i].name, typename)) {
+			found=1;
+			*ret = types[i].value;
+		}
+		i++;
+	}
+	return found;
+}
 int
 main (int argc, char **argv)
 {
-int   i;
-MdbHandle *mdb;
-MdbCatalogEntry *entry;
-char *delimiter = NULL;
-int line_break=0;
-int skip_sys=1;
-int opt;
+	int   i;
+	MdbHandle *mdb;
+	MdbCatalogEntry *entry;
+	char *delimiter = NULL;
+	int line_break=0;
+	int skip_sys=1;
+	int opt;
+	int objtype = MDB_TABLE;
+
 
 	if (argc < 2) {
-		fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] <file>\n",argv[0]);
+		fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] [-t <type>] <file>\n",argv[0]);
+		fprintf (stderr, "       Valid types are: %s\n",valid_types());
+
 		exit (1);
 	}
 
-	while ((opt=getopt(argc, argv, "S1d:"))!=-1) {
+	while ((opt=getopt(argc, argv, "S1d:t:"))!=-1) {
         switch (opt) {
         case 'S':
             skip_sys = 0;
         case '1':
             line_break = 1;
+        break;
+        case 't':
+            if (!get_obj_type(optarg, &objtype)) {
+				fprintf(stderr,"Invalid type name.\n");
+				fprintf (stderr, "Valid types are: %s\n",valid_types());
+				exit(1);
+			}
+			printf("objtype is %d\n", objtype);
         break;
         case 'd':
             delimiter = (char *) malloc(strlen(optarg)+1);
@@ -65,7 +129,7 @@ int opt;
 	
 
  	/* read the catalog */
- 	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
+ 	if (!mdb_read_catalog (mdb, MDB_ANY)) {
 		fprintf(stderr,"File does not appear to be an Access database\n");
 		exit(1);
 	}
@@ -75,7 +139,7 @@ int opt;
 		entry = g_ptr_array_index (mdb->catalog, i);
 
      	/* if it's a table */
-     	if (entry->object_type == MDB_TABLE) {
+     	if (entry->object_type == objtype) {
 	 		/* skip the MSys tables */
 			if (!skip_sys || strncmp (entry->object_name, "MSys", 4)) {
 	       		if (line_break) 
