@@ -59,7 +59,7 @@
 			<widget class="GtkImageMenuItem" id="close_menu">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_CLOSE_ITEM</property>
-			  <signal name="activate" handler="gmdb_debug_close_cb"/>
+			  <signal name="activate" handler="gmdb_debug_close_cb" object="debug_window"/>
 			</widget>
 		      </child>
 		    </widget>

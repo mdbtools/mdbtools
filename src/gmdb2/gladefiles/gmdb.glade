@@ -167,12 +167,23 @@
 		    <widget class="GtkMenu" id="tools1_menu">
 
 		      <child>
-			<widget class="GtkMenuItem" id="sql_menu">
+			<widget class="GtkImageMenuItem" id="sql_menu">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">S_QL Window</property>
 			  <property name="use_underline">True</property>
 			  <signal name="activate" handler="gmdb_sql_new_cb" last_modification_time="Sat, 28 Dec 2002 16:54:54 GMT"/>
 			  <accelerator key="G" modifiers="GDK_CONTROL_MASK" signal="activate"/>
+			  <child internal-child="image">
+			    <widget class="GtkImage" id="sql_icon">
+			      <property name="visible">True</property>
+			      <property name="stock">gtk-execute</property>
+			      <property name="icon_size">1</property>
+			      <property name="xalign">0.5</property>
+			      <property name="yalign">0.5</property>
+			      <property name="xpad">0</property>
+			      <property name="ypad">0</property>
+			    </widget>
+			  </child>
 			</widget>
 		      </child>
 
@@ -293,41 +304,37 @@
 	      <property name="tooltips">True</property>
 
 	      <child>
-		<widget class="button" id="button2">
+		<widget class="GtkToolButton" id="button2">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Open an MDB database file</property>
-		  <property name="label">gtk-open</property>
-		  <property name="use_stock">True</property>
+		  <property name="tooltip" translatable="yes">Open database file</property>
+		  <property name="stock-id">gtk-open</property>
 		  <signal name="clicked" handler="gmdb_file_select_cb" last_modification_time="Sun, 29 Dec 2002 03:21:06 GMT"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="info_button">
+		<widget class="GtkToolButton" id="info_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">View database file properties</property>
-		  <property name="label">gtk-properties</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-properties</property>
 		  <signal name="clicked" handler="gmdb_info_cb" last_modification_time="Sun, 29 Dec 2002 03:21:29 GMT"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="button7">
+		<widget class="GtkToolButton" id="button7">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Close this database</property>
-		  <property name="label">gtk-close</property>
-		  <property name="use_stock">True</property>
+		  <property name="tooltip" translatable="yes">Close database file</property>
+		  <property name="stock-id">gtk-close</property>
+		  <signal name="clicked" handler="gmdb_file_close_cb"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="sql_button">
+		<widget class="GtkToolButton" id="sql_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Open SQL query window</property>
-		  <property name="label" translatable="yes">SQL</property>
-		  <property name="use_underline">True</property>
-		  <property name="stock_pixmap">gtk-execute</property>
+		  <property name="tooltip" translatable="yes">Perform SQL query</property>
+		  <property name="stock-id">gtk-execute</property>
 		  <signal name="clicked" handler="gmdb_sql_new_cb" last_modification_time="Sun, 29 Dec 2002 03:23:01 GMT"/>
 		</widget>
 		<packing>
@@ -336,15 +343,14 @@
 	      </child>
 
 	      <child>
-		<widget class="button" id="schema_button">
+		<widget class="GtkToolButton" id="schema_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Export schema definition</property>
-		  <property name="label" translatable="yes">Export Schema</property>
-		  <property name="use_underline">True</property>
-		  <property name="stock_pixmap">gtk-convert</property>
+		  <property name="stock-id">gtk-convert</property>
 		  <signal name="clicked" handler="gmdb_schema_new_cb" last_modification_time="Sun, 29 Dec 2002 20:34:50 GMT"/>
 		</widget>
 	      </child>
+
 	    </widget>
 	  </child>
 	</widget>

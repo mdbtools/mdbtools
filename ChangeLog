@@ -1,5 +1,8 @@
 Thu Feb  3 21:12:55 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING: Small documentation fix
+	* src/gmdb2/debug.c:
+	* src/gmdb2/gladefiles/gmdb-debug.glade:
+	* src/gmdb2/gladefiles/gmdb.glade: Lots of gmdb2 updates and fixes
 
 Mon Jan 10 06:52:43 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/gmdb2/gladefiles/gmdb-debug.glade:

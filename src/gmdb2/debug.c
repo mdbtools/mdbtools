@@ -15,6 +15,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+/* Objects attached to debug_window:
+ *   GList *nav_list: list of pages viewed, entries are guint32 *'s
+ *   guint *nav_elem: index to current page in nav_list
+ *   GladeXML *debugwin_xml: the associated glade hierarchy
+ *   gboolean *dissect: whether dissecting is turned on
+ */ 
+
 #include "gmdb.h"
 
 #include <glade/glade.h>
@@ -31,14 +39,15 @@ GList *debug_list = NULL;
 static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml);
 static void gmdb_debug_text_on(GtkWidget *textbox, int start_byte, int end_byte);
 static void gmdb_debug_text_off(GtkWidget *textbox);
-static GtkTreeIter *gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter, gchar *text, int start, int end);
+static GtkTreeIter *gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter, gchar *text, int start, int len);
 static void gmdb_debug_clear(GladeXML *xml);
 static void gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len);
 static guint16 get_uint16(unsigned char *c);
 static guint32 get_uint32(unsigned char *c);
+static gchar *gmdb_strappend(gchar *x, gchar *y);
 static long gmdb_get_max_page(MdbHandle *mdb);
 static void gmdb_debug_display(GladeXML *xml, guint32 page);
-static void gmdb_debug_jump(GtkWidget *w, GladeXML *xml, int msb);
+static void gmdb_debug_jump(GladeXML *xml, int msb);
 
 /* value to string stuff */
 typedef struct GMdbValStr {
@@ -86,16 +95,18 @@ int start_col, end_col;
 int i;
 GtkTreeIter iter;
 GtkTreeModel *model;
-gchar *fieldname;
 gint32 start, end;
 GtkWidget *textview;
 
 	if (!select) return;
 
 	if (gtk_tree_selection_get_selected (select, &model, &iter)) {
+		gchar *fieldname;
+		gint32 len;
 		gtk_tree_model_get (model, &iter, 0, &fieldname, 
 			1, &start, 
-			2, &end, -1);
+			2, &len, -1);
+		end = start + len - 1;
 		g_free (fieldname);
 	}
 
@@ -124,7 +135,7 @@ GtkWidget *textview;
 		gmdb_debug_text_on(textview, 
 			start_row + 59 + (start % 16),
 			start_row + 75); 
-		for (i=start_row + LINESZ; i < end_row; i++) {
+		for (i=start_row + LINESZ; i < end_row; i+=LINESZ) {
 			gmdb_debug_text_on(textview, i + 8, i + 55);
 			gmdb_debug_text_on(textview, i + 59, i + 75);
 		}
@@ -140,10 +151,9 @@ void
 gmdb_debug_forward_cb(GtkWidget *w, gpointer data)
 {
 	guint *nav_elem;
-	gchar *page;
+	guint32 *page;
 	GladeXML *xml;
 	GList *nav_list;
-	guint32 page_num;
 	guint num_items;
 
 	nav_list = g_object_get_data(G_OBJECT(w),"nav_list");
@@ -155,18 +165,16 @@ gmdb_debug_forward_cb(GtkWidget *w, gpointer data)
 	g_object_set_data(G_OBJECT(w), "nav_elem", nav_elem);
 	page = g_list_nth_data(nav_list,(*nav_elem) - 1);
 
-	page_num = atol(page);
 	xml = g_object_get_data(G_OBJECT(w), "debugwin_xml");
-	gmdb_debug_display(xml, page_num);
+	gmdb_debug_display(xml, *page);
 }
 void
 gmdb_debug_back_cb(GtkWidget *w, gpointer data)
 {
 	guint *nav_elem;
-	gchar *page;
+	guint32 *page;
 	GladeXML *xml;
 	GList *nav_list;
-	guint32 page_num;
 
 	nav_list = g_object_get_data(G_OBJECT(w),"nav_list");
 	nav_elem = g_object_get_data(G_OBJECT(w),"nav_elem");
@@ -176,9 +184,8 @@ gmdb_debug_back_cb(GtkWidget *w, gpointer data)
 	g_object_set_data(G_OBJECT(w), "nav_elem", nav_elem);
 	page = g_list_nth_data(nav_list,(*nav_elem) - 1);
 	
-	page_num = atol(page);
 	xml = g_object_get_data(G_OBJECT(w), "debugwin_xml");
-	gmdb_debug_display(xml, page_num);
+	gmdb_debug_display(xml, *page);
 }
 static void
 gmdb_nav_add_page(GtkWidget *win, guint32 page_num)
@@ -189,12 +196,11 @@ gmdb_nav_add_page(GtkWidget *win, guint32 page_num)
 	guint num_items;
 	int i;
 
+	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
 	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
 	if (!nav_elem) {
 		nav_elem = g_malloc0(sizeof(guint));
 	}
-
-	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
 	
 	/*
 	 * If we are positioned in the middle of the list and jumping from here
@@ -210,11 +216,7 @@ gmdb_nav_add_page(GtkWidget *win, guint32 page_num)
 		}
 	}
 
-	*nav_elem = g_list_length(nav_list);
-
-	nav_list = g_list_append(nav_list,
-		g_strdup_printf("%lu", (unsigned long)page_num));
-
+	nav_list = g_list_append(nav_list, g_memdup(&page_num, 4));
 	*nav_elem = g_list_length(nav_list);
 
 	g_object_set_data(G_OBJECT(win), "nav_list", nav_list);
@@ -331,17 +333,18 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	GtkTextIter iter;
 	GtkTextView *textview;
 	GtkWidget *entry, *window;
-	char pagestr[20];
-	guint *dissect;
+	char *pagestr;
+	gboolean *dissect;
 	GtkWidget *tree;
 	GtkTreeView *store;
 
 	textview = (GtkTextView *) glade_xml_get_widget (xml, "debug_textview");
 	gmdb_debug_clear(xml);
 
-	sprintf(pagestr, "%lu", (unsigned long)page);
+	pagestr = g_strdup_printf("%lu", (unsigned long)page);
 	entry = glade_xml_get_widget (xml, "debug_entry");
 	gtk_entry_set_text(GTK_ENTRY(entry),pagestr);
+	g_free(pagestr);
 
 	pos = lseek(mdb->f->fd, 0, SEEK_CUR);
 	lseek(mdb->f->fd, page * mdb->fmt->pg_size, SEEK_SET);
@@ -379,20 +382,27 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 
 	window = glade_xml_get_widget(xml, "debug_window");
 	dissect = g_object_get_data(G_OBJECT(window),"dissect");
-	if (!dissect || *dissect==1)
+	if (!dissect || *dissect)
 		gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
 
 	g_free(fbuf);
 	g_free(tbuf);
 }
 /* functions */
+static gchar *
+gmdb_strappend(gchar *x, gchar *y)
+{
+	gchar *z = g_strconcat(x, y);
+	g_free(x);
+	return z;
+}
 static long
 gmdb_get_max_page(MdbHandle *mdb)
 {
 struct stat st;
 
 	assert( fstat(mdb->f->fd, &st)!=-1 );
-	return st.st_size/mdb->fmt->pg_size;
+	return (st.st_size/mdb->fmt->pg_size)-1;
 }
 static gchar *
 gmdb_val_to_str(GMdbValStr *valstr, gint val)
@@ -412,248 +422,259 @@ int i = 0;
 static guint16 
 get_uint16(unsigned char *c)
 {
-guint16 i;
-
-i =c[1]; i<<=8;
-i+=c[0];
-
-return i;
+	guint16 i;
+	memcpy(&i, c, 2);
+	return GINT16_FROM_LE(i);
 }
 static guint32 
 get_uint32(unsigned char *c)
 {
-guint32 l;
-
-l =c[3]; l<<=8;
-l+=c[2]; l<<=8;
-l+=c[1]; l<<=8;
-l+=c[0];
-
-return l;
+	guint32 l;
+	memcpy(&l, c, 4);
+	return GINT32_FROM_LE(l);
 }
 static void 
 gmdb_debug_dissect_column(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
-	gchar str[100];
+	gchar *str;
+	char *foff = fbuf + offset;
 
-	snprintf(str, 100, "Column Type: 0x%02x (%s)", fbuf[offset],
-		gmdb_val_to_str(column_types, fbuf[offset]));
-	gmdb_debug_add_item(store, parent, str, offset, offset);
-	snprintf(str, 100, "Column #: %d", get_uint16(&fbuf[offset+1]));
-	gmdb_debug_add_item(store, parent, str, offset+1, offset+2);
-	snprintf(str, 100, "VarCol Offset: %d", get_uint16(&fbuf[offset+3]));
-	gmdb_debug_add_item(store, parent, str, offset+3, offset+4);
-	snprintf(str, 100, "Unknown");
-	gmdb_debug_add_item(store, parent, str, offset+5, offset+8);
-	snprintf(str, 100, "Unknown");
-	gmdb_debug_add_item(store, parent, str, offset+9, offset+12);
-	snprintf(str, 100, "Variable Column: %s", 
-		fbuf[offset+13] & 0x01  ? "No" : "Yes");
-	gmdb_debug_add_item(store, parent, str, offset+13, offset+13);
-	snprintf(str, 100, "Fixed Col Offset: %d", get_uint16(&fbuf[offset+14]));
-	gmdb_debug_add_item(store, parent, str, offset+14, offset+15);
-	snprintf(str, 100, "Column Length: %d", get_uint16(&fbuf[offset+16]));
-	gmdb_debug_add_item(store, parent, str, offset+16, offset+17);
+	str = g_strdup_printf("Column Type: 0x%02x (%s)", foff[0],
+		gmdb_val_to_str(column_types, foff[0]));
+	gmdb_debug_add_item(store, parent, str, offset, 1);
+	str = g_strdup_printf("Column #: %d", get_uint16(foff+1));
+	gmdb_debug_add_item(store, parent, str, offset+1, 2);
+	str = g_strdup_printf("VarCol Offset: %d", get_uint16(foff+3));
+	gmdb_debug_add_item(store, parent, str, offset+3, 2);
+	str = g_strdup_printf("Unknown");
+	gmdb_debug_add_item(store, parent, str, offset+5, 4);
+	str = g_strdup_printf("Unknown");
+	gmdb_debug_add_item(store, parent, str, offset+9, 4);
+	str = g_strdup_printf("Variable Column: %s", 
+		(foff[13] & 0x01) ? "No" : "Yes");
+	gmdb_debug_add_item(store, parent, str, offset+13, 1);
+	str = g_strdup_printf("Fixed Col Offset: %d", get_uint16(foff+14));
+	gmdb_debug_add_item(store, parent, str, offset+14, 2);
+	str = g_strdup_printf("Column Length: %d", get_uint16(foff+16));
+	gmdb_debug_add_item(store, parent, str, offset+16, 2);
 }
 static void 
 gmdb_debug_dissect_index1(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
-	gchar str[100];
+	gchar *str;
 
-	snprintf(str, 100, "Unknown");
-	gmdb_debug_add_item(store, parent, str, offset, offset+3);
-	snprintf(str, 100, "Rows in Index: %lu", (unsigned long)get_uint32(&fbuf[offset+4])); 
-	gmdb_debug_add_item(store, parent, str, offset+4, offset+7);
+	gmdb_debug_add_item(store, parent, g_strdup("Unknown"), offset, 4);
+	str = g_strdup_printf("Rows in Index: %lu",
+		(unsigned long)get_uint32(fbuf+offset+4)); 
+	gmdb_debug_add_item(store, parent, str, offset+4, 4);
 }
 static void 
 gmdb_debug_dissect_index2(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
-	gchar str[100];
+	gchar *str;
 	int mod=0;
 	unsigned char flags;
-	gchar flagstr[100];   /* If adding flags increase this */
 
-	snprintf(str, 100, "Column mask");
-	gmdb_debug_add_item(store, parent, str, offset, offset+29);
-	snprintf(str, 100, "Unknown");
-	gmdb_debug_add_item(store, parent, str, offset+30, offset+33);
-	snprintf(str, 100, "Root index page");
-	gmdb_debug_add_item(store, parent, str, offset+34, offset+37);
+	str = g_strdup("Column mask");
+	gmdb_debug_add_item(store, parent, str, offset, 30);
+	str = g_strdup("Unknown");
+	gmdb_debug_add_item(store, parent, str, offset+30, 4);
+	str = g_strdup("Root index page");
+	gmdb_debug_add_item(store, parent, str, offset+34, 4);
+
 	flags = fbuf[offset+38];
-	flagstr[0]=0;
+	str = g_strdup("Index Flags (");
 	if (flags & MDB_IDX_UNIQUE) { 
-		strcat(flagstr, "Unique"); mod++; 
+		str = gmdb_strappend(str, "Unique"); mod++; 
 	}
 	if (flags & MDB_IDX_IGNORENULLS) { 
-		if (mod) strcat(flagstr, ",");
-		strcat(flagstr, "Ignore Nulls"); mod++;
+		if (mod) str = gmdb_strappend(str, ",");
+		str = gmdb_strappend(str, "Ignore Nulls"); mod++;
 	}
 	if (flags & MDB_IDX_REQUIRED) { 
-		if (mod) strcat(flagstr, ",");
-		strcat(flagstr, "Required"); 
+		if (mod) str = gmdb_strappend(str, ",");
+		str = gmdb_strappend(str, "Required"); mod++;
 	}
-	if (!mod) strcpy(flagstr, "None");
-	snprintf(str, 100, "Index Flags (%s)", flagstr);
-	gmdb_debug_add_item(store, parent, str, offset+38, offset+38);
+	if (!mod) str = gmdb_strappend(str, "None");
+	str = gmdb_strappend(str, ")");
+	gmdb_debug_add_item(store, parent, str, offset+38, 1);
 }
 static void 
 gmdb_debug_add_page_ptr(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, const char *label, int offset)
 {
-gchar str[100];
-GtkTreeIter *node;
+	gchar *str;
+	GtkTreeIter *node;
 	guint32 pg_row = get_uint32(fbuf+offset);
 
-	snprintf(str, 100, "%s", label);
-	node = gmdb_debug_add_item(store, parent, str, offset, offset+3);
+	str = g_strdup(label);
+	node = gmdb_debug_add_item(store, parent, str, offset, 4);
 
-	snprintf(str, 100, "Row Number: %u", pg_row & 0xff);
-	gmdb_debug_add_item(store, node, str, offset, offset);
-	snprintf(str, 100, "Page Number: %lu", pg_row >> 8); 
-	gmdb_debug_add_item(store, node, str, offset+1, offset+3);
+	str = g_strdup_printf("Row Number: %u", pg_row & 0xff);
+	gmdb_debug_add_item(store, node, str, offset, 1);
+	str = g_strdup_printf("Page Number: %lu", pg_row >> 8); 
+	gmdb_debug_add_item(store, node, str, offset+1, 3);
 }
 static void 
-gmdb_debug_dissect_row(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset, int end)
+gmdb_debug_dissect_row(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset, int len)
 {
-gchar str[100];
-int bitmask_sz;
-int num_cols, var_cols, var_cols_loc, fixed_end, eod_ptr;
-int i;
+	gchar *str;
+	int bitmask_sz;
+	int num_cols, var_cols, var_cols_loc, fixed_end, eod_ptr;
+	int i;
 
 	num_cols = fbuf[offset];
-	snprintf(str, 100, "Num columns: %u", num_cols);
-	gmdb_debug_add_item(store, parent, str, offset, offset);
-	bitmask_sz = ((num_cols-1) / 8) + 1;
-	printf("bitmask_sz %d\n", bitmask_sz);
-	var_cols_loc = end - bitmask_sz;
+	str = g_strdup_printf("Num columns: %u", num_cols);
+	gmdb_debug_add_item(store, parent, str, offset, 1);
+	bitmask_sz = (num_cols+7) / 8;
+	var_cols_loc = offset + len - bitmask_sz - 1;
 	var_cols = fbuf[var_cols_loc];
 	fixed_end = offset + fbuf[var_cols_loc - 1] - 1; /* work even if 0 b/c of EOD */
-	snprintf(str, 100, "Fixed columns");
-	gmdb_debug_add_item(store, parent, str, offset + 1, fixed_end);
+	str = g_strdup("Fixed columns");
+	gmdb_debug_add_item(store, parent, str, offset + 1, fixed_end - offset);
 	for (i=0;i<var_cols;i++) {
 	}
 	eod_ptr = var_cols_loc - var_cols - 1;
 	for (i=0;i<var_cols;i++) {
-		snprintf(str, 100, "Var col %d", var_cols-i);
-		gmdb_debug_add_item(store, parent, str, offset + fbuf[var_cols_loc - i - 1], offset + fbuf[var_cols_loc - i - 2] - 1);
+		int loc1 = fbuf[var_cols_loc - i - 1],
+		    loc2 = fbuf[var_cols_loc - i - 2];
+		str = g_strdup_printf("Var col %d", var_cols-i);
+		gmdb_debug_add_item(store, parent, str,
+			offset + loc1, loc2 - loc1);
 	}
-	snprintf(str, 100, "End of data (EOD): 0x%02x (%u)", fbuf[eod_ptr], fbuf[eod_ptr]);
-	gmdb_debug_add_item(store, parent, str, eod_ptr, eod_ptr);
+	str = g_strdup_printf("End of data (EOD): 0x%02x (%u)",
+		fbuf[eod_ptr], fbuf[eod_ptr]);
+	gmdb_debug_add_item(store, parent, str, eod_ptr, 1);
 	for (i=0;i<var_cols;i++) {
-		snprintf(str, 100, "Var col %d offset: 0x%02x (%u)", var_cols-i,fbuf[eod_ptr+i+1], fbuf[eod_ptr+i+1]);
-		gmdb_debug_add_item(store, parent, str, eod_ptr + i + 1, eod_ptr + i + 1);
+		g_strdup_printf("Var col %d offset: 0x%02x (%u)", var_cols-i,
+			fbuf[eod_ptr+i+1], fbuf[eod_ptr+i+1]);
+		gmdb_debug_add_item(store, parent, str, eod_ptr + i + 1, 1);
 	}
-	snprintf(str, 100, "Num var cols: %u", var_cols);
-	gmdb_debug_add_item(store, parent, str, var_cols_loc, var_cols_loc);
-	snprintf(str, 100, "Null mask");
-	gmdb_debug_add_item(store, parent, str, var_cols_loc + 1, end);
+	str = g_strdup_printf("Num var cols: %u", var_cols);
+	gmdb_debug_add_item(store, parent, str, var_cols_loc, 1);
+	str = g_strdup("Null mask");
+	gmdb_debug_add_item(store, parent, str, var_cols_loc + 1,
+		offset + len - (var_cols_loc + 1));
 }
 static void 
 gmdb_debug_dissect_index_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-gchar str[100];
-guint32 tdef;
+	gchar *str;
+	guint32 tdef;
 
-	snprintf(str, 100, "Page free space: %u", 
-		get_uint16(&fbuf[offset+2]));
-	gmdb_debug_add_item(store, NULL, str, offset+2, offset+3);
-	tdef = get_uint32(&fbuf[offset+4]);
-	snprintf(str, 100, "Parents TDEF page: 0x%06x (%lu)", tdef,(unsigned long)tdef);
-	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
+	str = g_strdup_printf("Page free space: %u", get_uint16(fbuf+offset+2));
+	gmdb_debug_add_item(store, NULL, str, offset+2, 2);
+
+	tdef = get_uint32(fbuf+offset+4);
+	str = g_strdup_printf("Parents TDEF page: 0x%06x (%lu)", tdef,
+		(unsigned long)tdef);
+	gmdb_debug_add_item(store, NULL, str, offset+4, 4);
 }
 
 static void 
 gmdb_debug_dissect_leaf_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-gchar str[100];
-guint32 tdef;
+	gchar *str;
+	guint32 temp;
 
-	tdef = get_uint32(&fbuf[offset+4]);
-	snprintf(str, 100, "Parents TDEF page: 0x%06x (%lu)", tdef,(unsigned long)tdef);
-	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
-	snprintf(str, 100, "Previous leaf page: 0x%06x (%lu)", get_uint32(&fbuf[offset+8]),(unsigned long)get_uint32(&fbuf[offset+8]));
-	gmdb_debug_add_item(store, NULL, str, offset+8, offset+11);
-	snprintf(str, 100, "Next leaf page: 0x%06x (%lu)", get_uint32(&fbuf[offset+12]),(unsigned long)get_uint32(&fbuf[offset+12]));
-	gmdb_debug_add_item(store, NULL, str, offset+12, offset+15);
+	temp = get_uint32(fbuf+offset+4);
+	str = g_strdup_printf("Parents TDEF page: 0x%06x (%lu)", temp,
+		(unsigned long)temp);
+	gmdb_debug_add_item(store, NULL, str, offset+4, 4);
+
+	temp = get_uint32(fbuf+offset+8);
+	str = g_strdup_printf("Previous leaf page: 0x%06x (%lu)", temp,
+		(unsigned long)temp);
+	gmdb_debug_add_item(store, NULL, str, offset+8, 4);
+
+	temp = get_uint32(fbuf+offset+12);
+	str = g_strdup_printf("Next leaf page: 0x%06x (%lu)", temp,
+		(unsigned long)temp);
+	gmdb_debug_add_item(store, NULL, str, offset+12, 4);
 }
 static void 
 gmdb_debug_dissect_data_pg4(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-	gchar str[100];
-	int num_rows, i, row_start, row_end;
+	gchar *str;
+	int num_rows, i, row_start, row_len;
 	guint32 tdef;
 	GtkTreeIter *container;
 
-	snprintf(str, 100, "Page free space: %u", 
-		get_uint16(&fbuf[offset+2]));
-	gmdb_debug_add_item(store, NULL, str, offset+2, offset+3);
-	tdef = get_uint32(&fbuf[offset+4]);
-	snprintf(str, 100, "Parents TDEF page: 0x%06x (%lu)", tdef,(unsigned long)tdef);
-	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
-	num_rows = get_uint16(&fbuf[offset+12]);
-	snprintf(str, 100, "Num rows: %u", num_rows);
-	gmdb_debug_add_item(store, NULL, str, offset+12, offset+13);
+	str = g_strdup_printf("Page free space: %u", get_uint16(fbuf+offset+2));
+	gmdb_debug_add_item(store, NULL, str, offset+2, 2);
+
+	tdef = get_uint32(fbuf+offset+4);
+	str = g_strdup_printf("Parent's TDEF page: 0x%06x (%lu)", tdef,
+		(unsigned long)tdef);
+	gmdb_debug_add_item(store, NULL, str, offset+4, 4);
+
+	num_rows = get_uint16(fbuf+offset+12);
+	str = g_strdup_printf("Num rows: %u", num_rows);
+	gmdb_debug_add_item(store, NULL, str, offset+12, 2);
 	for (i=0;i<num_rows;i++) {
-		row_start = get_uint16(&fbuf[offset+14+(2*i)]);
-		snprintf(str, 100, "Row %d offset: 0x%02x (%u)", 
-				i+1, row_start, row_start) ;
-		gmdb_debug_add_item(store, NULL, str, offset+14+(2*i), 
-				offset+14+(2*i)+1);
+		row_start = get_uint16(fbuf+offset+14+(2*i));
+		str = g_strdup_printf("Row %d offset: 0x%02x (%u)", 
+			i+1, row_start, row_start) ;
+		gmdb_debug_add_item(store, NULL, str, offset+14+(2*i), 2);
 	}
 	for (i=0;i<num_rows;i++) {
-		row_start = get_uint16(&fbuf[offset+14+(2*i)]);
+		row_start = get_uint16(fbuf+offset+14+(2*i));
 		if (i==0)
-			row_end = mdb->fmt->pg_size - 1;
+			row_len = mdb->fmt->pg_size - row_start;
 		else
-			row_end = (get_uint16(&fbuf[offset+14+(i-1)*2]) 
-				& 0x0FFF) - 1;
-		snprintf(str, 100, "Row %d", i+1);
-		container = gmdb_debug_add_item(store, NULL, str, row_start, row_end); 
+			row_len = (get_uint16(fbuf+offset+14+(i-1)*2) 
+				& 0x0FFF) - row_start;
+		str = g_strdup_printf("Row %d", i+1);
+		container = gmdb_debug_add_item(store, NULL, str,
+			row_start, row_len); 
 		
 		/* usage pages have parent id of 0 (database) and do not 
 		 * follow normal row format */
 		/* if (tdef)
-			gmdb_debug_dissect_row(store, container, fbuf, row_start, row_end);
+			gmdb_debug_dissect_row(store, container, fbuf, row_start, row_len);
 		*/
 	}
 }
 static void 
 gmdb_debug_dissect_data_pg3(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-	gchar str[100];
-	int num_rows, i, row_start, row_end;
+	gchar *str;
+	int num_rows, i, row_start, row_len;
 	guint32 tdef;
 	GtkTreeIter *container;
 
-	snprintf(str, 100, "Page free space: %u", 
-		get_uint16(&fbuf[offset+2]));
-	gmdb_debug_add_item(store, NULL, str, offset+2, offset+3);
-	tdef = get_uint32(&fbuf[offset+4]);
-	snprintf(str, 100, "Parents TDEF page: 0x%06x (%lu)", tdef,(unsigned long)tdef);
-	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
-	num_rows = get_uint16(&fbuf[offset+8]);
-	snprintf(str, 100, "Num rows: %u", num_rows);
-	gmdb_debug_add_item(store, NULL, str, offset+8, offset+9);
+	str = g_strdup_printf("Page free space: %u", get_uint16(fbuf+offset+2));
+	gmdb_debug_add_item(store, NULL, str, offset+2, 2);
+
+	tdef = get_uint32(fbuf+offset+4);
+	str = g_strdup_printf("Parent's TDEF page: 0x%06x (%lu)", tdef,
+		(unsigned long)tdef);
+	gmdb_debug_add_item(store, NULL, str, offset+4, 4);
+
+	num_rows = get_uint16(fbuf+offset+8);
+	str = g_strdup_printf("Num rows: %u", num_rows);
+	gmdb_debug_add_item(store, NULL, str, offset+8, 2);
 	for (i=0;i<num_rows;i++) {
-		row_start = get_uint16(&fbuf[offset+10+(2*i)]);
-		snprintf(str, 100, "Row %d offset: 0x%02x (%u)", 
-				i+1, row_start, row_start) ;
-		gmdb_debug_add_item(store, NULL, str, offset+10+(2*i), 
-				offset+10+(2*i)+1);
+		row_start = get_uint16(fbuf+offset+10+(2*i));
+		str = g_strdup_printf("Row %d offset: 0x%02x (%u)", 
+			i+1, row_start, row_start) ;
+		gmdb_debug_add_item(store, NULL, str, offset+10+(2*i), 2);
 	}
 	for (i=0;i<num_rows;i++) {
-		row_start = get_uint16(&fbuf[offset+10+(2*i)]);
+		row_start = get_uint16(fbuf+offset+10+(2*i));
 		if (i==0)
-			row_end = mdb->fmt->pg_size - 1;
+			row_len = mdb->fmt->pg_size - row_start;
 		else
-			row_end = (get_uint16(&fbuf[offset+10+(i-1)*2]) 
-				& 0x0FFF) - 1;
-		snprintf(str, 100, "Row %d", i+1);
-		container = gmdb_debug_add_item(store, NULL, str, row_start, row_end); 
+			row_len = (get_uint16(fbuf+offset+10+(i-1)*2) 
+				& 0x0FFF) - row_start;
+		str = g_strdup_printf("Row %d", i+1);
+		container = gmdb_debug_add_item(store, NULL, str,
+			row_start, row_len); 
 		
 		/* usage pages have parent id of 0 (database) and do not 
 		 * follow normal row format */
 		if (tdef)
-			gmdb_debug_dissect_row(store, container, fbuf, row_start, row_end);
+			gmdb_debug_dissect_row(store, container, fbuf,
+				row_start, row_len);
 	}
 }
 static void 
@@ -667,116 +688,147 @@ gmdb_debug_dissect_data_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
 static void 
 gmdb_debug_dissect_tabledef_pg4(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-gchar str[100];
-guint32 i, num_idx, num_cols, idx_entries;
-int newbase;
-GtkTreeIter *node, *container;
+	gchar *str;
+	guint32 i, num_idx, num_cols, idx_entries;
+	int newbase;
+	GtkTreeIter *node, *container;
+	char *foff = fbuf + offset;
 
-	snprintf(str, 100, "Next TDEF Page: 0x%06x (%lu)", 
-		get_uint32(&fbuf[offset+4]), (unsigned long)get_uint32(&fbuf[offset+4]));
-	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
-	snprintf(str, 100, "Length of Data: %lu", (unsigned long)get_uint32(&fbuf[offset+8]));
-	gmdb_debug_add_item(store, NULL, str, offset+8, offset+11);
-	snprintf(str, 100, "# of Records: %lu", (unsigned long)get_uint32(&fbuf[offset+16]));
-	gmdb_debug_add_item(store, NULL, str, offset+16, offset+19);
-	snprintf(str, 100, "Autonumber Value: %lu", (unsigned long)get_uint32(&fbuf[offset+20]));
-	gmdb_debug_add_item(store, NULL, str, offset+20, offset+23);
-	snprintf(str, 100, "Table Type: 0x%02x (%s)", fbuf[offset+40],
-		gmdb_val_to_str(table_types, fbuf[offset+40]));
-	gmdb_debug_add_item(store, NULL, str, offset+40, offset+40);
-	num_cols = get_uint16(&fbuf[offset+41]);
-	snprintf(str, 100, "Max # of Columns: %u", num_cols);
-	gmdb_debug_add_item(store, NULL, str, offset+41, offset+42);
-	snprintf(str, 100, "# of VarCols: %u", 
-		get_uint16(&fbuf[offset+43]));
-	gmdb_debug_add_item(store, NULL, str, offset+43, offset+44);
-	snprintf(str, 100, "# of Columns: %u", 
-		(unsigned int)get_uint16(&fbuf[offset+45]));
-	gmdb_debug_add_item(store, NULL, str, offset+45, offset+46);
-	idx_entries = get_uint32(&fbuf[offset+47]);
-	snprintf(str, 100, "# of Index Entries: %lu", (unsigned long)idx_entries);
-	gmdb_debug_add_item(store, NULL, str, offset+47, offset+50);
-
-	num_idx = get_uint32(&fbuf[offset+51]);
-	snprintf(str, 100, "# of Real Indices: %lu", (unsigned long)num_idx);
-	gmdb_debug_add_item(store, NULL, str, offset+51, offset+54);
+	str = g_strdup_printf("Next TDEF Page: 0x%06x (%lu)",
+		get_uint32(foff+4), (unsigned long)get_uint32(foff+4));
+	gmdb_debug_add_item(store, NULL, str, offset+4, 4);
+	str = g_strdup_printf("Length of Data: %lu",
+		(unsigned long)get_uint32(foff+8));
+	gmdb_debug_add_item(store, NULL, str, offset+8, 4);
+	str = g_strdup_printf("# of Records: %lu",
+		(unsigned long)get_uint32(foff+16));
+	gmdb_debug_add_item(store, NULL, str, offset+16, 4);
+	str = g_strdup_printf("Autonumber Value: %lu",
+		(unsigned long)get_uint32(foff+20));
+	gmdb_debug_add_item(store, NULL, str, offset+20, 4);
+	str = g_strdup_printf("Table Type: 0x%02x (%s)", foff[40],
+		gmdb_val_to_str(table_types, foff[40]));
+	gmdb_debug_add_item(store, NULL, str, offset+40, 1);
+	str = g_strdup_printf("Max # of Columns: %u", get_uint16(foff+41));
+	gmdb_debug_add_item(store, NULL, str, offset+41, 2);
+	str = g_strdup_printf("# of VarCols: %u", get_uint16(foff+43));
+	gmdb_debug_add_item(store, NULL, str, offset+43, 2);
+	num_cols = get_uint16(foff+45);
+	str = g_strdup_printf("# of Columns: %u", num_cols);
+	gmdb_debug_add_item(store, NULL, str, offset+45, 2);
+	idx_entries = get_uint32(foff+47);
+	str = g_strdup_printf("# of Index Entries: %lu",
+		(unsigned long)idx_entries);
+	gmdb_debug_add_item(store, NULL, str, offset+47, 4);
+	num_idx = get_uint32(foff+51);
+	str = g_strdup_printf("# of Real Indices: %lu",
+		(unsigned long)num_idx);
+	gmdb_debug_add_item(store, NULL, str, offset+51, 4);
 
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Used Pages Pointer", offset+55);
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Pages Freespace Pointer", offset+59);
+	newbase = offset+63;
 
-	container = gmdb_debug_add_item(store, NULL, "Index Entries", -1, -1);
+	str = g_strdup("Index Entries");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<num_idx;i++) {
-		snprintf(str, 100, "Index %d", i+1);
-		node = gmdb_debug_add_item(store, container, str, offset+63+(12*i), offset+63+(12*i)+11);
-		//gmdb_debug_dissect_index1(store, node, fbuf, offset+63+(12*i));
+		str = g_strdup_printf("Index %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase, 12);
+		//gmdb_debug_dissect_index1(store, node, fbuf, offset+63);
+		newbase += 12;
 	}
-	newbase = offset + 63 + (12*i);
 
-	container = gmdb_debug_add_item(store, NULL, "Column Data", -1, -1);
+	str = g_strdup("Column Data");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<num_cols;i++) {
-		snprintf(str, 100, "Column %d", i+1);
-		node = gmdb_debug_add_item(store, container, str, newbase + (25*i), newbase + (25*i) + 24);
-		//gmdb_debug_dissect_column(store, node, fbuf, newbase + (25*i));
+		str = g_strdup_printf("Column %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase, 25);
+		//gmdb_debug_dissect_column(store, node, fbuf, newbase);
+		newbase += 25;
 	}
-	newbase += 25*num_cols;
+
+	str = g_strdup("Column Names");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
+	for (i=0;i<num_cols;i++) {
+		char *tmpstr;
+		int namelen;
+
+		namelen = get_uint16(fbuf+newbase);
+//		tmpstr = g_malloc(namelen + 1);
+//		strncpy(tmpstr, &fbuf[newbase+1], namelen);
+//		tmpstr[namelen]=0;
+//		str = g_strdup_printf("Column %d: %s", i+1, tmpstr);
+//		g_free(tmpstr);
+		str = g_strdup_printf("Column %d", i+1);
+		node = gmdb_debug_add_item(store, container, str,
+			newbase+2, namelen);
+		newbase += namelen+2;
+	}
 }
 static void 
 gmdb_debug_dissect_tabledef_pg3(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-gchar str[100];
-guint32 i, num_idx, num_cols, idx_entries;
-int newbase;
-GtkTreeIter *node, *container;
+	gchar *str;
+	guint32 i, num_idx, num_cols, idx_entries;
+	int newbase;
+	GtkTreeIter *node, *container;
+	char *foff = fbuf + offset;
 
-	snprintf(str, 100, "Next TDEF Page: 0x%06x (%lu)", 
-		get_uint32(&fbuf[offset+4]), (unsigned long)get_uint32(&fbuf[offset+4]));
-	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
-	snprintf(str, 100, "Length of Data: %lu", (unsigned long)get_uint32(&fbuf[offset+8]));
-	gmdb_debug_add_item(store, NULL, str, offset+8, offset+11);
-	snprintf(str, 100, "# of Records: %lu", (unsigned long)get_uint32(&fbuf[offset+12]));
-	gmdb_debug_add_item(store, NULL, str, offset+12, offset+15);
-	snprintf(str, 100, "Autonumber Value: %lu", (unsigned long)get_uint32(&fbuf[offset+16]));
-	gmdb_debug_add_item(store, NULL, str, offset+16, offset+19);
-	snprintf(str, 100, "Table Type: 0x%02x (%s)", fbuf[offset+20],
-		gmdb_val_to_str(table_types, fbuf[offset+20]));
-	gmdb_debug_add_item(store, NULL, str, offset+20, offset+20);
-	num_cols = get_uint16(&fbuf[offset+21]);
-	snprintf(str, 100, "Max # of Columns: %u", num_cols);
-	gmdb_debug_add_item(store, NULL, str, offset+21, offset+22);
-	snprintf(str, 100, "# of VarCols: %u", 
-		get_uint16(&fbuf[offset+23]));
-	gmdb_debug_add_item(store, NULL, str, offset+23, offset+24);
-	snprintf(str, 100, "# of Columns: %u", 
-		get_uint16(&fbuf[offset+25]));
-	gmdb_debug_add_item(store, NULL, str, offset+25, offset+26);
-	idx_entries = get_uint32(&fbuf[offset+27]);
-	snprintf(str, 100, "# of Index Entries: %lu", (unsigned long)idx_entries);
-	gmdb_debug_add_item(store, NULL, str, offset+27, offset+30);
+	str = g_strdup_printf("Next TDEF Page: 0x%06x (%lu)", 
+		get_uint32(foff+4), (unsigned long)get_uint32(foff+4));
+	gmdb_debug_add_item(store, NULL, str, offset+4, 4);
+	str = g_strdup_printf("Length of Data: %lu",
+		(unsigned long)get_uint32(foff+8));
+	gmdb_debug_add_item(store, NULL, str, offset+8, 4);
+	str = g_strdup_printf("# of Records: %lu",
+		(unsigned long)get_uint32(foff+12));
+	gmdb_debug_add_item(store, NULL, str, offset+12, 4);
+	str = g_strdup_printf("Autonumber Value: %lu",
+		(unsigned long)get_uint32(foff+16));
+	gmdb_debug_add_item(store, NULL, str, offset+16, 4);
+	str = g_strdup_printf("Table Type: 0x%02x (%s)", foff[20],
+		gmdb_val_to_str(table_types, foff[20]));
+	gmdb_debug_add_item(store, NULL, str, offset+20, 1);
+	str = g_strdup_printf("Max # of Columns: %u", get_uint16(foff+21));
+	gmdb_debug_add_item(store, NULL, str, offset+21, 2);
+	str = g_strdup_printf("# of VarCols: %u", get_uint16(foff+23));
+	gmdb_debug_add_item(store, NULL, str, offset+23, 2);
+	num_cols = get_uint16(foff+25);
+	str = g_strdup_printf("# of Columns: %u", num_cols);
+	gmdb_debug_add_item(store, NULL, str, offset+25, 2);
+	idx_entries = get_uint32(foff+27);
+	str = g_strdup_printf("# of Index Entries: %lu",
+		(unsigned long)idx_entries);
+	gmdb_debug_add_item(store, NULL, str, offset+27, 4);
+	num_idx = get_uint32(foff+31);
+	str = g_strdup_printf("# of Real Indices: %lu",
+		(unsigned long)num_idx);
 
-	num_idx = get_uint32(&fbuf[offset+31]);
-	snprintf(str, 100, "# of Real Indices: %lu", (unsigned long)num_idx);
-
-	gmdb_debug_add_item(store, NULL, str, offset+31, offset+34);
+	gmdb_debug_add_item(store, NULL, str, offset+31, 4);
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Used Pages Pointer", offset+35);
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Pages Freespace Pointer", offset+39);
+	newbase = offset + 43;
 
-	container = gmdb_debug_add_item(store, NULL, "Index Entries", -1, -1);
+	str = g_strdup("Index Entries");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<num_idx;i++) {
-		snprintf(str, 100, "Index %d", i+1);
-		node = gmdb_debug_add_item(store, container, str, offset+43+(8*i), offset+43+(8*i)+7);
-		gmdb_debug_dissect_index1(store, node, fbuf, offset+43+(8*i));
+		str = g_strdup_printf("Index %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase, 8);
+		gmdb_debug_dissect_index1(store, node, fbuf, offset+43);
+		newbase += 8;
 	}
-	newbase = offset + 43 + (8*i);
 
-	container = gmdb_debug_add_item(store, NULL, "Column Data", -1, -1);
+	str = g_strdup("Column Data");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<num_cols;i++) {
-		snprintf(str, 100, "Column %d", i+1);
-		node = gmdb_debug_add_item(store, container, str, newbase + (18*i), newbase + (18*i) + 17);
-		gmdb_debug_dissect_column(store, node, fbuf, newbase + (18*i));
+		str = g_strdup_printf("Column %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase, 18);
+		gmdb_debug_dissect_column(store, node, fbuf, newbase);
+		newbase += 18;
 	}
-	newbase += 18*num_cols;
 
-	container = gmdb_debug_add_item(store, NULL, "Column Names", -1, -1);
+	str = g_strdup("Column Names");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<num_cols;i++) {
 		char *tmpstr;
 		int namelen;
@@ -785,26 +837,30 @@ GtkTreeIter *node, *container;
 		tmpstr = g_malloc(namelen + 1);
 		strncpy(tmpstr, &fbuf[newbase+1], namelen);
 		tmpstr[namelen]=0;
-		snprintf(str, 100, "Column %d: %s", i+1, tmpstr);
+		str = g_strdup_printf("Column %d: %s", i+1, tmpstr);
 		g_free(tmpstr);
-		node = gmdb_debug_add_item(store, container, str, newbase + 1, newbase + namelen);
+		node = gmdb_debug_add_item(store, container, str,
+			newbase + 1, namelen);
 		newbase += namelen + 1;
 	}
-	container = gmdb_debug_add_item(store, NULL, "Index definition 1", -1, -1);
+	str = g_strdup("Index definition 1");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<num_idx;i++) {
-		snprintf(str, 100, "Index %d", i+1);
-		node = gmdb_debug_add_item(store, container, str, newbase+(i*39), newbase+(i*39)+38);
-		gmdb_debug_dissect_index2(store, node, fbuf, newbase+(i*39));
+		str = g_strdup_printf("Index %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase, 39);
+		gmdb_debug_dissect_index2(store, node, fbuf, newbase);
+		newbase += 39;
 	}
-	newbase += num_idx * 39;
-	container = gmdb_debug_add_item(store, NULL, "Index definition 2", -1, -1);
+	str = g_strdup("Index definition 2");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<idx_entries;i++) {
-		snprintf(str, 100, "Index %d", i+1);
-		node = gmdb_debug_add_item(store, container, str, newbase+(i*20), newbase+(i*20)+19);
+		str = g_strdup_printf("Index %d", i+1);
+		node = gmdb_debug_add_item(store, container, str, newbase, 20);
+		newbase += 20;
 	}
 
-	newbase += idx_entries * 20;
-	container = gmdb_debug_add_item(store, NULL, "Index Names", -1, -1);
+	str = g_strdup("Index Names");
+	container = gmdb_debug_add_item(store, NULL, str, -1, 1);
 	for (i=0;i<idx_entries;i++) {
 		char *tmpstr;
 		int namelen;
@@ -813,8 +869,9 @@ GtkTreeIter *node, *container;
 		tmpstr = g_malloc(namelen + 1);
 		strncpy(tmpstr, &fbuf[newbase+1], namelen);
 		tmpstr[namelen]=0;
-		snprintf(str, 100, "Index %d: %s", i+1, tmpstr);
-		node = gmdb_debug_add_item(store, container, str, newbase+1, newbase+namelen);
+		str = g_strdup_printf("Index %d: %s", i+1, tmpstr);
+		node = gmdb_debug_add_item(store, container, str,
+			newbase+1, namelen);
 		g_free(tmpstr);
 		newbase += namelen + 1;
 	}
@@ -830,11 +887,11 @@ gmdb_debug_dissect_tabledef_pg(GtkTreeStore *store, char *fbuf, int offset, int 
 static void 
 gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-	gchar str[100];
+	gchar *str;
 
-	snprintf(str, 100, "Object Type: 0x%02x (%s)", fbuf[offset],
+	str = g_strdup_printf("Object Type: 0x%02x (%s)", fbuf[offset],
 		gmdb_val_to_str(object_types, fbuf[offset]));
-	gmdb_debug_add_item(store, NULL, str, 0, 0);
+	gmdb_debug_add_item(store, NULL, str, 0, 1);
 	switch (fbuf[offset]) {
 		case 0x00:
 			//gmdb_debug_dissect_dbpage(store, fbuf, 1, len);
@@ -874,13 +931,14 @@ GtkWidget *treeview, *textview, *store;
 }
 
 static GtkTreeIter *
-gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter1, gchar *text, int start, int end)
+gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter1, gchar *text, int start, int len)
 {
-GtkTreeIter *iter2;
+	GtkTreeIter *iter2;
 
 	iter2 = g_malloc(sizeof(GtkTreeIter));
 	gtk_tree_store_append(store, iter2, iter1);
-	gtk_tree_store_set(store, iter2, 0, text, 1, start, 2, end, -1);
+	gtk_tree_store_set(store, iter2, 0, text, 1, start, 2, len, -1);
+	g_free(text);
 
 	return iter2;
 }
@@ -1020,22 +1078,22 @@ gmdb_debug_new_cb(GtkWidget *w, gpointer data)
 void 
 gmdb_debug_set_dissect_cb(GtkWidget *w, gpointer data)
 {
-	guint *dissect;
+	gboolean *dissect;
 	
 	dissect = g_object_get_data(G_OBJECT(w),"dissect");
 	if (!dissect) return;
 	//printf("here %d\n", *dissect);
-	*dissect = *dissect ? 0 : 1;
+	*dissect = !(*dissect);
 	g_object_set_data(G_OBJECT(w), "dissect", dissect);
 }
 static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml)
 {
 	gchar *str;
 	GtkWidget *pglabel, *entry, *window;
-	guint *dissect;
+	gboolean *dissect;
 
 	pglabel = glade_xml_get_widget (xml, "debug_num_label");
-	str = g_strdup_printf("(0-%d):", (int)gmdb_get_max_page(mdb));
+	str = g_strdup_printf("(0-%d):", gmdb_get_max_page(mdb));
 	gtk_label_set_text(GTK_LABEL(pglabel), str);
 	g_free(str);
 
@@ -1044,6 +1102,6 @@ static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml)
 
 	window = glade_xml_get_widget (xml, "debug_window");
 	dissect = g_malloc0(sizeof(guint));
-	*dissect = 1;
+	*dissect = TRUE;
 	g_object_set_data(G_OBJECT(window), "dissect", dissect);
 }
