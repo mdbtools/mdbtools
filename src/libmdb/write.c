@@ -329,7 +329,7 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 }
 /**
  * mdb_crack_row:
- * @mdb: Database handle
+ * @table: Table that the row belongs to
  * @row_start: offset to start of row on current page
  * @row_end: offset to end of row on current page
  * @fields: pointer to MdbField array to be popluated by mdb_crack_row

@@ -43,14 +43,37 @@ null		{ return NUL; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }
 [ \t\r]	;
-\"[A-z][A-z0-9 _#@]*\"   {
-				yylval.name = strdup(&yytext[1]);
-				yylval.name[strlen(yylval.name)-1]='\0';
-				return IDENT;
+
+\"[^"]*\"\"  {
+		yyless(yyleng-1);
+		yymore();
+	}
+\"[^"]*\"  {
+		int ip, op, ilen;
+		ilen = strlen(yytext);
+		yylval.name = malloc(ilen-1);
+		for (ip=1, op=0; ip<ilen-1; ip++, op++) {
+			if (yytext[ip] != '"') {
+				yylval.name[op] = yytext[ip];
+			} else if (yytext[ip+1] == '"') {
+				yylval.name[op] = yytext[ip++];
 			}
+		}
+		yylval.name[op]='\0';
+		return IDENT;
+	}
+
 [A-z][A-z0-9_#@]*		{ yylval.name = strdup(yytext); return NAME; }
 
-'[A-z0-9 !@#$%^&*()-_+={}[\];:",.<>/?`~|\\]*'			{ yylval.name = strdup(yytext); return STRING; }
+'[^']*''  {
+		yyless(yyleng-1);
+		yymore();
+	}
+'[^']*'  {
+		yylval.name = strdup(yytext);
+		return STRING;
+	}
+
 (-*[0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?) { 
 				yylval.name = strdup(yytext); return NUMBER; 
 			}
