@@ -31,6 +31,8 @@ void mdb_dump_results(MdbSQL *sql);
 #include <wordexp.h>
 #endif
 
+char *g_input_ptr;
+
 void
 mdb_sql_error(char *fmt, ...)
 {
@@ -62,21 +64,37 @@ MdbSQL *sql;
 	sql = (MdbSQL *) g_malloc0(sizeof(MdbSQL));
 	sql->columns = g_ptr_array_new();
 	sql->tables = g_ptr_array_new();
-	sql->sargs = g_ptr_array_new();
 	sql->sarg_tree = NULL;
 	sql->sarg_stack = NULL;
 
 	return sql;
 }
 
-MdbSQLSarg *mdb_sql_alloc_sarg()
+int _parse(MdbSQL *sql, char *buf)
 {
-MdbSQLSarg *sql_sarg;
-	sql_sarg = (MdbSQLSarg *) malloc(sizeof(MdbSQLSarg));
-	memset(sql_sarg,0,sizeof(MdbSQLSarg));
-	sql_sarg->sarg = (MdbSarg *) malloc(sizeof(MdbSarg));
-	memset(sql_sarg->sarg,0,sizeof(MdbSarg));
-	return sql_sarg;
+	g_input_ptr = buf;
+	/* begin unsafe */
+	_mdb_sql(sql);
+	if (yyparse()) {
+		/* end unsafe */
+		mdb_sql_reset(sql);
+		return 0;
+	} else {
+		return 1;
+	}
+}
+int mdb_run_query(MdbSQL *sql, char *query)
+{
+	if (_parse(sql,query) && sql->cur_table) {
+		mdb_sql_bind_all(sql);
+		return 1;
+	} else {
+		return 0;
+	}
+}
+void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
+{
+	sql->max_rows = maxrow;
 }
 void mdb_sql_free_column(MdbSQLColumn *c)
 {
@@ -295,10 +313,58 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 		mdb_sql_dump_node(node->right, mylevel);
 	}
 }
+/* evaluate a expression involving 2 constants and add answer to the stack */
+int 
+mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
+{
+	long val1, val2, value, compar;
+	unsigned char illop = 0; 
+	MdbSargNode *node;
+
+	if (const1[0]=='\'' && const2[0]=='\'') {
+		value = strcmp(const1, const2);
+		switch (op) {
+			case MDB_EQUAL: compar = (value ? 0 : 1); break;
+			case MDB_GT: compar = (value > 0); break;
+			case MDB_GTEQ: compar = (value >= 0); break;
+			case MDB_LT: compar = (value < 0); break;
+			case MDB_LTEQ: compar = (value <= 0); break;
+			case MDB_LIKE: compar = mdb_like_cmp(const1,const2); break;
+			default: illop = 1;
+		}
+	} else if (const1[0]!='\'' && const2[0]!='\'') {
+		val1 = atol(const1);
+		val2 = atol(const2);
+		switch (op) {
+			case MDB_EQUAL: compar = (val1 == val2); break;
+			case MDB_GT: compar = (val1 > val2); break;
+			case MDB_GTEQ: compar = (val1 >= val2); break;
+			case MDB_LT: compar = (val1 < val2); break;
+			case MDB_LTEQ: compar = (val1 <= val2); break;
+			default: illop = 1;
+		}
+	} else {
+		mdb_sql_error("Comparison of strings and numbers not allowed.");
+		/* the column and table names are no good now */
+		mdb_sql_reset(sql);
+		return 1;
+	}
+	if (illop) {
+		mdb_sql_error("Illegal operator used for comparision of literals.");
+		/* the column and table names are no good now */
+		mdb_sql_reset(sql);
+		return 1;
+	}
+	node = mdb_sql_alloc_node();
+	node->op = MDB_EQUAL;
+	node->col = NULL;
+	node->value.i = (compar ? 1 : 0);
+	mdb_sql_push_node(sql, node);
+	return 0;
+}
 int 
 mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 {
-	MdbSQLSarg *sql_sarg;
 	int lastchar;
 	MdbSargNode *node;
 
@@ -307,14 +373,8 @@ mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 	/* stash the column name until we finish with the grammar */
 	node->parent = (void *) g_strdup(col_name);
 
-	sql_sarg = mdb_sql_alloc_sarg();
-	sql_sarg->col_name = g_strdup(col_name);
-	sql_sarg->sarg->op = op;
-
 	if (!constant) {
 		/* XXX - do we need to check operator? */
-		g_ptr_array_add(sql->sargs, sql_sarg);
-		sql->num_sargs++;
 		mdb_sql_push_node(sql, node);
 		return 0;
 	}
@@ -323,16 +383,11 @@ mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 	*/
 	if (constant[0]=='\'') {
 		lastchar = strlen(constant) > 256 ? 256 : strlen(constant);
-		strncpy(sql_sarg->sarg->value.s, &constant[1], lastchar - 2);
-		sql_sarg->sarg->value.s[lastchar - 1]='\0';
 		strncpy(node->value.s, &constant[1], lastchar - 2);;
 		node->value.s[lastchar - 1]='\0';
 	} else {
-		sql_sarg->sarg->value.i = atoi(constant);
 		node->value.i = atoi(constant);
 	}
-	g_ptr_array_add(sql->sargs, sql_sarg);
-	sql->num_sargs++;
 
 	mdb_sql_push_node(sql, node);
 
@@ -384,7 +439,6 @@ void mdb_sql_exit(MdbSQL *sql)
 int i;
 MdbSQLColumn *c;
 MdbSQLTable *t;
-MdbSQLSarg *sql_sarg;
 
 	for (i=0;i<sql->num_columns;i++) {
 		c = g_ptr_array_index(sql->columns,i);
@@ -394,11 +448,6 @@ MdbSQLSarg *sql_sarg;
 		t = g_ptr_array_index(sql->tables,i);
 		if (t->name) g_free(t->name);
 	}
-	for (i=0;i<sql->num_sargs;i++) {
-		sql_sarg = g_ptr_array_index(sql->sargs,i);
-		if (sql_sarg->col_name) g_free(sql_sarg->col_name);
-		if (sql_sarg->sarg) g_free(sql_sarg->sarg);
-	}
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
 		sql->sarg_tree = NULL;
@@ -407,7 +456,6 @@ MdbSQLSarg *sql_sarg;
 	sql->sarg_stack = NULL;
 	g_ptr_array_free(sql->columns,TRUE);
 	g_ptr_array_free(sql->tables,TRUE);
-	g_ptr_array_free(sql->sargs,TRUE);
 	if (sql->mdb) {
 		mdb_close(sql->mdb);	
 		mdb_free_handle(sql->mdb);	
@@ -418,7 +466,6 @@ void mdb_sql_reset(MdbSQL *sql)
 int i;
 MdbSQLColumn *c;
 MdbSQLTable *t;
-MdbSQLSarg *sql_sarg;
 
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
@@ -437,11 +484,6 @@ MdbSQLSarg *sql_sarg;
 		t = g_ptr_array_index(sql->tables,i);
 		mdb_sql_free_table(t);
 	}
-	for (i=0;i<sql->num_sargs;i++) {
-		sql_sarg = g_ptr_array_index(sql->sargs,i);
-		if (sql_sarg->col_name) g_free(sql_sarg->col_name);
-		if (sql_sarg->sarg) g_free(sql_sarg->sarg);
-	}
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
 		sql->sarg_tree = NULL;
@@ -450,15 +492,12 @@ MdbSQLSarg *sql_sarg;
 	sql->sarg_stack = NULL;
 	g_ptr_array_free(sql->columns,TRUE);
 	g_ptr_array_free(sql->tables,TRUE);
-	g_ptr_array_free(sql->sargs,TRUE);
 
 	sql->all_columns = 0;
 	sql->num_columns = 0;
 	sql->columns = g_ptr_array_new();
 	sql->num_tables = 0;
 	sql->tables = g_ptr_array_new();
-	sql->num_sargs = 0;
-	sql->sargs = g_ptr_array_new();
 }
 static void print_break(int sz, int first)
 {
@@ -668,6 +707,7 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 	MdbColumn *col;
 
 	if (!mdb_is_relational_op(node->op)) return 0;
+	if (!node->parent) return 0;
 
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
@@ -745,13 +785,6 @@ int found = 0;
 		}
 	}
 
-#if 0
-	/* now add back the sargs */
-	for (i=0;i<sql->num_sargs;i++) {
-		sql_sarg=g_ptr_array_index(sql->sargs,i);
-		//mdb_add_sarg_by_name(table,sql_sarg->col_name, sql_sarg->sarg);
-	}
-#endif
 	/* 
 	 * resolve column names to MdbColumn structs
 	 */
@@ -770,7 +803,8 @@ int found = 0;
 	mdb_index_scan_init(mdb, table);
 }
 
-void mdbsql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
+void 
+mdb_sql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
 {
 MdbTableDef *table = sql->cur_table;
 MdbSQLColumn *sqlcol;
@@ -788,7 +822,8 @@ int j;
 		}
 	}
 }
-void mdbsql_bind_len(MdbSQL *sql, int colnum, int *len_ptr)
+void 
+mdb_sql_bind_len(MdbSQL *sql, int colnum, int *len_ptr)
 {
 MdbTableDef *table = sql->cur_table;
 MdbSQLColumn *sqlcol;
@@ -806,17 +841,19 @@ int j;
 		}
 	}
 }
-void mdbsql_bind_all(MdbSQL *sql)
+void 
+mdb_sql_bind_all(MdbSQL *sql)
 {
 int i;
 
 	for (i=0;i<sql->num_columns;i++) {
 		sql->bound_values[i] = (char *) malloc(MDB_BIND_SIZE);
 		sql->bound_values[i][0] = '\0';
-		mdbsql_bind_column(sql, i+1, sql->bound_values[i]);
+		mdb_sql_bind_column(sql, i+1, sql->bound_values[i]);
 	}
 }
-void mdbsql_dump_results(MdbSQL *sql)
+void 
+mdb_sql_dump_results(MdbSQL *sql)
 {
 int j;
 MdbSQLColumn *sqlcol;

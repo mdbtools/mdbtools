@@ -119,7 +119,7 @@ mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 	 * a pretty worthless test for indexes, ie NOT col1 = 3, we are 
 	 * probably better off table scanning.
 	 */
-	if (mdb_is_relational_op(node->op)) {
+	if (mdb_is_relational_op(node->op) && node->col) {
 		//printf("op = %d value = %s\n", node->op, node->value.s);
 		sarg.op = node->op;
 		sarg.value = node->value;
@@ -187,6 +187,10 @@ mdb_test_sarg_node(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int num_
 
 	if (mdb_is_relational_op(node->op)) {
 		col = node->col;
+		/* for const = const expressions */
+		if (!col) {
+			return (node->value.i);
+		}
 		elem = mdb_find_field(col->col_num, fields, num_fields);
 		if (!mdb_test_sarg(mdb, col, node, &fields[elem])) 
 			return 0;

@@ -185,7 +185,7 @@ run_query(MdbSQL *sql, char *mybuf)
 			mdb_sql_reset(sql);
 			return;
 		}
-		mdbsql_bind_all(sql);
+		mdb_sql_bind_all(sql);
 		if (pretty_print)
 			dump_results_pp(sql);
 		else

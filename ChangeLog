@@ -3,6 +3,15 @@ Sun Feb  8 13:02:56 EST 2004	Brian Bruns <brian@bruns.com>
 	* doc/faq.html: update email addy
 	* doc/userguide.sgml: fix typo
 	* src/libmdb/backend.c: mysql patch
+	* src/odbc/odbc.c:
+	* src/util/mdb-sql.c:
+	* src/gmdb2/sql.c: change mdbsql_bind_col to mdb_sql_bind_col to match other functions
+	* include/mdbtools.h: move mdb_backends to .c file
+	* src/sql/lexer.l: fix STRING token from overreading
+	* include/mdbsql.h: 
+	* src/sql/parser.y: 
+	* src/sql/mdbsql.c: added mdb_sql_eval_expr() to support 0=1 literal comparison
+	* src/libmdb/sargs.c: check for null node->col (literal comparision)
 
 Fri Feb  6 18:08:59 EST 2004	Brian Bruns <brian@bruns.com>
 

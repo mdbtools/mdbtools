@@ -27,6 +27,8 @@
 #include "dmalloc.h"
 #endif
 
+GHashTable *mdb_backends;
+
    /*    Access data types */
 MdbBackendType mdb_access_types[] = {
 		{"Unknown 0x00", 0,0,0 },

@@ -49,6 +49,7 @@ static MdbSQL *g_sql;
 %type <name> constant
 %type <ival> operator
 %type <ival> nulloperator
+%type <name> identifier
 
 %%
 
@@ -89,20 +90,28 @@ sarg_list:
 	;
 
 sarg:
-	NAME operator constant	{ 
+	identifier operator constant	{ 
 				mdb_sql_add_sarg(_mdb_sql(NULL), $1, $2, $3);
 				free($1);
 				free($3);
 				}
-	| constant operator NAME {
+	| constant operator identifier {
 				mdb_sql_add_sarg(_mdb_sql(NULL), $3, $2, $1);
 				free($1);
 				free($3);
 				}
-	| NAME nulloperator	{ 
+	| constant operator constant {
+				mdb_sql_eval_expr(_mdb_sql(NULL), $1, $2, $3);
+	}
+	| identifier nulloperator	{ 
 				mdb_sql_add_sarg(_mdb_sql(NULL), $1, $2, NULL);
 				free($1);
 				}
+	;
+
+identifier:
+	NAME
+	| IDENT
 	;
 
 operator:

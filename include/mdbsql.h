@@ -13,14 +13,15 @@ typedef struct {
 	GPtrArray *columns;
 	int num_tables;
 	GPtrArray *tables;
-	int num_sargs;
-	GPtrArray *sargs;
+	//int num_sargs;
+	//GPtrArray *sargs;
 	MdbTableDef *cur_table;
 	MdbSargNode *sarg_tree;
 	GList *sarg_stack;
 	/* FIX ME */
 	char *bound_values[256];
 	unsigned char *kludge_ttable_pg;
+	long max_rows;
 } MdbSQL;
 
 typedef struct {
@@ -42,7 +43,7 @@ typedef struct {
 	MdbSarg *sarg;
 } MdbSQLSarg;
 
-char *g_input_ptr;
+extern char *g_input_ptr;
 
 #undef YY_INPUT
 #define YY_INPUT(b, r, ms) (r = mdb_sql_yyinput(b, ms));
@@ -70,5 +71,8 @@ extern void mdb_sql_add_and(MdbSQL *sql);
 extern void mdb_sql_listtables(MdbSQL *sql);
 extern void mdb_sql_add_not(MdbSQL *sql);
 extern void mdb_sql_describe_table(MdbSQL *sql);
+extern int mdb_sql_run_query(MdbSQL *sql, char *query);
+extern void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow);
+extern int mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2);
 
 #endif
