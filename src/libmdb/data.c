@@ -229,7 +229,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbField fields[256];
 	int num_fields;
 
-	if (table->num_rows <= row) 
+	if (table->num_rows == 0) 
 		return 0;
 
 	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2)); 

@@ -1,5 +1,6 @@
 Wed Feb  9 23:37:43 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Date calculation bugfix (David Mansfield)
+	* src/libmdb/data.c: Deleted rows bugfix (David Mansfield)
 
 Thu Feb  3 21:12:55 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING: Small documentation fix
