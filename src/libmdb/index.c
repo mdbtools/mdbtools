@@ -253,7 +253,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 			/* XXX - kludge */
 			node.op = sarg->op;
 			node.value = sarg->value;
-			if (!mdb_test_sarg(col, &node, &mdb->pg_buf[offset + c_offset], c_len)) {
+			if (!mdb_test_sarg(mdb, col, &node, &mdb->pg_buf[offset + c_offset], c_len)) {
 				/* sarg didn't match, no sense going on */
 				return 0;
 			}
@@ -579,7 +579,7 @@ mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table)
 	int use_index=0;
 	char *s;
 
-	if (s=getenv("MDBOPTS")) {
+	if ((s=getenv("MDBOPTS"))) {
 		if (!strcmp(s, "use_index")) use_index++;
 	}
 	if (use_index && mdb_choose_index(table, &i) == MDB_INDEX_SCAN) {

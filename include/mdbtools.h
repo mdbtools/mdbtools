@@ -377,6 +377,7 @@ extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 extern int mdb_col_fixed_size(MdbColumn *col);
 extern int mdb_col_disp_size(MdbColumn *col);
 extern void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr);
+extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
 
 /* dump.c */
 extern void buffer_dump(const unsigned char* buf, int start, int end);
@@ -390,7 +391,7 @@ extern char *mdb_get_relationships(MdbHandle *mdb);
 
 /* sargs.c */
 extern int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
-extern int mdb_test_sarg(MdbColumn *col, MdbSargNode *node, void *buf, int len);
+extern int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, void *buf, int len);
 extern void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
 extern int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
 

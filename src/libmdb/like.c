@@ -20,10 +20,15 @@
 #include <stdio.h>
 #include <string.h>
 
+//#define MDB_DEBUG_LIKE 1
+
 int mdb_like_cmp(char *s, char *r)
 {
 int i, ret;
 
+#if MDB_DEBUG_LIKE
+				printf("comparing %s and %s\n", s, r);
+#endif
 	switch (r[0]) {
 		case '\0':
 			if (s[0]=='\0') {
@@ -51,7 +56,13 @@ int i, ret;
 			if (strncmp(s,r,i)) {
 				return 0;
 			} else {
+#if MDB_DEBUG_LIKE
+				printf("at pos %d comparing %s and %s\n", i, &s[i], &r[i]);
+#endif
 				ret = mdb_like_cmp(&s[i],&r[i]);
+#if MDB_DEBUG_LIKE
+				printf("returning %d (%s and %s)\n", ret, &s[i], &r[i]);
+#endif
 				return ret;
 			}
 	}

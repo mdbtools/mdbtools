@@ -113,7 +113,7 @@ mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 	return 0;
 }
 int 
-mdb_test_sarg(MdbColumn *col, MdbSargNode *node, void *buf, int len)
+mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, void *buf, int len)
 {
 char tmpbuf[256];
 int lastchar;
@@ -129,9 +129,13 @@ int lastchar;
 			return mdb_test_int(node, _mdb_get_int32(buf, 0));
 			break;
 		case MDB_TEXT:
-			strncpy(tmpbuf, buf,255);
-			lastchar = len > 255 ? 255 : len;
-			tmpbuf[lastchar]='\0';
+			if (IS_JET4(mdb)) {
+				mdb_unicode2ascii(mdb, buf, 0, len, tmpbuf);
+			} else {
+				strncpy(tmpbuf, buf,255);
+				lastchar = len > 255 ? 255 : len;
+				tmpbuf[lastchar]='\0';
+			}
 			return mdb_test_string(node, tmpbuf);
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
@@ -149,7 +153,8 @@ mdb_find_field(int col_num, MdbField *fields, int num_fields)
 	}
 	return -1;
 }
-mdb_test_sarg_node(MdbSargNode *node, MdbField *fields, int num_fields)
+int
+mdb_test_sarg_node(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int num_fields)
 {
 	int elem;
 	MdbColumn *col;
@@ -158,7 +163,7 @@ mdb_test_sarg_node(MdbSargNode *node, MdbField *fields, int num_fields)
 	if (mdb_is_relational_op(node->op)) {
 		col = node->col;
 		elem = mdb_find_field(col->col_num, fields, num_fields);
-		if (!mdb_test_sarg(col, 
+		if (!mdb_test_sarg(mdb, col, 
 				node, 
 				fields[elem].value, 
 				fields[elem].siz)) 
@@ -166,18 +171,18 @@ mdb_test_sarg_node(MdbSargNode *node, MdbField *fields, int num_fields)
 	} else { /* logical op */
 		switch (node->op) {
 		case MDB_NOT:
-			rc = mdb_test_sarg_node(node->left, fields, num_fields);
+			rc = mdb_test_sarg_node(mdb, node->left, fields, num_fields);
 			return !rc;
 			break;
 		case MDB_AND:
-			if (!mdb_test_sarg_node(node->left, fields, num_fields))
+			if (!mdb_test_sarg_node(mdb, node->left, fields, num_fields))
 				return 0;
-			return mdb_test_sarg_node(node->right, fields, num_fields);
+			return mdb_test_sarg_node(mdb, node->right, fields, num_fields);
 			break;
 		case MDB_OR:
-			if (mdb_test_sarg_node(node->left, fields, num_fields))
+			if (mdb_test_sarg_node(mdb, node->left, fields, num_fields))
 				return 1;
-			return mdb_test_sarg_node(node->right, fields, num_fields);
+			return mdb_test_sarg_node(mdb, node->right, fields, num_fields);
 			break;
 		}
 	}
@@ -187,13 +192,15 @@ int
 mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields)
 {
 	MdbSargNode *node;
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
 
 	node = table->sarg_tree;
 
 	/* there may not be a sarg tree */
 	if (!node) return 1;
 
-	return mdb_test_sarg_node(node, fields, num_fields);
+	return mdb_test_sarg_node(mdb, node, fields, num_fields);
 }
 #if 0
 int mdb_test_sargs(MdbHandle *mdb, MdbColumn *col, int offset, int len)

@@ -658,7 +658,6 @@ guint16 row_start, row_stop;
 guint8 memo_row;
 guint32 lval_pg;
 guint16 len;
-int i;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return "";
@@ -708,6 +707,8 @@ int i;
 			strncpy(text, &mdb->pg_buf[row_start], len);
 			text[len]='\0';
 		} else {
+			mdb_unicode2ascii(mdb, mdb->pg_buf, row_start, len, text);
+#if 0
 			if (mdb->pg_buf[row_start]==0xff && 
 			   mdb->pg_buf[row_start+1]==0xfe) {
 				strncpy(text, &mdb->pg_buf[row_start+2], len-2);
@@ -718,6 +719,7 @@ int i;
 					text[i/2] = mdb->pg_buf[row_start + i];
 				text[len/2]='\0';
 			}
+#endif
 		}
 		/* make sure to swap page back */
 		mdb_swap_pgbuf(mdb);
@@ -950,4 +952,21 @@ int mdb_col_fixed_size(MdbColumn *col)
 		break;
 	}
 	return 0;
+}
+int
+mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest)
+{
+	int i;
+
+	if (buf[offset]==0xff && 
+		buf[offset+1]==0xfe) {
+		strncpy(dest, &buf[offset+2], len-2);
+		dest[len-2]='\0';
+	} else {
+		/* convert unicode to ascii, rather sloppily */
+		for (i=0;i<len;i+=2)
+			dest[i/2] = buf[offset + i];
+		dest[len/2]='\0';
+	}
+	return len;
 }
