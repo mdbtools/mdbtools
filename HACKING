@@ -52,7 +52,7 @@ Covered Query - a query that can be satisfied by reading only index pages.  For
 Pages
 -----
 
-At it's topmost level MDB files are organized into a series of fixed sized 
+At its topmost level MDB files are organized into a series of fixed sized 
 pages.  These are 2K in size for Jet3 (Access 97) and 4K for Jet4 (Access 
 2000/2002).  All data in MDB files exists within pages, of which there are 
 a number of types.
@@ -100,7 +100,7 @@ The header of a Jet3 data page looks like this:
 | ???? | 2 bytes | offset_row | The records location on this page          |
 +--------------------------------------------------------------------------+
 
-In Jet4, an additional four byte field was added.  It's purpose is currently
+In Jet4, an additional four byte field was added.  Its purpose is currently
 unknown.
 
 +--------------------------------------------------------------------------+
@@ -146,8 +146,8 @@ The Jet3 row format is:
 | ???? | n bytes | var_cols   | Variable length columns                    |
 | ???? | 1 byte  | eod        | length of data from begining of record     |
 | ???? | n bytes | var_table[]| offset from start of row for each var_col  |
-| ???? | 1 byte  | var_len    | number of variable length columns          |
 | ???? | n bytes | jump_table | Jump table (see description below)         |
+| ???? | 1 byte  | var_len    | number of variable length columns          |
 | ???? | n bytes | null_mask  | Null indicator. size is 1 byte per 8 cols  |
 |      |         |            | 0 indicates a null value.  Also used to    |
 |      |         |            | represent value of boolean type columns    |
@@ -160,7 +160,7 @@ Notes:
   columns are added.
 . All fixed length columns are stored first to last, followed by variable length
   columns.
-. The size of the null table is computed by (num_cols - 1)/8 + 1
+. The size of the null table is computed by (num_cols + 7)/8.
 . Fixed columns can be null (unlike some other databases).
 . The var_len field indicates the size of the var_table[].
 . The eod field points at the first byte after the var_cols field.  It is used
@@ -174,9 +174,9 @@ get around this offsets are computed using a jump table.  The jump table stores
 the number of the first column in this jump segment.  If the size of the data is
 less than 256 then no jump table will be present.
 
-For example if the row contains 45 columns and the offset of the 14th column is 
+For example if the row contains 45 columns and the offset of the 15th column is 
 more than 256 then the first entry in the jump table will be 0xe (14).  If the 
-23rd column is the first one at offset > 512 the second entry of the jump table
+24th column is the first one at offset > 512 the second entry of the jump table
 would be 0x17 (23) and so on.
  
 +--------------------------------------------------------------------------+
@@ -269,8 +269,8 @@ In a LVAL type 2 data page, you have
     2 bytes for an offset,
     4 bytes for the next lval_pg
 
-So there is  a bloc of 2048 - (10+2+4) = 2032(jet3) 
-or 4096 - (12+2+4)  = 4078(jet4) bytes max in a page.
+So there is a block of 2048 - (10+2+4) = 2032(jet3) 
+or 4096 - (12+2+4) = 4078(jet4) bytes max in a page.
 
 TDEF Pages (Table Definition)
 -----------------------------

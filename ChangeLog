@@ -1,5 +1,6 @@
 Tue Aug 17 22:46:13 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix and simplify usage map handling
+	* HACKING: Minor documentation corrections
 
 Wed Aug  4 21:22:46 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING:
