@@ -1,6 +1,7 @@
 Sat Aug 28 00:20:44 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Jump table packing/cracking improvements
 	* src/libmdb/worktable.c: Fix bug in temp tables with multiple columns
+	* src/libmdb/data.c: Minor simplification in mdb_read_row
 
 Thu Aug 26 21:06:35 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Documentation fix

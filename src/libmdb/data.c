@@ -202,7 +202,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	int num_fields;
 
 	if (table->num_rows <= row) 
-			return 0;
+		return 0;
 
 	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
@@ -238,17 +238,8 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	/* use num_cols instead of num_fields -- bsb 03/04/02 */
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index(table->columns,fields[i].colnum);
-		if (fields[i].is_fixed) {
-			rc = _mdb_attempt_bind(mdb, col, 
-				fields[i].is_null,
-				fields[i].start, 
-				col->col_size);
-		} else {
-			rc = _mdb_attempt_bind(mdb, col, 
-				fields[i].is_null,
-				fields[i].start, 
-				fields[i].siz);
-		}
+		rc = _mdb_attempt_bind(mdb, col, fields[i].is_null,
+			fields[i].start, fields[i].siz);
 	}
 
 	return 1;
