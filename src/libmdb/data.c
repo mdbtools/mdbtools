@@ -634,7 +634,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			pg_row & 0xff, row_start, len);
 		buffer_dump(mdb->pg_buf, row_start, row_start + len);
 #endif
-		mdb_unicode2ascii(mdb, buf, row_start, len, text, MDB_BIND_SIZE);
+		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;
 	} else { /* if (memo_flags == 0x0000) { */
 		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
@@ -737,7 +737,7 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 			if (size<0) {
 				return "";
 			}
-			mdb_unicode2ascii(mdb, mdb->pg_buf, start, size, text, MDB_BIND_SIZE);
+			mdb_unicode2ascii(mdb, mdb->pg_buf + start, size, text, MDB_BIND_SIZE);
 			return text;
 		break;
 		case MDB_SDATETIME:

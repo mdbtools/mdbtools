@@ -230,7 +230,6 @@ typedef struct {
 #ifdef HAVE_ICONV
 	iconv_t	iconv_in;
 	iconv_t	iconv_out;
-	iconv_t	iconv_compress;
 #endif
 } MdbHandle; 
 
@@ -530,7 +529,7 @@ extern int mdb_get_option(unsigned long optnum);
 extern void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest, unsigned int dest_sz);
-extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest, unsigned int dest_sz);
+extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen);
+extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen);
 
 #endif /* _mdbtools_h_ */

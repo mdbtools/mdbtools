@@ -1,3 +1,14 @@
+Sat Dec 11 00:03:17 CST 2004	Jeff Smith <whydoubt@yahoo.com>
+	* HACKING:
+	* include/mdbtools.h:
+	* src/libmdb/data.c:
+	* src/libmdb/iconv.c:
+	* src/libmdb/index.c:
+	* src/libmdb/sargs.c:
+	* src/libmdb/table.c:
+	* src/odbc/odbc.c:
+	* src/sql/mdbsql.c: Better compressed text handling
+
 Wed Dec  1 18:18:02 EST 2004	Brian Bruns <brian@bruns.com>
 	* src/libmdb/data.c: 
 	* src/libmdb/iconv.c:

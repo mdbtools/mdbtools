@@ -154,7 +154,7 @@ int lastchar;
 			return mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
 			break;
 		case MDB_TEXT:
-			mdb_unicode2ascii(mdb, field->value, 0, field->siz, tmpbuf, 256);
+			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, 256);
 			return mdb_test_string(node, tmpbuf);
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);

@@ -269,9 +269,9 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	** column names - ordered the same as the column attributes table
 	*/
 	for (i=0;i<table->num_cols;i++) {
+		char *tmp_buf;
 		pcol = g_ptr_array_index(table->columns, i);
 
-		char *tmp_buf;
 		if (IS_JET4(mdb)) {
 			name_sz = read_pg_if_16(mdb, &cur_pos);
 			cur_pos += 2;
@@ -285,7 +285,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		}
 		tmp_buf = (char *) g_malloc(name_sz);
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
-		mdb_unicode2ascii(mdb, tmp_buf, 0, name_sz, pcol->name, name_sz);
+		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
 		g_free(tmp_buf);
 		cur_pos += name_sz;
 

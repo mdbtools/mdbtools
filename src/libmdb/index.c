@@ -111,7 +111,7 @@ mdb_read_indices(MdbTableDef *table)
 		tmpbuf = g_malloc(name_sz);
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
 		cur_pos += name_sz;
-		mdb_unicode2ascii(mdb, tmpbuf, 0, name_sz, pidx->name, name_sz); 
+		mdb_unicode2ascii(mdb, tmpbuf, name_sz, pidx->name, MDB_MAX_OBJ_NAME); 
 		g_free(tmpbuf);
 		//fprintf(stderr, "index name %s\n", pidx->name);
 	}

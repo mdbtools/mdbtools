@@ -23,86 +23,159 @@
 #include "dmalloc.h"
 #endif
 
+/*
+ * This function is used in reading text data from an MDB table.
+ */
 int
-mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest, unsigned int dest_sz)
+mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen)
 {
-        unsigned int i, ret;
-        int len_in, len_out;
-        unsigned char *in_ptr, *out_ptr;
+	unsigned char *tmp = NULL;
+	unsigned int tlen = 0;
+	int len_in, len_out;
+	char *in_ptr, *out_ptr;
 
-        in_ptr = &buf[offset];
-        out_ptr = dest;
-        len_in = len;
-        len_out = dest_sz;
+	if ((!src) || (!dest))
+		return 0;
 
+	/* Uncompress 'Unicode Compressed' string into tmp */
+	if (IS_JET4(mdb) && (slen>=2) && (src[0]==0xff) && (src[1]==0xfe)) {
+		unsigned int compress=1;
+		src += 2;
+		slen -= 2;
+		tmp = (char *)g_malloc(slen*2);
+		while (slen) {
+			if (*src == 0) {
+				compress = (compress) ? 0 : 1;
+				src++;
+				slen--;
+			} else if (compress) {
+				tmp[tlen++] = *src++;
+				tmp[tlen++] = 0;
+				slen--;
+			} else if (slen >= 2){
+				tmp[tlen++] = *src++;
+				tmp[tlen++] = *src++;
+				slen-=2;
+			}
+		}
+	}
 
-	if (buf[offset]==0xff && buf[offset+1]==0xfe) {
-		len_in -= 2;
-        	in_ptr += 2;
-                ret = iconv(mdb->iconv_compress, (char **)&in_ptr, &len_in, (char **)&out_ptr, &len_out);
-                dest[dest_sz - len_out]='\0';
-                return dest_sz - len_out;
-		//strncpy(dest, in_ptr+2, len-2);
-		//dest[len-2]='\0';
+	in_ptr = (tmp) ? tmp : src;
+	out_ptr = dest;
+	len_in = (tmp) ? tlen : slen;
+	len_out = dlen;
+
+#if HAVE_ICONV
+	//printf("1 len_in %d len_out %d\n",len_in, len_out);
+	while (1) {
+		iconv(mdb->iconv_in, &in_ptr, &len_in, &out_ptr, &len_out);
+		if (!len_in) break;
+		/* Don't bail if impossible conversion is encountered */
+		in_ptr += (IS_JET4(mdb)) ? 2 : 1;
+		len_in -= (IS_JET4(mdb)) ? 2 : 1;
+		*out_ptr++ = '?';
+		len_out--;
+	}
+	//printf("2 len_in %d len_out %d\n",len_in, len_out);
+	dlen -= len_out;
+#else
+	if (IS_JET3(mdb)) {
+		strncpy(out_ptr, in_ptr, len_in);
+		dlen = len_in;
 	} else {
-#ifdef HAVE_ICONV
-        if (mdb->iconv_in) {
-                //printf("1 len_in %d len_out %d\n",len_in, len_out);
-                ret = iconv(mdb->iconv_in, (char **)&in_ptr, &len_in, (char **)&out_ptr, &len_out);
-                //printf("2 len_in %d len_out %d\n",len_in, len_out);
-                dest[dest_sz - len_out]='\0';
-                //printf("dest %s\n",dest);
-                return dest_sz - len_out;
-        }
+		/* rough UCS-2LE to ISO-8859-1 conversion */
+		unsigned int i;
+		for (i=0; i<len_in; i+=2)
+			dest[i/2] = (in_ptr[i+1] == 0) ? in_ptr[i] : '?';
+		dlen = len_in/2;
+	}
 #endif
 
-		/* convert unicode to ascii, rather sloppily */
-		for (i=0;i<len;i+=2)
-			dest[i/2] = in_ptr[i];
-		dest[len/2]='\0';
-	}
-	return len;
+	if (tmp) g_free(tmp);
+	dest[dlen]='\0';
+	//printf("dest %s\n",dest);
+	return dlen;
 }
 
+/*
+ * This function is used in writing text data to an MDB table.
+ * If slen is 0, strlen will be used to calculate src's length.
+ */
 int
-mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest, unsigned int dest_sz)
+mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen)
 {
-        unsigned int i = 0, ret;
-        size_t len_in, len_out, len_orig;
+        size_t len_in, len_out;
         char *in_ptr, *out_ptr;
 
-        in_ptr = &buf[offset];
-        out_ptr = dest;
-        len_orig = strlen(in_ptr);
-        len_in = len_orig;
-        len_out = dest_sz;
+	if ((!src) || (!dest))
+		return 0;
 
-        if (!buf) return 0;
+        in_ptr = src;
+        out_ptr = dest;
+        len_in = (slen) ? slen : strlen(src);
+        len_out = dlen;
 
 #ifdef HAVE_ICONV
-        if (mdb->iconv_out) {
-                ret = iconv(mdb->iconv_out, &in_ptr, &len_in, &out_ptr, &len_out);
-                //printf("len_in %d len_out %d\n",len_in, len_out);
-                dest[dest_sz - len_out]='\0';
-                dest[dest_sz - len_out + 1]='\0';
-                return dest_sz - len_out;
+	iconv(mdb->iconv_out, &in_ptr, &len_in, &out_ptr, &len_out);
+	//printf("len_in %d len_out %d\n", len_in, len_out);
+	dlen -= len_out;
+#else
+	if (IS_JET3(mdb)) {
+		dlen = MIN(len_in, len_out);
+		strncpy(out_ptr, in_ptr, dlen);
+	} else {
+		unsigned int i;
+		slen = MIN(len_in, len_out/2);
+		dlen = slen*2;
+		for (i=0; i<slen; i++) {
+			out_ptr[i*2] = in_ptr[i];
+			out_ptr[i*2+1] = 0;
+		}
 	}
 #endif
 
-	if (IS_JET3(mdb)) {
-		strncpy(dest, in_ptr, len);
-		dest[len]='\0';
-		return strlen(dest);
+	/* Unicode Compression */
+	if(IS_JET4(mdb) && (dlen>4)) {
+		char *tmp = g_malloc(dlen);
+		int tptr = 0, dptr = 0;
+		int comp = 1;
+
+		tmp[tptr++] = 0xff;
+		tmp[tptr++] = 0xfe;
+		while((dptr < dlen) && (tptr < dlen)) {
+			if (((dest[dptr+1]==0) && (comp==0))
+			 || ((dest[dptr+1]!=0) && (comp==1))) {
+				/* switch encoding mode */
+				tmp[tptr++] = 0;
+				comp = (comp) ? 0 : 1;
+			} else if (dest[dptr]==0) {
+				/* this string cannot be compressed */
+				tptr = dlen;
+			} else if (comp==1) {
+				/* encode compressed character */
+				tmp[tptr++] = dest[dptr];
+				dptr += 2;
+			} else if (tptr+1 < dlen) {
+				/* encode uncompressed character */
+				tmp[tptr++] = dest[dptr];
+				tmp[tptr++] = dest[dptr+1];
+				dptr += 2;
+			} else {
+				/* could not encode uncompressed character
+				 * into single byte */
+				tptr = dlen;
+			}
+		}
+		if (tptr < dlen) {
+			memcpy(dest, tmp, tptr);
+			dlen = tptr;
+		}
+		g_free(tmp);
 	}
 
-	while (i<strlen(in_ptr) && (i*2+2)<len) {
-		dest[i*2] = in_ptr[i];
-		dest[i*2+1] = 0;
-		i++;
-	}
-
-	return (i*2);
+	return dlen;
 }
+
 void mdb_iconv_init(MdbHandle *mdb)
 {
 	char *iconv_code;
@@ -112,21 +185,20 @@ void mdb_iconv_init(MdbHandle *mdb)
 		iconv_code="UTF-8";
 	}
 
-
 #ifdef HAVE_ICONV
         if (IS_JET4(mdb)) {
                 mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
                 mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
-                mdb->iconv_compress = iconv_open(iconv_code, "ISO8859-1");
         } else {
-                /* ToDO - need to determine character set from file */
-		/* But according to MS kb289525 and kb202427, there is not such info in jet3 db */
+                /* According to Microsoft Knowledge Base pages 289525 and */
+		/* 202427, code page info is not contained in the database */
 		char *jet3_iconv_code;
 
 		/* check environment variable */
 		if (!(jet3_iconv_code=(char *)getenv("MDB_JET3_CHARSET"))) {
-			jet3_iconv_code="ISO8859-1";
+			jet3_iconv_code="CP1252";
 		}
+
                 mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
                 mdb->iconv_in = iconv_open(iconv_code, jet3_iconv_code);
         }
@@ -137,8 +209,5 @@ void mdb_iconv_close(MdbHandle *mdb)
 #ifdef HAVE_ICONV
         if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
         if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
-	if (IS_JET4(mdb)) {
-        	if (mdb->iconv_compress != (iconv_t)-1) iconv_close(mdb->iconv_compress);
-	}
 #endif
 }

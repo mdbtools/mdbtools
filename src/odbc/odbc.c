@@ -27,7 +27,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.26 2004/11/27 18:18:55 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.27 2004/12/11 06:07:22 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -1081,9 +1081,9 @@ SQLRETURN SQL_API SQLColumns(
 		for (j=0; j<table->num_cols; j++) {
 			col = g_ptr_array_index(table->columns, j);
 
-			ts2 = mdb_ascii2unicode(mdb, table->name, 0, 100, t2, MDB_BIND_SIZE);
-			ts3 = mdb_ascii2unicode(mdb, col->name, 0, 100, t3, MDB_BIND_SIZE);
-			ts5 = mdb_ascii2unicode(mdb, "FIX ME", 0, 100, t5, MDB_BIND_SIZE);
+			ts2 = mdb_ascii2unicode(mdb, table->name, 0, t2, MDB_BIND_SIZE);
+			ts3 = mdb_ascii2unicode(mdb, col->name, 0, t3, MDB_BIND_SIZE);
+			ts5 = mdb_ascii2unicode(mdb, "FIX ME", 0, t5, MDB_BIND_SIZE);
 			nullable = SQL_NO_NULLS;
 			datatype = _odbc_get_client_type(col->col_type);
 			sqldatatype = _odbc_get_client_type(col->col_type);
@@ -1384,11 +1384,11 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 		if (fSqlType && (fSqlType != type_info[i].data_type))
 			continue;
 
-		ts0 = mdb_ascii2unicode(mdb, type_info[i].type_name, 0, 100, t0, MDB_BIND_SIZE);
-		ts3 = mdb_ascii2unicode(mdb, type_info[i].literal_prefix, 0, 100, t3, MDB_BIND_SIZE);
-		ts4 = mdb_ascii2unicode(mdb, type_info[i].literal_suffix, 0, 100, t4, MDB_BIND_SIZE);
-		ts5 = mdb_ascii2unicode(mdb, type_info[i].create_params, 0, 100, t5, MDB_BIND_SIZE);
-		ts12 = mdb_ascii2unicode(mdb, type_info[i].local_type_name, 0, 100, t12, MDB_BIND_SIZE);
+		ts0 = mdb_ascii2unicode(mdb, type_info[i].type_name, 0, t0, MDB_BIND_SIZE);
+		ts3 = mdb_ascii2unicode(mdb, type_info[i].literal_prefix, 0, t3, MDB_BIND_SIZE);
+		ts4 = mdb_ascii2unicode(mdb, type_info[i].literal_suffix, 0, t4, MDB_BIND_SIZE);
+		ts5 = mdb_ascii2unicode(mdb, type_info[i].create_params, 0, t5, MDB_BIND_SIZE);
+		ts12 = mdb_ascii2unicode(mdb, type_info[i].local_type_name, 0, t12, MDB_BIND_SIZE);
 
 		FILL_FIELD(&fields[0], t0, ts0);
 		FILL_FIELD(&fields[1],&type_info[i].data_type, 0);
@@ -1542,8 +1542,8 @@ SQLRETURN SQL_API SQLTables(
 			FILL_FIELD(&fields[j], NULL, 0);
 		}
 
-		ts2 = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, t2, MDB_BIND_SIZE);
-		ts3 = mdb_ascii2unicode(mdb, table_types[ttype], 0, 100, t3, MDB_BIND_SIZE);
+		ts2 = mdb_ascii2unicode(mdb, entry->object_name, 0, t2, MDB_BIND_SIZE);
+		ts3 = mdb_ascii2unicode(mdb, table_types[ttype], 0, t3, MDB_BIND_SIZE);
 
 		FILL_FIELD(&fields[2], t2, ts2);
 		FILL_FIELD(&fields[3], t3, ts3);

@@ -697,3 +697,27 @@ Next comes one of more rows of data. (column names, descriptions, etc...)
 
 See kkd.c for an example, although it needs cleanup.
 
+
+Text Data Type
+--------------
+
+In Jet3, the encoding of text depends on the machine on which it was created.
+So for databases created on U.S. English systems, it can be expected that text
+is encoded in CP1252.  This is the default used by mdbtools.  If you know that
+another encoding has been used, you can over-ride the default by setting the
+environment variable MDB_JET3_CHARSET.  To find out what encodings will work on
+your system, run 'iconv -l'.
+
+In Jet4, the encoding can be either little-endian UCS-2, or a special
+compressed form of it.  This compressed format begins with 0xff 0xfe.
+The string then starts in compressed mode, where characters with 0x00 for the
+most-significant byte do not encode it.  In the compressed format, a 0x00 byte
+signals a change from compressed mode to uncompressed mode, or from
+uncompressed mode back to compressed mode.  The string may end in either mode.
+Note that a string containing any character 0x##00 (UCS-2) will not be
+compressed.  Also, the string will only be compressed if it really does make
+the string shorter as compared to uncompressed UCS-2.
+
+Programs that use mdbtools libraries will receive strings encoded in UTF-8 by
+default.  This default can by over-ridden by setting the environment variable
+MDB_ICONV to the desired encoding.
