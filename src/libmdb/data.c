@@ -707,8 +707,8 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 	long int day, time;
 	int yr, q;
 	int *cal;
-	int noleap_cal[] = {0,31,59,90,120,150,181,212,243,273,304,334,365};
-	int leap_cal[]   = {0,31,60,91,121,151,182,213,244,274,305,335,366};
+	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
 	switch (datatype) {
 		case MDB_BOOL:
