@@ -77,26 +77,18 @@ int len, i;
 	return table;
 }
 
-MdbColumn *mdb_read_column(MdbTableDef *table)
+GArray *mdb_read_columns(MdbHandle *mdb, MdbTableDef *table)
 {
-}
-
-void mdb_table_dump(MdbCatalogEntry *entry)
-{
+MdbColumn col;
+GArray *columns;
 int len, i;
 int cur_col, cur_name;
 int col_type, col_size;
 int col_start, name_start;
 char name[MDB_MAX_OBJ_NAME+1];
 int name_sz;
-MdbTableDef *table;
-MdbHandle *mdb = entry->mdb;
-
-	table = mdb_read_table(entry);
-	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
-	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
-	fprintf(stdout,"number of datapages = %d\n",table->num_pgs);
-	fprintf(stdout,"first data page     = %d\n",table->first_data_pg);
+	
+	table->columns = g_array_new(FALSE,FALSE,sizeof(MdbColumn));
 
 	col_start = 43 + (table->num_pgs * 8);
 	name_start = col_start + (table->num_cols * 18);
@@ -105,18 +97,43 @@ MdbHandle *mdb = entry->mdb;
 	cur_name = name_start;
 
 	for (i=0;i<table->num_cols;i++) {
-		col_type = mdb->pg_buf[cur_col];
-		col_size = mdb_get_int16(mdb,cur_col+16);
-		
+		memset(&col,'\0', sizeof(MdbColumn));
+
+		col.col_type = mdb->pg_buf[cur_col];
+		col.col_size = mdb_get_int16(mdb,cur_col+16);
 		/* get the name */
 		name_sz = mdb->pg_buf[cur_name];
-		memcpy(name,&mdb->pg_buf[cur_name+1],name_sz);
-		name[name_sz]='\0';
-		fprintf(stdout,"column %2d %s\n",i,name);
-		fprintf(stdout,"column type %s\n",mdb_get_coltype_string(col_type));
-		fprintf(stdout,"column size %d\n",col_size);
+		memcpy(col.name,&mdb->pg_buf[cur_name+1],name_sz);
+		col.name[name_sz]='\0';
 
 		cur_col += 18;
 		cur_name += name_sz + 1;
+		g_array_append_val(table->columns, col);
+	}
+
+	return table->columns;
+}
+
+void mdb_table_dump(MdbCatalogEntry *entry)
+{
+MdbTableDef *table;
+MdbColumn col;
+MdbHandle *mdb = entry->mdb;
+int i;
+
+	table = mdb_read_table(entry);
+	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
+	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
+	fprintf(stdout,"number of datapages = %d\n",table->num_pgs);
+	fprintf(stdout,"first data page     = %d\n",table->first_data_pg);
+
+	mdb_read_columns(mdb, table);
+	for (i=0;i<table->num_cols;i++) {
+		col = g_array_index(table->columns,MdbColumn,i);
+	
+		fprintf(stdout,"column %2d %s\n",i,col.name);
+		fprintf(stdout,"column type %s\n",
+			mdb_get_coltype_string(col.col_type));
+		fprintf(stdout,"column size %d\n",col.col_size);
 	}
 }

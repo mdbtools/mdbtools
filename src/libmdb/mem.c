@@ -39,12 +39,8 @@ void mdb_free_handle(MdbHandle *mdb)
 void mdb_free_catalog(MdbHandle *mdb)
 {
 GList *l;
-MdbCatalogEntry *entryp;
+MdbCatalogEntry entry;
 
-	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
-		entryp = l->data;
-		g_free(entryp);
-	}
 }
 MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 {

@@ -26,7 +26,7 @@ int rows;
 int i;
 unsigned char buf[2048];
 MdbHandle *mdb;
-MdbCatalogEntry *entry;
+MdbCatalogEntry entry;
 GList *l;
 
 
@@ -39,10 +39,10 @@ GList *l;
 
 	mdb_read_catalog(mdb, MDB_TABLE);
 
-	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
-		entry = l->data;
-		if (!strcmp(entry->object_name,argv[2])) {
-				mdb_table_dump(entry);
+	for (i=0;i<mdb->num_catalog;i++) {
+		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
+		if (!strcmp(entry.object_name,argv[2])) {
+				mdb_table_dump(&entry);
 		}
 	}
 

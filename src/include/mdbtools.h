@@ -62,14 +62,15 @@ typedef struct {
 	guint16       row_num;
 	unsigned int  cur_pos;
 	unsigned char pg_buf[MDB_PGSIZE];
-	GList         *catalog;
+	int		num_catalog;
+	GArray		*catalog;
 } MdbHandle; 
 
 typedef struct {
 	MdbHandle	*mdb;
 	char           object_name[MDB_MAX_OBJ_NAME+1];
 	int            object_type;
-	unsigned long  table_pg;
+	unsigned long  table_pg; /* misnomer since object may not be a table */
 	unsigned long  kkd_pg;
 	unsigned int   kkd_rowid;
 	int		num_props;
@@ -92,6 +93,8 @@ typedef struct {
 
 typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];
+	int		col_type;
+	int		col_size;
 	GHashTable	*properties;
 } MdbColumn;
 

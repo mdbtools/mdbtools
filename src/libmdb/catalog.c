@@ -84,7 +84,7 @@ int mdb_catalog_rows(MdbHandle *mdb)
 {
 	return mdb_get_int16(mdb, 0x08);
 }
-GList *mdb_read_catalog(MdbHandle *mdb, int obj_type)
+GArray *mdb_read_catalog(MdbHandle *mdb, int obj_type)
 {
 int i;
 int rows;
@@ -126,6 +126,7 @@ int next_pg, next_pg_off;
 	}
 	return (mdb->catalog);
 #endif
+	mdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
 	next_pg=0;
 	while (mdb_read_pg(mdb,next_pg)) {
 		if (mdb->pg_buf[0]==0x01 && 
@@ -135,8 +136,8 @@ int next_pg, next_pg_off;
 			for (i=0;i<rows;i++) {
 				if (mdb->pg_buf[11 + 2 * i] & 0x40) continue;
 				if (mdb_read_catalog_entry(mdb, i, &entry)) {
-					data = g_memdup(&entry,sizeof(MdbCatalogEntry));
-					mdb->catalog = g_list_append(mdb->catalog, data);
+					mdb->num_catalog++;
+					mdb->catalog = g_array_append_val(mdb->catalog, entry);
 				}
 			}
 		}
@@ -145,20 +146,19 @@ int next_pg, next_pg_off;
 }
 void mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
-int rows;
-GList *l;
-MdbCatalogEntry *entryp;
+int rows, i;
+MdbCatalogEntry entry;
 
 	mdb_read_catalog(mdb, obj_type);
-	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
-                entryp = l->data;
-		if (obj_type==-1 || entryp->object_type==obj_type) {
+	for (i=0;i<mdb->num_catalog;i++) {
+                entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
+		if (obj_type==-1 || entry.object_type==obj_type) {
 			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x KKD pg: %04x row: %2d\n",
-			mdb_get_objtype_string(entryp->object_type),
-			entryp->object_name,
-			entryp->table_pg,
-			entryp->kkd_pg,
-			entryp->kkd_rowid);
+			mdb_get_objtype_string(entry.object_type),
+			entry.object_name,
+			entry.table_pg,
+			entry.kkd_pg,
+			entry.kkd_rowid);
 		}
         }
 	return;
