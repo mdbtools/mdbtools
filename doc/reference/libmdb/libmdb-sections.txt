@@ -141,6 +141,5 @@ read_pg_if_32
 read_pg_if
 read_pg_if_n
 mdb_alloc_tabledef
-mdb_alloc_catalog
 </SECTION>
 

@@ -1,3 +1,8 @@
+Thu Sep  2 23:04:02 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* doc/reference/libmdb/libmdb-sections.txt:
+	* include/mdbtools.h:
+	* src/libmdb/catalog.c: Remove function mdb_alloc_catalog
+
 Sat Aug 28 14:21:41 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix mdb_read_next_dpg
 	                     Correct long int display length

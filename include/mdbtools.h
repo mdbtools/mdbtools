@@ -407,7 +407,6 @@ extern void mdb_swap_pgbuf(MdbHandle *mdb);
 extern long _mdb_get_int32(unsigned char *buf, int offset);
 
 /* catalog.c */
-extern void mdb_alloc_catalog(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
 extern GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
 extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);

@@ -47,10 +47,6 @@ static char *type_name[] = {"Form",
 	}
 }
 
-void mdb_alloc_catalog(MdbHandle *mdb)
-{
-	mdb->catalog = g_ptr_array_new();
-}
 void mdb_free_catalog(MdbHandle *mdb)
 {
 	unsigned int i;
@@ -72,7 +68,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	int type;
 
 	if (mdb->catalog) mdb_free_catalog(mdb);
-	mdb_alloc_catalog(mdb);
+	mdb->catalog = g_ptr_array_new();
 	mdb->num_catalog = 0;
 
 	/* dummy up a catalog entry so we may read the table def */
