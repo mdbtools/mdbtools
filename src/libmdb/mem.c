@@ -24,21 +24,39 @@
 #include "dmalloc.h"
 #endif
 
+/**
+ * mdb_init:
+ *
+ * Initializes the LibMDB library.  This function should be called exactly once
+ * by calling program and prior to any other function.
+ *
+ **/
 void mdb_init()
 {
 	mdb_init_backends();
 }
 
+/**
+ * mdb_exit:
+ *
+ * Cleans up the LibMDB library.  This function should be called exactly once
+ * by the calling program prior to exiting (or prior to final use of LibMDB 
+ * functions).
+ *
+ **/
 void mdb_exit()
 {
 	mdb_remove_backends();
 }
 
+/* private function */
 MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)
 {
 	mdb->stats = g_malloc0(sizeof(MdbStatistics));
 	return mdb->stats;
+/* private function */
 }
+/* private function */
 void 
 mdb_free_stats(MdbHandle *mdb)
 {

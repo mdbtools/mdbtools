@@ -23,6 +23,18 @@
 #include "dmalloc.h"
 #endif
 
+/**
+ * mdb_stats_on:
+ * @mdb: Handle to the (open) MDB file to collect stats on.
+ *
+ * Begins collection of statistics on an MDBHandle.
+ *
+ * Statistics in LibMDB will track the number of reads from the MDB file.  The
+ * collection of statistics is started and stopped with the mdb_stats_on and
+ * mdb_stats_off functions.  Collected statistics are accessed by reading the
+ * MdbStatistics structure or calling mdb_dump_stats.
+ * 
+ */
 void
 mdb_stats_on(MdbHandle *mdb)
 {
@@ -31,6 +43,15 @@ mdb_stats_on(MdbHandle *mdb)
 
 	mdb->stats->collect = TRUE;
 }
+/**
+ * mdb_stats_off:
+ * @mdb: pointer to handle of MDB file with active stats collection.
+ *
+ * Turns off statistics collection.
+ *
+ * If mdb_stats_off is not called, statistics will be turned off when handle
+ * is freed using mdb_free_handle.
+ **/
 void
 mdb_stats_off(MdbHandle *mdb)
 {
@@ -38,6 +59,12 @@ mdb_stats_off(MdbHandle *mdb)
 
 	mdb->stats->collect = FALSE;
 }
+/**
+ * mdb_dump_stats:
+ * @mdb: pointer to handle of MDB file with active stats collection.
+ *
+ * Dumps current statistics to stdout.
+ **/
 void
 mdb_dump_stats(MdbHandle *mdb)
 {

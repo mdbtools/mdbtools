@@ -4,6 +4,8 @@ Mon Apr 12 09:56:23 EDT 2004	Brian Bruns <brian@bruns.com>
 	* src/libmdb/backend.c: free backends on exit (Jeff Smith)
 	* src/libmdb/index.c: missing function mdb_swap_n()
 	* src/libmdb/file.c: 
+	* src/libmdb/mem.c: 
+	* src/libmdb/stats.c: 
 	* configure.in:
 	* doc/reference/libmdb/Makefile.am:
 	* doc/reference/libmdb/libmdb-sections.txt:
