@@ -331,7 +331,7 @@ dump_results_pp(MdbSQL *sql)
 
 	/* clean up */
 	for (j=0;j<sql->num_columns;j++) {
-		if (sql->bound_values[j]) free(sql->bound_values[j]);
+		g_free(sql->bound_values[j]);
 	}
 
 	/* the column and table names are no good now */
@@ -340,7 +340,7 @@ dump_results_pp(MdbSQL *sql)
 
 void myexit(int r)
 {
-	free(delimiter);
+	g_free(delimiter);
 	exit(r);
 }
 int
@@ -360,10 +360,9 @@ char *histpath;
 
 
 	if (home) {
-		histpath = (char *)malloc(strlen(home) + strlen(HISTFILE) + 2);
-		sprintf(histpath,"%s/%s",home,HISTFILE);
+		histpath = (char *) g_strconcat(home, "/", HISTFILE, NULL);
 		read_history(histpath);
-		free(histpath);
+		g_free(histpath);
 	}
 	if (!isatty(fileno(stdin))) {
 		in = stdin;
@@ -371,8 +370,7 @@ char *histpath;
 	while ((opt=getopt(argc, argv, "HFpd:i:o:"))!=-1) {
 		switch (opt) {
 		        case 'd':
-				delimiter = malloc(strlen(optarg)+1);
-				strcpy(delimiter, optarg);
+				delimiter = (char *) g_strdup(optarg);
 				break;
 		        case 'p':
 				pretty_print=0;
@@ -403,7 +401,7 @@ char *histpath;
 		}
 	}
 	if (!delimiter) {
-		delimiter = strdup("\t");
+		delimiter = (char *) g_strdup("\t");
 	}
 	/* initialize the SQL engine */
 	sql = mdb_sql_init();
@@ -413,12 +411,16 @@ char *histpath;
 
 	/* give the buffer an initial size */
 	bufsz = 4096;
-	mybuf = (char *) malloc(bufsz);
+	mybuf = (char *) g_malloc(bufsz);
 	mybuf[0]='\0';
 
 	if (in) {
 		s=malloc(256);
-		if (!fgets(s, 256, in)) myexit(0);
+		if (!fgets(s, 256, in)) {
+			if (s) free (s);
+			g_free (mybuf);
+			myexit(0);
+		}
 	} else {
 		sprintf(prompt,"1 => ");
 		s=readline(prompt);
@@ -457,6 +459,8 @@ char *histpath;
 				/* if we have something in the buffer, run it */
 				if (strlen(mybuf)) 
 					run_query(sql, mybuf);
+				if (s) free (s);
+				g_free (mybuf);
 				myexit(0);
 			}
 			if (s[strlen(s)-1]=='\n') s[strlen(s)-1]=0;
@@ -471,14 +475,13 @@ char *histpath;
 	}
 	mdb_sql_exit(sql);	
 
-	free(mybuf);
+	g_free(mybuf);
 	if (s) free(s);
 
 	if (home) {
-		histpath = (char *)malloc(strlen(home) + strlen(HISTFILE) + 2);
-		sprintf(histpath,"%s/%s",home,HISTFILE);
+		histpath = (char *) g_strconcat(home, "/", HISTFILE, NULL);
 		write_history(histpath);
-		free(histpath);
+		g_free(histpath);
 	}
 
 	myexit(0);

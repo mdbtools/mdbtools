@@ -110,8 +110,7 @@ main (int argc, char **argv)
 			}
         break;
         case 'd':
-            delimiter = (char *) malloc(strlen(optarg)+1);
-            strcpy(delimiter, optarg);
+            delimiter = (char *) g_strdup(optarg);
         break;
 		}
 	}
@@ -155,7 +154,7 @@ main (int argc, char **argv)
  
 	mdb_close(mdb);
 	mdb_exit();
-	if (delimiter) free(delimiter);
+	g_free(delimiter);
 
 	exit(0);
 }

@@ -55,8 +55,7 @@ int opt;
   while ((opt=getopt(argc, argv, "T:"))!=-1) {
      switch (opt) {
        case 'T':
-         tabname = (char *) malloc(strlen(optarg)+1);
-         strcpy(tabname, optarg);
+         tabname = (char *) g_strdup(optarg);
          break;
      }
   }
@@ -101,6 +100,7 @@ int opt;
 	}
    }
 
+	g_free(tabname);
 	mdb_close (mdb);
 	mdb_exit();
 

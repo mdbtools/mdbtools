@@ -57,8 +57,8 @@ main(int argc, char **argv)
 	/* doesn't handle tables > 256 columns.  Can that happen? */
 	char *bound_values[256]; 
 	int  bound_lens[256]; 
-	char *delimiter = ",";
-	char *row_delimiter = "\n";
+	char *delimiter = NULL;
+	char *row_delimiter = NULL;
 	char header_row = 1;
 	char quote_text = 1;
 	char insert_statements = 0;
@@ -74,12 +74,10 @@ main(int argc, char **argv)
 			quote_text = 0;
 		break;
 		case 'd':
-			delimiter = (char *) malloc(strlen(optarg)+1);
-			strcpy(delimiter, optarg);
+			delimiter = (char *) g_strdup(optarg);
 		break;
 		case 'R':
-			row_delimiter = (char *) malloc(strlen(optarg)+1);
-			strcpy(row_delimiter, optarg);
+			row_delimiter = (char *) g_strdup(optarg);
 		break;
 		case 'I':
 			insert_statements = 1;
@@ -94,6 +92,12 @@ main(int argc, char **argv)
 		default:
 		break;
 		}
+	}
+	if (!delimiter) {
+		delimiter = (char *) g_strdup(",");
+	}
+	if (!row_delimiter) {
+		row_delimiter = (char *) g_strdup("\n");
 	}
 	
 	/* 
@@ -133,7 +137,7 @@ main(int argc, char **argv)
 			mdb_rewind_table(table);
 			
         		for (j=0;j<table->num_cols;j++) {
-                	bound_values[j] = (char *) malloc(MDB_BIND_SIZE);
+                	bound_values[j] = (char *) g_malloc(MDB_BIND_SIZE);
 				bound_values[j][0] = '\0';
                 		mdb_bind_column(table, j+1, bound_values[j]);
                 		mdb_bind_len(table, j+1, &bound_lens[j]);
@@ -191,12 +195,14 @@ main(int argc, char **argv)
 				fprintf(stdout,"%s", row_delimiter);
 			}
         		for (j=0;j<table->num_cols;j++) {
-				free(bound_values[j]);
+				g_free(bound_values[j]);
 			}
 			mdb_free_tabledef(table);
 		}
 	}
 
+	g_free (delimiter);
+	g_free (row_delimiter);
 	mdb_close(mdb);
 	mdb_exit();
 

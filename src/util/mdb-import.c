@@ -22,9 +22,6 @@
 
 #define MAX_ROW_SIZE 4096
 
-char *delimiter = ",";
-char header_rows = 0;
-
 void
 free_values(MdbField *fields, int num_fields)
 {
@@ -107,7 +104,7 @@ convert_field(MdbColumn *col, char *s, MdbField *field)
 	return 0;
 }
 int
-prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields)
+prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields, char *delim)
 {
 	MdbColumn *col;
 	char delims[20];
@@ -117,7 +114,7 @@ prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields)
 	/*
 	 * pull apart the row and turn it into something respectable
 	 */
-	sprintf(delims, "%c\n", delimiter[0]);
+	sprintf(delims, "%c\n", delim[0]);
 	s = strtok(line, delims);
 	file_cols = 0;
 	do {
@@ -162,6 +159,8 @@ main(int argc, char **argv)
 	int  opt;
 	char *s;
 	FILE *in;
+	char *delimiter = NULL;
+	char header_rows = 0;
 
 	while ((opt=getopt(argc, argv, "H:d:"))!=-1) {
 		switch (opt) {
@@ -169,12 +168,14 @@ main(int argc, char **argv)
 			header_rows = atol(optarg);
 		break;
 		case 'd':
-			delimiter = (char *) malloc(strlen(optarg)+1);
-			strcpy(delimiter, optarg);
+			delimiter = (char *) g_strdup(optarg);
 		break;
 		default:
 		break;
 		}
+	}
+	if (!delimiter) {
+		delimiter = (char *) g_strdup(",");
 	}
 	
 	/* 
@@ -225,7 +226,7 @@ main(int argc, char **argv)
 
 	row = 1;
 	while (fgets(line, MAX_ROW_SIZE, in)) {
-		num_fields = prep_row(table, line, fields);
+		num_fields = prep_row(table, line, fields, delimiter);
 		if (!num_fields) {
 			fprintf(stderr, "Aborting import at row %d\n", row);
 			exit(1);
@@ -236,6 +237,7 @@ main(int argc, char **argv)
 		mdb_insert_row(table, num_fields, fields);
 	}
 
+	g_free(delimiter);
 	fclose(in);
 	mdb_close(mdb);
 	mdb_exit();

@@ -35,7 +35,7 @@ main (int argc, char **argv)
 	MdbCatalogEntry *entry;
 	char		*the_relation;
 	char *tabname = NULL;
-	char *namespace = "";
+	char *namespace = NULL;
 	int s = 0;
 	int opt;
 
@@ -51,18 +51,19 @@ main (int argc, char **argv)
 	while ((opt=getopt(argc, argv, "T:N:S:"))!=-1) {
 		switch (opt) {
 			case 'T':
-				tabname = (char *) malloc(strlen(optarg)+1);
-				strcpy(tabname, optarg);
+				tabname = (char *) g_strdup(optarg);
 			break;
 			case 'N':
-				namespace = (char *) malloc(strlen(optarg)+1);
-				strcpy(namespace, optarg);
+				namespace = (char *) g_strdup(optarg);
 			break;
 			case 'S':
 				s = 1;
 			break;
-     }
-  }
+		}
+	}
+	if (!namespace) {
+		namespace = (char *) g_strdup("");
+	}
  
  mdb_init();
 
@@ -119,7 +120,8 @@ main (int argc, char **argv)
 		the_relation=mdb_get_relationships(mdb);
 	}            
  
-
+	g_free(namespace);
+	g_free(tabname);
 	mdb_close (mdb);
 	mdb_exit();
 
