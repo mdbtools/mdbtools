@@ -263,9 +263,6 @@ typedef struct _mdbsargtree {
 
 typedef struct {
 	guint32 pg;
-	int mask_pos;	
-	unsigned char mask_byte;
-	int mask_bit;
 	int start_pos;
 	int offset;
 	int len;

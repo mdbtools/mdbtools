@@ -1,3 +1,8 @@
+Sat Feb 14 14:41:00 EST 2004	Brian Bruns <brian@bruns.com>
+	* include/.cvsignore: add mdbver.h
+	* include/mdbtools: remove variables for old index algorithm.
+	* src/libmdb/index.c: missing return in mdb_index_find_next, remove old index algorithm
+
 Fri Feb 13 12:51:50 EST 2004	Brian Bruns <brian@bruns.com>
 
 	* src/extras/.cvsignore: change mdb-dump to mdb-hexdump

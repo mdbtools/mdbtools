@@ -1,5 +1,5 @@
 /* MDB Tools - A library for reading MS Access database file
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2004 Brian Bruns
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -261,7 +261,8 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, unsigned char *buf, int len)
 	MdbSarg *sarg;
 	MdbField field;
 	MdbSargNode node;
-	int c_offset = 0, c_len;
+	//int c_offset = 0, 
+	int c_len;
 
 	//fprintf(stderr,"mdb_index_test_sargs called on ");
 	//for (i=0;i<len;i++)
@@ -346,6 +347,9 @@ mdb_index_unpack_page(MdbHandle *mdb, MdbIndexPage *ipg)
 
 	} while (mask_pos < 0xf8);
 
+	/* if we zero the next element, so we don't pick up the last pages starts*/
+	ipg->idx_starts[elem]=0;
+
 	return elem;
 }
 /*
@@ -355,46 +359,30 @@ mdb_index_unpack_page(MdbHandle *mdb, MdbIndexPage *ipg)
 int
 mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 {
-	int offset, len;
-	int ret = 0;
-
 	if (!ipg->pg) return 0;
 
 	/* if this page has not been unpacked to it */
-	if (!ipg->idx_starts[0])
+	if (!ipg->idx_starts[0]){
+		//fprintf(stdout, "Unpacking page %d\n", ipg->pg);
 		mdb_index_unpack_page(mdb, ipg);
+	}
 
 	
 	if (ipg->idx_starts[ipg->start_pos + 1]==0) return 0; 
 	ipg->len = ipg->idx_starts[ipg->start_pos+1] - ipg->idx_starts[ipg->start_pos];
 	ipg->start_pos++;
+	//fprintf(stdout, "Start pos %d\n", ipg->start_pos);
 
-
-	/*
-	do {
-		//fprintf(stdout, "%d %d\n", ipg->mask_bit, ipg->mask_byte);
-		ipg->mask_bit++;
-		if (ipg->mask_bit==8) {
-			ipg->mask_bit=0;
-			ipg->mask_pos++;
-		}
-		ipg->mask_byte = mdb->pg_buf[ipg->mask_pos];
-		ipg->len++;
-	} while (ipg->mask_pos <= 0xf8 && 
-			!((1 << ipg->mask_bit) & ipg->mask_byte));
-
-	if (ipg->mask_pos>=0xf8) 
-		return 0;
-*/
 	return ipg->len;
 }
 void mdb_index_page_reset(MdbIndexPage *ipg)
 {
+	int i;
+
 	ipg->offset = 0xf8; /* start byte of the index entries */
-	ipg->mask_pos = 0x16; 
-	ipg->mask_bit=0;
 	ipg->start_pos=0;
 	ipg->len = 0; 
+	ipg->idx_starts[0]=0;
 }
 void mdb_index_page_init(MdbIndexPage *ipg)
 {
@@ -526,6 +514,7 @@ mdb_index_unwind(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 		//printf("last leaf %lu\n", chain->last_leaf_found);
 		return NULL;
 	}
+	return ipg;
 }
 /*
  * the main index function.
@@ -563,7 +552,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 					chain->clean_up_mode = 1;
 			}
 			if (chain->clean_up_mode) {
-				//printf("in cleanup mode\n");
+				//fprintf(stdout,"in cleanup mode\n");
 
 				if (!chain->last_leaf_found) return 0;
 				mdb_read_pg(mdb, chain->last_leaf_found);
