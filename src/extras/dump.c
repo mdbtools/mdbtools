@@ -17,11 +17,18 @@ int main(int argc, char **argv)
    int                  j;
    unsigned char        data[17];
    FILE                 *in;
-   int length;
+   int                  length;
+   int                  pg=0;
+   char                 addr[10];
 
    in = fopen(argv[1],"r");
    while (length = fread(data,1,16,in)) {
-      fprintf(stdout, "%06x  ", i);
+      sprintf(addr, "%06x", i);
+      if (!strcmp(&addr[3],"000") || ! strcmp(&addr[3],"800")) {
+	fprintf(stdout,"-- Page 0x%04x (%d) --\n", pg, pg);
+	pg++;
+      }
+      fprintf(stdout,"%s  ", addr);
       i+=length;
 
       for(j=0; j<length; j++) {

@@ -57,7 +57,7 @@ struct stat status;
 		return 0;
 	}
 	else if (len<MDB_PGSIZE) {
-		fprintf(stderr,"EOF reached.\n");
+		/* fprintf(stderr,"EOF reached.\n"); */
 		return 0;
 	}
 	return len;
