@@ -2,8 +2,8 @@
 ]>
 <book>
 	<bookinfo>
-		<date>$Date: 2003/01/12 22:59:42 $</date>
-		<releaseinfo>$Revision: 1.1 $</releaseinfo>
+		<date>$Date: 2003/01/15 15:16:53 $</date>
+		<releaseinfo>$Revision: 1.2 $</releaseinfo>
 		<title><productname>MDB Tools</productname> Installation Guide</title>
 		<subtitle>A Guide to Installing and  Configuring <productname>MDB Tools</productname></subtitle>
 		<author>
@@ -34,9 +34,9 @@ This guide is intended to provide help with installing and configuring the <prod
 			<para>
 A few technical notes.  This guide is written in SGML DocBook format, specifications for which are found in the <ulink url="http://www.docbook.org/tdg/en/html/docbook.html">DocBook book</ulink>.  It was converted to HTML with <ulink url="http://openjade.sourceforge.net">OpenJade</ulink>.  
 The document you are reading is version 
-$Revision: 1.1 $
+$Revision: 1.2 $
 , dated 
-$Date: 2003/01/12 22:59:42 $ (CVS control number $Id: install.sgml,v 1.1 2003/01/12 22:59:42 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
+$Date: 2003/01/15 15:16:53 $ (CVS control number $Id: install.sgml,v 1.2 2003/01/15 15:16:53 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
 <ulink url="http://mdbtools.sourceforge.net/userguide/">web site</ulink>.
 			</para>
 	</preface>
@@ -87,7 +87,7 @@ A complete description of libmdb will be available in the forthcoming <productna
         </row>
         <row>
         <entry>mdb-schema</entry>
-        <entry>generate schema DLL for the specified file</entry>
+        <entry>generate schema DDL for the specified file</entry>
         </row>
         <row>
         <entry>mdb-export</entry>
@@ -120,7 +120,7 @@ A complete description of libmdb will be available in the forthcoming <productna
 LibMDBSQL is an SQL engine which provides a subset of the SQL query language to access MDB databases.  It is used with the ODBC driver, by the mdb-sql utility, and by the query window in gmdb2.
 		</para>
 		<para>
-For a description of the support SQL, see the mdb-sql man page.
+For a description of the supported SQL, see the mdb-sql man page.
 		</para>
 		</sect1>
 		<sect1 id="libmdbodbc">
@@ -136,6 +136,9 @@ The ODBC driver relies on LibMDB and LibMDBSQL.
 		<title>Gmdb2</title>
 		<para>
 Gmdb2 is a graphical interface to the functionality of MDB Tools.  Its interface resembles that of access with a tabbed interface to each of the object types in the database (tables, queries, forms, etc...).  Additonally, it sports an SQL Query window, and a file debugger useful for developers or anybody interested in examining the dark secrets of the MDB file format.
+		</para>
+		<para>
+For information on how to use gmdb2, see the manual under the Help menu.
 		</para>
 		</sect1>
 	</chapter>
