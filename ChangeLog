@@ -1,3 +1,6 @@
+Tue Jun 22 22:02:02 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-schema.c: Fix a memory leak
+
 Mon Jun 21 23:18:18 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/backend.c:
 	* src/libmdb/file.c:

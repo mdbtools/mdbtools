@@ -179,6 +179,7 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 	fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
 	fprintf (stdout, "\n");
 
+	mdb_free_tabledef (table);
 }
 
 static char *sanitize_name(char *str, int sanitize)
