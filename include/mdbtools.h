@@ -308,7 +308,7 @@ typedef struct {
 	unsigned char cache_value[256];
 } MdbIndexPage;
 
-typedef int (*MdbSargTreeFunc)(MdbSargNode *, gpointer *data);
+typedef int (*MdbSargTreeFunc)(MdbSargNode *, gpointer data);
 
 #define MDB_MAX_INDEX_DEPTH 10
 

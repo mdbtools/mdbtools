@@ -63,7 +63,7 @@ like		{ return LIKE; }
 		return IDENT;
 	}
 
-[A-z][A-z0-9_#@]*		{ yylval.name = strdup(yytext); return NAME; }
+[A-Za-z][A-Za-z0-9_#@]*		{ yylval.name = strdup(yytext); return NAME; }
 
 '[^']*''  {
 		yyless(yyleng-1);
@@ -77,7 +77,7 @@ like		{ return LIKE; }
 (-*[0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?) { 
 				yylval.name = strdup(yytext); return NUMBER; 
 			}
-~?(\/?[A-z0-9\.]+)+		{ yylval.name = strdup(yytext); return PATH; }
+~?(\/?[A-Za-z0-9\.]+)+		{ yylval.name = strdup(yytext); return PATH; }
 .	{ return yytext[0]; }
 %%
 
