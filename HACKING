@@ -16,11 +16,11 @@ hex dump of the data they start on addreeses like xxx000 and xxx800.  Access
 addresses ending in xxx000.
 
 Each page is known by a page_id of 3 bytes (max value is 0x07FFFF). 
-The start adresse of a page is at page_id * 0x800.
+The start address of a page is at page_id * 0x800.
 So the maximum of data storage for Access97 database is near 
 0x080000 * 0x800 = 0x40000000 bytes (1 Go)
 
-We have two differents structures which use page_id :
+We have two different structures which use page_id :
 
 1) Data pointer structure (_dp):
 +------+---------+-------------+------------------------------------------+
@@ -38,8 +38,8 @@ We have two differents structures which use page_id :
 | ???? | 1 byte  | flags       | If not null, indicate a system object.   |
 +-------------------------------------------------------------------------+
 
-The first byte of each page seems to be a type indentifier for instance the 
-first page in the mdb file is 0x00, which no other pages seems to share.  Other
+The first byte of each page seems to be a type identifier, for instance, the 
+first page in the mdb file is 0x00, which no other page seems to share.  Other
 pages have the following values:
 
 0x00 Database definition page.  (Page 0)
@@ -105,14 +105,14 @@ Some of the offsets are not within the bounds of the page.  The reason for this
 is not presently understood and the current code discards them silently.
 Offsets that have 0x40 in the high order byte point to a location within the 
 page where a pointer to another catalog page is stored. This does not seem to 
-yeild a complete chain of catalog pages and is currently being ignored in favor 
+yield a complete chain of catalog pages and is currently being ignored in favor 
 of a brute force read of the entire database for catalog pages.
 
 Little is understood of the meaning of the bytes that make up the records.  They
 vary in size, but portion prior to the objects name seems to be fixed.  All 
 records start with a '0x11'. The next two bytes are a page number to the column definitions. (see Column Definition).
 
-Byte offset 9 from the beginning of the record contains it's type.  Here is a
+Byte offset 9 from the beginning of the record contains its type.  Here is a
 table of known types:
 
 0x00 Form
@@ -244,7 +244,7 @@ Column Type may be one of the following (not complete):
     UNKNOWN_0D      = 0x0D
     REPID           = 0x0F /* GUID */
 
-Note: this is were my stuff didn't mesh with Yves Maingoy's who reworked the section above.
+Note: this is where my stuff didn't mesh with Yves Maingoy's who reworked the section above.
 
 (start old stuff)
 Following the 18 byte column records begins the column names, listed in order

@@ -1,0 +1,17 @@
+Makefile
+Makefile.in
+.deps
+.libs
+mdb-array
+mdb-export
+mdb-header
+mdb-parsecsv
+mdb-schema
+mdb-sql
+mdb-tables
+mdb-ver
+prcat
+prdata
+prdump
+prkkd
+prtable

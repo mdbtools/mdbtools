@@ -20,6 +20,8 @@
 
 #include "mdbtools.h"
 
+void read_to_row(MdbTableDef *table, char *sargname);
+
 main(int argc, char **argv)
 {
 int rows;

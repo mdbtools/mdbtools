@@ -1,6 +1,6 @@
 Summary: Several utilities for using MS-Access .mdb files. 
 Name: mdbtools
-Version: 0.3
+Version: 0.5
 Release: 1
 Copyright: GPL
 Group: Development/Tools

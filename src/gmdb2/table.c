@@ -73,7 +73,57 @@ gchar *text;
 		}
 	}
 }
+gmdb_table_popup_cb(GtkWidget *menu, GdkEvent *event)
+{
+GdkEventButton *event_button;
+//GtkWidget *menu;
+	
+	if (event->type == GDK_BUTTON_PRESS) {
+		event_button = (GdkEventButton *) event;
+		if (event_button->button == 3) {
+			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 
+				event_button->button, event_button->time);
+	        	g_print("button press\n");
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
 /* functions */
+void
+gmdb_table_init_popup()
+{
+GnomeIconList *gil;
+GtkWidget *menu, *mi;
+
+	gil = glade_xml_get_widget (mainwin_xml, "table_iconlist");
+
+	menu = gtk_menu_new();
+	gtk_widget_show(menu);
+	mi = gtk_menu_item_new_with_label("Definition");
+	gtk_widget_show(mi);
+	g_signal_connect_swapped (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_table_def_cb), gil);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+	mi = gtk_menu_item_new_with_label("Data");
+	gtk_widget_show(mi);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+	mi = gtk_menu_item_new_with_label("Export");
+	gtk_widget_show(mi);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+	mi = gtk_separator_menu_item_new();
+	gtk_widget_show(mi);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+	mi = gtk_menu_item_new_with_label("Debug");
+	gtk_widget_show(mi);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+	mi = gtk_menu_item_new_with_label("Usage Map");
+	gtk_widget_show(mi);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+
+	g_signal_connect_swapped (GTK_OBJECT (gil), "button_press_event",
+		G_CALLBACK (gmdb_table_popup_cb), GTK_OBJECT(menu));
+}	
 void
 gmdb_table_add_icon(gchar *text)
 {

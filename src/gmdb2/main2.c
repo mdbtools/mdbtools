@@ -7,6 +7,8 @@ GtkWidget *app;
 GladeXML *mainwin_xml;
 MdbSQL *sql;
 
+gmdb_table_popup_cb(GtkWidget *button, GdkEvent *event);
+
 /* called when the user closes the window */
 static gint
 delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
@@ -31,7 +33,7 @@ const gchar *documenters[] = {
 };
 GdkPixbuf *pixbuf;
 
-pixbuf = gdk_pixbuf_new_from_file ("logo.gif", NULL);
+pixbuf = gdk_pixbuf_new_from_file ("logo.xpm", NULL);
 
 gtk_widget_show (gnome_about_new ("Gnome MDB Viewer", "0.2",
                  "Copyright 2002-2003 Brian Bruns",
@@ -105,8 +107,10 @@ int pos;
 	gil = glade_xml_get_widget (mainwin_xml, "module_iconlist");
 	gnome_icon_list_clear(gil);
 }
+	
 void gmdb_init_popups()
 {
+		gmdb_table_init_popup();
 }
 
 int main(int argc, char *argv[]) 
