@@ -189,21 +189,6 @@ mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest)
 		dest[j++] = src[i];
 	}
 }
-guint32
-mdb_index_swap_int32(guint32 l)
-{
-	unsigned char *c, *c2;
-	guint32 l2;
-
-	c = (unsigned char *) &l;
-	c2 = (unsigned char *) &l2;
-	c2[0]=c[3];
-	c2[1]=c[2];
-	c2[2]=c[1];
-	c2[3]=c[0];
-
-	return l2;
-}
 void 
 mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 {
@@ -216,7 +201,7 @@ mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		break;
 
 		case MDB_LONGINT:
-		idx_sarg->value.i = mdb_index_swap_int32(sarg->value.i);
+		idx_sarg->value.i = GUINT32_SWAP_LE_BE(sarg->value.i);
 		//cache_int = sarg->value.i * -1;
 		c = (unsigned char *) &(idx_sarg->value.i);
 		c[0] |= 0x80;
