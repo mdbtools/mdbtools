@@ -1,6 +1,7 @@
 Wed Mar 16 06:41:57 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/data.c: Improve OLE-related functions
+	* src/util/mdb-prop.c: Uncomment use of OLE functions
 
 Sun Mar 13 15:22:11 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-export.c:
