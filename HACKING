@@ -472,19 +472,75 @@ Indices are not completely understood but here is what we know.
 | ???? | 4 bytes | leaf_page   | Pointer to leaf page, purpose unknown    |
 +-------------------------------------------------------------------------+
 
-On the page pointed to by the table definition a series of records start at
-byte offset 0xf8.
+Index pages come in two flavors.
 
-If the page is an index page (type 0x03) then the value of each key column is
-stored (for integers it seems to be in msb-lsb order to help comparison) preceded
-by a flag field and followed by the data pointer to the index entries record, this 
-is then followed by a pointer to a leaf index page.
+0x04 pages are leaf pages which contain one entry for each row in the table.  
+Each entry is composed of a flag, the indexed column values and a page/row 
+pointer to the data.
 
-The flag field is generally either 0x00, 0x7f, 0x80.  0x80 is the one's complement 
-of 0x7f and all text data in the index would then need to be negated.  The reason
-for this negation is unknown, although I suspect it has to do with descending
-order.  The 0x00 flag indicates that the key column is null, and no data will follow,
-only the page pointer.
+0x03 index pages make up the rest of the index tree and contain a flag, the 
+indexed columns, the page/row contains this entry, and the leaf page or 
+intermediate (another 0x03 page) page pointer for which this is the first 
+entry on.
+
+Both index types have a bitmask starting at 0x16 which identifies the starting
+location of each index entry on this page.  The first entry is assumed and 
+the count starts from the low order bit.  For example take the data:
+
+00 20 00 04 80 00 ...
+
+This first entry starts at 0xf8 (always).  Convert the bytes to binary starting with the low order bit and stopping at the first "on" bit:
+
+0000 0000  0000 01
+-- 00 ---  -- 20 -->
+This next entry starts 14 (0xe) bytes in at 0x105. Proceding from here, the next
+entry:
+
+       00  0000 0000  001
+<-- 20 --  -- 00 ---  -- 04
+
+starts 13 (0xd) bytes further in at 0x112.  The final entry starts at 
+
+   0 0000  0000 0001
+<-- 04 --  -- 80 ---
+
+or 13 (0xd) bytes more at 0x120.  In this example the rest of the mask (up to offset 0xf8) would be zero filled and thus this last entry at 0x120 isn't an actual entry but the stopping point of the data.
+
+Since 0xf8 = 248 and 0x16 = 22, (248 - 22) * 8 = 1808 and 2048 - 1808 = 240 leaving just enough space for the bit mask to encode the remainder of the page.  One wonders why MS didn't use a row offset table like they did on data pages, 
+seems like it would have been easier and more flexible.
+
+So now we come to the index entries for type 0x03 pages which look like this:
+
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| 0x7f | 1 byte  | flags       | 0x80 LSB, 0x7f MSB, 0x00 null?           |
+| ???? | variable| indexed cols| indexed column data                      |
+| ???? | 3 bytes | data page   | page containing row referred to by this  |
+|      |         |             | index entry                              |
+| ???? | 1 byte  | data row    | row number on that page of this entry    |
+| ???? | 4 bytes | child page  | next level index page containing this    |
+|      |         |             | entry as first entry.  Could be a leaf   |
+|      |         |             | node.                                    |
++-------------------------------------------------------------------------+
+
+The flag field is generally either 0x00, 0x7f, 0x80.  0x80 is the one's 
+complement of 0x7f and all text data in the index would then need to be negated.
+The reason for this negation is unknown, although I suspect it has to do with 
+descending order.  The 0x00 flag indicates that the key column is null, and no 
+data will follow, only the page pointer.  In multicolumn indexes the flag field plus data is repeated for the number of columns participating in the key.
+
+Update: There is a compression scheme utilized on leaf pages as follows:
+Normally an index entry with an integer primary key would be 9 bytes (1 for the flags field, 4 for the integer, 3 for page, and 1 for row).  The entry can be shorter than 9, containing only 5 bytes, the first byte is the last octet of the
+encoded primary key field (integer) and the last four are the page/row pointer.
+Thus if the first key value on the page is 1 and it points to page 261 (00 01 05
+) row 3, it becomes
+7f 00 00 00 01 00 01 05 03
+
+the next index entry can be:
+02 00 01 05 04
+
+that is, the key value is 2 (the last octet changes to 02) page 261 row 4.
 
 Access stores an 'alphabetic sort order' version of the text key columns in the index.  Basically this means that upper and lower case characters A-Z are merged and start at 0x60. Digits are 0x56 through 0x5f. Once converted into this 
 (non-ascii) character set, the text value is able to be sorted in 'alphabetic'

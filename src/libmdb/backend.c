@@ -110,6 +110,26 @@ MdbBackendType mdb_postgres_types[] = {
 		{"Serial",0,0,0},
 		{"Postgres_Unknown 0x10",0,0,0},
 };
+/*    MySQL data types */
+MdbBackendType mdb_mysql_types[] = {
+        {"Mysql_Unknown 0x00",0,0,0},
+		{"bit",0,0,0},
+		{"char",1,0,1},
+		{"smallint",0,0,0},
+		{"int",0,0,0},
+		{"money",0,0,0},
+		{"real",0,0,0},
+		{"float",0,0,0},
+		{"smalldatetime",0,0,0},
+		{"Mysql_Unknown 0x09",0,0,0},
+		{"varchar",1,0,1},
+		{"varbinary",1,0,1},
+		{"text",1,0,1},
+		{"Mysql_Unknown 0x0d",0,0,0},
+		{"Mysql_Unknown 0x0e",0,0,0},
+  		{"Mysql_Unknown 0x0f",0,0,0},
+		{"numeric",1,1,0},
+};
 
 char *bound_values[MDB_MAX_COLS];
 char *relationships[4];

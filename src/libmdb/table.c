@@ -189,7 +189,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
 
-		read_pg_if(mdb, &cur_col, fmt->col_num_offset); // col_num_offset == 1
+		read_pg_if(mdb, &cur_col, fmt->col_num_offset); // col_num_offset == 1 or 5
 		col.col_num = mdb->pg_buf[cur_col + fmt->col_num_offset];
 
 		/* FIXME: can this be right in Jet3 and Jet4? */

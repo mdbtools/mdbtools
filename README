@@ -1,4 +1,4 @@
-This is mdbtools version 0.4
+This is mdbtools version 0.6pre1
 
 Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
 program to help you use Microsoft Access file in various settings.  The major
@@ -12,7 +12,7 @@ pieces are:
               get results.
 . odbc      - An ODBC driver for use with unixODBC driver manager.  Allows 
               one to use MDB files with PHP for example.
-. gmdb      - The GTK MDB File Viewer and debugger.  Still alpha, but making
+. gmdb2     - The Gnome MDB File Viewer and debugger.  Still alpha, but making
               great progress.
 
 If you are interested in helping, read the HACKING file for a description of 
@@ -30,5 +30,5 @@ To install see the INSTALL file
 Check out http://mdbtools.sourceforge.net for CVS, mailing list and similar.
 
 Brian Bruns
-camber@ais.org
+brian@bruns.com
 

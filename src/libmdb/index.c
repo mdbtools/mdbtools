@@ -262,6 +262,10 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 	MdbSargNode node;
 	int c_offset = 0, c_len;
 
+	//fprintf(stderr,"mdb_index_test_sargs called on ");
+	//for (i=0;i<len;i++)
+		//fprintf(stderr,"%02x ",mdb->pg_buf[offset+i]);
+	//fprintf(stderr,"\n");
 	for (i=0;i<idx->num_keys;i++) {
 		c_offset++; /* the per column null indicator/flags */
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
@@ -326,13 +330,17 @@ mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 	
 	return ipg->len;
 }
-void mdb_index_page_init(MdbIndexPage *ipg)
+void mdb_index_page_reset(MdbIndexPage *ipg)
 {
-	memset(ipg, 0, sizeof(MdbIndexPage));
 	ipg->offset = 0xf8; /* start byte of the index entries */
 	ipg->mask_pos = 0x16; 
 	ipg->mask_bit=0;
 	ipg->len = 0; 
+}
+void mdb_index_page_init(MdbIndexPage *ipg)
+{
+	memset(ipg, 0, sizeof(MdbIndexPage));
+	mdb_index_page_reset(ipg);
 }
 /*
  * find the next leaf page if any given a chain. Assumes any exhausted leaf 
@@ -361,8 +369,10 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 	do {
 		ipg->len = 0;
 		//printf("finding next on pg %lu\n", ipg->pg);
-		if (!mdb_index_find_next_on_page(mdb, ipg))
+		if (!mdb_index_find_next_on_page(mdb, ipg)) {
+			//printf("find_next_on_page returned 0\n");
 			return 0;
+		}
 		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 3);
 		//printf("Looking at pg %lu at %lu %d\n", pg, ipg->offset, ipg->len);
 		ipg->offset += ipg->len;
@@ -373,7 +383,7 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 		 */
 		newipg = mdb_chain_add_page(mdb, chain, pg);
 		newipg = mdb_find_next_leaf(mdb, idx, chain);
-		//printf("returning pg %lu\n",newipg->pg);
+		printf("returning pg %lu\n",newipg->pg);
 		return newipg;
 	} while (!passed);
 	/* no more pages */
@@ -396,6 +406,10 @@ mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg)
 
 	return ipg;
 }
+/*
+ * returns the bottom page of the IndexChain, if IndexChain is empty it 
+ * initializes it by reading idx->first_pg (the root page)
+ */
 MdbIndexPage *
 mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 {
@@ -451,8 +465,65 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		 */
 		if (!mdb_index_find_next_on_page(mdb, ipg)) {
 			//printf("page %lu finished\n",ipg->pg);
+			if (chain->cur_depth==1) {
+				//printf("cur_depth == 1 we're out\n");
+				return 0;
+			}
+			/* 
+			 * unwind the stack until we find something or reach 
+			 * the top.
+			 */
+			ipg = 0;
+			while (chain->cur_depth>1 && ipg==0) {
+				//printf("chain depth %d\n", chain->cur_depth);
+				chain->cur_depth--;
+				ipg = mdb_find_next_leaf(mdb, idx, chain);
+				if (ipg) mdb_index_find_next_on_page(mdb, ipg);
+			}
 			if (chain->cur_depth==1)
 				return 0;
+		}
+		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
+		*pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
+		//printf("row = %d pg = %lu ipg->pg = %lu offset = %lu len = %d\n", *row, *pg, ipg->pg, ipg->offset, ipg->len);
+
+		passed = mdb_index_test_sargs(mdb, idx, ipg->offset, ipg->len);
+
+		ipg->offset += ipg->len;
+	} while (!passed);
+
+	//fprintf(stdout,"len = %d pos %d\n", ipg->len, ipg->mask_pos);
+	//buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset+ipg->len-1);
+
+	return ipg->len;
+}
+/*
+ * XXX - FIX ME
+ * This function is grossly inefficient.  It scans the entire index building 
+ * an IndexChain to a specific row.  We should be checking the index pages 
+ * for matches against the indexed fields to find the proper leaf page, but
+ * getting it working first and then make it fast!
+ */
+int 
+mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row)
+{
+	MdbIndexPage *ipg;
+	int passed = 0;
+	guint32 datapg;
+	guint16 datarow;
+
+	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
+
+	do {
+		ipg->len = 0;
+		/*
+		 * if no more rows on this leaf, try to find a new leaf
+		 */
+		if (!mdb_index_find_next_on_page(mdb, ipg)) {
+			/* back to top? We're done */
+			if (chain->cur_depth==1)
+				return 0;
+
 			/* 
 			 * unwind the stack until we find something or reach 
 			 * the top.
@@ -466,19 +537,20 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 			if (chain->cur_depth==1)
 				return 0;
 		}
-		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
-		*pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
+		/* test row and pg */
+		datarow = mdb->pg_buf[ipg->offset + ipg->len - 1];
+		datapg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 
-		passed = mdb_index_test_sargs(mdb, idx, ipg->offset, ipg->len);
-
+		if (datapg == pg && datarow == row) {
+			passed = 1;
+		}
 		ipg->offset += ipg->len;
 	} while (!passed);
 
-	//fprintf(stdout,"len = %d pos %d\n", ipg->len, ipg->mask_pos);
-	//buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset+ipg->len-1);
-
-	return ipg->len;
+	/* index chain from root to leaf should now be in "chain" */
+	return 1;
 }
+
 void mdb_index_walk(MdbTableDef *table, MdbIndex *idx)
 {
 MdbHandle *mdb = table->entry->mdb;
@@ -520,6 +592,14 @@ mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
 	}
 	mdb_index_walk(table, idx);
 }
+/*
+ * compute_cost tries to assign a cost to a given index using the sargs 
+ * available in this query.
+ *
+ * Indexes with no matching sargs are assigned 0
+ * Unique indexes are preferred over non-uniques
+ * Operator preference is equal, like, isnull, others 
+ */
 int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 {
 	int i;
@@ -531,7 +611,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 	if (idx->num_keys > 1) {
 		for (i=0;i<idx->num_keys;i++) {
 			col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
-			sarg = g_ptr_array_index (col->sargs, 0);
+			if (col->sargs) sarg = g_ptr_array_index (col->sargs, 0);
 			if (!sarg || sarg->op != MDB_EQUAL) not_all_equal++;
 		}
 	}
@@ -609,6 +689,12 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 	}
 	return 0;
 }
+/*
+ * choose_index runs mdb_index_compute_cost for each available index and picks
+ * the best.
+ *
+ * Returns strategy to use (table scan, or index scan)
+ */
 MdbStrategy 
 mdb_choose_index(MdbTableDef *table, int *choice)
 {

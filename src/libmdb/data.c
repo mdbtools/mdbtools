@@ -897,17 +897,19 @@ guint16 len;
 		}
 		/* swap the alt and regular page buffers, so we can call get_int16 */
 		mdb_swap_pgbuf(mdb);
+		row_stop = 0;
 		if (memo_row) {
 			row_stop = mdb_pg_get_int16(mdb, fmt->row_count_offset + 2 + (memo_row - 1) * 2) & 0x0FFF;
-		} else {
+		} 
+		if (row_stop == 0) 
 			row_stop = fmt->pg_size - 1;
-		}
+
 		row_start = mdb_pg_get_int16(mdb, fmt->row_count_offset + 2 + memo_row * 2);
+		len = row_stop - row_start;
 #if MDB_DEBUG
 		printf("row num %d row start %d row stop %d\n", memo_row, row_start, row_stop);
 		buffer_dump(mdb->pg_buf,row_start, row_start + len);
 #endif
-		len = row_stop - row_start;
 		if (IS_JET3(mdb)) {
 			strncpy(text, &mdb->pg_buf[row_start], len);
 			text[len]='\0';

@@ -37,6 +37,7 @@ describe	{ return DESCRIBE; }
 and		{ return AND; }
 or		{ return OR; }
 not		{ return NOT; }
+is		{ return IS; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }

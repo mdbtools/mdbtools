@@ -1,8 +1,19 @@
-Sat Jan 10 17:18:00 EST 2004	Brian Bruns <camber@ais.org>
+Thu Feb 5 20:45:00 EST 2004		Brian Bruns <brian@bruns.com>
+
+	* HACKING: added information on indexes
+	* src/sql/lexer.l:
+	* src/sql/parser.y: added is null/is not null, not working yet
+	* src/util/mdb-sql.c: fix readline support, added history file
+	* src/util/mdb-export.c: update usage for -D flag
+	* src/libmdb/backend.c: added mysql struct (not complete)
+	* src/libmdb/sargs.c: fix casts
+	* src/libmdb/write.c: break apart mdb_crack_row new index func
+
+Sat Jan 10 17:18:00 EST 2004	Brian Bruns <brian@bruns.com>
 
 	* src/util/mdb-parse.c: fixed char comparison to -1 re: bug 688181
 
-Fri Jan 9 15:22:11 EST 2004	Brian Bruns <camber@ais.org>
+Fri Jan 9 15:22:11 EST 2004	Brian Bruns <brian@bruns.com>
 
 	* include/mdbtools.h:
 	* src/libmdb/index.c:

@@ -17,6 +17,16 @@
  * Boston, MA 02111-1307, USA.
  */
 
+/*
+ * code for handling searchable arguments (sargs) used primary by the sql 
+ * engine to support where clause handling.  The sargs are configured in 
+ * a tree with AND/OR operators connecting the child nodes. NOT operations
+ * have only one child on the left side.  Logical operators (=,<,>,etc..)
+ * have no children.
+ *
+ * datatype support is a bit weak at this point.  To add more types create
+ * a mdb_test_[type]() function and invoke it from mdb_test_sarg()
+ */
 #include "mdbtools.h"
 
 #ifdef DMALLOC
@@ -66,6 +76,7 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 {
 	switch (node->op) {
 		case MDB_EQUAL:
+			//fprintf(stderr, "comparing %ld and %ld\n", i, node->value.i);
 			if (node->value.i == i) return 1;
 			break;
 		case MDB_GT:
@@ -124,13 +135,13 @@ int lastchar;
 
 	switch (col->col_type) {
 		case MDB_BYTE:
-			return mdb_test_int(node, (int)((char *)buf)[0]);
+			return mdb_test_int(node, (gint32)((char *)buf)[0]);
 			break;
 		case MDB_INT:
-			return mdb_test_int(node, mdb_get_int16(buf, 0));
+			return mdb_test_int(node, (gint32)mdb_get_int16(buf, 0));
 			break;
 		case MDB_LONGINT:
-			return mdb_test_int(node, mdb_get_int32(buf, 0));
+			return mdb_test_int(node, (gint32)mdb_get_int32(buf, 0));
 			break;
 		case MDB_TEXT:
 			if (IS_JET4(mdb)) {
