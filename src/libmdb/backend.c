@@ -164,7 +164,7 @@ int mdb_coltype_takes_length(MdbBackend *backend, int col_type)
 */
 void mdb_init_backends()
 {
-MdbBackend *backend;
+	MdbBackend *backend;
 
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
@@ -205,13 +205,12 @@ void mdb_remove_backends()
 }
 int mdb_set_default_backend(MdbHandle *mdb, char *backend_name)
 {
-MdbBackend *backend;
+	MdbBackend *backend;
 
 	backend = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend_name);
 	if (backend) {
 		mdb->default_backend = backend;
-		mdb->backend_name = (char *) malloc(strlen(backend_name)+1);
-		strcpy(mdb->backend_name, backend_name);
+		mdb->backend_name = (char *) g_strdup(backend_name);
 		did_first = 0;
 		return 1;
 	} else {
@@ -237,14 +236,14 @@ do_first (MdbHandle *mdb)
 				mdb_read_columns(table);
 				mdb_rewind_table(table);
 				for (k=0;k<table->num_cols;k++) {
-					bound_values[k] = (char *) malloc(MDB_BIND_SIZE);
+					bound_values[k] = (char *) g_malloc(MDB_BIND_SIZE);
 					bound_values[k][0] = '\0';
 					mdb_bind_column(table,k+1,bound_values[k]);
 				}
-				relationships[0] = (char *) malloc(256); /* child column */
-				relationships[1] = (char *) malloc(256); /* child table */
-				relationships[2] = (char *) malloc(256); /* parent column */
-				relationships[3] = (char *) malloc(256); /* parent table */
+				relationships[0] = (char *) g_malloc(256); /* child column */
+				relationships[1] = (char *) g_malloc(256); /* child table */
+				relationships[2] = (char *) g_malloc(256); /* parent column */
+				relationships[3] = (char *) g_malloc(256); /* parent table */
 			} /* if num_rows > 0 */
 			did_first = 1;
 			return;
@@ -296,12 +295,12 @@ static char text[255];
     } /* got a row */
   } else {
     for (k=0;k<table->num_cols;k++) {
-       free(bound_values[k]);
+       g_free(bound_values[k]);
     }
-    free(relationships[0]);
-    free(relationships[1]);
-    free(relationships[2]);
-    free(relationships[3]);
+    g_free(relationships[0]);
+    g_free(relationships[1]);
+    g_free(relationships[2]);
+    g_free(relationships[3]);
     did_first = 0;
   }
   return text;

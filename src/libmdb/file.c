@@ -127,7 +127,7 @@ MdbFile *f;
 			fprintf(stderr, "Can't alloc filename\n");
 			free(f->filename);
 			free(f);
-			if (mdb->backend_name) free(mdb->backend_name);
+			g_free(mdb->backend_name);
 			free(mdb);
 			return NULL; 
 		}
@@ -179,7 +179,7 @@ mdb_close(MdbHandle *mdb)
 	if (!mdb) return;	
 	mdb_free_stats(mdb);
 	mdb_free_catalog(mdb);
-	if (mdb->backend_name) free(mdb->backend_name);
+	g_free(mdb->backend_name);
 
 	if (mdb->f) {
 		if (mdb->f->refs > 1) {

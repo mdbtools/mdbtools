@@ -1,3 +1,7 @@
+Sat May 29 14:14:21 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/backend.c:
+	* src/libmdb/file.c: malloc to g_malloc for backend functions
+
 Fri May 28 06:55:55 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/mem.c: Fixed a couple of potential memory leaks
 	* include/mdbtools.h: Fixed a couple of compiler warnings
