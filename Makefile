@@ -82,8 +82,8 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 DIST_COMMON =  README AUTHORS COPYING COPYING.LIB ChangeLog INSTALL \
-Makefile.am Makefile.in NEWS TODO acinclude.m4 aclocal.m4 config.guess \
-configure configure.in
+Makefile.am Makefile.in NEWS TODO acinclude.m4 aclocal.m4 configure \
+configure.in
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)

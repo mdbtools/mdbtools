@@ -1,0 +1,48 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/extras/mdb-dump.c)
+AC_CONFIG_AUX_DIR(config)
+AM_INIT_AUTOMAKE(mdbtools,0.3)
+
+AC_PROG_CC(gcc)
+dnl Checks for programs.
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+AM_PROG_LIBTOOL
+AM_PROG_LEX
+AC_PROG_YACC
+
+dnl Checks for libraries.
+dnl Replace `main' with a function in -libs:
+AC_CHECK_LIB(ibs, main)
+dnl Replace `main' with a function in -lmdb:
+AC_CHECK_LIB(mdb, mdb_free_handle)
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+AC_C_BIGENDIAN
+
+dnl Checks for library functions.
+
+OLDLDFLAGS=$LDFLAGS
+
+AC_CHECK_LIB(ncurses,initscr,[
+	READLINE_LIBS="$READLINE_LIBS -lncurses"
+	LDFLAGS="$LDFLAGS -lncurses"
+	],[])
+
+AC_CHECK_LIB(readline, add_history, [
+	READLINE_LIBS="$READLINE_LIBS -lreadline"
+	AC_DEFINE(HAVE_READLINE,1,[ ]) 
+	],[])
+
+LDFLAGS=$OLDLDFLAGS
+
+AC_SUBST(READLINE_LIBS)
+
+AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile)
