@@ -1,6 +1,12 @@
 Sun Feb 15 07:37:19 EST 2004	Brian Bruns	<brian@bruns.com>
-	* src/gmdb2/debug.c: move declarations to top of function, fixes bug 675022
-	* src/gmdb2/debug.c: merge patch for bug #688655, check negative values on datetime
+	* HACKING: better description of Jet4 column deletion/addition
+	* src/gmdb2/gladefiles/gmdb-debug.glade: 
+	remove incorrect default callback
+	* src/gmdb2/debug.c: 
+	move declarations to top of function, fixes bug 675022
+	fix -Wall messages
+	add data page dissector for jet4
+	* src/lib/data.c: merge patch for bug #688655, check negative values on datetime
 
 Sat Feb 14 14:41:00 EST 2004	Brian Bruns <brian@bruns.com>
 	* include/.cvsignore: add mdbver.h

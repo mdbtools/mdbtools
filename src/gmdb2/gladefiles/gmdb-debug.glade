@@ -97,7 +97,6 @@
 			  <property name="stock_item">GNOMEUIINFO_MENU_NEW_ITEM</property>
 			  <property name="label" translatable="yes">_Forward</property>
 			  <property name="use_underline">True</property>
-			  <signal name="activate" handler="on_menu_forward_activate" last_modification_time="Fri, 03 Jan 2003 15:27:51 GMT"/>
 			</widget>
 		      </child>
 
@@ -186,6 +185,7 @@
 		  <property name="tooltip" translatable="yes">New File</property>
 		  <property name="label">gtk-go-back</property>
 		  <property name="use_stock">True</property>
+		  <property name="new_group">True</property>
 		</widget>
 		<packing>
 		  <property name="new_group">True</property>
@@ -215,6 +215,7 @@
 		  <property name="tooltip" translatable="yes">Save File</property>
 		  <property name="label">gtk-close</property>
 		  <property name="use_stock">True</property>
+		  <property name="new_group">True</property>
 		</widget>
 		<packing>
 		  <property name="new_group">True</property>
