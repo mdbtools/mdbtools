@@ -13,3 +13,6 @@ mdbtools.spec
 autom4te.cache
 libmdb.pc
 libmdbsql.pc
+missing
+install-sh
+depcomp
