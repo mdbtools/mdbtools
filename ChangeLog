@@ -1,4 +1,8 @@
-Wed Jan 9 15:22:11 EST 2004	Brian Bruns <camber@ais.org>
+Sat Jan 10 17:18:00 EST 2004	Brian Bruns <camber@ais.org>
+
+	* src/util/mdb-parse.c: fixed char comparison to -1 re: bug 688181
+
+Fri Jan 9 15:22:11 EST 2004	Brian Bruns <camber@ais.org>
 
 	* include/mdbtools.h:
 	* src/libmdb/index.c:

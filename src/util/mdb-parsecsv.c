@@ -51,7 +51,7 @@ main (int argc, char **argv)
   int count;
   char input [BUFFERSIZE];
   int location;
-  char c;
+  int c;
   int instring;
   int lastcomma;
   int i;
