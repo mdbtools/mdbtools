@@ -104,7 +104,7 @@ int LoadDSN (
    {
       if (!FindSection (stream, dsnName))
       {
-	 g_printerr ("Couldn't find DSN %s in %s\n", iniFileName, dsnName);
+	 g_printerr ("Couldn't find DSN %s in %s\n", dsnName, iniFileName);
 	 fclose (stream);
          return 0;
       }
@@ -128,7 +128,7 @@ int LoadDSN (
 gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
 {
    if (!params) {
-      fprintf(stderr,"LookupDSN: no parameters, returning FALSE");
+      fprintf(stderr,"LookupDSN: no parameters, returning FALSE\n");
       return FALSE;
    }
    /*
@@ -139,12 +139,12 @@ gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
     * Search for the ODBC ini file
     */
    if (!(params->iniFileName = GetIniFileName ())) {
-      fprintf(stderr,"LookupDSN: GetIniFileName returned FALSE");
+      fprintf(stderr,"LookupDSN: GetIniFileName returned FALSE\n");
       return FALSE;
    }
 
    if (!LoadDSN (params->iniFileName->str, dsnName, params->table)) {
-      fprintf(stderr,"LookupDSN: LoadDSN returned FALSE");
+      fprintf(stderr,"LookupDSN: LoadDSN returned FALSE\n");
       return FALSE;
    }
 
