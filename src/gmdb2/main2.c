@@ -7,10 +7,8 @@ GtkWidget *app;
 GladeXML *mainwin_xml;
 MdbSQL *sql;
 
-gmdb_table_popup_cb(GtkWidget *button, GdkEvent *event);
-
 /* called when the user closes the window */
-static gint
+gint
 delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	/* signal the main loop to quit */
@@ -38,7 +36,7 @@ pixbuf = gdk_pixbuf_new_from_file ("logo.xpm", NULL);
 gtk_widget_show (gnome_about_new ("Gnome MDB Viewer", "0.2",
                  "Copyright 2002-2003 Brian Bruns",
                  _("The Gnome-MDB Viewer is the grapical interface to "
-                   "MDB Tools.  It lets you view, print and export data "
+                   "MDB Tools.  It lets you view and export data and schema"
 		   "from MDB files produced by MS Access 97/2000/XP."),
                   (const gchar **) authors,
                   (const gchar **) authors,
@@ -94,17 +92,17 @@ gmdb_reset_widgets()
 GnomeIconList *gil;
 int pos;
 
-	gil = glade_xml_get_widget (mainwin_xml, "table_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "table_iconlist");
 	gnome_icon_list_clear(gil);
-	gil = glade_xml_get_widget (mainwin_xml, "query_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "query_iconlist");
 	gnome_icon_list_clear(gil);
-	gil = glade_xml_get_widget (mainwin_xml, "form_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "form_iconlist");
 	gnome_icon_list_clear(gil);
-	gil = glade_xml_get_widget (mainwin_xml, "report_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "report_iconlist");
 	gnome_icon_list_clear(gil);
-	gil = glade_xml_get_widget (mainwin_xml, "macro_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "macro_iconlist");
 	gnome_icon_list_clear(gil);
-	gil = glade_xml_get_widget (mainwin_xml, "module_iconlist");
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "module_iconlist");
 	gnome_icon_list_clear(gil);
 }
 	
@@ -115,8 +113,7 @@ void gmdb_init_popups()
 
 int main(int argc, char *argv[]) 
 {
-GtkWidget *menuitem;
-GtkWidget *menulabel;
+GtkWidget *gmdb;
 
 #ifdef SQL
 	/* initialize the SQL engine */
@@ -136,7 +133,8 @@ GtkWidget *menulabel;
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(mainwin_xml);
 
-	gtk_signal_connect (GTK_OBJECT (app), "delete_event",
+	gmdb = glade_xml_get_widget (mainwin_xml, "gmdb");
+	gtk_signal_connect (GTK_OBJECT (gmdb), "delete_event",
 		GTK_SIGNAL_FUNC (delete_event), NULL);
 
 	if (argc>1) {

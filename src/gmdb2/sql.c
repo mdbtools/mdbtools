@@ -14,45 +14,61 @@ typedef struct GMdbSQLWindow {
 } GMdbSQLWindow;
 
 GList *window_list;
+GladeXML *sqlwin_xml;
 
 extern GtkWidget *app;
 extern MdbHandle *mdb;
 extern MdbSQL *sql;
 
-
-GtkCTreeNode *gmdb_sql_ctree_populate(MdbHandle *mdb, GMdbSQLWindow *sqlwin);
+void gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml);
 
 /* callbacks */
+#if 0
 gint
-gmdb_sql_close(GtkList *list, GtkWidget *w, GMdbSQLWindow *sqlwin)
+gmdb_sql_close_cb(GtkList *list, GtkWidget *w, GMdbSQLWindow *sqlwin)
 {
     window_list = g_list_remove(window_list, sql);
     g_free(sql);
     return FALSE;
 }
-
+#endif
 void
-gmdb_sql_tree_select_cb(GtkCTree *tree, GList *node, gint column, GMdbSQLWindow *sqlwin)
+gmdb_sql_close_cb(GtkWidget *w, GladeXML *xml)
 {
-	sqlwin->current_node = node;
+	GtkWidget *win;
+	win = glade_xml_get_widget (xml, "sql_window");
+	if (win) gtk_widget_destroy(win);
 }
+
 void 
 gmdb_sql_dnd_dataget_cb(
     GtkWidget *w, GdkDragContext *dc,
     GtkSelectionData *selection_data, guint info, guint t,
-    GMdbSQLWindow *sqlwin)
+    GladeXML *xml)
 {
 gchar tablename[256];
-gchar *text[2];
+//gchar *tablename = "Orders";
+gchar *name;
+GtkTreeSelection *select;
+GtkTreeStore *store;
+GtkTreeView *tree;
+GtkTreeIter *iter, iter2;
 
-	gtk_ctree_get_node_info(GTK_CTREE(sqlwin->ctree), sqlwin->current_node, text, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	tree = (GtkTreeView *) glade_xml_get_widget(sqlwin_xml, "sql_treeview");
+	select = gtk_tree_view_get_selection(GTK_TREE_VIEW (tree));
+	store = (GtkTreeStore *) gtk_tree_view_get_model(tree);
+	gtk_tree_selection_get_selected (select, NULL, &iter2);
+	gtk_tree_model_get (GTK_TREE_MODEL(store), &iter2, 0, &name, -1);
 
+	strcpy(tablename,name);
+	g_free(name);
+	printf("table %s\n",tablename);
 	//strcpy(tablename, "Shippers");
 	gtk_selection_data_set(
 		selection_data,
 		GDK_SELECTION_TYPE_STRING,
 		8,  /* 8 bits per character. */
-		text[0], strlen(text[0]));
+		tablename, strlen(tablename));
 }
 void gmdb_sql_dnd_datareceived_cb(
         GtkWidget *w,
@@ -60,31 +76,22 @@ void gmdb_sql_dnd_datareceived_cb(
         gint x, gint y,
         GtkSelectionData *selection_data,
         guint info, guint t,
-        GMdbSQLWindow *sqlwin)
+        GladeXML *xml)
 {
 gchar *buf, *lastbuf;
 GtkTextIter iter, start, end;
 GtkTextBuffer *txtbuffer;
 int len;
+GtkWidget *textview;
 
+	textview = glade_xml_get_widget(xml, "sql_textview");
 	buf = selection_data->data;
-	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(sqlwin->textbox));
+	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 	if (gtk_text_buffer_get_char_count(txtbuffer)==0) {
 		gtk_text_buffer_get_iter_at_offset (txtbuffer, &iter, 0);
 		gtk_text_buffer_insert(txtbuffer, &iter, "select * from ", 14);
 	}
-#if 0
-        len = gtk_text_buffer_get_char_count(txtbuffer);
-	gtk_text_buffer_get_iter_at_offset (txtbuffer, &end, len);
-	gtk_text_buffer_get_iter_at_offset (txtbuffer, &start, len - strlen(buf));
-	lastbuf = gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE);
-	printf("last buf %s\n", lastbuf);
-
-	if (strcmp(buf,lastbuf)) {
-		//gtk_text_buffer_insert_at_cursor(txtbuffer,buf,strlen(buf));
-	}
-#endif
-	gtk_widget_grab_focus(GTK_WIDGET(sqlwin->textbox));
+	gtk_widget_grab_focus(GTK_WIDGET(textview));
 }
 
 void
@@ -95,13 +102,13 @@ gchar *buf;
 GtkTextBuffer *txtbuffer;
 
 	child_num = gtk_list_child_position(list, w);
-	buf = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sqlwin->combo)->entry));
+	buf = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(sqlwin->combo)->entry));
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(sqlwin->textbox));
 	gtk_text_buffer_set_text(txtbuffer, buf, strlen(buf));
 }
 
 void
-gmdb_sql_execute_cb(GtkWidget *w, GMdbSQLWindow *sqlwin)
+gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 {
 guint len;
 gchar *buf;
@@ -111,44 +118,76 @@ MdbSQLColumn *sqlcol;
 gchar *titles[256];
 GtkTextBuffer *txtbuffer;
 GtkTextIter start, end;
+GtkWidget *textview, *combo, *treeview, *store;
+GList *history;
+GType *gtypes;
+GtkTreeIter iter;
+GtkTreeViewColumn *column;
 
 	/* stuff this query on the history */
-	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(sqlwin->textbox));
+	textview = glade_xml_get_widget(xml, "sql_textview");
+	combo = glade_xml_get_widget(xml, "sql_combo");
+	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
         len = gtk_text_buffer_get_char_count(txtbuffer);
 	gtk_text_buffer_get_iter_at_offset (txtbuffer, &start, 0);
 	gtk_text_buffer_get_iter_at_offset (txtbuffer, &end, len);
 	buf = gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE);
 
-	sqlwin->history = g_list_prepend(sqlwin->history, g_strdup(buf));
-	gtk_combo_set_popdown_strings(GTK_COMBO(sqlwin->combo), sqlwin->history);
+	/* add to the history */
+	history = g_object_get_data(G_OBJECT(combo),"hist_list");
+	history = g_list_prepend(history, g_strdup(buf));
+	g_object_set_data(G_OBJECT(combo), "hist_list", history);
+	gtk_combo_set_popdown_strings(GTK_COMBO(combo), history);
 
 	/* ok now execute it */
 	g_input_ptr = buf;
-    /* begin unsafe */
+	/* begin unsafe */
 	_mdb_sql(sql);
 	if (yyparse()) {
 		/* end unsafe */
 		gmdb_info_msg("Couldn't parse SQL");
 		mdb_sql_reset(sql);
 		return;
-    }
-    for (i=0;i<sql->num_columns;i++) {
-        bound_data[i] = (char *) malloc(MDB_BIND_SIZE);
-        bound_data[i][0] = '\0';
-        mdbsql_bind_column(sql, i+1, bound_data[i]);
-		sqlcol = g_ptr_array_index(sql->columns,i);
-		titles[i] = sqlcol->name;
 	}
-    if (sqlwin->clist) {
-		gtk_container_remove(GTK_CONTAINER(sqlwin->scroll), sqlwin->clist);
-	}
-    sqlwin->clist = gtk_clist_new_with_titles(sql->num_columns, titles);
-	gtk_container_add(GTK_CONTAINER(sqlwin->scroll),sqlwin->clist);
-	gtk_widget_show(sqlwin->clist);
 
-    while(mdb_fetch_row(sql->cur_table)) {
-		gtk_clist_append(GTK_CLIST(sqlwin->clist), bound_data);
-    }
+	treeview = glade_xml_get_widget(xml, "sql_results");
+
+	gtypes = g_malloc(sizeof(GType) * sql->num_columns);
+	for (i=0;i<sql->num_columns;i++) 
+		gtypes[i]=G_TYPE_STRING;
+
+	store = gtk_tree_view_get_model(treeview);
+	if (store) {
+		i=0;
+		while (column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), i)) {
+			gtk_tree_view_remove_column(GTK_TREE_VIEW(treeview), column);
+		}
+		gtk_widget_destroy(store);
+	}
+	store = (GtkWidget *) gtk_list_store_newv(sql->num_columns, gtypes);
+	g_free(gtypes);
+
+	gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), GTK_TREE_MODEL(store));
+	
+	GtkCellRenderer *renderer;
+	renderer = gtk_cell_renderer_text_new(); 
+
+	for (i=0;i<sql->num_columns;i++) { 
+		bound_data[i] = (char *) malloc(MDB_BIND_SIZE); 
+		bound_data[i][0] = '\0';
+        	mdbsql_bind_column(sql, i+1, bound_data[i]);
+		sqlcol = g_ptr_array_index(sql->columns,i);
+		column = gtk_tree_view_column_new_with_attributes(sqlcol->name, renderer, "text", i, NULL); 
+		gtk_tree_view_append_column(GTK_TREE_VIEW (treeview), column); 
+	}
+
+	while(mdb_fetch_row(sql->cur_table)) {
+		gtk_list_store_append(GTK_LIST_STORE(store), &iter);
+		for (i=0;i<sql->num_columns;i++) { 
+			gtk_list_store_set(GTK_LIST_STORE(store), 
+				&iter, i, (gchar *) bound_data[i], -1);
+		}
+	}
 
 
 	/* free the memory used to bind */
@@ -161,136 +200,81 @@ GtkTextIter start, end;
 }
 
 void
-gmdb_sql_new_window_cb(GtkWidget *w, gpointer data)
+gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 {
-GtkWidget *hpane;
-GtkWidget *vpane;
-GtkWidget *vbox;
-GtkWidget *hbox;
-GtkWidget *scroll;
-GtkWidget *button;
-GtkWidget *frame1;
 GtkTargetEntry src;
-GMdbSQLWindow *sqlwin;
-GtkWindow *txtbuffer;
-GtkCTreeNode *node;
+GtkWidget *mi, *but;
 
-	if (!mdb) {
-		gmdb_info_msg("No database is open.");
-		return;
-	}
-	sqlwin = g_malloc0(sizeof(GMdbSQLWindow));
-	sqlwin->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);	
-	gtk_window_set_title(GTK_WINDOW(sqlwin->window), "Query Tool");
-	gtk_widget_set_usize(sqlwin->window, 400,300);
-	gtk_widget_show(sqlwin->window);
+	/* load the interface */
+	sqlwin_xml = glade_xml_new("gladefiles/gmdb-sql.glade", NULL, NULL);
+	/* connect the signals in the interface */
+	glade_xml_signal_autoconnect(sqlwin_xml);
 
-	gtk_signal_connect (GTK_OBJECT (sqlwin->window), "delete_event",
-		GTK_SIGNAL_FUNC (gmdb_sql_close), sqlwin);
+	mi = glade_xml_get_widget (sqlwin_xml, "close_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_sql_close_cb), sqlwin_xml);
 
-	vpane = gtk_vpaned_new();
-	gtk_widget_show(vpane);
-	gtk_paned_set_position(GTK_PANED(vpane), 100);
-	gtk_paned_set_gutter_size(GTK_PANED(vpane), 12);
-	gtk_container_add(GTK_CONTAINER(sqlwin->window), vpane);
+	but = glade_xml_get_widget (sqlwin_xml, "close_button");
+	g_signal_connect (G_OBJECT (but), "clicked",
+		G_CALLBACK (gmdb_sql_close_cb), sqlwin_xml);
 
-	hpane = gtk_hpaned_new();
-	gtk_widget_show(hpane);
-	gtk_paned_set_position(GTK_PANED(hpane), 100);
-	gtk_paned_set_gutter_size(GTK_PANED(hpane), 12);
-	gtk_container_add(GTK_CONTAINER(vpane), hpane);
+	mi = glade_xml_get_widget (sqlwin_xml, "execute_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_sql_execute_cb), sqlwin_xml);
 
-	scroll = gtk_scrolled_window_new(NULL, NULL);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
-		GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_widget_show (scroll);
-	gtk_container_add(GTK_CONTAINER(hpane), scroll);
+	but = glade_xml_get_widget (sqlwin_xml, "execute_button");
+	g_signal_connect (G_OBJECT (but), "clicked",
+		G_CALLBACK (gmdb_sql_execute_cb), sqlwin_xml);
 
-    sqlwin->ctree = gtk_ctree_new (1, 0);
-    gtk_widget_show (sqlwin->ctree);
-    gtk_container_add (GTK_CONTAINER (scroll), sqlwin->ctree);
+	/* set up treeview, libglade only gives us the empty widget */
+	GtkWidget *tree = glade_xml_get_widget(sqlwin_xml, "sql_treeview");
+	GtkTreeStore *store = gtk_tree_store_new(1, G_TYPE_STRING);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(tree), GTK_TREE_MODEL(store));
+
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *column;
+	renderer = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes("Name",
+		renderer, "text", 0, NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW (tree), column);
+
+	GtkTreeSelection *select = 
+		gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
+	gtk_tree_selection_set_mode (select, GTK_SELECTION_SINGLE);
+	//g_signal_connect (G_OBJECT (select), "changed",
+		//G_CALLBACK (gmdb_sql_select_cb), sqlwin_xml);
 	
-	gtk_signal_connect ( GTK_OBJECT (sqlwin->ctree),
-		 "tree-select-row", GTK_SIGNAL_FUNC (gmdb_sql_tree_select_cb), sqlwin);
-
-	vbox = gtk_vbox_new(FALSE,0);
-    gtk_widget_show (vbox);
-	gtk_container_add(GTK_CONTAINER(hpane), vbox);
-
-    frame1 = gtk_frame_new (NULL);
-    gtk_frame_set_shadow_type(GTK_FRAME(frame1), GTK_SHADOW_IN);
-    gtk_widget_show (frame1);
-	gtk_box_pack_start (GTK_BOX (vbox), frame1, TRUE, TRUE, 0);
-
-    sqlwin->textbox = gtk_text_view_new();
-    gtk_widget_show (sqlwin->textbox);
-	gtk_container_add(GTK_CONTAINER(frame1), sqlwin->textbox);
-#if 0
-
-	gtk_signal_connect ( GTK_OBJECT (sqlwin->textbox),
-		 "activate", GTK_SIGNAL_FUNC (gmdb_sql_execute_cb), sqlwin);
-#endif
-
-	hbox = gtk_hbox_new(FALSE,0);
-    gtk_widget_show (hbox);
-	gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
-
-	sqlwin->combo = gtk_combo_new();
-    gtk_widget_show (sqlwin->combo);
-	gtk_box_pack_start (GTK_BOX (hbox), sqlwin->combo, TRUE, TRUE, 0);
-	gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(sqlwin->combo)->entry), FALSE);
-
-	gtk_signal_connect ( GTK_OBJECT (GTK_COMBO(sqlwin->combo)->list),
-		 "select-child", GTK_SIGNAL_FUNC (gmdb_sql_select_hist_cb), sqlwin);
-
-	button = gtk_button_new_with_label("Execute");
-    gtk_widget_show (button);
-	gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 5);
-
-	gtk_signal_connect ( GTK_OBJECT (button),
-		 "clicked", GTK_SIGNAL_FUNC (gmdb_sql_execute_cb), sqlwin);
-
-	sqlwin->scroll = gtk_scrolled_window_new(NULL,NULL);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sqlwin->scroll),
-		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_widget_show (sqlwin->scroll);
-	gtk_container_add(GTK_CONTAINER(vpane), sqlwin->scroll);
-
-	sqlwin->clist = gtk_clist_new(1);
-	gtk_widget_show(sqlwin->clist);
-	gtk_container_add(GTK_CONTAINER(sqlwin->scroll),sqlwin->clist);
-
 	/* populate first level of tree */
-	node = gmdb_sql_ctree_populate(mdb, sqlwin);
-	gtk_ctree_select(sqlwin->ctree, node);
+	gmdb_sql_tree_populate(mdb, sqlwin_xml);
+
+	GtkWidget *textview = glade_xml_get_widget(sqlwin_xml, "sql_textview");
 	src.target = "table";
 	src.flags = 0;
 	src.info = 1;
-	gtk_drag_source_set( sqlwin->ctree, GDK_BUTTON1_MASK, &src, 1, GDK_ACTION_COPY);
-	gtk_drag_dest_set( sqlwin->textbox,
+	gtk_drag_source_set( tree, GDK_BUTTON1_MASK, &src, 1, GDK_ACTION_COPY);
+	gtk_drag_dest_set( textview,
 		//GTK_DEST_DEFAULT_MOTION | 
 		GTK_DEST_DEFAULT_HIGHLIGHT ,
 		// GTK_DEST_DEFAULT_DROP, 
 		&src, 1, GDK_ACTION_COPY | GDK_ACTION_MOVE);
-	gtk_signal_connect( GTK_OBJECT(sqlwin->ctree), "drag_data_get",
-		GTK_SIGNAL_FUNC(gmdb_sql_dnd_dataget_cb), sqlwin);
-	gtk_signal_connect( GTK_OBJECT(sqlwin->textbox), "drag_data_received",
-		GTK_SIGNAL_FUNC(gmdb_sql_dnd_datareceived_cb), sqlwin);
+	gtk_signal_connect( GTK_OBJECT(tree), "drag_data_get",
+		GTK_SIGNAL_FUNC(gmdb_sql_dnd_dataget_cb), sqlwin_xml);
+	gtk_signal_connect( GTK_OBJECT(textview), "drag_data_received",
+		GTK_SIGNAL_FUNC(gmdb_sql_dnd_datareceived_cb), sqlwin_xml);
 	
-	gtk_widget_grab_focus(GTK_WIDGET(sqlwin->textbox));
-
-	/* add this one to the window list */
-	window_list = g_list_append(window_list, sql);
+	gtk_widget_grab_focus(GTK_WIDGET(textview));
 }
 
 /* functions */
-GtkCTreeNode *
-gmdb_sql_ctree_populate(MdbHandle *mdb, GMdbSQLWindow *sqlwin)
+void 
+gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml)
 {
 int   i;
 MdbCatalogEntry *entry;
-gchar *text[2];
-GtkCTreeNode *node, *first_node = NULL;
+GtkTreeIter *iter1, *iter2;
+
+	GtkWidget *tree = glade_xml_get_widget(sqlwin_xml, "sql_treeview");
+	GtkTreeStore *store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
 	/* loop over each entry in the catalog */
 	for (i=0; i < mdb->num_catalog; i++) {
@@ -301,19 +285,17 @@ GtkCTreeNode *node, *first_node = NULL;
 			/* skip the MSys tables */
 			if (strncmp (entry->object_name, "MSys", 4)) {
 				/* add table to tab */
-				text[0] = entry->object_name;
-				text[1] = ""; 
-				node = gtk_ctree_insert_node(GTK_CTREE(sqlwin->ctree), NULL, NULL, text, 0, NULL, NULL, NULL, NULL, FALSE, FALSE);
-				if (! first_node) first_node = node;
-	     	}
+				iter2 = g_malloc(sizeof(GtkTreeIter));
+				gtk_tree_store_append(store, iter2, NULL);
+				gtk_tree_store_set(store, iter2, 0, entry->object_name, -1);
+	     		}
 		} /* if MDB_TABLE */
 	} /* for */
-	return first_node;
 }
 #else
 
 void
-gmdb_sql_new_window_cb(GtkWidget *w, gpointer data)
+gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 {
 	gmdb_info_msg("SQL support was not built in.\nRun configure with the --enable-sql option.");
 }

@@ -35,10 +35,6 @@ int opt;
    fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
    exit (1);
  }
- if (argc < 2) {
-   fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] <file>\n",argv[0]);
-   exit (1);
- }
 
   while ((opt=getopt(argc, argv, "T:"))!=-1) {
      switch (opt) {

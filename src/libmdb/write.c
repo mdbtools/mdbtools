@@ -28,6 +28,7 @@ typedef struct {
 	int siz;
 	unsigned char is_null;
 	unsigned char is_fixed;
+	int colnum;
 } MdbField;
 
 static int 
@@ -44,26 +45,17 @@ MdbIndex *idx;
 	}
 	return 0;
 }
-static int mdb_is_null(unsigned char *null_mask, int col_num)
-{
-int byte_num = (col_num - 1) / 8;
-int bit_num = (col_num - 1) % 8;
-
-	if ((1 << bit_num) & null_mask[byte_num]) {
-		return 0;
-	} else {
-		return 1;
-	}
-}
 int
 mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 {
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
 MdbColumn *col;
-int var_cols, fixed_cols, num_cols, i;
-unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
+int var_cols, fixed_cols, num_cols, i, totcols;
+unsigned char *nullmask;
 int bitmask_sz;
+int byte_num, bit_num;
+
 
 	printf("field 0 %s\n", fields[0].value);
 
@@ -73,20 +65,36 @@ int bitmask_sz;
 		num_cols = mdb->pg_buf[row_start];
 	}
 
+	totcols = 0;
 	var_cols = 0; /* mdb->pg_buf[row_end-1]; */
 	fixed_cols = 0; /* num_cols - var_cols; */
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index (table->columns, i);
-		if (mdb_is_fixed_col(col))
+		if (mdb_is_fixed_col(col)) {
 			fixed_cols++;
-		else
+			fields[totcols++].colnum = i;
+			fields[totcols].siz = col->col_size;
+			fields[totcols].is_fixed = 1;
+		}
+	}
+	for (i = 0; i < table->num_cols; i++) {
+		col = g_ptr_array_index (table->columns, i);
+		if (!mdb_is_fixed_col(col)) {
 			var_cols++;
+			fields[totcols++].colnum = i;
+			fields[totcols].is_fixed = 0;
+		}
 	}
 
 	bitmask_sz = (num_cols - 1) / 8 + 1;
+	nullmask = &mdb->pg_buf[row_end - bitmask_sz + 1];
 
-	for (i=0;i<bitmask_sz;i++) {
-		null_mask[i]=mdb->pg_buf[row_end - bitmask_sz + i + 1];
+	for (i=0;i<num_cols;i++) {
+		byte_num = i / 8;
+		bit_num = i % 8;
+		/* logic on nulls is reverse, 1 is not null, 0 is null */
+		fields[i].is_null = nullmask[byte_num] & 1 << bit_num ? 0 : 1;
+		printf("col %d is %s\n", i, fields[i].is_null ? "null" : "not null");
 	}
 
 	return num_cols;

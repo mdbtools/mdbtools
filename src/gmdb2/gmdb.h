@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <gtk/gtk.h>
 #include <gnome.h>
+#include <glade/glade.h>
 
 #ifndef _gmdb_h_
 #define _gmdb_h_
@@ -35,7 +36,6 @@ void gmdb_query_populate(MdbHandle *mdb);
 void gmdb_report_populate(MdbHandle *mdb);
 void gmdb_macro_populate(MdbHandle *mdb);
 void gmdb_module_populate(MdbHandle *mdb);
-void gmdb_debug_init(MdbHandle *mdb);
 
 void gmdb_table_add_tab(GtkWidget *notebook);
 void gmdb_debug_tab_new(GtkWidget *notebook);

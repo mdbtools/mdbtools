@@ -38,70 +38,9 @@
 		    <widget class="GtkMenu" id="file1_menu">
 
 		      <child>
-			<widget class="GtkImageMenuItem" id="new1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_NEW_ITEM</property>
-			  <property name="label" translatable="yes">_New</property>
-			  <property name="use_underline">True</property>
-			  <signal name="activate" handler="on_new1_activate" last_modification_time="Sat, 21 Dec 2002 14:54:43 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkMenuItem" id="separator1">
-			  <property name="visible">True</property>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="close1">
+			<widget class="GtkImageMenuItem" id="close_menu">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_CLOSE_ITEM</property>
-			  <signal name="activate" handler="gmdb_debug_close_cb" last_modification_time="Sat, 21 Dec 2002 20:42:09 GMT"/>
-			</widget>
-		      </child>
-		    </widget>
-		  </child>
-		</widget>
-	      </child>
-
-	      <child>
-		<widget class="GtkMenuItem" id="edit1">
-		  <property name="visible">True</property>
-		  <property name="stock_item">GNOMEUIINFO_MENU_EDIT_TREE</property>
-
-		  <child>
-		    <widget class="GtkMenu" id="edit1_menu">
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="cut1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_CUT_ITEM</property>
-			  <signal name="activate" handler="on_cut1_activate" last_modification_time="Sat, 21 Dec 2002 14:54:43 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="copy1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_COPY_ITEM</property>
-			  <signal name="activate" handler="on_copy1_activate" last_modification_time="Sat, 21 Dec 2002 14:54:43 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="paste1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_PASTE_ITEM</property>
-			  <signal name="activate" handler="on_paste1_activate" last_modification_time="Sat, 21 Dec 2002 14:54:43 GMT"/>
-			</widget>
-		      </child>
-
-		      <child>
-			<widget class="GtkImageMenuItem" id="clear1">
-			  <property name="visible">True</property>
-			  <property name="stock_item">GNOMEUIINFO_MENU_CLEAR_ITEM</property>
-			  <signal name="activate" handler="on_clear1_activate" last_modification_time="Sat, 21 Dec 2002 14:54:43 GMT"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -213,7 +152,6 @@
 		      <property name="has_frame">True</property>
 		      <property name="invisible_char" translatable="yes">*</property>
 		      <property name="activates_default">False</property>
-		      <signal name="activate" handler="gmdb_debug_display_cb" after="yes" last_modification_time="Sat, 21 Dec 2002 19:05:15 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -223,13 +161,12 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkButton" id="button4">
+		    <widget class="GtkButton" id="debug_button">
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">_Display</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
-		      <signal name="clicked" handler="gmdb_debug_display_cb" after="yes" last_modification_time="Sat, 21 Dec 2002 18:33:54 GMT"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>

@@ -12,11 +12,24 @@ extern char *mdb_access_types[];
 
 /* callbacks */
 void
+gmdb_table_debug_cb(GtkList *list, GtkWidget *w, gpointer data)
+{
+MdbCatalogEntry *entry;
+guint32 page;
+
+	/* nothing selected yet? */
+	if (selected_table==-1) {
+		return;
+	}
+
+	entry = g_ptr_array_index(mdb->catalog,selected_table);
+	gmdb_debug_new_cb(w, &entry->table_pg);
+}
+void
 gmdb_table_def_cb(GtkList *list, GtkWidget *w, gpointer data)
 {
 MdbCatalogEntry *entry;
 
-	printf("here\n");
 	/* nothing selected yet? */
 	if (selected_table==-1) {
 		return;
@@ -63,7 +76,6 @@ MdbCatalogEntry *entry;
 gchar *text;
 
 	text = (gchar *) gnome_icon_list_get_icon_data(gil, num);
-	printf ("text !%s!\n",text);
 
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
@@ -83,7 +95,6 @@ GdkEventButton *event_button;
 		if (event_button->button == 3) {
 			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 
 				event_button->button, event_button->time);
-	        	g_print("button press\n");
 			return TRUE;
 		}
 	}
@@ -107,15 +118,21 @@ GtkWidget *menu, *mi;
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_menu_item_new_with_label("Data");
 	gtk_widget_show(mi);
+	g_signal_connect_swapped (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_table_data_cb), gil);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_menu_item_new_with_label("Export");
 	gtk_widget_show(mi);
+	g_signal_connect_swapped (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_table_export_cb), gil);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_separator_menu_item_new();
 	gtk_widget_show(mi);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_menu_item_new_with_label("Debug");
 	gtk_widget_show(mi);
+	g_signal_connect_swapped (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_table_debug_cb), gil);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_menu_item_new_with_label("Usage Map");
 	gtk_widget_show(mi);

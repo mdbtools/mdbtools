@@ -81,11 +81,11 @@ if test "$no_glib" == yes; then
 	exit 1
 fi
 
-AM_PATH_GTK_2_0(2.0.0)
-AM_CONDITIONAL(HAVE_GTK, test x$no_gtk = xtrue) 
-AC_SUBST(HAVE_GTK)
+PKG_CHECK_MODULES(GNOME,libglade-2.0 libgnomeui-2.0)
 
-if test "$no_gtk" != yes; then
+if test "$GNOME_CFLAGS" != ""; then
+	AC_SUBST(GNOME_CFLAGS)
+	AC_SUBST(GNOME_LIBS)
 	OPTDIRS="$OPTDIRS gmdb2"
 fi
 
