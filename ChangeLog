@@ -1,3 +1,10 @@
+Fri Jun 11 08:52:14 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/data.c:
+	* src/libmdb/backend.c:
+	* src/gmdb2/schema.c:
+	* src/util/mdb-schema.c:
+	* include/mdbtools.h: Major revisions to 'backend' code
+
 Wed Jun  2 07:31:04 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c: Improve mdb_open's error handling
 

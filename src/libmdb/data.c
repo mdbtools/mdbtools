@@ -59,11 +59,12 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr)
 	
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcmp(col->name,col_name))
-		col_num = col->col_num + 1;
+		if (!strcmp(col->name,col_name)) {
+			col_num = col->col_num + 1;
+			mdb_bind_column(table, col_num, bind_ptr);
+			break;
+		}
 	}
-
-	mdb_bind_column(table, col_num, bind_ptr);
 
 	return col_num;
 }

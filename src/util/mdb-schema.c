@@ -114,10 +114,9 @@ main (int argc, char **argv)
 	fprintf (stdout, "\n\n");
 	fprintf (stdout, "-- CREATE ANY Relationships ...\n");
 	fprintf (stdout, "\n");
-	the_relation=mdb_get_relationships(mdb);
-	while (the_relation[0] != '\0') {
+	while ((the_relation=mdb_get_relationships(mdb)) != NULL) {
 		fprintf(stdout,"%s\n",the_relation);
-		the_relation=mdb_get_relationships(mdb);
+		g_free(the_relation);
 	}            
  
 	g_free(namespace);

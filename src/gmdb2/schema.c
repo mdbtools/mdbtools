@@ -110,10 +110,9 @@ char            *the_relation;
 	if (relation=='Y') {
 		fprintf (outfile, "-- CREATE ANY Relationships ...\n");
 		fprintf (outfile, "\n");
-		the_relation=mdb_get_relationships(mdb);
-		while (the_relation[0] != '\0') {
+		while ((the_relation=mdb_get_relationships(mdb)) != NULL) {
 			fprintf(outfile,"%s\n",the_relation);
-			the_relation=mdb_get_relationships(mdb);
+			g_free(the_relation);
 		}            
  	}
 
