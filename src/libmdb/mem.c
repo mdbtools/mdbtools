@@ -31,8 +31,7 @@ void mdb_init()
 
 void mdb_exit()
 {
-	/* FIX ME -- need to deallocate backend structures */
-	g_hash_table_destroy(mdb_backends);
+	mdb_remove_backends();
 }
 
 MdbStatistics *mdb_alloc_stats(MdbHandle *mdb)

@@ -1,3 +1,8 @@
+Mon Apr 12 09:56:23 EDT 2004	Brian Bruns <brian@bruns.com>
+	* include/mdbtools:
+	* src/libmdb/mem.c:
+	* src/libmdb/backend.c: free backends on exit (Jeff Smith)
+
 Thu Mar 25 04:56:05 EST 2004	Brian Bruns <brian@bruns.com>
 	* src/odbc/odbc.c(_SQLFreeStmt): call mdb_sql_reset on stmt drop (Jeff Smith)
 

@@ -192,6 +192,17 @@ void mdb_register_backend(MdbBackend *backend, char *backend_name)
 {
 	g_hash_table_insert(mdb_backends,backend_name,backend);
 }
+static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
+{
+	MdbBackend *backend = (MdbBackend *)value;
+	g_free (backend);
+	return TRUE;
+}
+void mdb_remove_backends()
+{
+	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
+	g_hash_table_destroy(mdb_backends);
+}
 int mdb_set_default_backend(MdbHandle *mdb, char *backend_name)
 {
 MdbBackend *backend;
