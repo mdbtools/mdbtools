@@ -1,3 +1,6 @@
+Mon Sep 13 19:10:24 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/odbc/odbc.c: Fix a bug in SQLConnect
+
 Sun Sep 12 14:03:10 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/write.c:

@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.20 2004/09/12 20:56:35 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.21 2004/09/14 00:13:20 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -573,6 +573,8 @@ SQLRETURN SQL_API SQLConnect(
    strcpy (lastError, "");
 
    params = ((ODBCConnection*) hdbc)->params;
+
+   params->dsnName = g_string_assign (params->dsnName, szDSN);
 
    if (!LookupDSN (params, szDSN))
    {
