@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.16 2004/03/25 10:34:07 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.17 2004/04/13 03:17:20 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -980,17 +980,15 @@ SQLRETURN SQL_API SQLPrepare(
     SQLCHAR FAR       *szSqlStr,
     SQLINTEGER         cbSqlStr)
 {
-struct _hstmt *stmt=(struct _hstmt *)hstmt;
+	struct _hstmt *stmt=(struct _hstmt *)hstmt;
+	int sqllen = _odbc_get_string_size(cbSqlStr, szSqlStr);
 
 	TRACE("SQLPrepare");
-   if (cbSqlStr!=SQL_NTS) {
-	strncpy(stmt->query, szSqlStr, cbSqlStr);
-	stmt->query[cbSqlStr]='\0';
-   } else {
-   	strcpy(stmt->query, szSqlStr);
-   }
 
-   return SQL_SUCCESS;
+	strncpy(stmt->query, szSqlStr, sqllen);
+	stmt->query[sqllen]='\0';
+
+	return SQL_SUCCESS;
 }
 
 SQLRETURN SQL_API SQLRowCount(

@@ -1,6 +1,7 @@
 Mon Apr 12 21:58:00 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/odbc/connectparams.c: ODBC driver dialog enhancements
 	* src/sql/mdbsql.c: Correct some array sizes
+	* src/odb/odbc.c: Utilize _odbc_get_string_size() in SQLPrepare()
 
 Mon Apr 12 09:56:23 EDT 2004	Brian Bruns <brian@bruns.com>
 	* include/mdbtools:
