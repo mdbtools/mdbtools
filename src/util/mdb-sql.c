@@ -19,9 +19,33 @@
 #include <config.h>
 
 #include <stdio.h>
-#ifdef HAVE_READLINE
-#include <readline/readline.h>
-#endif
+
+#ifdef HAVE_LIBREADLINE
+#  if defined(HAVE_READLINE_READLINE_H)
+#    include <readline/readline.h>
+#  elif defined(HAVE_READLINE_H)
+#    include <readline.h>
+#  else /* !defined(HAVE_READLINE_H) */
+extern char *readline ();
+#  endif /* !defined(HAVE_READLINE_H) */
+char *cmdline = NULL;
+#else /* !defined(HAVE_READLINE_READLINE_H) */
+/* no readline */
+#endif /* HAVE_LIBREADLINE */
+
+#ifdef HAVE_READLINE_HISTORY
+#  if defined(HAVE_READLINE_HISTORY_H)
+#    include <readline/history.h>
+#  elif defined(HAVE_HISTORY_H)
+#    include <history.h>
+#  else /* !defined(HAVE_HISTORY_H) */
+extern void add_history ();
+extern int write_history ();
+extern int read_history ();
+#  endif /* defined(HAVE_READLINE_HISTORY_H) */
+/* no history */
+#endif /* HAVE_READLINE_HISTORY */
+
 #include <string.h>
 #include "mdbsql.h"
 
@@ -44,7 +68,7 @@ int noexec = 0;
 
 #define HISTFILE ".mdbhistory"
 
-#ifndef HAVE_READLINE
+#ifndef HAVE_LIBREADLINE
 char *readline(char *prompt)
 {
 char *buf, line[1000];
@@ -68,6 +92,13 @@ int i = 0;
 void add_history(char *s)
 {
 }
+void read_history(char *s)
+{
+}
+void write_history(char *s)
+{
+}
+
 #endif
 
 int parse(MdbSQL *sql, char *buf)

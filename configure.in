@@ -156,19 +156,11 @@ dnl Checks for library functions.
 
 OLDLDFLAGS=$LDFLAGS
 
-AC_CHECK_LIB(ncurses,initscr,[
-	READLINE_LIBS="$READLINE_LIBS -lncurses"
-	LDFLAGS="$LDFLAGS -lncurses"
-	],[])
-
-AC_CHECK_LIB(readline, add_history, [
-	READLINE_LIBS="$READLINE_LIBS -lreadline"
-	AC_DEFINE(HAVE_READLINE,1,[ ]) 
-	],[])
+VL_LIB_READLINE
+READLINE_LIBS=$vl_cv_lib_readline
+AC_SUBST(READLINE_LIBS)
 
 LDFLAGS=$OLDLDFLAGS
-
-AC_SUBST(READLINE_LIBS)
 
 localedir=${datadir}/locale
 AC_SUBST(localedir)
