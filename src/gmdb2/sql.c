@@ -693,20 +693,14 @@ GtkTreeIter *iter2;
 	GtkWidget *tree = glade_xml_get_widget(xml, "sql_treeview");
 	GtkTreeStore *store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
-	/* loop over each entry in the catalog */
+	/* add all user tables in catalog to tab */
 	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
-
- 		/* if it's a table */
-		if (entry->object_type == MDB_TABLE) {
-			/* skip the MSys tables */
-			if (strncmp (entry->object_name, "MSys", 4)) {
-				/* add table to tab */
-				iter2 = g_malloc(sizeof(GtkTreeIter));
-				gtk_tree_store_append(store, iter2, NULL);
-				gtk_tree_store_set(store, iter2, 0, entry->object_name, -1);
-	     		}
-		} /* if MDB_TABLE */
+		if (mdb_is_user_table(entry)) {
+			iter2 = g_malloc(sizeof(GtkTreeIter));
+			gtk_tree_store_append(store, iter2, NULL);
+			gtk_tree_store_set(store, iter2, 0, entry->object_name, -1);
+		}
 	} /* for */
 }
 #else

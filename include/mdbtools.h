@@ -240,6 +240,7 @@ typedef struct {
 	int			num_props;
 	GArray		*props;
 	GArray		*columns;
+	int		flags;
 } MdbCatalogEntry;
 
 typedef struct {
@@ -428,7 +429,8 @@ extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
 extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
 extern int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset);
 extern guint16 read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len);
-
+extern int mdb_is_user_table(MdbCatalogEntry *entry);
+extern int mdb_is_system_table(MdbCatalogEntry *entry);
 
 /* data.c */
 extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr);

@@ -23,8 +23,10 @@ structures.
 
 Page          - A fixed size region within the file on a 2 or 4K boundry. All 
                 data in the file exists inside pages.
-Catalog Table - Tables in Access generally starting with "MSys".  See the TDEF
-                (table definition) pages for "System Table" field.
+System Table  - Tables in Access generally starting with "MSys".  The 'Flags'
+                field in the table's Catalog Entry will contain a flag in one
+                of two positions (0x80000000 or 0x00000002).  See also the TDEF
+		(table definition) pages for "System Table" field.
 Catalog Entry - A row from the MSysObjects table describing another database
                 object.  The MSysObjects table definition page is always at 
                 page 2 of the database, and a phony tdef structure is

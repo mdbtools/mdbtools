@@ -56,18 +56,17 @@ char            *the_relation;
 	mdb_set_default_backend(mdb,backend);
 
 	for (i=0; i < mdb->num_catalog; i++) {
-     		entry = g_ptr_array_index (mdb->catalog, i);
+		entry = g_ptr_array_index (mdb->catalog, i);
 
-     /* if it's a table */
+		if (entry->object_type != MDB_TABLE)
+			continue;
+		/* Do not show system tables if table name is not specified */
+		if (mdb_is_system_table(entry) && !strlen(tabname))
+			continue;
+		/* If object name does not match the table specified */
+		if (strlen(tabname) && strcmp(entry->object_name, tabname))
+			continue;
 
-     if (entry->object_type == MDB_TABLE) {
-	 /* skip the MSys tables */
-       if ((strlen(tabname) && !strcmp(entry->object_name,tabname)) ||
-           (!strlen(tabname) && strncmp (entry->object_name, "MSys", 4))) {
-	   
-	   /* make sure it's a table (may be redundant) */
-
-	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table")) {
 	       /* drop the table if it exists */
 	       if (drops=='Y') 
 		       fprintf(outfile, "DROP TABLE %s;\n", entry->object_name);
@@ -101,10 +100,7 @@ char            *the_relation;
 	       fprintf (outfile, "\n);\n");
 	       fprintf (outfile, "-- CREATE ANY INDEXES ...\n");
 	       fprintf (outfile, "\n");
-	     }
-	 }
-     }
-   }
+	}
 	fprintf (outfile, "\n\n");
 
 	if (relation=='Y') {
@@ -183,18 +179,12 @@ gmdb_schema_new_cb(GtkWidget *w, gpointer data)
 	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
 
 	glist = g_list_append(glist, ALL_TABLES);
-	/* loop over each entry in the catalog */
+	/* add all user tables in catalog to list */
 	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
-
- 		/* if it's a table */
-		if (entry->object_type == MDB_TABLE) {
-			/* skip the MSys tables */
-			if (strncmp (entry->object_name, "MSys", 4)) {
-				/* add table to list */
-				glist = g_list_append(glist, entry->object_name);
-	     		}
-		} /* if MDB_TABLE */
+		if (mdb_is_user_table(entry)) {
+			glist = g_list_append(glist, entry->object_name);
+		}
 	} /* for */
 	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
 	g_list_free(glist);

@@ -136,18 +136,17 @@ main (int argc, char **argv)
  	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
 
-     	/* if it's a table */
-     	if (entry->object_type == objtype) {
-	 		/* skip the MSys tables */
-			if (!skip_sys || strncmp (entry->object_name, "MSys", 4)) {
-	       		if (line_break) 
-					fprintf (stdout, "%s\n", entry->object_name);
-				else if (delimiter) 
-					fprintf (stdout, "%s%s", entry->object_name, delimiter);
-				else 
-					fprintf (stdout, "%s ", entry->object_name);
-	     	}
-		}
+     		if (entry->object_type != objtype)
+			continue;
+		if (skip_sys && mdb_is_system_table(entry))
+			continue;
+
+       		if (line_break) 
+			fprintf (stdout, "%s\n", entry->object_name);
+		else if (delimiter) 
+			fprintf (stdout, "%s%s", entry->object_name, delimiter);
+		else 
+			fprintf (stdout, "%s ", entry->object_name);
 	}
 	if (!line_break) 
 		fprintf (stdout, "\n");

@@ -65,6 +65,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	char obj_id[256];
 	char obj_name[256];
 	char obj_type[256];
+	char obj_flags[256];
 	int type;
 
 	if (mdb->catalog) mdb_free_catalog(mdb);
@@ -88,6 +89,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	mdb_bind_column_by_name(table, "Id", obj_id);
 	mdb_bind_column_by_name(table, "Name", obj_name);
 	mdb_bind_column_by_name(table, "Type", obj_type);
+	mdb_bind_column_by_name(table, "Flags", obj_flags);
 
 	mdb_rewind_table(table);
 
@@ -101,6 +103,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 			strcpy(entry->object_name, obj_name);
 			entry->object_type = (type & 0x7F);
 			entry->table_pg = atol(obj_id) & 0x00FFFFFF;
+			entry->flags = atol(obj_flags);
 			mdb->num_catalog++;
 			g_ptr_array_add(mdb->catalog, entry); 
 		}

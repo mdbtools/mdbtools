@@ -61,9 +61,6 @@ main (int argc, char **argv)
 			break;
 		}
 	}
-	if (!namespace) {
-		namespace = (char *) g_strdup("");
-	}
  
  mdb_init();
 
@@ -94,19 +91,12 @@ main (int argc, char **argv)
 	fprintf(stdout,"-- Check out http://mdbtools.sourceforge.net\n");
 	fprintf(stdout,"-------------------------------------------------------------\n\n");
 
-	/* loop over each entry in the catalog */
-
 	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
-
-		/* if it's a table */
-
 		if (entry->object_type == MDB_TABLE) {
-			/* skip the MSys tables */
-			if ((tabname && !strcmp(entry->object_name,tabname)) ||
-				(!tabname && strncmp (entry->object_name, "MSys", 4))) {
-	   
-				   generate_table_schema(entry, namespace, s);
+			if ((tabname && !strcmp(entry->object_name, tabname)) 
+			 || (!tabname && mdb_is_user_table(entry))) {
+				generate_table_schema(entry, namespace, s);
 			}
 		}
 	}
@@ -134,16 +124,13 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 	unsigned int i;
 	MdbColumn *col;
 
-	/* make sure it's a table (may be redundant) */
-
-	if (strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
-		   return;
-
 	/* drop the table if it exists */
-	fprintf (stdout, "DROP TABLE %s%s;\n", namespace, sanitize_name(entry->object_name,sanitize));
+	fprintf (stdout, "DROP TABLE %s%s;\n", (namespace) ? namespace : "",
+		sanitize_name(entry->object_name, sanitize));
 
 	/* create the table */
-	fprintf (stdout, "CREATE TABLE %s%s\n", namespace, sanitize_name(entry->object_name,sanitize));
+	fprintf (stdout, "CREATE TABLE %s%s\n", (namespace) ? namespace : "",
+		sanitize_name(entry->object_name, sanitize));
 	fprintf (stdout, " (\n");
 	       	       
 	table = mdb_read_table (entry);

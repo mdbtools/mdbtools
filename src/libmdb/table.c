@@ -355,3 +355,14 @@ guint32 pgnum;
 		printf("\n");
 	}
 }
+
+int mdb_is_user_table(MdbCatalogEntry *entry)
+{
+	return ((entry->object_type == MDB_TABLE)
+	 && !(entry->flags & 0x80000002)) ? 1 : 0;
+}
+int mdb_is_system_table(MdbCatalogEntry *entry)
+{
+	return ((entry->object_type == MDB_TABLE)
+	 && (entry->flags & 0x80000002)) ? 1 : 0;
+}

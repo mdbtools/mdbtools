@@ -66,8 +66,7 @@ MdbCatalogEntry *entry;
 	selected_child = child_num;
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
-		if (entry->object_type==MDB_TABLE && 
-			strncmp(entry->object_name,"MSys",4)) {
+		if (mdb_is_user_table(entry)) {
 			if (j==child_num) {
 				selected_table = i;
 			}
@@ -192,17 +191,11 @@ void gmdb_table_populate(MdbHandle *mdb)
 int   i;
 MdbCatalogEntry *entry;
 
-	/* loop over each entry in the catalog */
+	/* add all user tables in catalog to tab */
 	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
-
- 		/* if it's a table */
-		if (entry->object_type == MDB_TABLE) {
-			/* skip the MSys tables */
-			if (strncmp (entry->object_name, "MSys", 4)) {
-				/* add table to tab */
-				gmdb_table_add_icon(entry->object_name);
-	     	}
-		} /* if MDB_TABLE */
+		if (mdb_is_user_table(entry)) {
+			gmdb_table_add_icon(entry->object_name);
+		}
 	} /* for */
 }

@@ -1,3 +1,20 @@
+Wed Sep 15 22:59:26 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/gmdb/sql.c:
+	* src/gmdb/table.c:
+	* src/gmdb2/schema.c:
+	* src/gmdb2/sql.c:
+	* src/gmdb2/table.c:
+	* src/libmdb/catalog.c:
+	* src/libmdb/table.c:
+	* src/odbc/odbc.c:
+	* src/sql/mdbsql.c:
+	* src/util/mdb-check.c:
+	* src/util/mdb-header.c:
+	* src/util/mdb-schema.c:
+	* src/util/mdb-tables.c:
+	* HACKING: Use 'Flags' field in MSysObjects to recognize system tables
+
 Wed Sep 15 07:33:34 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/odbc/Makefile.am: Fix a bug in ODBC Makefile
 

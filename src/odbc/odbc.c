@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.21 2004/09/14 00:13:20 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.22 2004/09/16 04:00:45 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -153,7 +153,7 @@ SQLRETURN SQL_API SQLDriverConnect(
    ConnectParams* params;
    SQLRETURN ret;
 
-	TRACE("DriverConnect");
+	TRACE("SQLDriverConnect");
 
    strcpy (lastError, "");
 
@@ -191,7 +191,7 @@ SQLRETURN SQL_API SQLBrowseConnect(
     SQLSMALLINT        cbConnStrOutMax,
     SQLSMALLINT FAR   *pcbConnStrOut)
 {
-	TRACE("BrowseConnect");
+	TRACE("SQLBrowseConnect");
 	return SQL_SUCCESS;
 }
 
@@ -1542,15 +1542,17 @@ SQLRETURN SQL_API SQLTables(
 	mdb_sql_add_temp_col(sql, ttable, 4, "REMARKS", MDB_TEXT, 254, 0);
 	mdb_temp_columns_end(ttable);
 
+	/* TODO: Sort the return list by TYPE, CAT, SCHEM, NAME */
 	for (i=0; i<mdb->num_catalog; i++) {
      		entry = g_ptr_array_index(mdb->catalog, i);
-     		switch (entry->object_type) {
-			case MDB_TABLE: ttype = 1; break;
-			case MDB_SYSTEM_TABLE: ttype = 2; break;
-			case MDB_QUERY: ttype = 3; break;
-			default: ttype = 0; break;
-		}
-		if (!ttype)
+
+		if (mdb_is_user_table(entry))
+			ttype = 0;
+		else if (mdb_is_system_table(entry))
+			ttype = 1;
+		else if (entry->object_type == MDB_QUERY)
+			ttype = 2;
+		else
 			continue;
 
 		/* Set all fields to NULL */
@@ -1559,7 +1561,7 @@ SQLRETURN SQL_API SQLTables(
 		}
 
 		ts2 = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, t2);
-		ts3 = mdb_ascii2unicode(mdb, table_types[ttype-1], 0, 100, t3);
+		ts3 = mdb_ascii2unicode(mdb, table_types[ttype], 0, 100, t3);
 
 		FILL_FIELD(&fields[2], t2, ts2);
 		FILL_FIELD(&fields[3], t3, ts3);

@@ -80,18 +80,8 @@ FILE *cfile;
    {
      entry = g_ptr_array_index (mdb->catalog, i);
 
-     /* if it's a table */
-
-     if (entry->object_type == MDB_TABLE)
-       {
-	 /* skip the MSys tables */
-       if (strncmp (entry->object_name, "MSys", 4))
-	 {
-	   
-	   /* make sure it's a table (may be redundant) */
-
-	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
-	     {
+     if (!mdb_is_user_table(entry))
+          continue;
 
 	       fprintf (typesfile, "typedef struct _%s\n", entry->object_name);
 	       fprintf (typesfile, "{\n");
@@ -147,9 +137,6 @@ FILE *cfile;
 	       fprintf (cfile, "}\n\n");
 
 	       mdb_free_tabledef(table);
-	     }
-	 }
-     }
    }
 
  fclose (typesfile);

@@ -264,20 +264,14 @@ int   i;
 MdbCatalogEntry *entry;
 gchar *text[2];
 
-	/* loop over each entry in the catalog */
+	/* add all user tables in catalog to tab */
 	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
-
- 		/* if it's a table */
-		if (entry->object_type == MDB_TABLE) {
-			/* skip the MSys tables */
-			if (strncmp (entry->object_name, "MSys", 4)) {
-				/* add table to tab */
-				text[0] = entry->object_name;
-				text[1] = ""; 
-				gtk_ctree_insert_node(GTK_CTREE(sqlwin->ctree), NULL, NULL, text, 0, NULL, NULL, NULL, NULL, FALSE, FALSE);
-	     	}
-		} /* if MDB_TABLE */
+		if (mdb_is_user_table(entry)) {
+			text[0] = entry->object_name;
+			text[1] = ""; 
+			gtk_ctree_insert_node(GTK_CTREE(sqlwin->ctree), NULL, NULL, text, 0, NULL, NULL, NULL, NULL, FALSE, FALSE);
+		}
 	} /* for */
 }
 #else

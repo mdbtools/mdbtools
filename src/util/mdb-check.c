@@ -79,10 +79,8 @@ int opt;
      /* if it's a table */
 
 	if (entry->object_type == MDB_TABLE) {
-		/* skip the MSys tables */
 		if ((tabname && !strcmp(entry->object_name,tabname)) ||
-			(!tabname )) {
-			 // && strncmp (entry->object_name, "MSys", 4))) {
+			(!tabname /* && mdb_is_user_table(entry) */)) {
 			int ret;
 
 	       		table = mdb_read_table(entry);

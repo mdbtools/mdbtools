@@ -506,12 +506,10 @@ void mdb_sql_listtables(MdbSQL *sql)
 	ttable = mdb_create_temp_table(mdb, "#listtables");
 	mdb_sql_add_temp_col(sql, ttable, 0, "Tables", MDB_TEXT, 30, 0);
 
- 	/* loop over each entry in the catalog */
+ 	/* add all user tables in catalog to list */
  	for (i=0; i < mdb->num_catalog; i++) {
      		entry = g_ptr_array_index (mdb->catalog, i);
-     		/* only list user tables */
-     		if ((entry->object_type == MDB_TABLE)
-		 && (strncmp (entry->object_name, "MSys", 4))) {
+     		if (mdb_is_user_table(entry)) {
           		//col = g_ptr_array_index(table->columns,0);
 			tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, tmpstr);
 			mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
