@@ -31,16 +31,32 @@ int row_start, row_end;
 int fixed_cols_found, var_cols_found;
 int col_start, len;
 int eod; /* end of data */
+int delflag, lookupflag;
 
 	for (pg_num=1;pg_num<=table->num_pgs;pg_num++) {
 		mdb_read_pg(mdb,table->first_data_pg + pg_num);
 		rows = mdb_get_int16(mdb,8);
-		fprintf(stdout,"Rows on page %d: %d\n", pg_num, rows);
+		fprintf(stdout,"Rows on page %d: %d\n", 
+			pg_num + table->first_data_pg, 
+			rows);
 		row_end=2047;
 		for (i=0;i<rows;i++) {
-			row_start = mdb_get_int16(mdb,10+i*2);
-			fprintf(stdout,"Pg %d Row %d bytes %d to %d\n", pg_num, i, row_start, row_end);
+			row_start = mdb_get_int16(mdb,10+i*2); 
+			delflag = lookupflag = 0;
+			if (row_start & 0x8000) delflag++;
+			if (row_start & 0x4000) lookupflag++;
+			row_start &= 0x0FFF; /* remove flags */
+			fprintf(stdout,"Pg %d Row %d bytes %d to %d %s %s\n", 
+				pg_num, i, row_start, row_end,
+				lookupflag ? "[lookup]" : "",
+				delflag ? "[delflag]" : "");
 			
+			if (delflag || lookupflag) {
+				row_end = row_start-1;
+				continue;
+			}
+			buffer_dump(mdb->pg_buf, row_start, row_end);
+
 			num_cols = mdb->pg_buf[row_start];
 			var_cols = mdb->pg_buf[row_end-1];
 			fixed_cols = num_cols - var_cols;
@@ -55,7 +71,7 @@ int eod; /* end of data */
 				col = g_array_index(table->columns,MdbColumn,j);
 				if (mdb_is_fixed_col(&col) &&
 				    ++fixed_cols_found <= fixed_cols) {
-					fprintf(stdout,"fixed col %s = %s\n",col.name,mdb_col_to_string(&mdb->pg_buf[row_start + col_start],col.col_type,NULL));
+					fprintf(stdout,"fixed col %s = %s\n",col.name,mdb_col_to_string(&mdb->pg_buf[row_start + col_start],col.col_type,0));
 					col_start += col.col_size;
 				}
 			}

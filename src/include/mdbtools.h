@@ -121,4 +121,8 @@ extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
 
 /* data.c */
 extern void mdb_data_dump(MdbTableDef *table);
+
+/* dump.c */
+void buffer_dump(const char* buf, int start, int end);
+
 #endif /* _mdbtools_h_ */
