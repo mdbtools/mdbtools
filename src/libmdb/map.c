@@ -23,16 +23,16 @@
 #include "dmalloc.h"
 #endif
 
-guint32 
-mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start_pg)
+static guint32 
+mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
-	int pgnum, i, bitn;
+	unsigned int pgnum, i, bitn;
 
 	pgnum = mdb_get_int32(map,1);
 	/* the first 5 bytes of the usage map mean something */
 	for (i=5;i<map_sz;i++) {
 		for (bitn=0;bitn<8;bitn++) {
-			if (map[i] & 1 << bitn && pgnum > start_pg) {
+			if ((map[i] & (1 << bitn)) && (pgnum > start_pg)) {
 				return pgnum;
 			}
 			pgnum++;
@@ -41,8 +41,8 @@ mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start
 	/* didn't find anything */
 	return 0;
 }
-int 
-mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start_pg)
+static int 
+mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
 	guint32 pgnum, i, j, bitn, map_pg;
 
@@ -73,7 +73,7 @@ mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start
 	return 0;
 }
 guint32 
-mdb_map_find_next(MdbHandle *mdb, unsigned char *map, int map_sz, guint32 start_pg)
+mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
 	int map_type;
 
