@@ -135,6 +135,27 @@ unsigned char *c;
 	mdb->cur_pos+=4;
 	return l;
 }
+float mdb_get_single(MdbHandle *mdb, int offset)
+{
+float f, f2;
+unsigned char *c;
+int i;
+
+       if (offset <0 || offset+4 > mdb->pg_size) return -1;
+
+       memcpy(&f, &mdb->pg_buf[offset], 4);
+
+#ifdef HW_BIG_ENDIAN
+       f2 = f;
+       for (i=0; i<sizeof(f); i++) {
+               *(((unsigned char *)&f)+i) =
+               *(((unsigned char *)&f2)+sizeof(f)-1-i);
+       }
+#endif
+       mdb->cur_pos+=4;
+       return f;
+}
+
 double mdb_get_double(MdbHandle *mdb, int offset)
 {
 double d, d2;

@@ -35,21 +35,22 @@ int mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
 int row_start, row_end, i;
 
-	/* Search the previous "row start" values for the first non-deleted one.
-	 * If we don't find one, then the end of the page is the correct value.
-	 */
-	for (i = row - 1; i >= 0; i--) {
-		row_start = mdb_get_int16(mdb, (10 + i * 2));
-		if (!(row_start & 0x8000)) {
-			break;
-		}
-	}
+        /* Search the previous "row start" values for the first non-deleted
+one.
+         * If we don't find one, then the end of the page is the correct value.
+         */
+        for (i = row - 1; i >= 0; i--) {
+                row_start = mdb_get_int16(mdb, (10 + i * 2));
+                if (!(row_start & 0x8000)) {
+                        break;
+                }
+        }
 
-	if (i == -1) {
-		row_end = mdb->pg_size - 1;
-	} else {
-		row_end = row_start - 1;
-	}
+        if (i == -1) {
+                row_end = mdb->pg_size - 1;
+        } else {
+                row_end = row_start - 1;
+        }
 
 	return row_end;
 }
@@ -86,6 +87,7 @@ int num_cols, var_cols, fixed_cols;
 int row_start, row_end;
 int fixed_cols_found, var_cols_found;
 int col_start, len;
+int num_of_jumps=0, jumps_used=0;
 int eod; /* end of data */
 int delflag, lookupflag;
 int bitmask_sz;
@@ -105,7 +107,8 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		delflag ? "[delflag]" : "");
 #endif	
 	if (delflag || lookupflag) {
-		return -1;
+		row_end = row_start-1;
+		return 0;
 	}
 
 #if MDB_DEBUG
@@ -153,12 +156,37 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		}
 	}
 
+       if (col_start >= 256) {
+               num_of_jumps++;
+               jumps_used++;
+               row_start = row_start + col_start - (col_start % 256);
+       }
+
+       col_start = row_start;
+       while (col_start+256 < row_end-bitmask_sz-1-var_cols-num_of_jumps){
+               col_start += 256;
+               num_of_jumps++;
+       }
+       eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz-num_of_jumps];
+
+       col_start = mdb->pg_buf[row_end-bitmask_sz-1-num_of_jumps];
+
+
 	/* variable columns */
 	for (j=0;j<table->num_cols;j++) {
 		col = g_ptr_array_index(table->columns,j);
 		if (!mdb_is_fixed_col(col) &&
 		    ++var_cols_found <= var_cols) {
-			col_start = mdb->pg_buf[row_end-bitmask_sz-var_cols_found];
+			/* col_start = mdb->pg_buf[row_end-bitmask_sz-var_cols_found]; */
+			/* more code goes here but the diff is mangled */
+			
+			if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
+				jumps_used < num_of_jumps) {
+				row_start += 256;
+				col_start -= 256;
+				jumps_used++;
+			}
+
 
 			if (var_cols_found==var_cols) 
 				len=eod - col_start;
@@ -166,7 +194,7 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 				len=mdb->pg_buf[row_end 
 					- bitmask_sz 
 					- var_cols_found 
-					- 1 ] - col_start;
+					- 1 - num_of_jumps ] - col_start;
 
 			if (mdb_is_null(null_mask, j+1)) {
 				mdb_xfer_bound_data(mdb, 0, col, 0);
@@ -177,7 +205,7 @@ unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 		}
 	}
 
-	return 0;
+	return 1;
 }
 int mdb_read_next_dpg(MdbTableDef *table)
 {
@@ -219,14 +247,8 @@ int rows;
 		if (!mdb_read_next_dpg(table)) return 0;
 	}
 
-	/* Skip over any deleted rows.
-	 *  mdb_read_row() returns -1 on deleted rows.
-	 *  mdb_read_row() returns 0 on actual rows.
-	 */
-	while(mdb_read_row(table,
-		table->cur_row)) {
-		table->cur_row++;
-	}
+	mdb_read_row(table, 
+		table->cur_row);
 
 	table->cur_row++;
 	return 1;
@@ -236,7 +258,7 @@ void mdb_data_dump(MdbTableDef *table)
 MdbHandle *mdb = table->entry->mdb;
 int i, j, pg_num;
 int rows;
-char *bound_values[256]; /* warning doesn't handle tables > 256 columns.  Can that happen? */
+char *bound_values[MDB_MAX_COLS]; 
 
 	for (i=0;i<table->num_cols;i++) {
 		bound_values[i] = (char *) malloc(256);
@@ -314,6 +336,10 @@ static char text[MDB_BIND_SIZE];
 		break;
 		case MDB_LONGINT:
 			sprintf(text,"%ld",mdb_get_int32(mdb, start));
+			return text;
+		break;
+		case MDB_FLOAT:
+			sprintf(text,"%f",mdb_get_double(mdb, start));
 			return text;
 		break;
 		case MDB_DOUBLE:

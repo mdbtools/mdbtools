@@ -99,7 +99,7 @@ char *mdb_postgres_types[] =
          "Postgres_Unknown 0x0e",
     "Serial"};
 
-char *bound_values[256];
+char *bound_values[MDB_MAX_COLS];
 char *relationships[4];
 MdbColumn *col;
 MdbCatalogEntry entry;

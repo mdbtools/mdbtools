@@ -31,25 +31,53 @@ MdbTableDef *table;
 MdbColumn *col;
 /* doesn't handle tables > 256 columns.  Can that happen? */
 char *bound_values[256]; 
-char delimiter[] = ",";
+char *delimiter = ",";
 char header_row = 1;
 char quote_text = 1;
+int  opt;
 
-	if (argc<2) {
-		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);
+	while ((opt=getopt(argc, argv, "HQd:"))!=-1) {
+		switch (opt) {
+		case 'H':
+			header_row = 0;
+		break;
+		case 'Q':
+			quote_text = 0;
+		break;
+		case 'd':
+			delimiter = (char *) malloc(strlen(optarg)+1);
+			strcpy(delimiter, optarg);
+		break;
+		default:
+		break;
+		}
+	}
+	
+	/* 
+	** optind is now the position of the first non-option arg, 
+	** see getopt(3) 
+	*/
+	if (argc-optind < 2) {
+		fprintf(stderr,"Usage: %s [options] <file> <table>\n",argv[0]);
+		fprintf(stderr,"where options are:\n");
+		fprintf(stderr,"  -H             supress header row\n");
+		fprintf(stderr,"  -Q             don't wrap text-like fields in quotes\n");
+		fprintf(stderr,"  -d <delimiter> specify a column delimiter\n");
+		exit(1);
+	}
+
+	mdb_init();
+
+	if (!(mdb = mdb_open(argv[optind]))) {
 		exit(1);
 	}
 	
-	mdb_init();
-
-	mdb = mdb_open(argv[1]);
-
 	mdb_read_catalog(mdb, MDB_TABLE);
 
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
 		if (entry.object_type == MDB_TABLE &&
-			!strcmp(entry.object_name,argv[2])) {
+			!strcmp(entry.object_name,argv[argc-1])) {
 			table = mdb_read_table(&entry);
 			mdb_read_columns(table);
 			mdb_rewind_table(table);

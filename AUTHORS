@@ -1,9 +1,20 @@
 Brian Bruns <camber@ais.org>
+	Started MDB Tools
 
 Karl Nyberg <knyberg@grebyn.com>
+	Lots and lots of bug fixes and functionality
 
 Georg Bauer <gb@hugo.westfalen.de>
+	Lots and lots of bug fixes and functionality
 
 Carl Seutter <cgseutter@worldnet.att.net>
+	Backend schema export, other stuff
 
 Trevor Harrison <trevor@harrison.org>
+	password field, etc...	
+
+Brent Johnson <xone47@yahoo.com>
+	large MEMO fields, deleted rows, double datatype
+
+Tim Nelson <vbprogie@hotmail.com>
+	Multipage table defs, column totals > 255
