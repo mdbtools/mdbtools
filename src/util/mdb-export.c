@@ -27,6 +27,9 @@
 #define MDB_BIND_SIZE 200000
 
 #define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
+
+static char *sanitize_name(char *str, int sanitize);
+
 void
 print_col(gchar *col_val, int quote_text, int col_type)
 {
@@ -54,11 +57,13 @@ main(int argc, char **argv)
 	/* doesn't handle tables > 256 columns.  Can that happen? */
 	char *bound_values[256]; 
 	char *delimiter = ",";
+	char *row_delimiter = "\n";
 	char header_row = 1;
 	char quote_text = 1;
+	char insert_statements = 0;
 	int  opt;
 
-	while ((opt=getopt(argc, argv, "HQd:D:"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQd:D:R:I"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -69,6 +74,14 @@ main(int argc, char **argv)
 		case 'd':
 			delimiter = (char *) malloc(strlen(optarg)+1);
 			strcpy(delimiter, optarg);
+		break;
+		case 'R':
+			row_delimiter = (char *) malloc(strlen(optarg)+1);
+			strcpy(row_delimiter, optarg);
+		break;
+		case 'I':
+			insert_statements = 1;
+			header_row = 0;
 		break;
 		case 'D':
 			mdb_set_date_fmt(optarg);
@@ -88,6 +101,8 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -H             supress header row\n");
 		fprintf(stderr,"  -Q             don't wrap text-like fields in quotes\n");
 		fprintf(stderr,"  -d <delimiter> specify a column delimiter\n");
+		fprintf(stderr,"  -R <delimiter> specify a row delimiter\n");
+		fprintf(stderr,"  -I             INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
 		exit(1);
 	}
@@ -127,6 +142,18 @@ main(int argc, char **argv)
 			}
 
 			while(mdb_fetch_row(table)) {
+
+				if (insert_statements) {
+					fprintf(stdout, "INSERT INTO %s (",
+						sanitize_name(argv[optind + 1],1));
+        			for (j=0;j<table->num_cols;j++) {
+						if (j>0) fprintf(stdout, ", ");
+						col=g_ptr_array_index(table->columns,j);
+						fprintf(stdout,"%s", sanitize_name(col->name,1));
+					} 
+					fprintf(stdout, ") VALUES (");
+				}
+
 				col=g_ptr_array_index(table->columns,0);
 				if (col->col_type == MDB_OLE) {
 					mdb_ole_read(mdb, col, bound_values[0], MDB_BIND_SIZE);	
@@ -147,7 +174,8 @@ main(int argc, char **argv)
 						quote_text, 
 						col->col_type);
 				}
-				fprintf(stdout,"\n");
+				if (insert_statements) fprintf(stdout,")");
+				fprintf(stdout,"%s", row_delimiter);
 			}
         		for (j=0;j<table->num_cols;j++) {
 				free(bound_values[j]);
@@ -161,5 +189,24 @@ main(int argc, char **argv)
 	mdb_exit();
 
 	exit(0);
+}
+
+static char *sanitize_name(char *str, int sanitize)
+{
+	static char namebuf[256];
+	char *p = namebuf;
+
+	if (!sanitize)
+		return str;
+		
+	while (*str) {
+		*p = isalnum(*str) ? *str : '_';
+		p++;
+		str++;
+	}
+	
+	*p = 0;
+										
+	return namebuf;
 }
 
