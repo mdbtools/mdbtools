@@ -62,6 +62,7 @@ typedef struct {
 	MdbHandle	*mdb;
 	char           object_name[MDB_MAX_OBJ_NAME+1];
 	int            object_type;
+	unsigned long  table_pg;
 	unsigned long  kkd_pg;
 	unsigned int   kkd_rowid;
 	int		num_props;

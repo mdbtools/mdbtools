@@ -66,9 +66,7 @@ is not presently understood and the current code discards them silently.
 
 Little is understood of the meaning of the bytes that make up the records.  They
 vary in size, but portion prior to the objects name seems to be fixed.  All 
-records start with a '0x11' and have a sequential number in the second byte 
-(disregarding system tables which share values and with other gaps). The best 
-way to explain this is the run the 'prcatalogs' table and look at the results.
+records start with a '0x11'. The next two bytes are a page number to the column definitions. (see Column Definition).
 
 Byte offset 9 from the beginning of the record contains it's type.  Here is a
 table of known types:
@@ -91,12 +89,53 @@ course of action has been to stop at the first non-printable character
 After the name there is sometimes have (not yet determined why only sometimes) 
 a page pointer and offset to the KKD records (see below).  There is also pointer to other catalog pages, but I'm not really sure how to parse those.
 
+Column Definition
+-----------------
+
+The second and third bytes of each catalog entry store a 16 bit page pointer to 
+a column definition, including name, type, size and possibly more.  I haven't 
+fully figured this out so what follows is rough.  
+
+The header to table definition pages start look something like this:
+
++------+---------+--------------------------------------------------------+
+| 0x02 | 1 byte  | Page type                                              |
+| 0x01 | 1 byte  | Unknown                                                |
+| 'VC' | 2 bytes | ???                                                    |
+| 0x00 | 4 bytes | Unknown                                                |
+| ???? | 2 bytes | appears to be a length of the data                     |
+| 0x00 |10 bytes | ???                                                    |
+| 0x4e | 1 byte  | ???                                                    |
+| ???? | 2 bytes | ranges from 1 to 3ish                                  |
+| ???? | 2 bytes | ranges from 1 to 3ish                                  |
+| ???? | 1 byte  | number of columns in table                             |
++-------------------------------------------------------------------------+
+The next few bytes are somewhat of a mystery right now, but around 0x2B from 
+the start of the page (though not always) begins a series of 18 byte records
+one for each column present.  It's format is as follows:
++------+---------+--------------------------------------------------------+
+| ???? | 1 byte  | Column Type (see table below)                          |
+| ???? |15 bytes | ???                                                    |
+| ???? | 2 bytes | length of column                                       |
++-------------------------------------------------------------------------+
+
+Column Type may be one of the following (not complete).
+
+0x03   Integer (16 bit)
+0x04   Long Integer (32 bit)
+0x08   Short Date/Time
+0x0a   Text
+0x0c   Hyperlink
+
+Following the 18 byte column records begins the column names, listed in order
+with a 1 byte size prefix preceding each name.
+
 KKD Records
 -----------
 
-Table definitions look to be stored in 'KKD' records (my name for them...they 
-always start with 'KKD\0'). Again these reside on pages, packed to the end of 
-the page. 
+Design View table definitions look to be stored in 'KKD' records (my name for 
+them...they always start with 'KKD\0'). Again these reside on pages, packed to 
+the end of the page. 
 
 They look a little like this: (this needs work...see the kkd.c)
 

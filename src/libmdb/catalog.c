@@ -68,6 +68,7 @@ fprintf(stdout,"\n");
 	entry->object_type = mdb->pg_buf[offset+0x09];
 	j=0;
 	entry->mdb = mdb;
+	entry->table_pg = mdb_get_int16(mdb,offset+1);
 	for (i=offset+31;isprint(mdb->pg_buf[i]);i++) {
 		if (j<=MDB_MAX_OBJ_NAME) {
 			entry->object_name[j++]=mdb->pg_buf[i];
@@ -111,9 +112,10 @@ MdbCatalogEntry *entryp;
 	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
                 entryp = l->data;
 		if (obj_type==-1 || entryp->object_type==obj_type) {
-			fprintf(stdout,"Type: %-15s Name: %-30s KKD pg: %04x row: %2d\n",
+			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x KKD pg: %04x row: %2d\n",
 			mdb_get_objtype_string(entryp->object_type),
 			entryp->object_name,
+			entryp->table_pg,
 			entryp->kkd_pg,
 			entryp->kkd_rowid);
 		}
