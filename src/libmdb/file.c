@@ -112,6 +112,10 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 
 	mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
+#ifdef HAVE_ICONV
+	mdb->iconv_in = (iconv_t)-1;
+	mdb->iconv_out = (iconv_t)-1;
+#endif
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
 	mdb->f = (MdbFile *) g_malloc0(sizeof(MdbFile));
