@@ -67,7 +67,7 @@ int rownum, row_start, row_end;
 	mdb_read_alt_pg(mdb, mdb_get_int24(mdb, fmt->tab_usage_map_offset + 1)); 
 	mdb_swap_pgbuf(mdb);
 	row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
-   row_end = mdb_find_end_of_row(mdb, rownum);
+	row_end = mdb_find_end_of_row(mdb, rownum);
 	table->map_sz = row_end - row_start + 1;
 	table->usage_map = malloc(table->map_sz);
 	memcpy(table->usage_map, &mdb->pg_buf[row_start], table->map_sz);
@@ -80,6 +80,17 @@ int rownum, row_start, row_end;
 	printf ("usage map found on page %ld start %d end %d\n", mdb_get_int24(mdb, fmt->tab_usage_map_offset + 1), row_start, row_end);
 #endif
 
+
+	/* now grab the free space page map */
+	mdb_swap_pgbuf(mdb);
+	rownum = mdb->pg_buf[fmt->tab_free_map_offset];
+	mdb_read_alt_pg(mdb, mdb_get_int24(mdb, fmt->tab_free_map_offset + 1));
+	mdb_swap_pgbuf(mdb);
+	row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
+	row_end = mdb_find_end_of_row(mdb, rownum);
+	table->freemap_sz = row_end - row_start + 1;
+	table->free_usage_map = malloc(table->freemap_sz);
+	memcpy(table->free_usage_map, &mdb->pg_buf[row_start], table->freemap_sz);
 
 	table->first_data_pg = mdb_get_int16(mdb, fmt->tab_first_dpg_offset);
 

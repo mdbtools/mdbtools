@@ -246,8 +246,10 @@
 		  <property name="tooltip" translatable="yes">Execute query</property>
 		  <property name="label">gtk-execute</property>
 		  <property name="use_stock">True</property>
-		  <property name="new_group">True</property>
 		</widget>
+		<packing>
+		  <property name="new_group">True</property>
+		</packing>
 	      </child>
 
 	      <child>
@@ -266,8 +268,10 @@
 		  <property name="tooltip" translatable="yes">Close this window</property>
 		  <property name="label">gtk-close</property>
 		  <property name="use_stock">True</property>
-		  <property name="new_group">True</property>
 		</widget>
+		<packing>
+		  <property name="new_group">True</property>
+		</packing>
 	      </child>
 	    </widget>
 	  </child>

@@ -44,6 +44,22 @@ MdbColumn *col;
 	col=g_ptr_array_index(table->columns, col_num - 1);
 	col->bind_ptr = bind_ptr;
 }
+int
+mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr)
+{
+	int i, col_num = -1;
+	MdbColumn *col;
+	
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!strcmp(col->name,col_name))
+		col_num = col->col_num + 1;
+	}
+
+	mdb_bind_column(table, col_num, bind_ptr);
+
+	return col_num;
+}
 void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr)
 {
 MdbColumn *col;

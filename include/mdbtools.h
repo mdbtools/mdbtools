@@ -179,6 +179,7 @@ typedef struct {
 	guint16		col_size_offset;
 	guint16		col_num_offset;
 	guint16		tab_col_entry_size;
+	guint16         tab_free_map_offset;
 } MdbFormatConstants; 
 
 typedef struct {

@@ -276,6 +276,91 @@ int rows, free_start, free_end;
 #endif
 	return (free_end - free_start + 1);
 }
+unsigned char *
+mdb_new_data_pg(MdbCatalogEntry *entry)
+{
+	MdbHandle *mdb = entry->mdb;
+	unsigned char *new_pg;
+
+	new_pg = (unsigned char *) g_malloc0(mdb->fmt->pg_size);
+		
+	new_pg[0]=0x01;
+	new_pg[1]=0x01;
+	_mdb_put_int32(new_pg, 4, entry->table_pg);
+	
+	return new_pg;
+}
+
+int
+mdb_update_indexes(MdbTableDef *table, int num_fields, MdbField *fields)
+{
+	int i;
+	MdbIndex *idx;
+	
+	for (i=0;i<table->num_idxs;i++) {
+		idx = g_ptr_array_index (table->indices, i);
+#if MDB_DEBUG_WRITE
+		fprintf(stderr,"Updating %s (%d).\n", idx->name, idx->index_type);
+#endif
+	}
+}
+
+int
+mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
+{
+	int new_row_size, num_rows, i, pos, row_start, row_end, row_size;
+	unsigned char row_buffer[4096];
+	MdbCatalogEntry *entry = table->entry;
+	MdbHandle *mdb = entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
+	guint32 pgnum;
+	unsigned char *new_pg;
+
+	if (!mdb->f->writable) {
+		fprintf(stderr, "File is not open for writing\n");
+		return 0;
+	}
+	new_row_size = mdb_pack_row(table, row_buffer, num_fields, fields);
+#if MDB_DEBUG_WRITE
+	buffer_dump(row_buffer, 0, new_row_size-1);
+#endif
+	pgnum = mdb_map_find_next_freepage(table, new_row_size);
+	if (!pgnum) {
+		fprintf(stderr, "Unable to allocate new page.\n");
+		return 0;
+	}
+
+
+	new_pg = mdb_new_data_pg(entry);
+	num_rows = mdb_get_int16(mdb, fmt->row_count_offset);
+	pos = mdb->fmt->pg_size;
+
+	for (i=0;i<num_rows;i++) {
+		row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
+		row_end = mdb_find_end_of_row(mdb, i);
+		row_size = row_end - row_start + 1;
+		pos -= row_size;
+		memcpy(&new_pg[pos], &mdb->pg_buf[row_start], row_size);
+		_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
+	}
+
+	/* add our new row */
+	pos -= new_row_size;
+	memcpy(&new_pg[pos], row_buffer, new_row_size);
+	_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (num_rows*2), pos);
+
+	num_rows++;
+	_mdb_put_int16(new_pg, fmt->row_count_offset, num_rows);
+
+	memcpy(mdb->pg_buf, new_pg, fmt->pg_size);
+	g_free(new_pg);
+#if MDB_DEBUG_WRITE
+	buffer_dump(mdb->pg_buf, 0, 39);
+	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+#endif
+
+	mdb_update_indexes(table, num_fields, fields);
+}
 int 
 mdb_update_row(MdbTableDef *table)
 {
@@ -356,12 +441,7 @@ int i, pos;
 	buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
 	printf("updating row %d on page %lu\n", row, (unsigned long) table->cur_phys_pg);
 #endif
-	new_pg = (unsigned char *) g_malloc0(fmt->pg_size);
-	g_free(new_pg);
-
-	new_pg[0]=0x01;
-	new_pg[1]=0x01;
-	_mdb_put_int32(new_pg, 4, entry->table_pg);
+	new_pg = mdb_new_data_pg(entry);
 
 	num_rows = mdb_get_int16(mdb, fmt->row_count_offset);
 	_mdb_put_int16(new_pg, fmt->row_count_offset, num_rows);
@@ -395,6 +475,8 @@ int i, pos;
 
 	/* almost done, copy page over current */
 	memcpy(mdb->pg_buf, new_pg, fmt->pg_size);
+
+	g_free(new_pg);
 
 	_mdb_put_int16(mdb->pg_buf, 2, mdb_pg_get_freespace(mdb));
 #if MDB_DEBUG_WRITE

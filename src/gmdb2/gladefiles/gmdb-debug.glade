@@ -163,7 +163,6 @@
 	      <child>
 		<widget class="button" id="button4">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Open a new debug window</property>
 		  <property name="label">gtk-new</property>
 		  <property name="use_stock">True</property>
 		  <signal name="clicked" handler="gmdb_debug_new_cb" last_modification_time="Fri, 03 Jan 2003 13:12:52 GMT"/>
@@ -173,19 +172,19 @@
 	      <child>
 		<widget class="button" id="back_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Back</property>
+		  <property name="tooltip" translatable="yes">New File</property>
 		  <property name="label">gtk-go-back</property>
 		  <property name="use_stock">True</property>
-		  <property name="new_group">True</property>
 		</widget>
 		<packing>
+		  <property name="new_group">True</property>
 		</packing>
 	      </child>
 
 	      <child>
 		<widget class="button" id="forward_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Forward</property>
+		  <property name="tooltip" translatable="yes">Open File</property>
 		  <property name="label">gtk-go-forward</property>
 		  <property name="use_stock">True</property>
 		</widget>
@@ -194,7 +193,6 @@
 	      <child>
 		<widget class="button" id="jump_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Jump to selected page</property>
 		  <property name="label">gtk-jump-to</property>
 		  <property name="use_stock">True</property>
 		</widget>
@@ -203,12 +201,12 @@
 	      <child>
 		<widget class="button" id="close_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Close this window</property>
+		  <property name="tooltip" translatable="yes">Save File</property>
 		  <property name="label">gtk-close</property>
 		  <property name="use_stock">True</property>
-		  <property name="new_group">True</property>
 		</widget>
 		<packing>
+		  <property name="new_group">True</property>
 		</packing>
 	      </child>
 	    </widget>

@@ -108,6 +108,7 @@ void
 mdb_free_tabledef(MdbTableDef *table)
 {
 	if (table->usage_map) free(table->usage_map);
+	if (table->free_usage_map) free(table->free_usage_map);
 	if (table) free(table);
 }
 void

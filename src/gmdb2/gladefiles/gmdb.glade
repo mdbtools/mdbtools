@@ -328,9 +328,11 @@
 		  <property name="label" translatable="yes">SQL</property>
 		  <property name="use_underline">True</property>
 		  <property name="stock_pixmap">gtk-execute</property>
-		  <property name="new_group">True</property>
 		  <signal name="clicked" handler="gmdb_sql_new_cb" last_modification_time="Sun, 29 Dec 2002 03:23:01 GMT"/>
 		</widget>
+		<packing>
+		  <property name="new_group">True</property>
+		</packing>
 	      </child>
 
 	      <child>
