@@ -28,21 +28,24 @@ char *mdb_get_coltype_string(int col_type)
 ** its own mapping.
 */
 static char *type_name[] = {"Unknown 0x00",
-                        "Unknown 0x01",
-                        "Unknown 0x02",
+                        "Boolean",
+                        "Byte",
                         "Integer",
                         "Long Integer",
-                        "Unknown 0x05",
-                        "Unknown 0x06",
-                        "Unknown 0x07",
+                        "Currency",
+                        "Single",
+                        "Double",
                         "DateTime (Short)",
                         "Unknown 0x09",
-                        "Varchar",
-                        "Unknown 0x0b"
-                        "Hyperlink"
+                        "Text",
+                        "OLE",
+                        "Memo/Hyperlink",
+                        "Unknown 0x0d",
+                        "Unknown 0x0e",
+			"Replication ID"
                 };
 
-        if (col_type > 11) {
+        if (col_type > 0x0f) {
                 return NULL;
         } else {
                 return type_name[col_type];

@@ -49,11 +49,17 @@ enum {
 };
 enum {
 	MDB_BOOL = 0x01,
+	MDB_BYTE = 0x02,
 	MDB_INT = 0x03,
 	MDB_LONGINT = 0x04,
+	MDB_MONEY = 0x05,
+	MDB_FLOAT = 0x06,
+	MDB_DOUBLE = 0x07,
 	MDB_SDATETIME = 0x08,
 	MDB_TEXT = 0x0a,
-	MDB_HYPERLINK = 0x0c
+	MDB_OLE = 0x0b,
+	MDB_MEMO = 0x0c,
+	MDB_REPID = 0x0f
 };
 
 typedef struct {
@@ -134,6 +140,6 @@ extern char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size
 
 
 /* dump.c */
-void buffer_dump(const char* buf, int start, int end);
+void buffer_dump(const unsigned char* buf, int start, int end);
 
 #endif /* _mdbtools_h_ */
