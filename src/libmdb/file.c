@@ -60,6 +60,8 @@ struct stat status;
 		/* fprintf(stderr,"EOF reached.\n"); */
 		return 0;
 	}
+ 	/* kan - reset the cur_pos on a new page read */
+        mdb->cur_pos = 0; /* kan */
 	return len;
 }
 int mdb_get_int16(MdbHandle *mdb, int offset)

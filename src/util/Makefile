@@ -3,11 +3,12 @@ CC = gcc
 
 INC = -I ../include `glib-config --cflags`
 LIBS = -L ../libmdb -lmdb `glib-config --libs`
-PROGS = prcat prkkd prtable prdata
+PROGS = prcat prkkd prtable prdata prdump
 PRCATOBJS = prcat.o
 PRKKDOBJS = prkkd.o
 PRTABLEOBJS = prtable.o
 PRDATAOBJS = prdata.o
+PRDUMPOBJS = prdump.o
 
 all: $(PROGS)
 
@@ -23,6 +24,9 @@ prtable: $(PRTABLEOBJS)
 prdata: $(PRDATAOBJS)
 	$(CC) -g -o $@ $(PRDATAOBJS) $(LIBS)
 		
+prdump: $(PRDUMPOBJS)
+	$(CC) -g -o $@ $(PRDUMPOBJS) $(LIBS)
+
 clean: 
 	rm -f core *.o $(PROGS)
 
