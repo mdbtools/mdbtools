@@ -112,22 +112,22 @@ MdbBackendType mdb_postgres_types[] = {
 };
 /*    MySQL data types */
 MdbBackendType mdb_mysql_types[] = {
-        {"Mysql_Unknown 0x00",0,0,0},
-		{"bit",0,0,0},
-		{"char",1,0,1},
-		{"smallint",0,0,0},
+        {"Text",1,0,1},
+		{"char",0,0,0},
 		{"int",0,0,0},
-		{"money",0,0,0},
-		{"real",0,0,0},
+		{"int",0,0,0},
+		{"int",0,0,0},
 		{"float",0,0,0},
-		{"smalldatetime",0,0,0},
-		{"Mysql_Unknown 0x09",0,0,0},
+		{"float",0,0,0},
+		{"float",0,0,0},
+		{"date",0,0,1},
 		{"varchar",1,0,1},
-		{"varbinary",1,0,1},
+		{"varchar",1,0,1},
+		{"varchar",1,0,1},
 		{"text",1,0,1},
-		{"Mysql_Unknown 0x0d",0,0,0},
-		{"Mysql_Unknown 0x0e",0,0,0},
-  		{"Mysql_Unknown 0x0f",0,0,0},
+		{"blob",0,0,0},
+		{"text",1,0,1},
+  		{"numeric",1,1,0},
 		{"numeric",1,1,0},
 };
 
@@ -181,6 +181,10 @@ MdbBackend *backend;
 	backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
 	backend->types_table = mdb_postgres_types;
 	mdb_register_backend(backend, "postgres");
+
+	backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
+	backend->types_table = mdb_mysql_types;
+	mdb_register_backend(backend, "mysql");
 }
 void mdb_register_backend(MdbBackend *backend, char *backend_name)
 {

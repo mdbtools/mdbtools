@@ -19,8 +19,8 @@ libmdb:
   ones should be static.
 . Create an API reference for libmdb (maybe some man pages).
 . Sargs need to support all datatypes
-. Need a way to express logical relationships between sargs (tree)
-. Add support for index scanning when using sargs
+. Need a way to express logical relationships between sargs (done)
+. Add support for index scanning when using sargs (partial)
 . Use allocation maps to read tables, should be more efficient (done)
 . write support
 
@@ -35,17 +35,17 @@ SQL Engine:
 
 . SQL Engine does not handle uppercase keywords (done)
 . Joins
-. OR clauses using sarg trees from above
+. OR clauses using sarg trees from above (done)
 . insert/updates
 . bogus column name in where clause not caught
 . const = const type operations not working (e.g. WHERE 0=1)
-. list tables/describe table shouldn't directly write to stdout
+. list tables/describe table shouldn't directly write to stdout (done, but will blow up on big tables)
 
 ODBC:
 
 . Figure out why we get unresolved symbols when ODBC driver load by DM (iODBC 
   only?)
-. Boolean not working
+. Boolean not working (done)
 . many unimplemented funtions
 
 GMDB:

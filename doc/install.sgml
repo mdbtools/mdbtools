@@ -2,8 +2,8 @@
 ]>
 <book>
 	<bookinfo>
-		<date>$Date: 2003/01/15 15:16:53 $</date>
-		<releaseinfo>$Revision: 1.2 $</releaseinfo>
+		<date>$Date: 2004/02/08 18:41:07 $</date>
+		<releaseinfo>$Revision: 1.3 $</releaseinfo>
 		<title><productname>MDB Tools</productname> Installation Guide</title>
 		<subtitle>A Guide to Installing and  Configuring <productname>MDB Tools</productname></subtitle>
 		<author>
@@ -34,9 +34,9 @@ This guide is intended to provide help with installing and configuring the <prod
 			<para>
 A few technical notes.  This guide is written in SGML DocBook format, specifications for which are found in the <ulink url="http://www.docbook.org/tdg/en/html/docbook.html">DocBook book</ulink>.  It was converted to HTML with <ulink url="http://openjade.sourceforge.net">OpenJade</ulink>.  
 The document you are reading is version 
-$Revision: 1.2 $
+$Revision: 1.3 $
 , dated 
-$Date: 2003/01/15 15:16:53 $ (CVS control number $Id: install.sgml,v 1.2 2003/01/15 15:16:53 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
+$Date: 2004/02/08 18:41:07 $ (CVS control number $Id: install.sgml,v 1.3 2004/02/08 18:41:07 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
 <ulink url="http://mdbtools.sourceforge.net/userguide/">web site</ulink>.
 			</para>
 	</preface>
@@ -145,7 +145,7 @@ For information on how to use gmdb2, see the manual under the Help menu.
 	<chapter id="requirements">
 		<title>Requirements</title>
 		<para>
-<productname>MDB Tools</productname> like any most packages has some requirements for libraries and such on your system.  Most of them are optional and will turn off certain features if not present.
+<productname>MDB Tools</productname> like most packages has some requirements for libraries and such on your system.  Most of them are optional and will turn off certain features if not present.
 		</para>
 		<sect1 id="reqtable">
 		<title>Requirements Matrix</title>

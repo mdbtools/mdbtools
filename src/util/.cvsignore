@@ -11,6 +11,7 @@ mdb-sql
 mdb-tables
 mdb-ver
 mdb-check
+mdb-prop
 prcat
 prdata
 prdump
