@@ -120,6 +120,7 @@ typedef struct {
 	guint16		tab_num_cols_offset;
 	guint16		tab_num_idxs_offset;
 	guint16		tab_num_ridxs_offset;
+	guint16		tab_usage_map_offset;
 	guint16		tab_first_dpg_offset;
 	guint16		tab_cols_start_offset;
 	guint16		tab_ridx_entry_size;
