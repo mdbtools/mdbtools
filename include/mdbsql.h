@@ -13,8 +13,6 @@ typedef struct {
 	GPtrArray *columns;
 	int num_tables;
 	GPtrArray *tables;
-	//int num_sargs;
-	//GPtrArray *sargs;
 	MdbTableDef *cur_table;
 	MdbSargNode *sarg_tree;
 	GList *sarg_stack;

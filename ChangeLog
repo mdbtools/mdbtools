@@ -12,6 +12,7 @@ Sun Feb  8 13:02:56 EST 2004	Brian Bruns <brian@bruns.com>
 	* src/sql/parser.y: 
 	* src/sql/mdbsql.c: added mdb_sql_eval_expr() to support 0=1 literal comparison
 	* src/libmdb/sargs.c: check for null node->col (literal comparision)
+	* src/sql/Makefile.am: change hardcoded bison reference to @YACC@
 
 Fri Feb  6 18:08:59 EST 2004	Brian Bruns <brian@bruns.com>
 
