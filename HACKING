@@ -1,158 +1,295 @@
-Ok, this is a brain-dump of everything I've learned about MDB files.  I'm am 
-using Access 97, so everything I say applies to that and maybe or maybe not 
-other versions.
+This file documents the Microsoft MDB file format for Jet3 and Jet4 databases.
 
-Right, so here goes:
+General Notes
+-------------
 
-Note: It appears that much of the data in the pages is unitialized garbage.
-This makes the task of figuring out the format a bit more challenging.
+Access (Jet) does not in general initialize pages to zero before writing them,
+so the file will contains a lot of unititialized data.  This makes the task of
+figuring out the format a bit more difficult than it otherwise would be.
+
+This document will, generally speaking, provide all offsets and constants in 
+hex format.  
+
+Most multibyte pointer and integers are stored in little endian (LSB-MSB) order.
+There is an exception in the case of indexes, see the section on index pages for
+details.
+
+Terminology
+-----------
+
+This section contains a mix of information about data structures used in the MDB
+file format along with general database terminology needed to explain these 
+structures.
+
+Page          - A fixed size region within the file on a 2 or 4K boundry. All 
+                data in the file exists inside pages.
+Catalog Table - Tables in Access generally starting with "MSys".  See the TDEF
+                (table definition) pages for "System Table" field.
+Catalog Entry - A row from the MSysObjects table describing another database
+                object.  The MSysObjects table definition page is always at 
+                page 2 of the database, and a phony tdef structure is
+                bootstrapped to initially read the database.
+Page Split    - A process in which a row is added to a page with no space left.
+                A second page is allocated and rows on the original page are 
+		split between the two pages and then indexes are updated. Pages
+                can use a variety of algorithms for splitting the rows, the 
+                most popular being a 50/50 split in which rows are divided 
+                evenly between pages.
+Overflow Page - Instead of doing a full page split with associated index writes,
+                a pointer to an "overflow" page can be stored at the original
+                row's location. Compacting a database would normally rewrite
+                overflow pages back into regular pages.
+Leaf Page     - The lowest page on an index tree.  In Access, leaf pages are of
+                a different type than other index pages.
+UCS-2         - a two byte unicode encoding used in Jet4 files.
+Covered Query - a query that can be satisfied by reading only index pages.  For
+                instance if the query 
+		"SELECT count(*) from Table1 where Column3 = 4" were run and 
+                Column3 was indexed, the query could be satisfied by reading
+                only indexes.  Because of the way Access hashes text columns
+                in indexes, covered queries on text columns are not possible.
 
 Pages
 -----
 
-MDB files are a set of pages.  These pages are 2K (2048 bytes) in size, so in a
-hex dump of the data they start on addreeses like xxx000 and xxx800.  Access 
-2000 has increased the page size to 4K and thus pages would appear on hex
-addresses ending in xxx000.
+At it's topmost level MDB files are organized into a series of fixed sized 
+pages.  These are 2K in size for Jet3 (Access 97) and 4K for Jet4 (Access 
+2000/2002).  All data in MDB files exists within pages, of which there are 
+a number of types.
 
-Each page is known by a page_id of 3 bytes (max value is 0x07FFFF). 
-The start address of a page is at page_id * 0x800.
-So the maximum of data storage for Access97 database is near 
-0x080000 * 0x800 = 0x40000000 bytes (1 Go)
+The first byte of each page idenitifies the page type as follows.
 
-We have two different structures which use page_id :
-
-1) Data pointer structure (_dp):
-+------+---------+-------------+------------------------------------------+
-| data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
-| ???? | 1 byte  | row_id      | The row id in the data page              |
-| ???? | 3 bytes | page_id     | Max value is 0x07FFFF                    |
-+-------------------------------------------------------------------------+
-
-2) Page pointer structure (_pg):
-+------+---------+-------------+------------------------------------------+
-| data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
-| ???? | 3 bytes | page_id     | Max value is 0x07FFFF                    |
-| ???? | 1 byte  | flags       | If not null, indicate a system object.   |
-+-------------------------------------------------------------------------+
-
-The first byte of each page seems to be a type identifier, for instance, the 
-first page in the mdb file is 0x00, which no other page seems to share.  Other
-pages have the following values:
-
-0x00 Database definition page.  (Page 0)
+0x00 Database definition page.  (Always page 0)
 0x01 Data page
 0x02 Table definition
-0x03 Index pages
-0x04 Index pages (Leaf nodes?)
+0x03 Intermediate Index pages
+0x04 Leaf Index pages 
 0x05 Page Usage Bitmaps (extended page usage)
 
-The second byte is always 0x01 as far as I can tell.
+Database Definition Page
+------------------------
 
-At some point in the file the page layout is apparently abandoned though the 
-very last 2K in the file again looks like a valid page.  The purpose of this
-non-paged region is so far unknown. Could be a corrupt db as well.  My current 
-thinking is that this area is unallocated pages based on the GAM (global 
-allocation map stored on page 0x01).
+Each MDB database has a single definition page located at beginning of the file.
+Not a lot is known about this page, and it is one of the least documented page
+types.  However, it contains things like Jet version, encryption keys, and name
+of the creating program.
 
-Bytes after the first and second seemed to depend on the type of page, although bytes 4-7 are pages pointers that refer to the parent (data pages) or a continuation page (table definition). 
+Offset 0x14 contains the Jet version of this database 0x00 for 3, 0x01 for 4
+This is used by the mdb-ver utility to determine the Jet version.
 
-Pages seem to have two parts, a header and a data portion.  The header starts 
-at the front of the page and builds up.  The data is packed to the end of the 
-page.  This means the last byte of the data portion is the last byte of the 
-page.
-
-Byte Order
+Data Pages
 ----------
 
-All offsets to data within the file are in little endian (intel) order
+All data rows are stored in type 0x01 pages.  
 
-Catalogs
---------
+The header of a Jet3 data page looks like this:
 
-Note: This section was written fairly early in the process of determining the file
-format.  It is now understood that the catalog pages are data for the MSysObjects
-system table (with a table definition starting at page 2).  The rest of this 
-section is presented for the understanding of the current code until it may be 
-replaced by a more proper implementation.
++--------------------------------------------------------------------------+
+| Jet3 Data Page Definition                                                |
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| 0x01 | 1 byte  | page_type  | 0x01 indicates a data page.                |
+| 0x01 | 1 byte  | unknown    |                                            |
+| ???? | 2 bytes | free_space | Free space in this page                    |
+| ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
+| ???? | 4 bytes | num_rows   | number of records on this page             |
++------+---------+---------------------------------------------------------+
+| Iterate for the number of records                                        |
++--------------------------------------------------------------------------+
+| ???? | 2 bytes | offset_row | The records location on this page          |
++--------------------------------------------------------------------------+
 
+In Jet4, an additional four byte field was added.  It's purpose is currently
+unknown.
 
-So far the first page of the catalog has always been seen at 0x9000 bytes into
-the file.  It is unclear whether this is always where it occurs, or whether a 
-pointer to this location exists elsewhere.
++--------------------------------------------------------------------------+
+| Jet4 Data Page Definition                                                |
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| 0x01 | 1 byte  | page_type  | 0x01 indicates a data page.                |
+| 0x01 | 1 byte  | unknown    |                                            |
+| ???? | 2 bytes | free_space | Free space in this page                    |
+| ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
+| ???? | 4 bytes | unknown    | Unknown                                    |
+| ???? | 4 bytes | num_rows   | number of records on this page             |
++------+---------+---------------------------------------------------------+
+| Iterate for the number of records                                        |
++--------------------------------------------------------------------------+
+| ???? | 2 bytes | offset_row | The records location on this page          |
++--------------------------------------------------------------------------+
 
-The header to the catalog page(s) start look something like this:
+Notes for offset_row:
+- Offsets that have 0x40 in the high order byte point to a location within
+  the page where a Data Pointer (4 bytes) to another data page is stored.  Also
+  know as an overflow page.
+- Offsets that have 0x80 in the high order byte are deleted rows.
+ (These flags are delflag and lookupflag in source code)
 
-+------+---------+--------------------------------------------------------+
-| 0x01 | 1 byte  | Page type                                              |
-| 0x01 | 1 byte  | Unknown                                                |
-| ???? | 2 bytes | A pointer of unknown use into the page                 |
-| 0x02 | 1 byte  | Unknown                                                |
-| 0x00 | 3 bytes | Possibly part of a 32 bit int including the 0x02 above |
-| ???? | 2 bytes | a 16bit int of the number of records on this page      |
+Rows are stored from the end of the page to the top of the page.  So, the first
+row stored runs from bytes offset_row to page_size - 1.  The next row runs from
+its offset to the previous row's offset, and so on.
+
+Decoding a row requires knowing the number and types of columns from its TDEF
+page. Decoding is handled by the routine mdb_crack_row().
+
+The Jet3 row format is:
+
++--------------------------------------------------------------------------+
+| Jet3 Row Definition                                                      |
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| ???? | 1 byte  | num_cols   | Number of columns stored on this row.      |
+| ???? | n bytes | fixed_cols | Fixed length columns                       |
+| ???? | n bytes | var_cols   | Variable length columns                    |
+| ???? | 1 byte  | eod        | length of data from begining of record     |
+| ???? | n bytes | var_table[]| offset from start of row for each var_col  |
+| ???? | 1 byte  | var_len    | number of variable length columns          |
+| ???? | n bytes | jump_table | number of variable length columns          |
+| ???? | n bytes | null_mask  | Null indicator. size is 1 byte per 8 cols  |
+|      |         |            | 0 indicates a null value.  Also used to    |
+|      |         |            | represent value of boolean type columns    |
++--------------------------------------------------------------------------+
+
+Notes:
+
+. A row will always have the number of fixed columns as specified in the table 
+  definition, but may have less variable columns, as rows are not updated when
+  columns are added.
+. All fixed length columns are stored first to last, followed by variable length
+  columns.
+. The size of the null table is computed by (num_cols - 1)/8 + 1
+. Fixed columns can be null (unlike some other databases).
+. The var_len field indicates the size of the var_table[].
+. The eod field points at the last byte of the var_cols field.  It is used to
+  determine where the last var_col ends.
+. For boolean fixed columns, the values are in null_table[]: 0 indicates a false  value, 1 indicates a true value
+. An 0xFF stored in the var_table indicates that this column has been deleted.
+
+In Jet3 offsets are stored as 1 byte fields yielding a maximum of 256 bytes.  To
+get around this offsets are computed using a jump table.  The jump table stores the number of the first column in this jump segment.  If the size of the data is
+less than 256 then no jump table will be present.
+
+For example if the row contains 45 columns and the offset of the 14th column is 
+more than 256 then the first entry in the jump table will be 0xe (14).  If the 
+23rd column is the first one at offset > 512 the second entry of the jump table
+would be 0x17 (23) and so on.
+ 
++--------------------------------------------------------------------------+
+| Jet4 Row Definition                                                      |
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| ???? | 2 bytes | num_cols   | Number of columns stored on this row.      |
+| ???? | n bytes | fixed_cols | Fixed length columns                       |
+| ???? | n bytes | var_cols   | Variable length columns                    |
+| ???? | 2 bytes | eod        | length of data from begining of record     |
+| ???? | n bytes | var_table[]| offset from start of row for each var_col  |
+| ???? | 2 bytes | var_len    | number of variable length columns          |
+| ???? | n bytes | null_mask  | Null indicator. size is 1 byte per 8 cols  |
+|      |         |            | 0 indicates a null value.  Also used to    |
+|      |         |            | represent value of bit type columns        |
++--------------------------------------------------------------------------+
+
+Notes:
+
+. All offsets are stored as 2 byte fields including the var_table entries.
+. the jump table was (thankfully) ditched in Jet4.
+
+Each memo column (or other long binary data) in a row
+
++-------------------------------------------------------------------------+
+| Memo Field Definition (12 bytes)
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 2 bytes | memo_len    | Total length of the memo                 |
+| ???? | 2 bytes | bitmask     | See values                               |
+| ???? | 4 bytes | lval_dp     | Data pointer to LVAL page (if needed)    |
+| 0x00 | 4 bytes | unknown     |                                          |
++------+---------+-------------+------------------------------------------+
+Values for the bitmask:
+
+0x8000= the memo is in a string at the end of this header (memo_len bytes)
+0x4000= the memo is in a unique LVAL page in a record type 1
+0x0000= the memo is in n LVAL pages in a record type 2
+
+If the memo is in a LVAL page, we use row_id of lval_dp to find the row.
+offset_start of memo = (int16*) LVAL_page[ 10 + row_id * 2]
+if (rowid=0)
+     offset_stop  of memo = 2048
+else
+     offset_stop  of memo = (int16*) LVAL_page[ 10 + row_id * 2 - 2]
+
+The length (partial if type 2) for the memo is:
+memo_page_len = offset_stop - offset_start
+
+LVAL Pages
+----------
+(LVAL Page are particular data pages for long data storages )
+
+The header of a LVAL page looks like this (10 bytes) :
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| 0x01 | 1 bytes | page_type   | 0x01 indicate a data page                |
+| 0x01 | 1 bytes | unknown     |                                          |
+| ???? | 2 bytes | free_space  | The free space in this page              |
+| LVAL | 4 bytes | lval_id     | The word  'LVAL'                         |
+| ???? | 2 bytes | num_rows    | Number of rows in this page              |
 +-------------------------------------------------------------------------+
 | Iterate for the number of records                                       |
 +-------------------------------------------------------------------------+
-| ???? | 2 bytes | offset to the records location on this page            |
+| ???? | 2 bytes | row_offset  | to the records location on this page     |
 +-------------------------------------------------------------------------+
 
-The rest of the data is packed to the end of the page, such that the last 
-record ends on byte 2047 (0 based). 
+Each memo record type 1 looks like this:
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | n bytes | memo_value  | A string which is the memo               |
++-------------------------------------------------------------------------+
 
-Some of the offsets are not within the bounds of the page.  The reason for this
-is not presently understood and the current code discards them silently.
-Offsets that have 0x40 in the high order byte point to a location within the 
-page where a pointer to another catalog page is stored. This does not seem to 
-yield a complete chain of catalog pages and is currently being ignored in favor 
-of a brute force read of the entire database for catalog pages.
+Each memo record type 2 looks like this:
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 4 bytes | lval_dp     | Next page LVAL type 2 if memo is too long|
+| ???? | n bytes | memo_value  | A string which is the memo (partial)     |
++-------------------------------------------------------------------------+
 
-Little is understood of the meaning of the bytes that make up the records.  They
-vary in size, but portion prior to the objects name seems to be fixed.  All 
-records start with a '0x11'. The next two bytes are a page number to the column definitions. (see Column Definition).
+In a LVAL type 2 data page, you have 
+   10 or 12 bytes for the header of the data page, 
+    2 bytes for an offset,
+    4 bytes for the next lval_pg
 
-Byte offset 9 from the beginning of the record contains its type.  Here is a
-table of known types:
-
-0x00 Form
-0x01 User Table
-0x02 Macro
-0x03 System Table
-0x04 Report
-0x05 Query
-0x06 Linked Table
-0x07 Module
-0x0b Unknown but used for two objects (AccessLayout and UserDefined)
-
-Byte offset 31 from the begining of the record starts the object's name.  I am
-not presently aware of any field defining the length of the name, so the present
-course of action has been to stop at the first non-printable character 
-(generally a 0x03 or 0x02)
-
-After the name there is sometimes have (not yet determined why only sometimes) 
-a page pointer and offset to the KKD records (see below).  There is also pointer to other catalog pages, but I'm not really sure how to parse those.
+So there is  a bloc of 2048 - (10+2+4) = 2032(jet3) 
+or 4096 - (12+2+4)  = 4078(jet4) bytes max in a page.
 
 TDEF Pages (Table Definition)
 -----------------------------
-A table definition, includes name, type, size, number of datarows, a pointer 
-to the first data page, and possibly more.  
 
-The header of each Tdef page looks like this (8 bytes) :
+Every table in the database has a TDEF page.  It contains a definition of the columns, types, sizes, indexes, and similar information.
+
++-------------------------------------------------------------------------+
+| Jet3/Jet4 TDEF Header
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
 | 0x02 | 1 bytes | page_type   | 0x02 indicate a tabledef page            |
 | 0x01 | 1 bytes | unknown     |                                          |
-| 'VC' | 2 bytes | tdef_id     | The word 'VC'                            |
+| 'VC' | 2 bytes | tdef_id     | The word 'VC' (Jet3 only, Jet4 unknown)  |
 | 0x00 | 4 bytes | next_pg     | Next tdef page pointer (0 if none)       |
 +------+---------+-------------+------------------------------------------+
 
-Note: The tabledef can be very long, so it can take many TDEF pages linked
-with the next_pg pointer.
+TDEFs can span multiple pages for large tables, this is accomplished using the
+next_pg field.
+
 
 +-------------------------------------------------------------------------+
-| Table definition bloc (35 bytes)                                        |
+| Jet3 Table Definition Block (35 bytes)                                  |
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
@@ -161,14 +298,14 @@ with the next_pg pointer.
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
 | 0x4e | 1 byte  | table_type  | 0x53: user table, 0x4e: system table     |
-| ???? | 2 bytes | num_real_col| Number of columns in table (not always)  |
+| ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
 | ???? | 4 bytes | num_idx     | Number of indexes in table               |
 | ???? | 4 bytes | num_real_idx| Number of indexes in table (repeat)      |
 | ???? | 4 bytes | used_pages  | Points to a record containing the        |
 |      |         |             | usage bitmask for this table.            |
-| ???? | 4 bytes |             | Points to a similar record as above,     |
+| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
 |      |         |             | listing pages which contain free space.  |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_real_idx (8 bytes per idxs)               |
@@ -221,6 +358,89 @@ with the next_pg pointer.
 | ???? | n bytes | ???         |                                          |
 | 0xFF | 2 bytes | ???         | End of the tableDef  ?                   |
 +-------------------------------------------------------------------------+
+
++-------------------------------------------------------------------------+
+| Jet4 Table Definition Block (55 bytes)                                  |
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 4 bytes | tdef_len    | Length of the data for this page         |
+| ???? | 4 bytes | unknown     | unknown                                  |
+| ???? | 4 bytes | num_rows    | Number of records in this table          |
+| 0x00 | 4 bytes | autonumber  | value for the next value of the          |
+|      |         |             | autonumber column, if any. 0 otherwise   |
+| ???? |16 bytes | unknown     | unknown                                  |
+| 0x4e | 1 byte  | table_type  | 0x53: user table, 0x4e: system table     |
+| ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
+| ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
+| ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
+| ???? | 4 bytes | num_idx     | Number of indexes in table               |
+| ???? | 4 bytes | num_real_idx| Number of indexes in table (repeat)      |
+| ???? | 4 bytes | used_pages  | Points to a record containing the        |
+|      |         |             | usage bitmask for this table.            |
+| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
+|      |         |             | listing pages which contain free space.  |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx (12 bytes per idxs)               |
++-------------------------------------------------------------------------+
+| 0x00 | 4 bytes | ???         |                                          |
+| ???? | 4 bytes | num_idx_rows| (not sure)                               |
+| 0x00 | 4 bytes | ???         |                                          |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_cols (25 bytes per column)                |
++-------------------------------------------------------------------------+
+| ???? | 1 byte  | col_type    | Column Type (see table below)            |
+| ???? | 4 bytes | unknown     | matches first unknown definition block   |
+| ???? | 2 bytes | col_num     | Column Number                            |
+| ???? | 2 bytes | offset_V    | Offset for variable length columns       |
+| ???? | 2 bytes | col_num     | Column Number (repeat)                   |
+| ???? | 4 bytes | ???         |                                          |
+| ???? | 1 byte  | bitmask     | low order bit indicates variable columns |
+| ???? | 1 byte  | ???         | seems to be 1 when variable len          |
+| 0000 | 4 bytes | ???         |                                          |
+| ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
+| ???? | 2 bytes | col_len     | Length of the column (0 if memo)         |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_cols (n*2 bytes per column)               |
++-------------------------------------------------------------------------+
+| ???? | 2 bytes | col_name_len| len of the name of the column            |
+| ???? | n bytes | col_name    | Name of the column (UCS-2 format)        |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx (30+9 = 39 bytes)                |
++-------------------------------------------------------------------------+
+| ???? | 4 bytes | ???         |                                          |
++-------------------------------------------------------------------------+
+|    Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
++-------------------------------------------------------------------------+
+| ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
+| ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
++-------------------------------------------------------------------------+
+| ???? | 4 bytes | unknown     |                                          |
+| ???? | 4 bytes | first_dp    | Data pointer of the index page           |
+| ???? | 1 byte  | flags       | See flags table for indexes              |
+| ???? | 9 bytes | unknown     |                                          |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx (27 bytes)                       |
++-------------------------------------------------------------------------+
+| ???? | 4 bytes | unknown     | matches first unknown definition block   |
+| ???? | 4 bytes | index_num   | Number of the index                      |
+|      |         |             |(warn: not always in the sequential order)|
+| ???? | 4 bytes | index_num2  | Number of the index (repeat)             |
+| 0xFF | 4 bytes | ???         |                                          |
+| 0x00 | 4 bytes | ???         |                                          |
+| 0x04 | 2 bytes | ???         |                                          |
+| ???? | 1 byte  | primary_key | 0x01 if this index is primary            |
+| ???? | 4 bytes | unknown     |                                          |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx                                  |
++-------------------------------------------------------------------------+
+| ???? | 2 bytes | idx_name_len| len of the name of the index             |
+| ???? | n bytes | idx_name    | Name of the index (UCS-2)                |
++-------------------------------------------------------------------------+
+| ???? | n bytes | ???         |                                          |
+| 0xFF | 2 bytes | ???         | End of the tableDef  ?                   |
++-------------------------------------------------------------------------+
+
 Index flags (not complete):
 0x01 Unique     
 0x02 IgnoreNuls
@@ -244,34 +464,26 @@ Column Type may be one of the following (not complete):
     UNKNOWN_0D      = 0x0D
     REPID           = 0x0F /* GUID */
 
-Note: this is where my stuff didn't mesh with Yves Maingoy's who reworked the section above.
 
-(start old stuff)
-Following the 18 byte column records begins the column names, listed in order
-with a 1 byte size prefix preceding each name.
 
-After this are a series of 39 byte fields for each index.  At offset 34 is a 4 byte page number where the index lives.
+Page Usage Maps
+---------------
 
-Beyond this are a series of 20 byte fields for each 'index entry'.  There may be more entrys than indexes and byte 20 represents its type (0x00 for normal index, 0x01 for Primary Key, and 0x02 otherwise).
+There are three uses for the page usage bitmaps.  There is a global page usage 
+stored on page 1 which tracks allocated pages throughout the database.  
 
-It is currently unknown how indexes are mapped to columns or the format of the index pages.
-(end old stuff)
+Tables store two page usage bitmaps.  One is straight map of which pages are 
+owned by the table.  The second is a map of the pages owned by the table which 
+have free space on them (used for inserting data).
 
-Page Usage Map
---------------
-
-The purpose of the page usage bitmap (called object allocation map (OAM) by 
-SQL Server, not sure what the official terminology is for Access) is to store 
-a bitmap of page allocations for a table.  This determines quickly which pages 
-are owned by the table and helps speed up access to the data.
-
-The table definition contains a data pointer to a usage bitmap of pages 
-allocated to this table.  It appears to be of a fixed size for both Jet 3 
-and 4 (128 and 64 bytes respectively).  The first byte of the map is a type 
+The table bitmaps appear to be of a fixed size for both Jet 3
+and 4 (128 and 64 bytes respectively).  The first byte of the map is a type
 field.
 
 Type 0 page usage map definition follows:
- 
+
++--------------------------------------------------------------------------+
+| Type 0 Page Usage Map                                                    |
 +------+---------+---------------------------------------------------------+
 | data | length  | name       | description                                |
 +------+---------+---------------------------------------------------------+
@@ -285,8 +497,14 @@ Type 0 page usage map definition follows:
 |      |         |            | Pages are stored from msb to lsb.          |
 +--------------------------------------------------------------------------+
 
-If you're paying attention then you'll realize that the relatively small size of the map (128*8*2048 or 64*8*4096 = 2 Meg) means that this scheme won't work with larger database files although the initial start page helps a bit.  To overcome this there is a second page usage map scheme with the map_type of 0x01 as follows:
+If you're paying attention then you'll realize that the relatively small size of
+the map (128*8*2048 or 64*8*4096 = 2 Meg) means that this scheme won't work with
+larger database files although the initial start page helps a bit.  To overcome
+this there is a second page usage map scheme with the map_type of 0x01 as 
+follows:
 
++--------------------------------------------------------------------------+
+| Type 1 Page Usage Map                                                    |
 +------+---------+---------------------------------------------------------+
 | data | length  | name       | description                                |
 +------+---------+---------------------------------------------------------+
@@ -299,6 +517,8 @@ If you're paying attention then you'll realize that the relatively small size of
 
 Note that the intial start page is gone and is reused for the first page indirection.  The 0x05 type page header looks like:
 
++--------------------------------------------------------------------------+
+| Usage Map Page (type 0x05)                                               |
 +------+---------+---------------------------------------------------------+
 | data | length  | name       | description                                |
 +------+---------+---------------------------------------------------------+
@@ -307,159 +527,22 @@ Note that the intial start page is gone and is reused for the first page indirec
 | 0x00 | 2 bytes | unknown    |                                            |
 +------+---------+---------------------------------------------------------+
 
-The rest of the page is the allocation bitmap following the same scheme (lsb 
-to msb order, 1 bit per page) as a type 0 map.  This yields a maximum of 
-2044*8=16352 (jet3) or 4092*8 = 32736 (jet4) pages mapped per type 0x05 page. 
-Given 128/4+1 = 33 or 64/4+1 = 17 page pointers per indirection row (remember 
-the start page field is reused, thus the +1), this yields 33*16352*2048 = 1053 
-Meg (jet3) or 17*32736*4096 = 2173 Meg (jet4) or enough to cover the maximum 
-size of each of the database formats comfortably, so there is no reason to 
+The rest of the page is the allocation bitmap following the same scheme (lsb
+to msb order, 1 bit per page) as a type 0 map.  This yields a maximum of
+2044*8=16352 (jet3) or 4092*8 = 32736 (jet4) pages mapped per type 0x05 page.
+Given 128/4+1 = 33 or 64/4+1 = 17 page pointers per indirection row (remember
+the start page field is reused, thus the +1), this yields 33*16352*2048 = 1053
+Meg (jet3) or 17*32736*4096 = 2173 Meg (jet4) or enough to cover the maximum
+size of each of the database formats comfortably, so there is no reason to
 believe any other page map schemes exist.
-
-Data Pages
-----------
-
-The header of a data page looks like this:
-
-+------+---------+---------------------------------------------------------+
-| data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
-| 0x01 | 1 byte  | page_type  | 0x01 indicates a data page.                |
-| 0x01 | 1 byte  | unknown    |                                            |
-| ???? | 2 bytes | free_space | Free space in this page                    |
-| ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
-| ???? | 4 bytes | num_rows   | number of records on this page             |
-+------+---------+---------------------------------------------------------+
-| Iterate for the number of records                                        |
-+--------------------------------------------------------------------------+
-| ???? | 2 bytes | offset_row | The records location on this page          |
-+--------------------------------------------------------------------------+
-
-Notes for offset_row:
-- Offsets that have 0x40 in the high order byte point to a location within 
-  the page where a Data Pointer (4 bytes) to another data page is stored.
-- Offsets that have 0x80 in the high order byte are deleted rows.
- (These flags are delflag and lookupflag in source code)
-
-
-Each data row looks like this (JET3):
-
-+------+---------+----------------------------------------------------------+
-| data | length  | name        | description                                |
-+------+---------+----------------------------------------------------------+
-| ???? | 1 byte  | num_cols    | Number of columns stored in this row       |
-| ???? | n bytes |             | Fixed length columns                       |
-| ???? | n bytes |             | Variable length columns                    |
-| ???? | 1 byte  | fixed_len   | length of data from beginning of record    |
-| ???? | n bytes | var_table[] | offset from start of row for each variable |
-|      |         |             | length column                              |
-| ???? | 1 byte  | var_len     | number of variable length columns          |
-| ???? | n bytes | null_table[]| Null indicator. size is 1 byte per 8 cols. |
-|      |         |             | 0 indicates a null value.                  |
-+------+---------+----------------------------------------------------------+
-
-Note: For boolean fixed columns, the values are in null_table[]:
-0 indicates a false value
-1 indicates a true value
-
-An 0xFF stored in the var_table indicates that this column has been deleted.
-
-Note: A row will always have the number of fixed columns as specified in the table definition, but may have less variable columns, as rows are not updated when columns are added.
-
-In Access 2000 (JET4) data rows are like this
-
-+------+---------+----------------------------------------------------------+
-| data | length  | name        | description                                |
-+------+---------+----------------------------------------------------------+
-| ???? | 2 bytes | num_cols    | Number of columns stored in this row       |
-| ???? | n bytes |             | Fixed length columns                       |
-| ???? | n bytes |             | Variable length columns                    |
-| ???? | 2 bytes | fixed_len   | length of data from beginning of record    |
-| ???? | n bytes | var_table[] | offset from start of row for each variable |
-|      |         |             | length column. (2 bytes per var column)    |
-| ???? | 2 bytes | var_len     | number of variable length columns          |
-| ???? | n bytes | null_table[]| Null indicator. size is 1 byte per 8 cols. |
-|      |         |             | 0 indicates a null value.                  |
-+------+---------+----------------------------------------------------------+
-
-Note: it is possible for the offset to the beginning of a variable length 
-column to require more than one byte (if the sum of the lengths of columns is
-greater than 255).  I have no idea how this is represented in the data as I
-have not looked at tables large enough for this to occur yet. 
-Update: This is currently implemented using a jump counter for Jet 3 files, see
-src/libmdb/data.c for details. 
-
-Each memo column (or other long binary data) in a row 
-looks like this (12 bytes):
-+------+---------+-------------+------------------------------------------+
-| data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
-| ???? | 2 bytes | memo_len    | Total length of the memo                 |
-| ???? | 2 bytes | bitmask     | See values                               |
-| ???? | 4 bytes | lval_dp     | Data pointer to LVAL page (if needed)    |
-| 0x00 | 4 bytes | unknown     |                                          |
-+------+---------+-------------+------------------------------------------+
-Values for the bitmask:
-
-0x8000= the memo is in a string at the end of this header (memo_len bytes)
-0x4000= the memo is in a unique LVAL page in a record type 1
-0x0000= the memo is in n LVAL pages in a record type 2
-
-If the memo is in a LVAL page, we use row_id of lval_dp to find the row.
-offset_start of memo = (int16*) LVAL_page[ 10 + row_id * 2]
-if (rowid=0) 
-     offset_stop  of memo = 2048
-else
-     offset_stop  of memo = (int16*) LVAL_page[ 10 + row_id * 2 - 2]
-
-The length (partial if type 2) for the memo is:
-memo_page_len = offset_stop - offset_start 
-
-LVAL Pages
-----------
-(LVAL Page are particular data pages for long data storages )
-
-The header of a LVAL page looks like this (10 bytes) :
-+------+---------+-------------+------------------------------------------+
-| data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
-| 0x01 | 1 bytes | page_type   | 0x01 indicate a data page                |
-| 0x01 | 1 bytes | unknown     |                                          |
-| ???? | 2 bytes | free_space  | The free space in this page              |
-| LVAL | 4 bytes | lval_id     | The word  'LVAL'                         |
-| ???? | 2 bytes | num_rows    | Number of rows in this page              |
-+-------------------------------------------------------------------------+
-| Iterate for the number of records                                       |
-+-------------------------------------------------------------------------+
-| ???? | 2 bytes | row_offset  | to the records location on this page     |
-+-------------------------------------------------------------------------+
-
-Each memo record type 1 looks like this:
-+------+---------+-------------+------------------------------------------+
-| data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
-| ???? | n bytes | memo_value  | A string which is the memo               |
-+-------------------------------------------------------------------------+
-
-Each memo record type 2 looks like this:
-+------+---------+-------------+------------------------------------------+
-| data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
-| ???? | 4 bytes | lval_dp     | Next page LVAL type 2 if memo is too long|
-| ???? | n bytes | memo_value  | A string which is the memo (partial)     |
-+-------------------------------------------------------------------------+
-
-In a LVAL type 2 data page, you have 
-   10 bytes for the header of the data page, 
-    2 bytes for an offset,
-    4 bytes for the next lval_pg
-So you have a bloc of 2048 - (10+2+4) = 2032 bytes max in a page.
 
 Indices
 -------
 
 Indices are not completely understood but here is what we know.
 
++-------------------------------------------------------------------------+
+| Index Page (type 0x03)                                                  |
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
@@ -511,6 +594,8 @@ seems like it would have been easier and more flexible.
 
 So now we come to the index entries for type 0x03 pages which look like this:
 
++-------------------------------------------------------------------------+
+| Index Record                                                            |
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
@@ -557,10 +642,13 @@ or (in the case of tables small enough to fit on one page) a data page
 So to search the index, you need to convert your value into the alphabetic 
 character set, compare against each index entry, and on successful comparison
 follow the page and row number to the data.  Because text data is managled 
-during this conversion there is no 'covered querys' possible (a query that can
-be satisfied by reading the index, without descending to the leaf page to read
-the data).
+during this conversion there is no 'covered querys' possible on text columns.
 
+To conserve on frequent index updates, Jet also does something special when creating new leaf pages at the end of a primary key 
+(maybe others as well) index.  The next leaf page pointer of the last leaf node points to the new leaf page but the index tree
+is not otherwise updated.  In src/libmdb/index.c, the last leaf read is stored, once the index search has been exhausted by the 
+normal search routine, it enters a "clean up mode" and reads the next leaf page pointer until it's null.
+ 
 KKD Records
 -----------
 

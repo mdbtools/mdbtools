@@ -268,6 +268,7 @@ typedef struct {
 	int mask_bit;
 	int offset;
 	int len;
+	unsigned char cache_value[256];
 } MdbIndexPage;
 
 typedef int MdbSargTreeFunc(MdbSargNode *, gpointer);
@@ -276,6 +277,8 @@ typedef int MdbSargTreeFunc(MdbSargNode *, gpointer);
 
 typedef struct {
 	int cur_depth;
+	guint32 last_leaf_found;
+	int clean_up_mode;
 	MdbIndexPage pages[MDB_MAX_INDEX_DEPTH];
 } MdbIndexChain;
 

@@ -23,6 +23,8 @@ libmdb:
 . Add support for index scanning when using sargs (partial)
 . Use allocation maps to read tables, should be more efficient (done)
 . write support
+. iconv conversion to utf-8, et al.
+. multipage work tables
 
 utils:
 

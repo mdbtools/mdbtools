@@ -355,6 +355,7 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	GtkTextView *textview;
 	GtkWidget *entry;
 	char pagestr[20];
+	guint *dissect;
 
 	textview = (GtkTextView *) glade_xml_get_widget (xml, "debug_textview");
 	gmdb_debug_clear(xml);
@@ -398,7 +399,9 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	GtkWidget *tree = glade_xml_get_widget(xml, "debug_treeview");
 	GtkTreeView *store = (GtkTreeView *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
-	gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
+	dissect = g_object_get_data(G_OBJECT(xml),"dissect");
+	if (!dissect || *dissect==1)
+		gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
 
 	free(fbuf);
 	free(tbuf);
@@ -744,10 +747,10 @@ GtkTreeIter *node, *container;
 		newbase += namelen + 1;
 	}
 }
-void gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len)
+void 
+gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
-gchar str[100];
-
+	gchar str[100];
 
 	snprintf(str, 100, "Object Type: 0x%02x (%s)", fbuf[offset],
 		gmdb_val_to_str(object_types, fbuf[offset]));
@@ -933,6 +936,10 @@ GladeXML *debugwin_xml;
 	g_signal_connect (G_OBJECT (button), "clicked",
 		G_CALLBACK (gmdb_debug_forward_cb), debugwin_xml);
 
+	mi = glade_xml_get_widget (debugwin_xml, "dissector");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_debug_set_dissect_cb), debugwin_xml);
+
 	button = glade_xml_get_widget (debugwin_xml, "debug_button");
 	g_signal_connect (G_OBJECT (button), "clicked",
 		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
@@ -983,15 +990,31 @@ GladeXML *debugwin_xml;
 		}
 	}
 }
+void 
+gmdb_debug_set_dissect_cb(GtkWidget *w, GladeXML *xml)
+{
+	guint *dissect;
+	
+	//win = glade_xml_get_widget (xml, "debug_window");
+	dissect = g_object_get_data(G_OBJECT(xml),"dissect");
+	if (!dissect) return;
+	//printf("here %d\n", *dissect);
+	*dissect = *dissect ? 0 : 1;
+	g_object_set_data(G_OBJECT(xml), "dissect", dissect);
+}
 static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml)
 {
-struct stat st;
-char tmpstr[100];
-GtkWidget *pglabel, *entry;
+	struct stat st;
+	char tmpstr[100];
+	GtkWidget *pglabel, *entry;
+	guint *dissect;
 
 	pglabel = glade_xml_get_widget (xml, "debug_num_label");
 	sprintf(tmpstr, "(0-%d):", gmdb_get_max_page(mdb));
 	gtk_label_set_text(GTK_LABEL(pglabel), tmpstr);
 	entry = glade_xml_get_widget (xml, "debug_entry");
 	gtk_widget_grab_focus(GTK_WIDGET(entry));
+	dissect = g_malloc0(sizeof(guint));
+	*dissect = 1;
+	g_object_set_data(G_OBJECT(xml), "dissect", dissect);
 }

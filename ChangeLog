@@ -1,3 +1,15 @@
+Wed Feb 11 15:30:42 EST 2004 	Brian Bruns <brian@bruns.com>
+
+	* HACKING: rewritten to better reflect Jet4
+	* src/gmdb2/gmdb2.h: add prototype for gmdb_debug_set_dissect_cb()
+	* src/gmdb2/debug.c: add switch to control dissecting pages or no
+	* src/gmdb2/gladefiles/gmdb-debug.glade: add dissect option to View menu
+	* src/libmdb/data.c: adding debugging code
+	* src/libmdb/table.c: adding debugging code for usage maps
+	* src/libmdb/write.c: remove jet3 check from mdb_crack_row4()
+	* include/mdbtools.h: 
+	* src/libmdb/index.c: handle compressed indexes, trailing leaves
+
 Mon Feb  9 14:53:19 EST 2004	Brian Bruns <brian@bruns.com>
 
 	* src/util/mdb-export.c: reorganized a bit, added header text and options from patch #857342

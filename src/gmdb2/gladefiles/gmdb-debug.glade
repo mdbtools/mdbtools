@@ -73,6 +73,15 @@
 		    <widget class="GtkMenu" id="view1_menu">
 
 		      <child>
+			<widget class="GtkCheckMenuItem" id="dissector">
+			  <property name="visible">True</property>
+			  <property name="label" translatable="yes">_Dissector</property>
+			  <property name="use_underline">True</property>
+			  <property name="active">True</property>
+			</widget>
+		      </child>
+
+		      <child>
 			<widget class="GtkMenuItem" id="menu_back">
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Back</property>

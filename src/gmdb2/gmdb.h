@@ -43,6 +43,7 @@ void gmdb_module_populate(MdbHandle *mdb);
 void gmdb_table_add_tab(GtkWidget *notebook);
 void gmdb_debug_tab_new(GtkWidget *notebook);
 void gmdb_debug_new_cb(GtkWidget *w, gpointer *data);
+void gmdb_debug_set_dissect_cb(GtkWidget *w, GladeXML *xml);
 
 unsigned long gmdb_prefs_get_maxrows();
 
