@@ -46,3 +46,17 @@ MdbCatalogEntry *entryp;
 		g_free(entryp);
 	}
 }
+MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
+{
+MdbTableDef *table;
+
+	table = (MdbTableDef *) malloc(sizeof(MdbTableDef));
+	memset(table, '\0', sizeof(MdbTableDef));
+	strcpy(table->name, entry->object_name);
+
+	return table;	
+}
+void mdb_free_tabledef(MdbTableDef *table)
+{
+	if (table) free(table);
+}

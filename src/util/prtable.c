@@ -1,7 +1,8 @@
 /* MDB Tools - A library for reading MS Access database file
  * Copyright (C) 2000 Brian Bruns
  *
- * This library is free software; you can redistribute it and/or
+ *
+ * This library is free software; you can redistribute it and/or 
  * modify it under the terms of the GNU Library General Public
  * License as published by the Free Software Foundation; either
  * version 2 of the License, or (at your option) any later version.
@@ -25,7 +26,8 @@ int rows;
 int i;
 unsigned char buf[2048];
 MdbHandle *mdb;
-MdbCatalogEntry entry;
+MdbCatalogEntry *entry;
+GList *l;
 
 
 	if (argc<2) {
@@ -35,14 +37,12 @@ MdbCatalogEntry entry;
 	
 	mdb = mdb_open(argv[1]);
 
-	mdb_read_pg(mdb, MDB_CATALOG_PG);
-	rows = mdb_catalog_rows(mdb);
+	mdb_read_catalog(mdb, MDB_TABLE);
 
-	for (i=0;i<rows;i++) {
-  		if (mdb_catalog_entry(mdb, i, &entry)) {
-			if (!strcmp(entry.object_name,argv[2])) {
-				mdb_table_dump(&entry);
-  			}
+	for (l=g_list_first(mdb->catalog);l;l=g_list_next(l)) {
+		entry = l->data;
+		if (!strcmp(entry->object_name,argv[2])) {
+				mdb_table_dump(entry);
 		}
 	}
 

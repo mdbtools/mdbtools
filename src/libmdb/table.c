@@ -58,39 +58,53 @@ unsigned char mdb_col_needs_size(int col_type)
 	}
 }
 
-/*
-**   
-*/
+MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
+{
+MdbTableDef *table;
+MdbHandle *mdb = entry->mdb;
+int len, i;
+
+	table = mdb_alloc_tabledef(entry);
+
+	mdb_read_pg(mdb, entry->table_pg);
+	len = mdb_get_int16(mdb,8);
+
+	table->num_rows = mdb_get_int32(mdb,12);
+	table->num_cols = mdb_get_int16(mdb,25);
+	table->num_pgs = mdb_get_int32(mdb,27);
+	table->first_data_pg = mdb_get_int16(mdb,36);
+
+	return table;
+}
+
+MdbColumn *mdb_read_column(MdbTableDef *table)
+{
+}
 
 void mdb_table_dump(MdbCatalogEntry *entry)
 {
-int num_cols, num_rows, data_pgs, first_dpg;
 int len, i;
 int cur_col, cur_name;
 int col_type, col_size;
 int col_start, name_start;
 char name[MDB_MAX_OBJ_NAME+1];
 int name_sz;
+MdbTableDef *table;
 MdbHandle *mdb = entry->mdb;
 
-	mdb_read_pg(mdb, entry->table_pg);
-	len = mdb_get_int16(mdb,8);
-	num_rows = mdb_get_int32(mdb,12);
-	num_cols = mdb_get_int16(mdb,25);
-	data_pgs = mdb_get_int32(mdb,27);
-	first_dpg = mdb_get_int16(mdb,36);
-	fprintf(stdout,"number of datarows  = %d\n",num_rows);
-	fprintf(stdout,"number of columns   = %d\n",num_cols);
-	fprintf(stdout,"number of datapages = %d\n",data_pgs);
-	fprintf(stdout,"first data page     = %d\n",first_dpg);
+	table = mdb_read_table(entry);
+	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
+	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
+	fprintf(stdout,"number of datapages = %d\n",table->num_pgs);
+	fprintf(stdout,"first data page     = %d\n",table->first_data_pg);
 
-	col_start = 43 + (data_pgs * 8);
-	name_start = col_start + (num_cols * 18);
+	col_start = 43 + (table->num_pgs * 8);
+	name_start = col_start + (table->num_cols * 18);
 
 	cur_col = col_start;
 	cur_name = name_start;
 
-	for (i=0;i<num_cols;i++) {
+	for (i=0;i<table->num_cols;i++) {
 		col_type = mdb->pg_buf[cur_col];
 		col_size = mdb_get_int16(mdb,cur_col+16);
 		
@@ -106,4 +120,3 @@ MdbHandle *mdb = entry->mdb;
 		cur_name += name_sz + 1;
 	}
 }
-

@@ -78,6 +78,15 @@ typedef struct {
 } MdbCatalogEntry;
 
 typedef struct {
+	char	name[MDB_MAX_OBJ_NAME+1];
+	int	num_cols;
+	int	num_rows;
+	int	num_pgs;
+	int	first_data_pg;
+	GArray	*columns;
+} MdbTableDef;
+
+typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];
 } MdbColumnProp;
 
@@ -90,6 +99,7 @@ typedef struct {
 extern MdbHandle *mdb_alloc_handle();
 extern void mdb_free_handle(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
+extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
 
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
 extern int    mdb_get_int16(MdbHandle *mdb, int offset);

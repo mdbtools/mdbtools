@@ -42,7 +42,7 @@ static char *type_name[] = {"Form",
 	}
 }
 
-MdbCatalogEntry *mdb_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry)
+MdbCatalogEntry *mdb_read_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry)
 {
 int offset;
 int rows;
@@ -118,7 +118,7 @@ int next_pg, next_pg_off;
 				fprintf(stdout,"YES! next pg = %04x %d\n",next_pg, next_pg); 
 				continue;
 			}
-			if (mdb_catalog_entry(mdb, i, &entry)) {
+			if (mdb_read_catalog_entry(mdb, i, &entry)) {
 				data = g_memdup(&entry,sizeof(MdbCatalogEntry));
 				mdb->catalog = g_list_append(mdb->catalog, data);
 			}
@@ -134,7 +134,7 @@ int next_pg, next_pg_off;
 			rows = mdb_catalog_rows(mdb);
 			for (i=0;i<rows;i++) {
 				if (mdb->pg_buf[11 + 2 * i] & 0x40) continue;
-				if (mdb_catalog_entry(mdb, i, &entry)) {
+				if (mdb_read_catalog_entry(mdb, i, &entry)) {
 					data = g_memdup(&entry,sizeof(MdbCatalogEntry));
 					mdb->catalog = g_list_append(mdb->catalog, data);
 				}
