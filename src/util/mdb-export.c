@@ -59,7 +59,7 @@ char quote_text = 1;
 			if (header_row) {
 				col=g_ptr_array_index(table->columns,0);
 				fprintf(stdout,"%s",col->name);
-        			for (j=0;j<table->num_cols;j++) {
+        			for (j=1;j<table->num_cols;j++) {
 					col=g_ptr_array_index(table->columns,j);
 					fprintf(stdout,"%s%s",delimiter,col->name);
 				}
