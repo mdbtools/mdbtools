@@ -68,7 +68,7 @@ main (int argc, char **argv)
 
  /* open the database */
 
- mdb = mdb_open (argv[optind]);
+ mdb = mdb_open (argv[optind], MDB_NOFLAGS);
  if (argc - optind >= 2) {
 	if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
 		fprintf(stderr,"Invalid backend type\n");

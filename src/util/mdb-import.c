@@ -191,7 +191,7 @@ main(int argc, char **argv)
 
 	mdb_init();
 
-	if (!(mdb = _mdb_open(argv[optind], TRUE))) {
+	if (!(mdb = mdb_open(argv[optind], MDB_WRITABLE))) {
 		exit(1);
 	}
 	

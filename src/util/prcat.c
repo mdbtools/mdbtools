@@ -31,7 +31,7 @@ main(int argc, char **argv)
 	
 	mdb_init();
 
-	mdb = mdb_open(argv[1]);
+	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_dump_catalog(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
 

@@ -65,7 +65,7 @@ int opt;
 
  /* open the database */
 
- mdb = mdb_open (argv[optind]);
+ mdb = mdb_open (argv[optind], MDB_NOFLAGS);
 
  /* read the catalog */
  

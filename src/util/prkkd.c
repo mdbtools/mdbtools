@@ -32,7 +32,7 @@ main(int argc, char **argv)
 	}
 	
 	mdb_init();
-	mdb = mdb_open(argv[1]);
+	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_read_pg(mdb, MDB_CATALOG_PG);
 	rows = mdb_catalog_rows(mdb);

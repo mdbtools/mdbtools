@@ -107,7 +107,7 @@ gmdb_file_open(gchar *file_path)
 	int i;
 
 	gmdb_reset_widgets();
-	mdb = mdb_open(file_path);
+	mdb = mdb_open(file_path, MDB_NOFLAGS);
 	if (!mdb) {
 		gnome_warning_dialog("Unable to open file.");
 		return;

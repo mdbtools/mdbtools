@@ -35,7 +35,7 @@ int found = 0;
 	}
 	
 	mdb_init();
-	mdb = mdb_open(argv[1]);
+	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_read_catalog(mdb, MDB_TABLE);
 

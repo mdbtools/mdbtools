@@ -8,7 +8,7 @@ extern int main_show_debug;
 void
 gmdb_file_open(gchar *file_path)
 {
-	mdb = mdb_open(file_path);
+	mdb = mdb_open(file_path, MDB_NOFLAGS);
 	if (!mdb) {
 		gmdb_info_msg("Unable to open file.");
 		return;

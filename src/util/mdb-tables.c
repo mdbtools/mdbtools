@@ -58,7 +58,7 @@ int opt;
  	mdb_init();
 
  	/* open the database */
- 	if (!(mdb = mdb_open (argv[optind]))) {
+ 	if (!(mdb = mdb_open (argv[optind], MDB_NOFLAGS))) {
 		fprintf(stderr,"Couldn't open database.\n");
 		exit(1);
 	}

@@ -54,7 +54,7 @@ main(int argc, char **argv)
 
 	mdb_init();
 
-	if (!(mdb = mdb_open(argv[optind]))) {
+	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		exit(1);
 	}
 	mdb_read_catalog(mdb, MDB_TABLE);

@@ -93,7 +93,18 @@ int ret;
 	} while ((dir = strtok(NULL, ":")));
 	return -1;
 }
-MdbHandle *_mdb_open(char *filename, gboolean writable)
+/**
+ * mdb_open:
+ * @filename: path to MDB (database) file
+ * @flags: MDB_NOFLAGS for read-only, MDB_WRITABLE for read/write
+ *
+ * Opens an MDB file and returns an MdbHandle to it.  MDB File may be relative
+ * to the current directory, a full path to the file, or relative to a 
+ * component of $MDBPATH.
+ *
+ * Return value: pointer to MdbHandle structure.
+ **/
+MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 {
 MdbHandle *mdb;
 int bufsize;
@@ -117,7 +128,7 @@ MdbFile *f;
 		}
 	}
 	//strcpy(f->filename, filename);
-	if (writable) {
+	if (flags & MDB_WRITABLE) {
 		f->writable = TRUE;
 		f->fd = open(f->filename,O_RDWR);
 	} else {
@@ -149,21 +160,14 @@ MdbFile *f;
 	f->refs++;
 	return mdb;
 }
-/**
- * mdb_open:
- * @filename: path to MDB (database) file
- *
- * Opens an MDB file and returns an MdbHandle to it.  MDB File may be relative
- * to the current directory, a full path to the file, or relative to a 
- * component of $MDBPATH.
- *
- * Return value: pointer to MdbHandle structure.
- **/
-MdbHandle *mdb_open(char *filename)
-{
-	return _mdb_open(filename, FALSE);
-}
 
+/**
+ * mdb_close:
+ * @mdb: Handle to open MDB database file
+ *
+ * Dereferences MDB file, closes if reference count is 0, and destroys handle.
+ *
+ **/
 void 
 mdb_close(MdbHandle *mdb)
 {
@@ -175,6 +179,15 @@ mdb_close(MdbHandle *mdb)
 		}
 	}
 }
+/**
+ * mdb_clone_handle:
+ * @mdb: Handle to open MDB database file
+ *
+ * Clones an existing database handle.  Cloned handle shares the file descriptor
+ * but has it's own page buffer, page position, and similar internal variables.
+ *
+ * Return value: new handle to the database.
+ */
 MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 {
 	MdbHandle *newmdb;

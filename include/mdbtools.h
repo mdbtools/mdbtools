@@ -105,6 +105,11 @@ typedef enum {
 	MDB_INDEX_SCAN
 } MdbStrategy;
 
+typedef enum {
+	MDB_NOFLAGS = 0x00,
+	MDB_WRITABLE = 0x01
+} MdbFileFlags;
+
 enum {
 	MDB_DEBUG_LIKE = 0x0001,
 	MDB_DEBUG_WRITE = 0x0002,
@@ -292,7 +297,7 @@ typedef struct {
 	unsigned char cache_value[256];
 } MdbIndexPage;
 
-typedef int MdbSargTreeFunc(MdbSargNode *, gpointer);
+typedef int MdbSargTreeFunc(MdbSargNode *, gpointer *data);
 
 #define MDB_MAX_INDEX_DEPTH 10
 
@@ -396,8 +401,7 @@ extern long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
 extern float  mdb_pg_get_single(MdbHandle *mdb, int offset);
 extern double mdb_pg_get_double(MdbHandle *mdb, int offset);
 extern gint32 mdb_pg_get_int24_msb(MdbHandle *mdb, int offset);
-extern MdbHandle *mdb_open(char *filename);
-extern MdbHandle *_mdb_open(char *filename, gboolean writable);
+extern MdbHandle *mdb_open(char *filename, MdbFileFlags flags);
 extern void mdb_close(MdbHandle *mdb);
 extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
@@ -406,9 +410,7 @@ extern void mdb_free_tabledef(MdbTableDef *table);
 
 /* catalog.c */
 GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
-extern void mdb_catalog_dump(MdbHandle *mdb, int obj_type);
-extern int mdb_catalog_rows(MdbHandle *mdb);
-extern MdbCatalogEntry *mdb_get_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry);
+extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 extern char *mdb_get_objtype_string(int obj_type);
 extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 

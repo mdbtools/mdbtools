@@ -62,7 +62,7 @@ main(int argc, char **argv)
 
 	mdb_init();
 
-	if (!(mdb = mdb_open(argv[optind]))) {
+	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		fprintf(stderr,_("Error: unable to open file %s\n"),argv[optind]);
 		exit(1);
 	}

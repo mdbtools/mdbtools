@@ -53,7 +53,7 @@ FILE *cfile;
 
  /* open the database */
 
- mdb = mdb_open (argv[1]);
+ mdb = mdb_open (argv[1], MDB_NOFLAGS);
  if (!mdb) {
  	mdb_exit();
 	exit(1);

@@ -39,7 +39,7 @@ char *sargname = NULL;
 	}
 	
 	mdb_init();
-	mdb = mdb_open(argv[1]);
+	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 	dot = strchr(argv[2],'.');
 	if (argc>3) sargname = argv[3];
 

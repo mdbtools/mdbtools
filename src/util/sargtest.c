@@ -37,7 +37,7 @@ MdbTableDef *table;
 
 	mdb_init();
 
-	if (!(mdb = mdb_open(MDB_FILE))) {
+	if (!(mdb = mdb_open(MDB_FILE, MDB_NOFLAGS))) {
 		exit(1);
 	}
 	

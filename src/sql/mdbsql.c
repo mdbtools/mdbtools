@@ -152,12 +152,12 @@ wordexp_t words;
 	
 #endif
 
-	if (!(sql->mdb = mdb_open(db_namep))) {
+	if (!(sql->mdb = mdb_open(db_namep, MDB_NOFLAGS))) {
 		if (!strstr(db_namep, ".mdb")) {
 			char *tmpstr = (char *) malloc(strlen(db_namep)+5);
 			strcpy(tmpstr,db_namep);
 			strcat(tmpstr,".mdb");
-			if (!(sql->mdb = mdb_open(tmpstr))) {
+			if (!(sql->mdb = mdb_open(tmpstr, MDB_NOFLAGS))) {
 				fail++;
 			}
 			free(tmpstr);

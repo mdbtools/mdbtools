@@ -44,7 +44,7 @@ int len;
 	}
 	
 	mdb_init();
-	mdb = _mdb_open(argv[1], TRUE);
+	mdb = mdb_open(argv[1], MDB_WRITABLE);
 	tabname = argv[2];
 	sargname = argv[3];
 	updstr = strdup(argv[4]);

@@ -40,7 +40,7 @@ int found = 0;
 	}
 	
 	mdb_init();
-	if (!(mdb = mdb_open(argv[1]))) {
+	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
 		fprintf(stderr,"Unable to open database.\n");
 		exit(1);
 	}

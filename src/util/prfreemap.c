@@ -35,7 +35,7 @@ unsigned char *map_buf;
 	}
 	
 	mdb_init();
-	mdb = mdb_open(argv[1]);
+	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_read_pg (mdb, 1);
 	row_start = mdb_get_int16(mdb, (mdb->fmt->row_count_offset + 2));
