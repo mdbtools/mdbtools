@@ -80,8 +80,7 @@ char *sargcol, *sargop, *sargval;
 		}
 	}
 	printf("column %d\n",found);
-	mdb_bind_column(table, found, ole_data);
-	mdb_bind_len(table, found, &len);
+	mdb_bind_column(table, found, ole_data, &len);
 
 	if (sargname) {
 		sargcol = strtok(sargname," ");

@@ -58,7 +58,6 @@ mdb_col_to_string
 mdb_find_end_of_row
 mdb_col_fixed_size
 mdb_col_disp_size
-mdb_bind_len
 mdb_ole_read_next
 mdb_ole_read
 mdb_set_date_fmt

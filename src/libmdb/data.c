@@ -41,18 +41,22 @@ void mdb_set_date_fmt(const char *fmt)
 		strncpy(date_fmt, fmt, 63);
 }
 
-void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
+void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr)
 {
-MdbColumn *col;
+	MdbColumn *col;
 
 	/* 
 	** the column arrary is 0 based, so decrement to get 1 based parameter 
 	*/
 	col=g_ptr_array_index(table->columns, col_num - 1);
-	col->bind_ptr = bind_ptr;
+	
+	if (bind_ptr)
+		col->bind_ptr = bind_ptr;
+	if (len_ptr)
+		col->len_ptr = len_ptr;
 }
 int
-mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr)
+mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr)
 {
 	unsigned int i;
 	int col_num = -1;
@@ -61,20 +65,16 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr)
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
 		if (!strcmp(col->name,col_name)) {
-			col_num = col->col_num + 1;
-			mdb_bind_column(table, col_num, bind_ptr);
+			col_num = i + 1;
+			if (bind_ptr)
+				col->bind_ptr = bind_ptr;
+			if (len_ptr)
+				col->len_ptr = len_ptr;
 			break;
 		}
 	}
 
 	return col_num;
-}
-void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr)
-{
-MdbColumn *col;
-
-	col=g_ptr_array_index(table->columns, col_num - 1);
-	col->len_ptr = len_ptr;
 }
 
 /**
@@ -397,7 +397,7 @@ void mdb_data_dump(MdbTableDef *table)
 
 	for (i=0;i<table->num_cols;i++) {
 		bound_values[i] = (char *) g_malloc(256);
-		mdb_bind_column(table, i+1, bound_values[i]);
+		mdb_bind_column(table, i+1, bound_values[i], NULL);
 	}
 	mdb_rewind_table(table);
 	while (mdb_fetch_row(table)) {

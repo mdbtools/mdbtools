@@ -27,7 +27,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.27 2004/12/11 06:07:22 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.28 2004/12/31 01:26:50 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -803,11 +803,8 @@ struct _sql_bind_info *cur;
         while (cur) {
             if (cur->column_number>0 &&
             cur->column_number <= env->sql->num_columns) {
-				mdb_sql_bind_column(env->sql, 
-					cur->column_number, cur->varaddr);
-				if (cur->column_lenbind)
-					mdb_sql_bind_len(env->sql, 
-						cur->column_number, cur->column_lenbind);
+			mdb_sql_bind_column(env->sql, cur->column_number,
+				cur->varaddr, cur->column_lenbind);
             } else {
                 /* log error ? */
             }

@@ -436,9 +436,9 @@ extern int mdb_is_user_table(MdbCatalogEntry *entry);
 extern int mdb_is_system_table(MdbCatalogEntry *entry);
 
 /* data.c */
-extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr);
+extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
 extern void mdb_data_dump(MdbTableDef *table);
-extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr);
+extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
 extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
 extern int mdb_is_fixed_col(MdbColumn *col);
@@ -447,7 +447,6 @@ extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, char **buf, int *off, int
 extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 extern int mdb_col_fixed_size(MdbColumn *col);
 extern int mdb_col_disp_size(MdbColumn *col);
-extern void mdb_bind_len(MdbTableDef *table, int col_num, int *len_ptr);
 extern int mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern int mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void mdb_set_date_fmt(const char *);

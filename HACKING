@@ -300,9 +300,9 @@ next_pg field.
 | Iterate for the number of num_cols (18 bytes per column)                |
 +-------------------------------------------------------------------------+
 | ???? | 1 byte  | col_type    | Column Type (see table below)            |
-| ???? | 2 bytes | col_pos     | Column Position, (counts deleted cols)   |
+| ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
-| ???? | 4 bytes | ???         |                                          |
+| ???? | 2 bytes | col_num     | Column Number                            |
 | ???? | 2 bytes | ???         |                                          |
 | ???? | 1 byte  | precision   | precision if numeric column              |
 | ???? | 1 byte  | scale       | scale if numeric column                  |

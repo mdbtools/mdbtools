@@ -20,7 +20,6 @@
 
 #include "mdbtools.h"
 
-int bind_column(MdbTableDef *table, char *colname, unsigned char *data, int *len);
 void read_to_row(MdbTableDef *table, char *sargname);
 
 int
@@ -30,6 +29,7 @@ MdbHandle *mdb;
 MdbTableDef *table;
 char *colname, *tabname;
 char *colval;
+int colnum;
 char *sargname = NULL;
 char *updstr = NULL;
 unsigned char data[255];
@@ -55,7 +55,8 @@ int len;
 		printf("updstr %s\n",updstr);
 		colname = strtok(updstr,"=");
 		colval = strtok(NULL,"=");
-		bind_column(table, colname, data, &len);
+		colnum = mdb_bind_column_by_name(table, colname, data, &len);
+		printf("column %d\n", colnum);
 		read_to_row(table, sargname);
 		printf("current value of %s is %s, changing to %s\n", colname, data, colval);
 		len = strlen(colval);
@@ -70,23 +71,6 @@ int len;
 	exit(0);
 }
 
-int bind_column(MdbTableDef *table, char *colname, unsigned char *data, int *len)
-{
-	unsigned int i, found = 0;
-	MdbColumn *col;
-
-	for (i=0;i<table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		printf("%d colname %s\n", i, col->name);
-		if (col && !strcmp(col->name,colname)) {
-			found = i+1;
-		}
-	}
-	printf("column %d\n",found);
-	mdb_bind_column(table, found, data);
-	mdb_bind_len(table, found, len);
-	return 0;
-}
 void read_to_row(MdbTableDef *table, char *sargname)
 {
 	static MdbSargNode sarg;

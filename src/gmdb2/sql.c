@@ -450,7 +450,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	for (i=0;i<sql->num_columns;i++) { 
 		bound_data[i] = (char *) malloc(MDB_BIND_SIZE); 
 		bound_data[i][0] = '\0';
-        	mdb_sql_bind_column(sql, i+1, bound_data[i]);
+        	mdb_sql_bind_column(sql, i+1, bound_data[i], NULL);
 		sqlcol = g_ptr_array_index(sql->columns,i);
 		column = gtk_tree_view_column_new_with_attributes(sqlcol->name, renderer, "text", i, NULL); 
 		gtk_tree_view_append_column(GTK_TREE_VIEW (treeview), column); 

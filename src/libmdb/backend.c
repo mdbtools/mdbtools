@@ -265,10 +265,10 @@ char *mdb_get_relationships(MdbHandle *mdb)
 		for (i=0;i<4;i++) {
 			bound[i] = (char *) g_malloc0(MDB_BIND_SIZE);
 		}
-		mdb_bind_column_by_name(table, "szColumn", bound[0]);
-		mdb_bind_column_by_name(table, "szObject", bound[1]);
-		mdb_bind_column_by_name(table, "szReferencedColumn", bound[2]);
-		mdb_bind_column_by_name(table, "szReferencedObject", bound[3]);
+		mdb_bind_column_by_name(table, "szColumn", bound[0], NULL);
+		mdb_bind_column_by_name(table, "szObject", bound[1], NULL);
+		mdb_bind_column_by_name(table, "szReferencedColumn", bound[2], NULL);
+		mdb_bind_column_by_name(table, "szReferencedObject", bound[3], NULL);
 		mdb_rewind_table(table);
 
 		is_init = 1;

@@ -60,7 +60,7 @@ int started;
 	   {
 	     bound_values [j] =  (char *) g_malloc (MDB_BIND_SIZE);
 	     bound_values [j] [0] = '\0';
-	     mdb_bind_column (table, j + 1, bound_values [j]);
+	     mdb_bind_column (table, j+1, bound_values[j], NULL);
 	   }
 
 	 fprintf (stdout, "/******************************************************************/\n");

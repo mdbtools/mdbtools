@@ -90,7 +90,7 @@ GMdbDataWindow *dataw = NULL;
 		/* bind columns */
 		bound_data[i] = (char *) malloc(MDB_BIND_SIZE);
 		bound_data[i][0] = '\0';
-		mdb_bind_column(table, i+1, bound_data[i]);
+		mdb_bind_column(table, i+1, bound_data[i], NULL);
 
 		/* display column titles */
 		col=g_ptr_array_index(table->columns,i);

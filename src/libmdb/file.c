@@ -49,7 +49,7 @@ MdbFormatConstants MdbJet4Constants = {
 	4096, 0x0c, 16, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59, 7, 21, 9
 };
 MdbFormatConstants MdbJet3Constants = {
-	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39, 3, 14, 5 /* not sure on 5, need to check */
+	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39, 3, 14, 5
 };
 
 static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);

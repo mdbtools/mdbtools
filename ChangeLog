@@ -1,3 +1,26 @@
+Thu Dec 30 19:26:01 CST 2004	Jeff Smith <whydoubt@yahoo.com>
+	* HACKING:
+	* doc/reference/libmdb/libmdb-sections.txt:
+	* include/mdbsql.h:
+	* include/mdbtools.h:
+	* src/gmdb/table_data.c:
+	* src/gmdb/table_export.c:
+	* src/gmdb2/sql.c:
+	* src/gmdb2/table_data.c:
+	* src/gmdb2/table_export.c:
+	* src/libmdb/backend.c:
+	* src/libmdb/catalog.c:
+	* src/libmdb/data.c:
+	* src/libmdb/file.c:
+	* src/odbc/odbc.c:
+	* src/sql/mdbsql.c:
+	* src/util/mdb-array.c:
+	* src/util/mdb-export.c:
+	* src/util/mdb-prop.c:
+	* src/util/prole.c:
+	* src/util/sargtest.c:
+	* src/util/updrow.c: Combine functions that bind a column and its length
+
 Thu Dec 30 06:36:25 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h: Fix MdbSargTreeFunc's typedef
 	* src/sql/lexer.l: Fix flex warning about A-z ambiguity

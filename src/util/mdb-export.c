@@ -139,8 +139,7 @@ main(int argc, char **argv)
 	
 	for (j=0;j<table->num_cols;j++) {
 		bound_values[j] = (char *) g_malloc0(MDB_BIND_SIZE);
-		mdb_bind_column(table, j+1, bound_values[j]);
-		mdb_bind_len(table, j+1, &bound_lens[j]);
+		mdb_bind_column(table, j+1, bound_values[j], &bound_lens[j]);
 	}
 	if (header_row) {
 		col=g_ptr_array_index(table->columns,0);

@@ -86,10 +86,10 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 
 	mdb_read_columns(table);
 
-	mdb_bind_column_by_name(table, "Id", obj_id);
-	mdb_bind_column_by_name(table, "Name", obj_name);
-	mdb_bind_column_by_name(table, "Type", obj_type);
-	mdb_bind_column_by_name(table, "Flags", obj_flags);
+	mdb_bind_column_by_name(table, "Id", obj_id, NULL);
+	mdb_bind_column_by_name(table, "Name", obj_name, NULL);
+	mdb_bind_column_by_name(table, "Type", obj_type, NULL);
+	mdb_bind_column_by_name(table, "Flags", obj_flags, NULL);
 
 	mdb_rewind_table(table);
 
