@@ -215,6 +215,7 @@ extern size_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
 extern unsigned char mdb_get_byte(MdbHandle *mdb, int offset);
 extern int    mdb_get_int16(MdbHandle *mdb, int offset);
 extern long   mdb_get_int32(MdbHandle *mdb, int offset);
+extern float  mdb_get_single(MdbHandle *mdb, int offset);
 extern double mdb_get_double(MdbHandle *mdb, int offset);
 extern MdbHandle *mdb_open(char *filename);
 

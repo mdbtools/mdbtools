@@ -516,7 +516,7 @@ int i;
 			return text;
 		break;
 		case MDB_FLOAT:
-			sprintf(text,"%f",mdb_get_double(mdb, start));
+			sprintf(text,"%f",mdb_get_single(mdb, start));
 			return text;
 		break;
 		case MDB_DOUBLE:
