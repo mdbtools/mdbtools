@@ -215,7 +215,7 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	int byte_num, bit_num;
 	int num_of_jumps = 0, jumps_used = 0;
 	int eod, len; /* end of data */
-	int row_pos;
+	int row_pos, col_ptr;
 
 	if (mdb_get_option(MDB_DEBUG_ROW)) {
 		buffer_dump(mdb->pg_buf, row_start, row_end+1);
@@ -283,7 +283,7 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	}
 
 	/* if fixed columns add up to more than 256, we need a jump */
-	int col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
+	col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
 	if (col_start >= 256) {
 		num_of_jumps++;
 		jumps_used++;
@@ -406,8 +406,10 @@ mdb_pack_row4(MdbTableDef *table, unsigned char *row_buffer, int num_fields, Mdb
 		if (!fields[i].is_fixed) {
 			var_cols++;
 			fields[i].offset = pos;
-			memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
-			pos += fields[i].siz;
+			if (! fields[i].is_null) {
+				memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
+				pos += fields[i].siz;
+			}
 		}
 	}
 	/* EOD */
@@ -451,8 +453,10 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, int num_fields, Mdb
 		if (!fields[i].is_fixed) {
 			var_cols++;
 			fields[i].offset = pos;
-			memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
-			pos += fields[i].siz;
+			if (! fields[i].is_null) {
+				memcpy(&row_buffer[pos], fields[i].value, fields[i].siz);
+				pos += fields[i].siz;
+			}
 		}
 	}
 	/* EOD */

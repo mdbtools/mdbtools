@@ -2,8 +2,8 @@
 ]>
 <book>
 	<bookinfo>
-		<date>$Date: 2004/02/08 18:41:07 $</date>
-		<releaseinfo>$Revision: 1.3 $</releaseinfo>
+		<date>$Date: 2004/03/13 15:07:19 $</date>
+		<releaseinfo>$Revision: 1.4 $</releaseinfo>
 		<title><productname>MDB Tools</productname> Installation Guide</title>
 		<subtitle>A Guide to Installing and  Configuring <productname>MDB Tools</productname></subtitle>
 		<author>
@@ -34,9 +34,9 @@ This guide is intended to provide help with installing and configuring the <prod
 			<para>
 A few technical notes.  This guide is written in SGML DocBook format, specifications for which are found in the <ulink url="http://www.docbook.org/tdg/en/html/docbook.html">DocBook book</ulink>.  It was converted to HTML with <ulink url="http://openjade.sourceforge.net">OpenJade</ulink>.  
 The document you are reading is version 
-$Revision: 1.3 $
+$Revision: 1.4 $
 , dated 
-$Date: 2004/02/08 18:41:07 $ (CVS control number $Id: install.sgml,v 1.3 2004/02/08 18:41:07 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
+$Date: 2004/03/13 15:07:19 $ (CVS control number $Id: install.sgml,v 1.4 2004/03/13 15:07:19 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
 <ulink url="http://mdbtools.sourceforge.net/userguide/">web site</ulink>.
 			</para>
 	</preface>
@@ -183,7 +183,7 @@ The following matrix lists all requirements and which features they affect.  An 
         <entry>Supports history in mdb-sql, will compile without history if not found.</entry>
         </row>
         <row>
-        <entry>bison</entry>
+        <entry>bison/yacc</entry>
         <entry>X</entry>
         <entry>X</entry>
         <entry></entry>

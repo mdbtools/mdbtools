@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.14 2004/03/06 23:59:54 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.15 2004/03/13 15:07:19 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -68,16 +68,16 @@ typedef struct {
 	SQLSMALLINT nullable;
 	SQLSMALLINT case_sensitive;
 	SQLSMALLINT searchable;
-	SQLSMALLINT unsigned_attribute;
+	SQLSMALLINT *unsigned_attribute;
 	SQLSMALLINT fixed_prec_scale;
 	SQLSMALLINT auto_unique_value;
 	SQLCHAR *local_type_name;
 	SQLSMALLINT minimum_scale;
 	SQLSMALLINT maximum_scale;
 	SQLSMALLINT sql_data_type;
-	SQLSMALLINT sql_datetime_sub;
-	SQLSMALLINT num_prec_radix;
-	SQLSMALLINT interval_precision;
+	SQLSMALLINT *sql_datetime_sub;
+	SQLSMALLINT *num_prec_radix;
+	SQLSMALLINT *interval_precision;
 } TypeInfo;
 
 TypeInfo type_info[] = {
@@ -429,6 +429,7 @@ SQLRETURN SQL_API SQLAllocHandle(
 			return _SQLAllocEnv(OutputHandle);
 			break;
 	}
+	return SQL_ERROR;
 }
 static SQLRETURN SQL_API _SQLAllocConnect(
     SQLHENV            henv,
@@ -696,7 +697,7 @@ SQLRETURN SQL_API SQLColAttributes(
 		case SQL_COLUMN_LABEL:
 			namelen = MIN(cbDescMax,strlen(sqlcol->name));
 			strncpy(rgbDesc, sqlcol->name, namelen);
-			*((char *)&rgbDesc[namelen])='\0';
+			((char *)rgbDesc)[namelen]='\0';
 			break;
 		case SQL_COLUMN_TYPE:
 			*pfDesc = SQL_CHAR;
@@ -1266,8 +1267,8 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 	MdbHandle *mdb = sql->mdb;
 	unsigned char *new_pg;
 	int row_size;
-	unsigned char *row_buffer[MDB_PGSIZE];
-	unsigned char *tmpstr[MDB_BIND_SIZE];
+	unsigned char row_buffer[MDB_PGSIZE];
+	unsigned char tmpstr[MDB_BIND_SIZE];
 	int i, tmpsiz;
 	MdbField fields[NUM_TYPE_INFO_COLS];
 
@@ -1315,7 +1316,7 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 			mdb_fill_temp_field(&fields[6],&type_info[i].nullable, sizeof(SQLSMALLINT), 0,0,0,1);
 			mdb_fill_temp_field(&fields[7],&type_info[i].case_sensitive, sizeof(SQLSMALLINT), 0,0,0,1);
 			mdb_fill_temp_field(&fields[8],&type_info[i].searchable, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[9],&type_info[i].unsigned_attribute, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[9],type_info[i].unsigned_attribute, sizeof(SQLSMALLINT), 0,type_info[i].unsigned_attribute ? 0 : 1,0,1);
 			mdb_fill_temp_field(&fields[10],&type_info[i].fixed_prec_scale, sizeof(SQLSMALLINT), 0,0,0,1);
 			mdb_fill_temp_field(&fields[11],&type_info[i].auto_unique_value, sizeof(SQLSMALLINT), 0,0,0,1);
 			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].local_type_name, 0, 100, tmpstr);
@@ -1323,9 +1324,9 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 			mdb_fill_temp_field(&fields[13],&type_info[i].minimum_scale, sizeof(SQLSMALLINT), 0,0,0,1);
 			mdb_fill_temp_field(&fields[14],&type_info[i].maximum_scale, sizeof(SQLSMALLINT), 0,0,0,1);
 			mdb_fill_temp_field(&fields[15],&type_info[i].sql_data_type, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[16],&type_info[i].sql_datetime_sub, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[17],&type_info[i].num_prec_radix, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[18],&type_info[i].interval_precision, sizeof(SQLSMALLINT), 0,0,0,1);
+			mdb_fill_temp_field(&fields[16],type_info[i].sql_datetime_sub, sizeof(SQLSMALLINT), 0,type_info[i].sql_datetime_sub ? 0 : 1,0,1);
+			mdb_fill_temp_field(&fields[17],type_info[i].num_prec_radix, sizeof(SQLSMALLINT), 0,type_info[i].num_prec_radix ? 0 : 1,0,1);
+			mdb_fill_temp_field(&fields[18],type_info[i].interval_precision, sizeof(SQLSMALLINT), 0,type_info[i].interval_precision ? 0 : 1,0,1);
 
 			row_size = mdb_pack_row(ttable, row_buffer, NUM_TYPE_INFO_COLS, fields);
 			mdb_add_row_to_pg(ttable,row_buffer, row_size);
@@ -1522,6 +1523,8 @@ char quote_char;
         }
 	*d='\0';
 	strcpy(stmt->query,tmp);
+
+	return 0;
 }
 
 static int _odbc_get_string_size(int size, char *str)
@@ -1534,6 +1537,7 @@ static int _odbc_get_string_size(int size, char *str)
 	} else {
 		return size;
 	}
+	return 0;
 }
 static int _odbc_get_server_type(int clt_type)
 {
@@ -1551,6 +1555,7 @@ static int _odbc_get_server_type(int clt_type)
 	default:
 		break;
 	}
+	return 0;
 }
 static SQLSMALLINT _odbc_get_client_type(int srv_type)
 {
@@ -1580,5 +1585,6 @@ static SQLSMALLINT _odbc_get_client_type(int srv_type)
 			// fprintf(stderr,"Unknown type %d\n",srv_type);
 			break;
 	}
+	return -1;
 }
 

@@ -7,7 +7,7 @@ MDBSOURCES     =    backend.c index.c money.c catalog.c kkd.c sargs.c \
 				map.c props.c worktable.c options.c \
 				write.c stats.c iconv.c
 
-bin_PROGRAMS	=	unittest
+bin_PROGRAMS	=	unittest unittest2
 lib_LTLIBRARIES	=	libmdbodbc.la
 AM_CPPFLAGS	=	-I ../../include $(GLIB_CFLAGS)
 libmdbodbc_la_SOURCES=	odbc.c connectparams.c

@@ -65,3 +65,4 @@ AUTHORS
   The mdb-sql utility was written by Brian Bruns
 
 BUGS
+  The supported SQL syntax is a very limited subset and deficient in several ways.

@@ -571,6 +571,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	int passed = 0;
 	int idx_sz;
 	int idx_start = 0;
+	MdbColumn *col;
 
 	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
 
@@ -608,8 +609,10 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
 		*pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 		//printf("row = %d pg = %lu ipg->pg = %lu offset = %lu len = %d\n", *row, *pg, ipg->pg, ipg->offset, ipg->len);
-		idx_sz = 4;
-		if (ipg->len - 4 < idx_sz) {
+		col=g_ptr_array_index(idx->table->columns,idx->key_col_num[0]-1);
+		idx_sz = mdb_col_fixed_size(col);
+		/* handle compressed indexes, single key indexes only? */
+		if (idx->num_keys==1 && idx_sz>0 && ipg->len - 4 < idx_sz) {
 			//printf("short index found\n");
 			//buffer_dump(ipg->cache_value, 0, idx_sz);
 			memcpy(&ipg->cache_value[idx_sz - (ipg->len - 4)], &mdb->pg_buf[ipg->offset], ipg->len);

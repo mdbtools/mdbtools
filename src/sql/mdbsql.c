@@ -652,7 +652,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
 		sprintf(tmpstr,"%d",col->col_size);
 		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, 100, col_size);
-		mdb_fill_temp_field(&fields[2],tmpstr, tmpsiz, 0,0,0,2);
+		mdb_fill_temp_field(&fields[2],col_size, tmpsiz, 0,0,0,2);
 
 		row_size = mdb_pack_row(ttable, row_buffer, 3, fields);
 		mdb_add_row_to_pg(ttable,row_buffer, row_size);

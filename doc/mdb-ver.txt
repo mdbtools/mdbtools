@@ -10,6 +10,8 @@ DESCRIPTION
 
 OPTIONS
 
+  -M	Prints the version of MDB Tools itself instead of the MDB file.
+
 NOTES 
   Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats.
 

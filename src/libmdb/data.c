@@ -1073,7 +1073,7 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 			return text;
 		break;
 		case MDB_SDATETIME:
-			td = mdb_get_double(mdb, start);
+			td = mdb_get_double(mdb->pg_buf, start);
 			if (td > 1) {
 				t = (long int)((td - 25569.0) * 86400.0);
 			} else {

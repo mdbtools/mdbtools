@@ -51,7 +51,7 @@ like		{ return LIKE; }
 [A-z][A-z0-9_#@]*		{ yylval.name = strdup(yytext); return NAME; }
 
 '[A-z0-9 !@#$%^&*()-_+={}[\];:",.<>/?`~|\\]*'			{ yylval.name = strdup(yytext); return STRING; }
-(-*[0-9]+|([0-9]*\.[0-9+)([eE][-+]?[0-9]+)?) { 
+(-*[0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?) { 
 				yylval.name = strdup(yytext); return NUMBER; 
 			}
 ~?(\/?[A-z0-9\.]+)+		{ yylval.name = strdup(yytext); return PATH; }
