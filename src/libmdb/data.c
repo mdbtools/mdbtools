@@ -192,6 +192,7 @@ int mdb_fetch_row(MdbTableDef *table)
 MdbHandle *mdb = table->entry->mdb;
 int rows;
 
+	/* initialize */
 	if (!table->cur_pg_num) {
 		table->cur_pg_num=1;
 		table->cur_row=0;
@@ -199,14 +200,17 @@ int rows;
 	}
 
 	rows = mdb_get_int16(mdb,8);
+
+	/* if at end of page, find a new page */
+	if (table->cur_row >= rows) {
+		table->cur_row=0;
+		if (!mdb_read_next_dpg(table)) return 0;
+	}
+
 	mdb_read_row(table, 
 		table->cur_row);
 
 	table->cur_row++;
-	if (table->cur_row > rows) {
-		table->cur_row=0;
-		if (!mdb_read_next_dpg(table)) return 0;
-	}
 	return 1;
 }
 void mdb_data_dump(MdbTableDef *table)
@@ -226,21 +230,6 @@ char *bound_values[256]; /* warning doesn't handle tables > 256 columns.  Can th
 			fprintf(stdout, "column %d is %s\n", j+1, bound_values[j]);
 		}
 	}
-#if 0
-	for (pg_num=1;pg_num<=table->num_pgs;pg_num++) {
-		mdb_read_pg(mdb,table->first_data_pg + pg_num);
-		rows = mdb_get_int16(mdb,8);
-		fprintf(stdout,"Rows on page %d: %d\n", 
-			pg_num + table->first_data_pg, 
-			rows);
-		for (i=0;i<rows;i++) {
-			mdb_read_row(table, i);
-			for (j=0;j<table->num_cols;j++) {
-				fprintf(stdout, "column %d is %s\n", j+1, bound_values[j]);
-			}
-		}
-	}
-#endif
 	for (i=0;i<table->num_cols;i++) {
 		free(bound_values[i]);
 	}
