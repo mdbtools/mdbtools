@@ -112,7 +112,7 @@ int mdb_find_row(MdbHandle *mdb, int row, int *start, int *len)
 	*start = mdb_get_int16(mdb->pg_buf, rco + 2 + row*2);
 	next_start = (row == 0) ? mdb->fmt->pg_size :
 		mdb_get_int16(mdb->pg_buf, rco + row*2) & OFFSET_MASK;
-	*len = next_start - *start;
+	*len = next_start - (*start & OFFSET_MASK);
 	return 0;
 }
 
