@@ -1,3 +1,6 @@
+Wed Mar 30 23:21:25 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* autogen.sh: Improve order of autotools calls
+
 Mon Mar 28 21:31:36 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* acinclude.m4:
 	* src/util/Makefile.am: Only mdb-sql depends on readline

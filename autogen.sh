@@ -74,11 +74,13 @@ if test "$DIE" -eq 1; then
   exit 1
 fi
 
+if test x$NOCONFIGURE = x; then
 if test -z "$*"; then
   echo "**Warning**: I am going to run \`configure' with no arguments."
   echo "If you wish to pass any to it, please specify them on the"
   echo \`$0\'" command line."
   echo
+fi
 fi
 
 case $CC in
@@ -123,18 +125,18 @@ do
 	echo "Making $dr/aclocal.m4 writable ..."
 	test -r $dr/aclocal.m4 && chmod u+w $dr/aclocal.m4
       fi
+      echo "Running aclocal $aclocalinclude ..."
+      aclocal $aclocalinclude
       if grep "^A[CM]_PROG_LIBTOOL" configure.in >/dev/null; then
 	echo "Running libtoolize..."
 	libtoolize --force --copy
       fi
-      echo "Running aclocal $aclocalinclude ..."
-      aclocal $aclocalinclude
       if grep "^A[CM]_CONFIG_HEADER" configure.in >/dev/null; then
 	echo "Running autoheader..."
 	autoheader
       fi
       echo "Running automake --gnu $am_opt ..."
-      automake --add-missing --gnu $am_opt
+      automake --add-missing --gnu --copy $am_opt
       echo "Running autoconf ..."
       autoconf
     )
