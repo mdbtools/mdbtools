@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.17 2004/04/13 03:17:20 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.18 2004/05/30 08:06:43 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -440,11 +440,10 @@ ODBCConnection* dbc;
 
 	TRACE("_SQLAllocConnect");
 	env = (struct _henv *) henv;
-        dbc = (SQLHDBC) malloc (sizeof (ODBCConnection));
-        memset(dbc,'\0',sizeof (ODBCConnection));
+	dbc = (SQLHDBC) g_malloc0(sizeof (ODBCConnection));
 	dbc->hdbc.henv=env;
-	
-     dbc->params = NewConnectParams ();
+
+	dbc->params = NewConnectParams ();
 	*phdbc=dbc;
 
 	return SQL_SUCCESS;
@@ -463,8 +462,7 @@ static SQLRETURN SQL_API _SQLAllocEnv(
 struct _henv *env;
 
 	TRACE("_SQLAllocEnv");
-     env = (SQLHENV) g_malloc(sizeof(struct _henv));
-     memset(env,'\0',sizeof(struct _henv));
+	env = (SQLHENV) g_malloc0(sizeof(struct _henv));
 	*phenv=env;
 	env->sql = mdb_sql_init();
 	return SQL_SUCCESS;
@@ -486,8 +484,7 @@ struct _hstmt *stmt;
 	TRACE("_SQLAllocStmt");
 	dbc = (struct _hdbc *) hdbc;
 
-     stmt = (SQLHSTMT) g_malloc(sizeof(struct _hstmt));
-     memset(stmt,'\0',sizeof(struct _hstmt));
+	stmt = (SQLHSTMT) g_malloc0(sizeof(struct _hstmt));
 	stmt->hdbc=hdbc;
 	*phstmt = stmt;
 
@@ -510,7 +507,7 @@ SQLRETURN SQL_API SQLBindCol(
     SQLINTEGER FAR    *pcbValue)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _sql_bind_info *cur, *prev, *newitem;
+	struct _sql_bind_info *cur, *newitem;
 
 	TRACE("SQLBindCol");
 	/* find available item in list */
@@ -527,8 +524,7 @@ SQLRETURN SQL_API SQLBindCol(
    		cur->varaddr = (char *) rgbValue;
 	} else {
 		/* didn't find it create a new one */
-		newitem = (struct _sql_bind_info *) malloc(sizeof(struct _sql_bind_info));
-		memset(newitem, 0, sizeof(struct _sql_bind_info));
+		newitem = (struct _sql_bind_info *) g_malloc0(sizeof(struct _sql_bind_info));
 		newitem->column_number = icol;
 		newitem->column_bindtype = fCType;
    		newitem->column_bindlen = cbValueMax;
@@ -540,11 +536,10 @@ SQLRETURN SQL_API SQLBindCol(
 		} else {
 			/* find the tail of the list */
 			cur = stmt->bind_head;
-			while (cur) {
-				prev = cur;
+			while (cur->next) {
 				cur = cur->next;
 			}
-			prev->next = newitem;
+			cur->next = newitem;
 		}
 	}
 

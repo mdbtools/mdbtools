@@ -60,7 +60,7 @@ static gboolean cleanup (gpointer key, gpointer value, gpointer user_data);
 
 ConnectParams* NewConnectParams ()
 {
-   ConnectParams* params = malloc (sizeof (ConnectParams));
+   ConnectParams* params = (ConnectParams *) g_malloc(sizeof (ConnectParams));
    if (!params)
       return params;
    
@@ -88,6 +88,7 @@ void FreeConnectParams (ConnectParams* params)
          g_hash_table_foreach_remove (params->table, cleanup, NULL);
          g_hash_table_destroy (params->table);
       }
+      g_free(params);
    }
 }
 
@@ -197,7 +198,7 @@ void SetConnectString (ConnectParams* params, const gchar* connectString)
    /*
     * Make a copy of the connection string so we can modify it
     */
-   cs = strdup (connectString);
+   cs = (char *) g_strdup(connectString);
    s = cs;
    /*
     * Loop over ';' seperated name=value pairs
@@ -239,21 +240,21 @@ void SetConnectString (ConnectParams* params, const gchar* connectString)
 	 /* 
 	  * cleanup strings 
 	  */
-	 free (key);
-	 free (oldvalue);
+	 g_free (key);
+	 g_free (oldvalue);
       }
       /*
        * Insert the name/value pair into the hash table.
        *
-       * Note that these strdup allocations are freed in cleanup,
+       * Note that these g_strdup allocations are freed in cleanup,
        * which is called by FreeConnectParams.
        */
-      g_hash_table_insert (params->table, strdup (name), strdup (value));
+      g_hash_table_insert (params->table, g_strdup (name), g_strdup (value));
 
       p = strchr (s, '=');
    }  
 
-   free (cs);
+   g_free (cs);
 }
 
 /*
@@ -471,8 +472,8 @@ static void visit (gpointer key, gpointer value, gpointer user_data)
 
 static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
 {
-   free (key);
-   free (value);
+   g_free (key);
+   g_free (value);
 
    return TRUE;
 }
