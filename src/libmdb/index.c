@@ -181,6 +181,15 @@ mdb_index_hash_text(guchar *text, guchar *hash)
 	}
 	hash[strlen(text)]=0;
 }
+void
+mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest)
+{
+	int i, j = 0;
+
+	for (i = sz; i > 0; i++) {
+		dest[j++] = src[i];
+	}
+}
 guint32
 mdb_index_swap_int32(guint32 l)
 {

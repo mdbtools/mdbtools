@@ -146,6 +146,7 @@ extern GHashTable	*mdb_backends;
 
 /* forward declarations */
 typedef struct mdbindex MdbIndex;
+typedef struct mdbsargtree MdbSargNode;
 
 typedef struct {
 	char *name;
@@ -273,14 +274,14 @@ typedef struct {
 	int		row_col_num;
 } MdbColumn;
 
-typedef struct _mdbsargtree {
+struct mdbsargtree {
 	int       op;
 	MdbColumn *col;
 	MdbAny    value;
 	void      *parent;
-	struct _mdbsargtree *left;
-	struct _mdbsargtree *right;
-} MdbSargNode;
+	MdbSargNode *left;
+	MdbSargNode *right;
+};
 
 typedef struct {
 	guint32 pg;
@@ -471,6 +472,8 @@ extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *cha
 extern void mdb_index_hash_text(guchar *text, guchar *hash);
 extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
+extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
+
 
 /* stats.c */
 extern void mdb_stats_on(MdbHandle *mdb);

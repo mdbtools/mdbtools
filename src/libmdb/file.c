@@ -149,6 +149,16 @@ MdbFile *f;
 	f->refs++;
 	return mdb;
 }
+/**
+ * mdb_open:
+ * @filename: path to MDB (database) file
+ *
+ * Opens an MDB file and returns an MdbHandle to it.  MDB File may be relative
+ * to the current directory, a full path to the file, or relative to a 
+ * component of $MDBPATH.
+ *
+ * Return value: pointer to MdbHandle structure.
+ **/
 MdbHandle *mdb_open(char *filename)
 {
 	return _mdb_open(filename, FALSE);

@@ -2,6 +2,15 @@ Mon Apr 12 09:56:23 EDT 2004	Brian Bruns <brian@bruns.com>
 	* include/mdbtools:
 	* src/libmdb/mem.c:
 	* src/libmdb/backend.c: free backends on exit (Jeff Smith)
+	* src/libmdb/index.c: missing function mdb_swap_n()
+	* src/libmdb/file.c: 
+	* configure.in:
+	* doc/reference/libmdb/Makefile.am:
+	* doc/reference/libmdb/libmdb-sections.txt:
+	* doc/reference/libmdb/libmdb-docs.sgml: Initial cut at gtk-doc reference manual
+	* include/mdbtools.h: Change MdbSargNode typedef to forward declaration to make gtk-doc happy
+	* doc/faq.html: Fix unclosed <ul> tag
+	* TODO: update finished items
 
 Thu Mar 25 04:56:05 EST 2004	Brian Bruns <brian@bruns.com>
 	* src/odbc/odbc.c(_SQLFreeStmt): call mdb_sql_reset on stmt drop (Jeff Smith)

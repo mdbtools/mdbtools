@@ -30,7 +30,7 @@ utils:
 
 . need program to unpack VBA script to file (see prole)
 . Access forms to glade converter ?
-. need --version flag
+. need --version flag (done using -M flag on mdb-ver)
 . -o on mdb-sql not working
 
 SQL Engine:
@@ -40,13 +40,13 @@ SQL Engine:
 . OR clauses using sarg trees from above (done)
 . insert/updates
 . bogus column name in where clause not caught
-. const = const type operations not working (e.g. WHERE 0=1)
+. const = const type operations not working (e.g. WHERE 0=1) (done)
 . list tables/describe table shouldn't directly write to stdout (done, but will blow up on big tables)
 
 ODBC:
 
 . Figure out why we get unresolved symbols when ODBC driver load by DM (iODBC 
-  only?)
+  only)
 . Boolean not working (done)
 . many unimplemented funtions
 
