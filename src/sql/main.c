@@ -1,11 +1,37 @@
 #include <stdio.h>
-#include <readline.h>
+#ifdef HAVE_READLINE
+#include <readline/readline.h>
+#endif
 #include <string.h>
 #include "mdbsql.h"
 
 extern MdbSQL *g_sql;
 
 char *g_input_ptr;
+
+#ifndef HAVE_READLINE
+char *readline(char *prompt)
+{
+char *buf, line[1000];
+int i = 0;
+
+	printf("%s",prompt);
+	fgets(line,1000,stdin);
+	for (i=strlen(line);i>0;i--) {
+		if (line[i]=='\n') {
+			line[i]='\0';
+			break;
+		}
+	}
+	buf = (char *) malloc(strlen(line)+1);
+	strcpy(buf,line);
+
+	return buf;
+}
+add_history(char *s)
+{
+}
+#endif
 
 int mdb_sql_yyinput(char *buf, int need)
 {

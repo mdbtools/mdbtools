@@ -73,13 +73,13 @@ PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 VERSION = @VERSION@
-YACC = @YACC@
 
-bin_PROGRAMS = mdb-dump
-mdb_dump_SOURCES = mdb-dump.c mdbsupport.c
+bin_PROGRAMS = mdb-sql
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LDADD = ../libmdb/libmdb.la 
-LIBS = `glib-config --libs`
+LIBS = `glib-config --libs` $(READLINE_LIBS) @LEXLIB@
+mdb_sql_SOURCES = mdbsql.c main.c parser.y lexer.l 
+YACC = yacc -d
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
@@ -88,31 +88,33 @@ PROGRAMS =  $(bin_PROGRAMS)
 DEFS = @DEFS@ -I. -I$(srcdir) 
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
-mdb_dump_OBJECTS =  mdb-dump.o mdbsupport.o
-mdb_dump_LDADD = $(LDADD)
-mdb_dump_DEPENDENCIES =  ../libmdb/libmdb.la
-mdb_dump_LDFLAGS = 
+mdb_sql_OBJECTS =  mdbsql.o main.o parser.o lexer.o
+mdb_sql_LDADD = $(LDADD)
+mdb_sql_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_sql_LDFLAGS = 
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
+LEXLIB = @LEXLIB@
 CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
-DIST_COMMON =  Makefile.am Makefile.in
+DIST_COMMON =  Makefile.am Makefile.in lexer.c parser.c
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/mdb-dump.P .deps/mdbsupport.P
-SOURCES = $(mdb_dump_SOURCES)
-OBJECTS = $(mdb_dump_OBJECTS)
+DEP_FILES =  .deps/lexer.P .deps/main.P .deps/mdbsql.P .deps/parser.P
+SOURCES = $(mdb_sql_SOURCES)
+OBJECTS = $(mdb_sql_OBJECTS)
 
 all: all-redirect
 .SUFFIXES:
-.SUFFIXES: .S .c .lo .o .s
+.SUFFIXES: .S .c .l .lo .o .s .y
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/extras/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/sql/Makefile
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
@@ -176,9 +178,18 @@ distclean-libtool:
 
 maintainer-clean-libtool:
 
-mdb-dump: $(mdb_dump_OBJECTS) $(mdb_dump_DEPENDENCIES)
-	@rm -f mdb-dump
-	$(LINK) $(mdb_dump_LDFLAGS) $(mdb_dump_OBJECTS) $(mdb_dump_LDADD) $(LIBS)
+mdb-sql: $(mdb_sql_OBJECTS) $(mdb_sql_DEPENDENCIES)
+	@rm -f mdb-sql
+	$(LINK) $(mdb_sql_LDFLAGS) $(mdb_sql_OBJECTS) $(mdb_sql_LDADD) $(LIBS)
+.l.c:
+	$(LEX) $(AM_LFLAGS) $(LFLAGS) $< && mv $(LEX_OUTPUT_ROOT).c $@
+.y.c:
+	$(YACC) $(AM_YFLAGS) $(YFLAGS) $< && mv y.tab.c $*.c
+	if test -f y.tab.h; then \
+	if cmp -s y.tab.h $*.h; then rm -f y.tab.h; else mv y.tab.h $*.h; fi; \
+	else :; fi
+parser.h: parser.c
+
 
 tags: TAGS
 
@@ -211,14 +222,14 @@ maintainer-clean-tags:
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = src/extras
+subdir = src/sql
 
 distdir: $(DISTFILES)
 	here=`cd $(top_builddir) && pwd`; \
 	top_distdir=`cd $(top_distdir) && pwd`; \
 	distdir=`cd $(distdir) && pwd`; \
 	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/extras/Makefile
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/sql/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
@@ -297,6 +308,7 @@ distclean-generic:
 	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
 
 maintainer-clean-generic:
+	-test -z "lexerlparserhparserc" || rm -f lexerl parserh parserc
 mostlyclean-am:  mostlyclean-binPROGRAMS mostlyclean-compile \
 		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
 		mostlyclean-generic

@@ -1,10 +1,10 @@
-This is mdbtools version 0.2
+This is mdbtools version 0.3
 
-This software is alpha so don't expect too much unless you know C and 
+This software is beta so don't expect too much unless you know C and 
 probably a little something about databases and reverse engineering file 
 formats, you're welcome to try it out but don't expect miracles.
 
-For the rest of you, read the HACKERS file for a description of where the code 
+For the rest of you, read the HACKING file for a description of where the code 
 stands and what has been gleened of the file format.
 
 The initial goal of these tools is to be able to extract data structures and 

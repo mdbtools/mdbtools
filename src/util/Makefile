@@ -1,3 +1,4 @@
+# Generated automatically from Makefile.in by configure.
 # Makefile.in generated automatically by automake 1.4 from Makefile.am
 
 # Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
@@ -11,45 +12,44 @@
 # PARTICULAR PURPOSE.
 
 
-SHELL = @SHELL@
+SHELL = /bin/sh
 
-srcdir = @srcdir@
-top_srcdir = @top_srcdir@
-VPATH = @srcdir@
-prefix = @prefix@
-exec_prefix = @exec_prefix@
+srcdir = .
+top_srcdir = ../..
+prefix = /usr/local
+exec_prefix = ${prefix}
 
-bindir = @bindir@
-sbindir = @sbindir@
-libexecdir = @libexecdir@
-datadir = @datadir@
-sysconfdir = @sysconfdir@
-sharedstatedir = @sharedstatedir@
-localstatedir = @localstatedir@
-libdir = @libdir@
-infodir = @infodir@
-mandir = @mandir@
-includedir = @includedir@
+bindir = ${exec_prefix}/bin
+sbindir = ${exec_prefix}/sbin
+libexecdir = ${exec_prefix}/libexec
+datadir = ${prefix}/share
+sysconfdir = ${prefix}/etc
+sharedstatedir = ${prefix}/com
+localstatedir = ${prefix}/var
+libdir = ${exec_prefix}/lib
+infodir = ${prefix}/info
+mandir = ${prefix}/man
+includedir = ${prefix}/include
 oldincludedir = /usr/include
 
 DESTDIR =
 
-pkgdatadir = $(datadir)/@PACKAGE@
-pkglibdir = $(libdir)/@PACKAGE@
-pkgincludedir = $(includedir)/@PACKAGE@
+pkgdatadir = $(datadir)/mdbtools
+pkglibdir = $(libdir)/mdbtools
+pkgincludedir = $(includedir)/mdbtools
 
 top_builddir = ../..
 
-ACLOCAL = @ACLOCAL@
-AUTOCONF = @AUTOCONF@
-AUTOMAKE = @AUTOMAKE@
-AUTOHEADER = @AUTOHEADER@
+ACLOCAL = aclocal
+AUTOCONF = autoconf
+AUTOMAKE = automake
+AUTOHEADER = autoheader
 
-INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
-INSTALL_DATA = @INSTALL_DATA@
-INSTALL_SCRIPT = @INSTALL_SCRIPT@
-transform = @program_transform_name@
+INSTALL = /usr/bin/install -c
+INSTALL_PROGRAM = ${INSTALL} $(AM_INSTALL_PROGRAM_FLAGS)
+INSTALL_DATA = ${INSTALL} -m 644
+INSTALL_SCRIPT = ${INSTALL_PROGRAM}
+transform = s,x,x,
 
 NORMAL_INSTALL = :
 PRE_INSTALL = :
@@ -57,26 +57,25 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-host_alias = @host_alias@
-host_triplet = @host@
+host_alias = i686-pc-linux-gnu
+host_triplet = i686-pc-linux-gnu
 AS = @AS@
-CC = @CC@
+CC = gcc
 DLLTOOL = @DLLTOOL@
-LD = @LD@
-LEX = @LEX@
-LIBTOOL = @LIBTOOL@
-LN_S = @LN_S@
-MAKEINFO = @MAKEINFO@
-NM = @NM@
+LD = /usr/bin/ld
+LEX = flex
+LIBTOOL = $(SHELL) $(top_builddir)/libtool
+LN_S = ln -s
+MAKEINFO = makeinfo
+NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
-PACKAGE = @PACKAGE@
-RANLIB = @RANLIB@
-READLINE_LIBS = @READLINE_LIBS@
-VERSION = @VERSION@
-YACC = @YACC@
+PACKAGE = mdbtools
+RANLIB = ranlib
+READLINE_LIBS =  -lncurses -lreadline
+VERSION = 0.3
+YACC = bison -y
 
-bin_PROGRAMS = mdb-dump
-mdb_dump_SOURCES = mdb-dump.c mdbsupport.c
+bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header prtable prcat prdata prkkd prdump
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LDADD = ../libmdb/libmdb.la 
 LIBS = `glib-config --libs`
@@ -85,14 +84,65 @@ CONFIG_CLEAN_FILES =
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS = @DEFS@ -I. -I$(srcdir) 
-CPPFLAGS = @CPPFLAGS@
-LDFLAGS = @LDFLAGS@
-mdb_dump_OBJECTS =  mdb-dump.o mdbsupport.o
-mdb_dump_LDADD = $(LDADD)
-mdb_dump_DEPENDENCIES =  ../libmdb/libmdb.la
-mdb_dump_LDFLAGS = 
-CFLAGS = @CFLAGS@
+DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
+CPPFLAGS = 
+LDFLAGS = 
+mdb_export_SOURCES = mdb-export.c
+mdb_export_OBJECTS =  mdb-export.o
+mdb_export_LDADD = $(LDADD)
+mdb_export_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_export_LDFLAGS = 
+mdb_array_SOURCES = mdb-array.c
+mdb_array_OBJECTS =  mdb-array.o
+mdb_array_LDADD = $(LDADD)
+mdb_array_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_array_LDFLAGS = 
+mdb_schema_SOURCES = mdb-schema.c
+mdb_schema_OBJECTS =  mdb-schema.o
+mdb_schema_LDADD = $(LDADD)
+mdb_schema_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_schema_LDFLAGS = 
+mdb_tables_SOURCES = mdb-tables.c
+mdb_tables_OBJECTS =  mdb-tables.o
+mdb_tables_LDADD = $(LDADD)
+mdb_tables_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_tables_LDFLAGS = 
+mdb_parsecsv_SOURCES = mdb-parsecsv.c
+mdb_parsecsv_OBJECTS =  mdb-parsecsv.o
+mdb_parsecsv_LDADD = $(LDADD)
+mdb_parsecsv_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_parsecsv_LDFLAGS = 
+mdb_header_SOURCES = mdb-header.c
+mdb_header_OBJECTS =  mdb-header.o
+mdb_header_LDADD = $(LDADD)
+mdb_header_DEPENDENCIES =  ../libmdb/libmdb.la
+mdb_header_LDFLAGS = 
+prtable_SOURCES = prtable.c
+prtable_OBJECTS =  prtable.o
+prtable_LDADD = $(LDADD)
+prtable_DEPENDENCIES =  ../libmdb/libmdb.la
+prtable_LDFLAGS = 
+prcat_SOURCES = prcat.c
+prcat_OBJECTS =  prcat.o
+prcat_LDADD = $(LDADD)
+prcat_DEPENDENCIES =  ../libmdb/libmdb.la
+prcat_LDFLAGS = 
+prdata_SOURCES = prdata.c
+prdata_OBJECTS =  prdata.o
+prdata_LDADD = $(LDADD)
+prdata_DEPENDENCIES =  ../libmdb/libmdb.la
+prdata_LDFLAGS = 
+prkkd_SOURCES = prkkd.c
+prkkd_OBJECTS =  prkkd.o
+prkkd_LDADD = $(LDADD)
+prkkd_DEPENDENCIES =  ../libmdb/libmdb.la
+prkkd_LDFLAGS = 
+prdump_SOURCES = prdump.c
+prdump_OBJECTS =  prdump.o
+prdump_LDADD = $(LDADD)
+prdump_DEPENDENCIES =  ../libmdb/libmdb.la
+prdump_LDFLAGS = 
+CFLAGS = -g -O2
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -104,15 +154,18 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/mdb-dump.P .deps/mdbsupport.P
-SOURCES = $(mdb_dump_SOURCES)
-OBJECTS = $(mdb_dump_OBJECTS)
+DEP_FILES =  .deps/mdb-array.P .deps/mdb-export.P .deps/mdb-header.P \
+.deps/mdb-parsecsv.P .deps/mdb-schema.P .deps/mdb-tables.P \
+.deps/prcat.P .deps/prdata.P .deps/prdump.P .deps/prkkd.P \
+.deps/prtable.P
+SOURCES = mdb-export.c mdb-array.c mdb-schema.c mdb-tables.c mdb-parsecsv.c mdb-header.c prtable.c prcat.c prdata.c prkkd.c prdump.c
+OBJECTS = mdb-export.o mdb-array.o mdb-schema.o mdb-tables.o mdb-parsecsv.o mdb-header.o prtable.o prcat.o prdata.o prkkd.o prdump.o
 
 all: all-redirect
 .SUFFIXES:
 .SUFFIXES: .S .c .lo .o .s
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/extras/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/util/Makefile
 
 Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
@@ -176,9 +229,49 @@ distclean-libtool:
 
 maintainer-clean-libtool:
 
-mdb-dump: $(mdb_dump_OBJECTS) $(mdb_dump_DEPENDENCIES)
-	@rm -f mdb-dump
-	$(LINK) $(mdb_dump_LDFLAGS) $(mdb_dump_OBJECTS) $(mdb_dump_LDADD) $(LIBS)
+mdb-export: $(mdb_export_OBJECTS) $(mdb_export_DEPENDENCIES)
+	@rm -f mdb-export
+	$(LINK) $(mdb_export_LDFLAGS) $(mdb_export_OBJECTS) $(mdb_export_LDADD) $(LIBS)
+
+mdb-array: $(mdb_array_OBJECTS) $(mdb_array_DEPENDENCIES)
+	@rm -f mdb-array
+	$(LINK) $(mdb_array_LDFLAGS) $(mdb_array_OBJECTS) $(mdb_array_LDADD) $(LIBS)
+
+mdb-schema: $(mdb_schema_OBJECTS) $(mdb_schema_DEPENDENCIES)
+	@rm -f mdb-schema
+	$(LINK) $(mdb_schema_LDFLAGS) $(mdb_schema_OBJECTS) $(mdb_schema_LDADD) $(LIBS)
+
+mdb-tables: $(mdb_tables_OBJECTS) $(mdb_tables_DEPENDENCIES)
+	@rm -f mdb-tables
+	$(LINK) $(mdb_tables_LDFLAGS) $(mdb_tables_OBJECTS) $(mdb_tables_LDADD) $(LIBS)
+
+mdb-parsecsv: $(mdb_parsecsv_OBJECTS) $(mdb_parsecsv_DEPENDENCIES)
+	@rm -f mdb-parsecsv
+	$(LINK) $(mdb_parsecsv_LDFLAGS) $(mdb_parsecsv_OBJECTS) $(mdb_parsecsv_LDADD) $(LIBS)
+
+mdb-header: $(mdb_header_OBJECTS) $(mdb_header_DEPENDENCIES)
+	@rm -f mdb-header
+	$(LINK) $(mdb_header_LDFLAGS) $(mdb_header_OBJECTS) $(mdb_header_LDADD) $(LIBS)
+
+prtable: $(prtable_OBJECTS) $(prtable_DEPENDENCIES)
+	@rm -f prtable
+	$(LINK) $(prtable_LDFLAGS) $(prtable_OBJECTS) $(prtable_LDADD) $(LIBS)
+
+prcat: $(prcat_OBJECTS) $(prcat_DEPENDENCIES)
+	@rm -f prcat
+	$(LINK) $(prcat_LDFLAGS) $(prcat_OBJECTS) $(prcat_LDADD) $(LIBS)
+
+prdata: $(prdata_OBJECTS) $(prdata_DEPENDENCIES)
+	@rm -f prdata
+	$(LINK) $(prdata_LDFLAGS) $(prdata_OBJECTS) $(prdata_LDADD) $(LIBS)
+
+prkkd: $(prkkd_OBJECTS) $(prkkd_DEPENDENCIES)
+	@rm -f prkkd
+	$(LINK) $(prkkd_LDFLAGS) $(prkkd_OBJECTS) $(prkkd_LDADD) $(LIBS)
+
+prdump: $(prdump_OBJECTS) $(prdump_DEPENDENCIES)
+	@rm -f prdump
+	$(LINK) $(prdump_LDFLAGS) $(prdump_OBJECTS) $(prdump_LDADD) $(LIBS)
 
 tags: TAGS
 
@@ -211,14 +304,14 @@ maintainer-clean-tags:
 
 distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 
-subdir = src/extras
+subdir = src/util
 
 distdir: $(DISTFILES)
 	here=`cd $(top_builddir) && pwd`; \
 	top_distdir=`cd $(top_distdir) && pwd`; \
 	distdir=`cd $(distdir) && pwd`; \
 	cd $(top_srcdir) \
-	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/extras/Makefile
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu src/util/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \

@@ -1,0 +1,4 @@
+The organization of the project files has changed a bit from that last release.
+The autoconf stuff has been moved to the root directory.  The include directory
+has also been moved from src/include to include
+

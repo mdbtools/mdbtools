@@ -1,7 +1,7 @@
 %{
-#include "y.tab.h"
 #include <string.h>
 #include "mdbsql.h"
+#include "parser.h"
 
 extern MdbSQL *g_sql;
 %}
