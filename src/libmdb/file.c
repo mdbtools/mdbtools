@@ -110,25 +110,23 @@ MdbHandle *mdb;
 int bufsize;
 MdbFile *f;
 
-	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
-	memset(mdb, '\0', sizeof(MdbHandle));
+	mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
-	mdb->f = f = (MdbFile *) malloc(sizeof(MdbFile));
-	memset(f, '\0', sizeof(MdbFile));
-	f->filename = (char *) malloc(strlen(filename)+1);
+	mdb->f = f = (MdbFile *) g_malloc0(sizeof(MdbFile));
+	f->filename = (char *) g_malloc(strlen(filename)+1);
 	bufsize = strlen(filename)+1;
 	bufsize = mdb_find_file(filename, f->filename, bufsize);
 	if (bufsize) {
-		f->filename = (char *) realloc(f->filename, bufsize+1);
+		f->filename = (char *) g_realloc(f->filename, bufsize+1);
 		bufsize = mdb_find_file(filename, f->filename, bufsize);
 		if (bufsize) { 
 			fprintf(stderr, "Can't alloc filename\n");
-			free(f->filename);
-			free(f);
+			g_free(f->filename);
+			g_free(f);
 			g_free(mdb->backend_name);
-			free(mdb);
+			g_free(mdb);
 			return NULL; 
 		}
 	}
@@ -186,12 +184,12 @@ mdb_close(MdbHandle *mdb)
 			mdb->f->refs--;
 		} else {
 			if (mdb->f->fd) close(mdb->f->fd);
-			if (mdb->f->filename) free(mdb->f->filename);
-			free(mdb->f);
+			g_free(mdb->f->filename);
+			g_free(mdb->f);
 		}
 	}
 
-	free(mdb);
+	g_free(mdb);
 }
 /**
  * mdb_clone_handle:
@@ -208,8 +206,7 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	MdbCatalogEntry *entry, *data;
 	int i;
 
-	newmdb = (MdbHandle *) malloc(sizeof(MdbHandle));
-	memcpy(newmdb, mdb, sizeof(MdbHandle));
+	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
 	newmdb->stats = NULL;
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {

@@ -73,8 +73,7 @@ mdb_read_table(MdbCatalogEntry *entry)
 	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
 	row_end = mdb_find_end_of_row(mdb, rownum);
 	table->map_sz = row_end - row_start + 1;
-	table->usage_map = malloc(table->map_sz);
-	memcpy(table->usage_map, &mdb->pg_buf[row_start], table->map_sz);
+	table->usage_map = g_memdup(&mdb->pg_buf[row_start], table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		buffer_dump(mdb->pg_buf, row_start, row_end);
 	/* swap back */
@@ -91,8 +90,7 @@ mdb_read_table(MdbCatalogEntry *entry)
 	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
 	row_end = mdb_find_end_of_row(mdb, rownum);
 	table->freemap_sz = row_end - row_start + 1;
-	table->free_usage_map = malloc(table->freemap_sz);
-	memcpy(table->free_usage_map, &mdb->pg_buf[row_start], table->freemap_sz);
+	table->free_usage_map = g_memdup(&mdb->pg_buf[row_start], table->freemap_sz);
 	mdb_swap_pgbuf(mdb);
 #endif
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1), rownum, row_start, row_end);

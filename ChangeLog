@@ -1,3 +1,9 @@
+Sun May 30 00:04:55 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/data.c:
+	* src/libmdb/file.c:
+	* src/libmdb/mem.c:
+	* src/libmdb/table.c: malloc to g_malloc
+
 Sat May 29 14:14:21 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/backend.c:
 	* src/libmdb/file.c: malloc to g_malloc for backend functions

@@ -84,8 +84,7 @@ MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 {
 	MdbTableDef *table;
 
-	table = (MdbTableDef *) malloc(sizeof(MdbTableDef));
-	memset(table, '\0', sizeof(MdbTableDef));
+	table = (MdbTableDef *) g_malloc0(sizeof(MdbTableDef));
 	table->entry=entry;
 	strcpy(table->name, entry->object_name);
 
@@ -95,9 +94,9 @@ void
 mdb_free_tabledef(MdbTableDef *table)
 {
 	if (!table) return;
-	if (table->usage_map) free(table->usage_map);
-	if (table->free_usage_map) free(table->free_usage_map);
-	free(table);
+	g_free(table->usage_map);
+	g_free(table->free_usage_map);
+	g_free(table);
 }
 
 void

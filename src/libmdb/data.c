@@ -607,21 +607,21 @@ mdb_fetch_row(MdbTableDef *table)
 }
 void mdb_data_dump(MdbTableDef *table)
 {
-int i, j;
-char *bound_values[MDB_MAX_COLS]; 
+	unsigned int i;
+	char *bound_values[MDB_MAX_COLS]; 
 
 	for (i=0;i<table->num_cols;i++) {
-		bound_values[i] = (char *) malloc(256);
+		bound_values[i] = (char *) g_malloc(256);
 		mdb_bind_column(table, i+1, bound_values[i]);
 	}
 	mdb_rewind_table(table);
 	while (mdb_fetch_row(table)) {
-		for (j=0;j<table->num_cols;j++) {
-			fprintf(stdout, "column %d is %s\n", j+1, bound_values[j]);
+		for (i=0;i<table->num_cols;i++) {
+			fprintf(stdout, "column %d is %s\n", i+1, bound_values[i]);
 		}
 	}
 	for (i=0;i<table->num_cols;i++) {
-		free(bound_values[i]);
+		g_free(bound_values[i]);
 	}
 }
 
