@@ -693,10 +693,16 @@ static int trim_trailing_zeros(char * buff)
 	char *p;
 	int n = strlen(buff);
 
+	/* Don't need to trim strings with no decimal portion */
+	if(!strchr(buff,'.'))
+		return 0;
+
+	/* Trim the zeros */
 	p = buff + n - 1;
 	while (p >= buff && *p == '0')
 		*p-- = '\0';
 
+	/* If a decimal sign is left at the end, remove it too */
 	if (*p == '.')
 		*p = '\0';
 
@@ -761,7 +767,36 @@ mdb_date_to_string(MdbHandle *mdb, int start)
 
 	return text;
 }
-				
+
+int floor_log10(double f, int is_single)
+{
+	unsigned int i;
+	double y = 10.0;
+
+	if (f < 0.0)
+		f = -f;
+	
+	if ((f == 0.0) || (f == 1.0)) {
+		return 0;
+	} else if (f < 1.0) {
+		if (is_single) {
+			/* The intermediate value p is necessary to prevent
+			 * promotion of the comparison to type double */
+			float p;
+			for (i=1; (p = f * y) < 1.0; i++)
+				y *= 10.0;
+		} else {
+			for (i=1; f * y < 1.0; i++)
+				y *= 10.0;
+		}
+		return -(int)i;
+	} else {  /* (x > 1.0) */
+		for (i=0; f >= y; i++)
+			y *= 10.0;
+		return (int)i;
+	}
+}
+
 char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
 {
 	char *text;
@@ -787,13 +822,13 @@ char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datat
 		case MDB_FLOAT:
 			tf = mdb_get_single(mdb->pg_buf, start);
 			text = g_strdup_printf("%.*f",
-				FLT_DIG - (int)ceil(log10(tf)), tf);
+				FLT_DIG - floor_log10(tf,1) - 1, tf);
 			trim_trailing_zeros(text);
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(mdb->pg_buf, start);
 			text = g_strdup_printf("%.*f",
-				DBL_DIG - (int)ceil(log10(td)), td);
+				DBL_DIG - floor_log10(td,0) - 1, td);
 			trim_trailing_zeros(text);
 		break;
 		case MDB_TEXT:
