@@ -58,10 +58,6 @@ mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int l
 		dest[i*2+1] = 0;
 		i++;
 	}
-	/* NULL */
-	dest[i*2] = 0;
-	dest[i*2+1] = 0;
-	i++;
 
 	return (i*2);
 }
