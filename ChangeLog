@@ -1,3 +1,9 @@
+Mon Jan 10 06:52:43 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/gmdb2/gladefiles/gmdb-debug.glade:
+	* src/gmdb2/debug.c:
+	* src/gmdb2/gmdb.h:
+	* src/gmdb2/table.c: Modify functions to work better with Glade
+
 Wed Jan  5 07:43:07 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/gmdb2/debug.c:
 	* src/gmdb2/file.c:

@@ -39,7 +39,7 @@ MdbCatalogEntry *entry;
 	}
 
 	entry = g_ptr_array_index(mdb->catalog,selected_table);
-	gmdb_debug_new_cb(w, (gpointer *) &entry->table_pg);
+	gmdb_debug_new_cb(w, (gpointer) &entry->table_pg);
 }
 void
 gmdb_table_def_cb(GtkList *list, GtkWidget *w, gpointer data)

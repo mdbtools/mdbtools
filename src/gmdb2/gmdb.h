@@ -57,8 +57,14 @@ void gmdb_table_add_tab(GtkWidget *notebook);
 void gmdb_debug_tab_new(GtkWidget *notebook);
 
 /* debug.c */
-void gmdb_debug_new_cb(GtkWidget *w, gpointer *data);
-void gmdb_debug_set_dissect_cb(GtkWidget *w, GladeXML *xml);
+void gmdb_debug_jump_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_jump_msb_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_display_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_close_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_forward_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_back_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_new_cb(GtkWidget *w, gpointer data);
+void gmdb_debug_set_dissect_cb(GtkWidget *w, gpointer data);
 void gmdb_debug_close_all(void);
 
 /* sql.c */

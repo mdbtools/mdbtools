@@ -21,7 +21,6 @@
 #include <gtk/gtkmessagedialog.h>
 #include <libgnome/gnome-i18n.h>
 
-extern GtkWidget *app;
 extern MdbHandle *mdb;
 
 GList *debug_list = NULL;
@@ -36,11 +35,10 @@ static GtkTreeIter *gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter, 
 static void gmdb_debug_clear(GladeXML *xml);
 static void gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len);
 static guint16 get_uint16(unsigned char *c);
-static guint32 get_uint24(unsigned char *c);
 static guint32 get_uint32(unsigned char *c);
 static long gmdb_get_max_page(MdbHandle *mdb);
-static void gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml);
 static void gmdb_debug_display(GladeXML *xml, guint32 page);
+static void gmdb_debug_jump(GtkWidget *w, GladeXML *xml, int msb);
 
 /* value to string stuff */
 typedef struct GMdbValStr {
@@ -103,8 +101,8 @@ GtkWidget *textview;
 
 	if (start == -1 || end == -1) return;
 
-	start_row = start / 16;
-	end_row = end / 16;
+	start_row = LINESZ * (start / 16);
+	end_row = LINESZ * (end / 16);
 	start_col = 8 + (start % 16) * 3;
 	end_col = 8 + (end % 16) * 3;
 
@@ -113,96 +111,89 @@ GtkWidget *textview;
 
 	if (start_row == end_row) {
 		gmdb_debug_text_on(textview, 
-			LINESZ * start_row + start_col,
-			LINESZ * start_row + end_col + 2);
+			start_row + start_col,
+			start_row + end_col + 2);
 		gmdb_debug_text_on(textview, 
-			LINESZ * start_row + 59 + (start % 16),
-			LINESZ * start_row + 59 + (end % 16) + 1);
+			start_row + 59 + (start % 16),
+			start_row + 59 + (end % 16) + 1);
 	} else {
 		gmdb_debug_text_on(textview, 
-			LINESZ * start_row + start_col,
+			start_row + start_col,
 			/* 55 = 8 (addr) + 15 (bytes) * 3 (%02x " ") + 2 (last byte) */
-			LINESZ * start_row + 55); 
+			start_row + 55); 
 		gmdb_debug_text_on(textview, 
-			LINESZ * start_row + 59 + (start % 16),
-			LINESZ * start_row + 75); 
-		for (i=start_row + 1; i < end_row; i++) {
-			gmdb_debug_text_on(textview, 
-				LINESZ * i + 8, LINESZ * i + 55);
-			gmdb_debug_text_on(textview, 
-				LINESZ * i + 59, LINESZ * i + 75);
+			start_row + 59 + (start % 16),
+			start_row + 75); 
+		for (i=start_row + LINESZ; i < end_row; i++) {
+			gmdb_debug_text_on(textview, i + 8, i + 55);
+			gmdb_debug_text_on(textview, i + 59, i + 75);
 		}
 		gmdb_debug_text_on(textview, 
-			LINESZ * end_row + 8,
-			LINESZ * end_row + end_col + 2); 
+			end_row + 8,
+			end_row + end_col + 2); 
 		gmdb_debug_text_on(textview,
-			LINESZ * end_row + 59,
-			LINESZ * end_row + 59 + (end % 16) + 1); 
+			end_row + 59,
+			end_row + 59 + (end % 16) + 1); 
 	}
 }
-static void
-gmdb_debug_forward_cb(GtkWidget *w, GladeXML *xml)
+void
+gmdb_debug_forward_cb(GtkWidget *w, gpointer data)
 {
 	guint *nav_elem;
 	gchar *page;
-	GtkWidget *win;
-	GList *nav_list = NULL;
+	GladeXML *xml;
+	GList *nav_list;
 	guint32 page_num;
 	guint num_items;
 
-	win = glade_xml_get_widget (xml, "debug_window");
-	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
-	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
+	nav_list = g_object_get_data(G_OBJECT(w),"nav_list");
+	nav_elem = g_object_get_data(G_OBJECT(w),"nav_elem");
 	num_items = g_list_length(nav_list);
 	if (!nav_elem || *nav_elem == num_items)
 		return;
 	(*nav_elem)++;
-	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
+	g_object_set_data(G_OBJECT(w), "nav_elem", nav_elem);
 	page = g_list_nth_data(nav_list,(*nav_elem) - 1);
 
 	page_num = atol(page);
+	xml = g_object_get_data(G_OBJECT(w), "debugwin_xml");
 	gmdb_debug_display(xml, page_num);
 }
-static void
-gmdb_debug_back_cb(GtkWidget *w, GladeXML *xml)
+void
+gmdb_debug_back_cb(GtkWidget *w, gpointer data)
 {
 	guint *nav_elem;
 	gchar *page;
-	GtkWidget *win;
-	GList *nav_list = NULL;
+	GladeXML *xml;
+	GList *nav_list;
 	guint32 page_num;
 
-	win = glade_xml_get_widget (xml, "debug_window");
-	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
-	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
+	nav_list = g_object_get_data(G_OBJECT(w),"nav_list");
+	nav_elem = g_object_get_data(G_OBJECT(w),"nav_elem");
 	if (!nav_elem || *nav_elem==1)
 		return; /* at top of list already */
 	(*nav_elem)--;
-	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
+	g_object_set_data(G_OBJECT(w), "nav_elem", nav_elem);
 	page = g_list_nth_data(nav_list,(*nav_elem) - 1);
 	
 	page_num = atol(page);
+	xml = g_object_get_data(G_OBJECT(w), "debugwin_xml");
 	gmdb_debug_display(xml, page_num);
 }
 static void
-gmdb_nav_add_page(GladeXML *xml, guint32 page_num)
+gmdb_nav_add_page(GtkWidget *win, guint32 page_num)
 {
 	GList *nav_list = NULL;
 	GList *link = NULL;
-	GtkWidget *win;
 	guint *nav_elem;
 	guint num_items;
-	char buf[100];
 	int i;
-
-	win = glade_xml_get_widget (xml, "debug_window");
 
 	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
 	if (!nav_elem) {
 		nav_elem = g_malloc0(sizeof(guint));
 	}
 
-	sprintf(buf, "%lu", (unsigned long)page_num);
 	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
 	
 	/*
@@ -221,15 +212,27 @@ gmdb_nav_add_page(GladeXML *xml, guint32 page_num)
 
 	*nav_elem = g_list_length(nav_list);
 
-	nav_list = g_list_append(nav_list, g_strdup(buf));
+	nav_list = g_list_append(nav_list,
+		g_strdup_printf("%lu", (unsigned long)page_num));
 
 	*nav_elem = g_list_length(nav_list);
 
 	g_object_set_data(G_OBJECT(win), "nav_list", nav_list);
 	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
 }
+
+void
+gmdb_debug_jump_cb(GtkWidget *w, gpointer data)
+{
+	gmdb_debug_jump(g_object_get_data(G_OBJECT(w), "debugwin_xml"), 0);
+}
+void
+gmdb_debug_jump_msb_cb(GtkWidget *w, gpointer data)
+{
+	gmdb_debug_jump(g_object_get_data(G_OBJECT(w), "debugwin_xml"), 1);
+}
 static void
-gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
+gmdb_debug_jump(GladeXML *xml, int msb)
 {
 	GtkTextView *textview;
 	GtkTextBuffer *txtbuffer;
@@ -249,6 +252,7 @@ gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 		return;
 	}
 	text = g_strdup(gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE));
+	//fprintf(stderr, "selected text = %s\n",text);
 	hex_digit = strtok(text, " ");
 	strcpy(page, "0x");
 	do {
@@ -258,84 +262,49 @@ gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 		}
 		strcpy(digits[num_digits++],hex_digit);
 	} while (num_digits < 4 && (hex_digit = strtok(NULL," ")));
-	for (i=num_digits-1;i>=0;i--) {
-		strcat(page, digits[i]);
+	if (msb) {
+		for (i=0;i<num_digits;i++) {
+			strcat(page, digits[i]);
+		}
+	} else {
+		for (i=num_digits-1;i>=0;i--) {
+			strcat(page, digits[i]);
+		}
 	}
 	g_free(text);
 	//fprintf(stderr, "going to page %s\n",page);
 	entry = glade_xml_get_widget (xml, "debug_entry");
 	gtk_entry_set_text(GTK_ENTRY(entry),page);
-	gmdb_debug_display_cb(w, xml);
+	gmdb_debug_display_cb(entry, NULL);
 }
-static void
-gmdb_debug_jump_msb_cb(GtkWidget *w, GladeXML *xml)
-{
-	GtkTextView *textview;
-	GtkTextBuffer *txtbuffer;
-	GtkTextIter start, end;
-	GtkWidget *entry;
-	gchar *text;
-	gchar page[12];
-	gchar digits[4][3];
-	gchar *hex_digit;
-	int i, num_digits = 0;
 
-	textview = (GtkTextView *) glade_xml_get_widget (xml, "debug_textview");
-	txtbuffer = gtk_text_view_get_buffer(textview);
-	if (!gtk_text_buffer_get_selection_bounds(txtbuffer, &start, &end)) {
-		/* FIX ME -- replace with text in status bar */
-		fprintf(stderr, "Nothing selected\n");
-		return;
-	}
-	text = g_strdup(gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE));
-	fprintf(stderr, "selected text = %s\n",text);
-	hex_digit = strtok(text, " ");
-	strcpy(page, "0x");
-	do {
-		if (strlen(hex_digit)>2) {
-			fprintf(stderr, "Not a hex value\n");
-			return;
-		}
-		strcpy(digits[num_digits++],hex_digit);
-	} while (num_digits < 4 && (hex_digit = strtok(NULL," ")));
-	for (i=0;i<num_digits;i++) {
-		strcat(page, digits[i]);
-	}
-	g_free(text);
-	fprintf(stderr, "going to page %s\n",page);
-	entry = glade_xml_get_widget (xml, "debug_entry");
-	gtk_entry_set_text(GTK_ENTRY(entry),page);
-	gmdb_debug_display_cb(w, xml);
-}
-static void
-gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
+/*
+ * w: pointer to GtkEntry 'debug_entry' 
+ */
+void
+gmdb_debug_display_cb(GtkWidget *w, gpointer data)
 {
 	int page;
 	int i;
-	GtkWidget *entry;
+	GtkWidget *win;
 	gchar *s;
-
+	GladeXML *xml;
 
 	if (!mdb) return;
 
-	entry = glade_xml_get_widget (xml, "debug_entry");
+	win = gtk_widget_get_toplevel(w);
+	xml = g_object_get_data(G_OBJECT(win), "debugwin_xml");
 	
-	s = g_strdup(gtk_entry_get_text(GTK_ENTRY(entry)));
-	
+	s = g_strdup(gtk_entry_get_text(GTK_ENTRY(w)));
 	if (!strncmp(s,"0x",2)) {
-		page = 0;
-		for (i=2;i<strlen(s);i++) {
-			page *= 16;
-			if (isupper(s[i]))
-				s[i] -= 0x20;
-			page += s[i] > '9' ? s[i] - 'a' + 10 : s[i] - '0';
-		}
+		page = strtol(s+2, NULL, 16);
 	} else {
-		page = atol(gtk_entry_get_text(GTK_ENTRY(entry)));
+		page = strtol(s, NULL, 10);
 	}
+	g_free(s);
+
 	if (page>gmdb_get_max_page(mdb) || page<0) {
-		GtkWidget* dlg = gtk_message_dialog_new (
-		    GTK_WINDOW(gtk_widget_get_toplevel(w)),
+		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW(win),
 		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING,
 		    GTK_BUTTONS_CLOSE,
 		    _("Page entered is outside valid page range."));
@@ -344,7 +313,7 @@ gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
 	}
 
 	/* add to the navigation list */
-	gmdb_nav_add_page(xml, page);
+	gmdb_nav_add_page(win, page);
 	/* gmdb_debug_display handles the mechanics of getting the page up */
 	gmdb_debug_display(xml, page);
 }
@@ -361,7 +330,7 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	GtkTextBuffer *buffer;
 	GtkTextIter iter;
 	GtkTextView *textview;
-	GtkWidget *entry;
+	GtkWidget *entry, *window;
 	char pagestr[20];
 	guint *dissect;
 	GtkWidget *tree;
@@ -408,7 +377,8 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	tree = glade_xml_get_widget(xml, "debug_treeview");
 	store = (GtkTreeView *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
-	dissect = g_object_get_data(G_OBJECT(xml),"dissect");
+	window = glade_xml_get_widget(xml, "debug_window");
+	dissect = g_object_get_data(G_OBJECT(window),"dissect");
 	if (!dissect || *dissect==1)
 		gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
 
@@ -448,17 +418,6 @@ i =c[1]; i<<=8;
 i+=c[0];
 
 return i;
-}
-static guint32 
-get_uint24(unsigned char *c)
-{
-guint32 l;
-
-l =c[2]; l<<=8;
-l+=c[1]; l<<=8;
-l+=c[0];
-
-return l;
 }
 static guint32 
 get_uint32(unsigned char *c)
@@ -542,13 +501,14 @@ gmdb_debug_add_page_ptr(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, co
 {
 gchar str[100];
 GtkTreeIter *node;
+	guint32 pg_row = get_uint32(fbuf+offset);
 
 	snprintf(str, 100, "%s", label);
 	node = gmdb_debug_add_item(store, parent, str, offset, offset+3);
 
-	snprintf(str, 100, "Row Number: %u", fbuf[offset]);
+	snprintf(str, 100, "Row Number: %u", pg_row & 0xff);
 	gmdb_debug_add_item(store, node, str, offset, offset);
-	snprintf(str, 100, "Page Number: %lu", (unsigned long)get_uint24(&fbuf[offset+1])); 
+	snprintf(str, 100, "Page Number: %lu", pg_row >> 8); 
 	gmdb_debug_add_item(store, node, str, offset+1, offset+3);
 }
 static void 
@@ -974,14 +934,14 @@ gmdb_debug_delete_cb(GtkWidget *w, GladeXML *xml)
 {
 	return FALSE;
 }
-static void
-gmdb_debug_close_cb(GtkWidget *w, GladeXML *xml)
+void
+gmdb_debug_close_cb(GtkWidget *w, gpointer data)
 {
-	GtkWidget *win;
+	GladeXML *xml;
 
+	xml = g_object_get_data(G_OBJECT(w), "debugwin_xml");
 	debug_list = g_list_remove(debug_list, xml);
-	win = glade_xml_get_widget (xml, "debug_window");
-	if (win) gtk_widget_destroy(win);
+	gtk_widget_destroy(w);
 }
 void
 gmdb_debug_close_all()
@@ -997,12 +957,10 @@ gmdb_debug_close_all()
 }
 
 void
-gmdb_debug_new_cb(GtkWidget *w, gpointer *data)
+gmdb_debug_new_cb(GtkWidget *w, gpointer data)
 {
 	GtkTextView *textview;
-	guint32 page;
-	GtkWidget *entry, *mi, *button, *debugwin;
-	gchar text[20];
+	GtkWidget *entry, *debugwin;
 	GladeXML *debugwin_xml;
 	GtkWidget *tree;
 	GtkTreeStore *store;
@@ -1019,55 +977,11 @@ gmdb_debug_new_cb(GtkWidget *w, gpointer *data)
 
 	/* set signals with user data, anyone know how to do this in glade? */
 	entry = glade_xml_get_widget (debugwin_xml, "debug_entry");
-	g_signal_connect (G_OBJECT (entry), "activate",
-		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
-	
-	mi = glade_xml_get_widget (debugwin_xml, "close_menu");
-	g_signal_connect (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_debug_close_cb), debugwin_xml);
 
-	button = glade_xml_get_widget (debugwin_xml, "close_button");
-	g_signal_connect (G_OBJECT (button), "clicked",
-		G_CALLBACK (gmdb_debug_close_cb), debugwin_xml);
-	
-	mi = glade_xml_get_widget (debugwin_xml, "menu_page");
-	g_signal_connect (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_debug_jump_cb), debugwin_xml);
-	mi = glade_xml_get_widget (debugwin_xml, "menu_page_msb");
-	g_signal_connect (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_debug_jump_msb_cb), debugwin_xml);
-
-	button = glade_xml_get_widget (debugwin_xml, "jump_button");
-	g_signal_connect (G_OBJECT (button), "clicked",
-		G_CALLBACK (gmdb_debug_jump_cb), debugwin_xml);
-
-	mi = glade_xml_get_widget (debugwin_xml, "back_menu");
-	g_signal_connect (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_debug_back_cb), debugwin_xml);
-
-	button = glade_xml_get_widget (debugwin_xml, "back_button");
-	g_signal_connect (G_OBJECT (button), "clicked",
-		G_CALLBACK (gmdb_debug_back_cb), debugwin_xml);
-
-	mi = glade_xml_get_widget (debugwin_xml, "forward_menu");
-	g_signal_connect (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_debug_forward_cb), debugwin_xml);
-
-	button = glade_xml_get_widget (debugwin_xml, "forward_button");
-	g_signal_connect (G_OBJECT (button), "clicked",
-		G_CALLBACK (gmdb_debug_forward_cb), debugwin_xml);
-
-	mi = glade_xml_get_widget (debugwin_xml, "dissector");
-	g_signal_connect (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_debug_set_dissect_cb), debugwin_xml);
-
-	button = glade_xml_get_widget (debugwin_xml, "debug_button");
-	g_signal_connect (G_OBJECT (button), "clicked",
-		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
-	
 	debugwin = glade_xml_get_widget (debugwin_xml, "debug_window");
-	gtk_signal_connect (GTK_OBJECT (debugwin), "delete_event",
-		GTK_SIGNAL_FUNC (gmdb_debug_delete_cb), debugwin_xml);
+	g_signal_connect (G_OBJECT (debugwin), "delete_event",
+		G_CALLBACK (gmdb_debug_delete_cb), debugwin_xml);
+	g_object_set_data (G_OBJECT (debugwin), "debugwin_xml", debugwin_xml);
 
 	/* this should be a preference, needs to be fixed width */
 	textview = (GtkTextView *) glade_xml_get_widget (debugwin_xml, "debug_textview");
@@ -1078,14 +992,6 @@ gmdb_debug_new_cb(GtkWidget *w, gpointer *data)
 	tree = glade_xml_get_widget(debugwin_xml, "debug_treeview");
 	store = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(tree), GTK_TREE_MODEL(store));
-
-	button = glade_xml_get_widget (debugwin_xml, "debug_button");
-	g_signal_connect (G_OBJECT (button), "clicked",
-		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
-	
-	debugwin = glade_xml_get_widget (debugwin_xml, "debug_window");
-	gtk_signal_connect (GTK_OBJECT (debugwin), "delete_event",
-		GTK_SIGNAL_FUNC (gmdb_debug_delete_cb), debugwin_xml);
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Field",
@@ -1101,37 +1007,43 @@ gmdb_debug_new_cb(GtkWidget *w, gpointer *data)
 	if (mdb) {
 		gmdb_debug_init(mdb, debugwin_xml);
 		if (data) {
-			page = *((guint32 *)data);
-			sprintf(text,"%lu",(unsigned long)page);
-			gtk_entry_set_text(GTK_ENTRY(entry),text);
-			gmdb_debug_display_cb(w, debugwin_xml);
+			gchar *text;
+			guint32 page = *((guint32 *)data);
+
+			text = g_strdup_printf("%lu", (unsigned long)page);
+			gtk_entry_set_text(GTK_ENTRY(entry), text);
+			g_free(text);
+			gmdb_debug_display_cb(entry, NULL);
 		}
 	}
 }
 void 
-gmdb_debug_set_dissect_cb(GtkWidget *w, GladeXML *xml)
+gmdb_debug_set_dissect_cb(GtkWidget *w, gpointer data)
 {
 	guint *dissect;
 	
-	//win = glade_xml_get_widget (xml, "debug_window");
-	dissect = g_object_get_data(G_OBJECT(xml),"dissect");
+	dissect = g_object_get_data(G_OBJECT(w),"dissect");
 	if (!dissect) return;
 	//printf("here %d\n", *dissect);
 	*dissect = *dissect ? 0 : 1;
-	g_object_set_data(G_OBJECT(xml), "dissect", dissect);
+	g_object_set_data(G_OBJECT(w), "dissect", dissect);
 }
 static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml)
 {
-	char tmpstr[100];
-	GtkWidget *pglabel, *entry;
+	gchar *str;
+	GtkWidget *pglabel, *entry, *window;
 	guint *dissect;
 
 	pglabel = glade_xml_get_widget (xml, "debug_num_label");
-	sprintf(tmpstr, "(0-%d):", (int)gmdb_get_max_page(mdb));
-	gtk_label_set_text(GTK_LABEL(pglabel), tmpstr);
+	str = g_strdup_printf("(0-%d):", (int)gmdb_get_max_page(mdb));
+	gtk_label_set_text(GTK_LABEL(pglabel), str);
+	g_free(str);
+
 	entry = glade_xml_get_widget (xml, "debug_entry");
 	gtk_widget_grab_focus(GTK_WIDGET(entry));
+
+	window = glade_xml_get_widget (xml, "debug_window");
 	dissect = g_malloc0(sizeof(guint));
 	*dissect = 1;
-	g_object_set_data(G_OBJECT(xml), "dissect", dissect);
+	g_object_set_data(G_OBJECT(window), "dissect", dissect);
 }

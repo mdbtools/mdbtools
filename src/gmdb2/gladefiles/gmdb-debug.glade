@@ -59,6 +59,7 @@
 			<widget class="GtkImageMenuItem" id="close_menu">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_CLOSE_ITEM</property>
+			  <signal name="activate" handler="gmdb_debug_close_cb"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -80,6 +81,7 @@
 			  <property name="label" translatable="yes">_Dissector</property>
 			  <property name="use_underline">True</property>
 			  <property name="active">True</property>
+			  <signal name="activate" handler="gmdb_debug_set_dissect_cb" object="debug_window"/>
 			</widget>
 		      </child>
 
@@ -88,6 +90,7 @@
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Back</property>
 			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="gmdb_debug_back_cb" object="debug_window"/>
 			</widget>
 		      </child>
 
@@ -97,6 +100,7 @@
 			  <property name="stock_item">GNOMEUIINFO_MENU_NEW_ITEM</property>
 			  <property name="label" translatable="yes">_Forward</property>
 			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="gmdb_debug_forward_cb" object="debug_window"/>
 			</widget>
 		      </child>
 
@@ -111,6 +115,7 @@
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Selected Page</property>
 			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="gmdb_debug_jump_cb" object="debug_window"/>
 			</widget>
 		      </child>
 
@@ -119,6 +124,7 @@
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">Selected Page (_MSB)</property>
 			  <property name="use_underline">True</property>
+			  <signal name="activate" handler="gmdb_debug_jump_msb_cb" object="debug_window"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -182,9 +188,10 @@
 	      <child>
 		<widget class="button" id="back_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">New File</property>
+		  <property name="tooltip" translatable="yes">Back</property>
 		  <property name="label">gtk-go-back</property>
 		  <property name="use_stock">True</property>
+		  <signal name="clicked" handler="gmdb_debug_back_cb" object="debug_window"/>
 		  <property name="new_group">True</property>
 		</widget>
 		<packing>
@@ -195,9 +202,10 @@
 	      <child>
 		<widget class="button" id="forward_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Open File</property>
+		  <property name="tooltip" translatable="yes">Forward</property>
 		  <property name="label">gtk-go-forward</property>
 		  <property name="use_stock">True</property>
+		  <signal name="clicked" handler="gmdb_debug_forward_cb" object="debug_window"/>
 		</widget>
 	      </child>
 
@@ -206,6 +214,7 @@
 		  <property name="visible">True</property>
 		  <property name="label">gtk-jump-to</property>
 		  <property name="use_stock">True</property>
+		  <signal name="clicked" handler="gmdb_debug_jump_cb" object="debug_window"/>
 		</widget>
 	      </child>
 
@@ -215,6 +224,7 @@
 		  <property name="tooltip" translatable="yes">Save File</property>
 		  <property name="label">gtk-close</property>
 		  <property name="use_stock">True</property>
+		  <signal name="clicked" handler="gmdb_debug_close_cb" object="debug_window"/>
 		  <property name="new_group">True</property>
 		</widget>
 		<packing>
@@ -305,6 +315,7 @@
 		      <property name="has_frame">True</property>
 		      <property name="invisible_char" translatable="yes">*</property>
 		      <property name="activates_default">False</property>
+		      <signal name="activate" handler="gmdb_debug_display_cb"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
@@ -320,6 +331,7 @@
 		      <property name="label" translatable="yes">_Display</property>
 		      <property name="use_underline">True</property>
 		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <signal name="clicked" handler="gmdb_debug_display_cb" object="debug_entry"/>
 		    </widget>
 		    <packing>
 		      <property name="padding">0</property>
