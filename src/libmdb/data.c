@@ -37,7 +37,7 @@ int rows, row_end;
 
 	rows = mdb_get_int16(mdb,8);
 	if (row==0) 
-		row_end=2047; /* end of page */
+		row_end = mdb->pg_size - 1; /* end of page */
 	else 
 		row_end = mdb_get_int16(mdb, (10 + (row-1) * 2)) - 1;
 
@@ -89,7 +89,7 @@ int bitmask_sz;
 		else
 			var_cols++;
 	}
-	bitmask_sz = (num_cols - 1) / 8 - 1;
+	bitmask_sz = (num_cols - 1) / 8 + 1;
 	eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
 
 #if MDB_DEBUG
@@ -132,12 +132,15 @@ int bitmask_sz;
 		col = g_ptr_array_index(table->columns,j);
 		if (!mdb_is_fixed_col(col) &&
 		    ++var_cols_found <= var_cols) {
-			col_start = mdb->pg_buf[row_end-1-var_cols_found];
+			col_start = mdb->pg_buf[row_end-bitmask_sz-var_cols_found];
 
 			if (var_cols_found==var_cols) 
 				len=eod - col_start;
 			else 
-				len=mdb->pg_buf[row_end-1-var_cols_found-1] - col_start;
+				len=mdb->pg_buf[row_end 
+					- bitmask_sz 
+					- var_cols_found 
+					- 1 ] - col_start;
 
 #if MDB_DEBUG
 			fprintf(stdout,"coltype %d colstart %d len %d\n",
@@ -242,11 +245,7 @@ char *bound_values[256]; /* warning doesn't handle tables > 256 columns.  Can th
 
 int mdb_is_fixed_col(MdbColumn *col)
 {
-	/* FIX ME -- not complete */
-	if (col->col_type==MDB_TEXT)
-		return FALSE;
-	else 
-		return TRUE;
+	return col->is_fixed;
 }
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
@@ -271,6 +270,14 @@ static char text[256];
 			}
 			strncpy(text, &mdb->pg_buf[start], size);
 			text[size]='\0';
+			return text;
+		case MDB_MEMO:
+			if (size<MDB_MEMO_OVERHEAD) {
+				return "(oops)";
+			}
+			strncpy(text, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD], 
+				size - MDB_MEMO_OVERHEAD);
+			text[size - MDB_MEMO_OVERHEAD]='\0';
 			return text;
 		break;
 	}

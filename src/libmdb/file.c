@@ -42,8 +42,8 @@ MdbHandle *mdb;
 size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 {
 size_t len;
-off_t offset = pg * MDB_PGSIZE;
 struct stat status;
+off_t offset = pg * mdb->pg_size;
 
         fstat(mdb->fd, &status);
         if (status.st_size < offset) { 
@@ -51,12 +51,12 @@ struct stat status;
                 return 0;
         }
 	lseek(mdb->fd, offset, SEEK_SET);
-	len = read(mdb->fd,mdb->pg_buf,MDB_PGSIZE);
+	len = read(mdb->fd,mdb->pg_buf,mdb->pg_size);
 	if (len==-1) {
 		perror("read");
 		return 0;
 	}
-	else if (len<MDB_PGSIZE) {
+	else if (len<mdb->pg_size) {
 		/* fprintf(stderr,"EOF reached.\n"); */
 		return 0;
 	}
@@ -69,7 +69,7 @@ int mdb_get_int16(MdbHandle *mdb, int offset)
 unsigned char *c;
 int           i;
 
-	if (offset < 0 || offset+2 > MDB_PGSIZE) return -1;
+	if (offset < 0 || offset+2 > mdb->pg_size) return -1;
 	c = &mdb->pg_buf[offset];
 	i = c[1]*256+c[0];
 
@@ -82,7 +82,7 @@ long mdb_get_int32(MdbHandle *mdb, int offset)
 long l;
 unsigned char *c;
 
-	if (offset <0 || offset+4 > MDB_PGSIZE) return -1;
+	if (offset <0 || offset+4 > mdb->pg_size) return -1;
 	c = &mdb->pg_buf[offset];
 	l =c[3]; l<<=8;
 	l+=c[2]; l<<=8;
@@ -94,7 +94,7 @@ unsigned char *c;
 }
 int mdb_set_pos(MdbHandle *mdb, int pos)
 {
-	if (pos<0 || pos >= MDB_PGSIZE) return 0;
+	if (pos<0 || pos >= mdb->pg_size) return 0;
 
 	mdb->cur_pos=pos;
 	return pos;

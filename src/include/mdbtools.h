@@ -32,6 +32,7 @@
 #define MDB_PGSIZE 2048
 #define MDB_MAX_OBJ_NAME 30
 #define MDB_CATALOG_PG 18
+#define MDB_MEMO_OVERHEAD 12
 
 enum {
 	MDB_FORM = 0,
@@ -71,6 +72,7 @@ typedef struct {
 	unsigned char pg_buf[MDB_PGSIZE];
 	int		num_catalog;
 	GArray		*catalog;
+	int		pg_size;
 } MdbHandle; 
 
 typedef struct {
@@ -107,6 +109,7 @@ typedef struct {
 	int		col_size;
 	void		*bind_ptr;
 	GHashTable	*properties;
+	unsigned char   is_fixed;
 } MdbColumn;
 
 /* mem.c */

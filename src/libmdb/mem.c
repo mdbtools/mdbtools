@@ -25,6 +25,7 @@ MdbHandle *mdb;
 
 	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
 	memset(mdb, '\0', sizeof(MdbHandle));
+	mdb->pg_size = MDB_PGSIZE;
 
 	return mdb;	
 }

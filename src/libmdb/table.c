@@ -103,6 +103,13 @@ int name_sz;
 		memset(&col,'\0', sizeof(MdbColumn));
 
 		col.col_type = mdb->pg_buf[cur_col];
+		if (col.col_type == MDB_TEXT) {
+			col.is_fixed = mdb->pg_buf[cur_col+3];
+		} else if (col.col_type == MDB_MEMO) {
+			col.is_fixed = 0;
+		} else {
+			col.is_fixed = 1;
+		}
 		col.col_size = mdb_get_int16(mdb,cur_col+16);
 		/* get the name */
 		name_sz = mdb->pg_buf[cur_name];

@@ -116,12 +116,12 @@ int rowid = entry->kkd_rowid;
 	fprintf(stdout,"number of rows = %d\n",rows);
 	kkd_start = mdb_get_int16(mdb,10+rowid*2);
 	fprintf(stdout,"kkd start = %d %04x\n",kkd_start,kkd_start);
-	kkd_end = MDB_PGSIZE;
+	kkd_end = mdb->pg_size;
 	for (i=0;i<rows;i++) {
 		tmp = mdb_get_int16(mdb, 10+i*2);
-		if (tmp<MDB_PGSIZE &&
-		    tmp>kkd_start &&
-		    tmp<kkd_end) {
+		if (tmp < mdb->pg_size &&
+		    tmp > kkd_start &&
+		    tmp < kkd_end) {
 			kkd_end = tmp;
 		}
 	}
