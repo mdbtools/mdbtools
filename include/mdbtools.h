@@ -375,15 +375,16 @@ typedef struct {
 /* mem.c */
 extern void mdb_init();
 extern void mdb_exit();
-extern MdbHandle *mdb_alloc_handle();
-extern void mdb_free_handle(MdbHandle *mdb);
+extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
+extern void mdb_free_stats(MdbHandle *mdb);
+extern void mdb_alloc_catalog(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
 extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
-extern void mdb_alloc_catalog(MdbHandle *mdb);
-extern MdbFile *mdb_alloc_file();
-extern void mdb_free_file(MdbFile *f);
+extern void mdb_free_tabledef(MdbTableDef *table);
+extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
+extern void mdb_free_columns(GPtrArray *columns);
 extern void mdb_append_index(GPtrArray *indices, MdbIndex *in_idx);
-extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
+extern void mdb_free_indices(GPtrArray *indices);
 
 /* file.c */
 extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -406,7 +407,6 @@ extern void mdb_close(MdbHandle *mdb);
 extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
 extern long _mdb_get_int32(unsigned char *buf, int offset);
-extern void mdb_free_tabledef(MdbTableDef *table);
 
 /* catalog.c */
 GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);

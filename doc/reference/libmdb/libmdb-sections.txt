@@ -115,7 +115,6 @@ mdb_unicode2ascii
 mdb_ascii2unicode
 <SUBSECTION Private>
 mdb_alloc_stats
-mdb_alloc_handle
 mdb_test_string
 mdb_test_int
 mdb_add_sarg
@@ -143,10 +142,7 @@ read_pg_if_16
 read_pg_if_32
 read_pg_if
 read_pg_if_n
-mdb_alloc_file
-mdb_free_file
 mdb_alloc_tabledef
 mdb_alloc_catalog
-mdb_free_handle
 </SECTION>
 

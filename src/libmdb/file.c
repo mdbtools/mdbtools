@@ -110,11 +110,13 @@ MdbHandle *mdb;
 int bufsize;
 MdbFile *f;
 
-	mdb = mdb_alloc_handle();
+	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
+	memset(mdb, '\0', sizeof(MdbHandle));
+	mdb_set_default_backend(mdb, "access");
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
-	mdb->f = mdb_alloc_file();
-	f = mdb->f;
+	mdb->f = f = (MdbFile *) malloc(sizeof(MdbFile));
+	memset(f, '\0', sizeof(MdbFile));
 	f->filename = (char *) malloc(strlen(filename)+1);
 	bufsize = strlen(filename)+1;
 	bufsize = mdb_find_file(filename, f->filename, bufsize);
@@ -123,7 +125,10 @@ MdbFile *f;
 		bufsize = mdb_find_file(filename, f->filename, bufsize);
 		if (bufsize) { 
 			fprintf(stderr, "Can't alloc filename\n");
-			mdb_free_handle(mdb);
+			free(f->filename);
+			free(f);
+			if (mdb->backend_name) free(mdb->backend_name);
+			free(mdb);
 			return NULL; 
 		}
 	}
@@ -171,18 +176,29 @@ MdbFile *f;
 void 
 mdb_close(MdbHandle *mdb)
 {
+	if (!mdb) return;	
+	mdb_free_stats(mdb);
+	mdb_free_catalog(mdb);
+	if (mdb->backend_name) free(mdb->backend_name);
+
 	if (mdb->f) {
-		mdb->f->refs--;
-		mdb_free_file(mdb->f);
+		if (mdb->f->refs > 1) {
+			mdb->f->refs--;
+		} else {
+			if (mdb->f->fd) close(mdb->f->fd);
+			if (mdb->f->filename) free(mdb->f->filename);
+			free(mdb->f);
+		}
 	}
-	mdb_free_handle(mdb);
+
+	free(mdb);
 }
 /**
  * mdb_clone_handle:
  * @mdb: Handle to open MDB database file
  *
  * Clones an existing database handle.  Cloned handle shares the file descriptor
- * but has it's own page buffer, page position, and similar internal variables.
+ * but has its own page buffer, page position, and similar internal variables.
  *
  * Return value: new handle to the database.
  */
@@ -192,7 +208,7 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	MdbCatalogEntry *entry, *data;
 	int i;
 
-	newmdb = mdb_alloc_handle();
+	newmdb = (MdbHandle *) malloc(sizeof(MdbHandle));
 	memcpy(newmdb, mdb, sizeof(MdbHandle));
 	newmdb->stats = NULL;
 	newmdb->catalog = g_ptr_array_new();

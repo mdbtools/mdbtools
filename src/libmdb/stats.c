@@ -50,7 +50,7 @@ mdb_stats_on(MdbHandle *mdb)
  * Turns off statistics collection.
  *
  * If mdb_stats_off is not called, statistics will be turned off when handle
- * is freed using mdb_free_handle.
+ * is freed using mdb_close.
  **/
 void
 mdb_stats_off(MdbHandle *mdb)

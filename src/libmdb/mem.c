@@ -65,48 +65,6 @@ mdb_free_stats(MdbHandle *mdb)
 	mdb->stats = NULL;
 }
 
-MdbFile *
-mdb_alloc_file()
-{
-	MdbFile *f;
-
-	f = (MdbFile *) malloc(sizeof(MdbFile));
-	memset(f, '\0', sizeof(MdbFile));
-
-	return f;	
-}
-void 
-mdb_free_file(MdbFile *f)
-{
-	if (!f) return;	
-	if (f->refs > 0) return;
-
-	if (f->fd) close(f->fd);
-	if (f->filename) free(f->filename);
-	free(f);
-}
-
-MdbHandle *mdb_alloc_handle()
-{
-MdbHandle *mdb;
-
-	mdb = (MdbHandle *) malloc(sizeof(MdbHandle));
-	memset(mdb, '\0', sizeof(MdbHandle));
-	mdb_set_default_backend(mdb, "access");
-
-	return mdb;	
-}
-void mdb_free_handle(MdbHandle *mdb)
-{
-	if (!mdb) return;	
-
-	mdb_free_stats(mdb);
-	mdb_free_catalog(mdb);
-	mdb_free_file(mdb->f);
-	if (mdb->backend_name) free(mdb->backend_name);
-	free(mdb);
-}
-
 void mdb_alloc_catalog(MdbHandle *mdb)
 {
 	mdb->catalog = g_ptr_array_new();
