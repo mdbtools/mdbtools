@@ -42,7 +42,8 @@ GList *l;
 
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_array_index(mdb->catalog,MdbCatalogEntry,i);
-		if (!strcmp(entry.object_name,argv[2])) {
+		if (entry.object_type == MDB_TABLE &&
+			!strcmp(entry.object_name,argv[2])) {
 				mdb_table_dump(&entry);
 		}
 	}

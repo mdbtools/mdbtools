@@ -42,7 +42,7 @@ int len, i;
 
 	table->num_rows = mdb_get_int32(mdb,12);
 	table->num_cols = mdb_get_int16(mdb,25);
-	table->num_pgs = mdb_get_int32(mdb,27);
+	table->num_pgs = mdb_get_int32(mdb,31);
 	table->first_data_pg = mdb_get_int16(mdb,36);
 
 	return table;
