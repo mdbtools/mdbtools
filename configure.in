@@ -72,6 +72,15 @@ AC_SUBST(ODBC_INC)
 
 dnl check for glib/gtk/gnome
 AM_PATH_GLIB_2_0(2.0.0)
+
+if test "$no_glib" == yes; then
+	echo
+	echo "glib 2.0 is required by MDB Tools."
+	echo "It can be downloaded at www.gtk.org."
+	echo
+	exit 1
+fi
+
 AM_PATH_GTK_2_0(2.0.0)
 AM_CONDITIONAL(HAVE_GTK, test x$no_gtk = xtrue) 
 AC_SUBST(HAVE_GTK)
