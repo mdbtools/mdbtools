@@ -442,7 +442,7 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
 	char *buf;
-	int pg_row, row_start;
+	int row_start;
 	int len;
 
 	ole_len = mdb_get_int32(ole_ptr, 0);
@@ -469,7 +469,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint32 ole_len;
 	char *buf;
-	int pg_row, row_start;
+	int row_start;
 	int len;
 
 	ole_len = mdb_get_int32(ole_ptr, 0);
@@ -509,7 +509,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 				buffer_dump(col->bind_ptr, 0, 16);
 		}
 		return len;
-	} else if (ole_len & 0xff000000 == 0) {
+	} else if ((ole_len & 0xff000000) == 0) {
 		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
@@ -561,7 +561,7 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 		if (dest)
 			memcpy(dest, buf + row_start, len);
 		return len;
-	} else if (ole_len & 0xff000000 == 0) { // assume all flags in MSB
+	} else if ((ole_len & 0xff000000) == 0) { // assume all flags in MSB
 		/* multi-page */
 		int cur = 0;
 		pg_row = mdb_get_int32(pg_buf, start+4);
@@ -634,7 +634,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 #endif
 		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;
-	} else if (memo_len & 0xff000000 == 0) { // assume all flags in MSB
+	} else if ((memo_len & 0xff000000) == 0) { // assume all flags in MSB
 		/* multi-page memo field */
 		guint32 tmpoff = 0;
 		char *tmp;

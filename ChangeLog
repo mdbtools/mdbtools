@@ -1,3 +1,11 @@
+Tue Mar 22 07:01:37 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/extras/mdb-dump.c:
+	* src/libmdb/data.c: Clean up some warnings
+
+Sat Mar 19 06:34:00 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/Makefile.am:
+	* src/libmdb/data.c: Clean up printing of floating-point values 
+
 Wed Mar 16 06:41:57 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/data.c: Improve OLE-related functions

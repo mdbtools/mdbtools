@@ -18,11 +18,11 @@
 
 int main(int argc, char **argv)
 {
-   long                 i=0;
-   int                  j;
+   unsigned long        i=0;
+   unsigned int         j;
    unsigned char        data[17];
    FILE                 *in;
-   int                  length;
+   size_t               length;
    int                  pg=0;
    char                 addr[10];
    int                  jet4 = 0;
