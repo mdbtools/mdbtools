@@ -2,6 +2,7 @@ Thu Aug 26 21:06:35 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Documentation fix
 	* src/sql/lexer.l: Add SQL quote escaping
 	* src/libmdb/worktable.c: Fix bug in creating temp tables
+	* src/libmdb/write.c: mdb_crack_row3 rewrite
 
 Tue Aug 24 21:04:17 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbsql.h:
