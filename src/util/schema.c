@@ -27,6 +27,7 @@ MdbHandle *mdb;
 MdbCatalogEntry entry;
 MdbTableDef *table;
 MdbColumn *col;
+char		*the_relation;
 
  if (argc < 2) {
    fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
@@ -105,6 +106,14 @@ MdbColumn *col;
 	 }
      }
    }
+	fprintf (stdout, "\n\n");
+	fprintf (stdout, "-- CREATE ANY Relationships ...\n");
+	fprintf (stdout, "\n");
+	the_relation=mdb_get_relationships(mdb);
+	while (the_relation[0] != '\0') {
+		fprintf(stdout,"%s\n",the_relation);
+		the_relation=mdb_get_relationships(mdb);
+	}            
  
  mdb_free_handle (mdb);
  mdb_exit();

@@ -29,10 +29,10 @@ static char *type_name[] = {"Form",
 			"Query",
 			"Linked Table",
 			"Module",
-			"Unknown 0x08",
+			"Relationship",
 			"Unknown 0x09",
 			"Unknown 0x0a",
-			"Unknown 0x0b"
+			"Database"
 		};
 
 	if (obj_type > 11) {

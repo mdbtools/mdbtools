@@ -98,6 +98,14 @@ char *mdb_postgres_types[] =
          "Postgres_Unknown 0x0d",
          "Postgres_Unknown 0x0e",
     "Serial"};
+
+char *bound_values[256];
+char *relationships[4];
+MdbColumn *col;
+MdbCatalogEntry entry;
+MdbTableDef *table;
+int did_first;
+
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
         if (col_type > 0x0f) {
@@ -143,8 +151,99 @@ MdbBackend *backend;
 	backend = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend_name);
 	if (backend) {
 		mdb->default_backend = backend;
+		mdb->backend_name = (char *) malloc(strlen(backend_name)+1);
+		strcpy(mdb->backend_name, backend_name);
+		did_first = 0;
 		return 1;
 	} else {
 		return 0;
 	}
 }
+char *mdb_get_relationships(MdbHandle *mdb) {
+
+int   i, j, k;
+static char text[255];
+  void do_first () {
+    mdb_read_catalog (mdb, MDB_TABLE);
+
+    /* loop over each entry in the catalog */
+    for (i=0; i < mdb->num_catalog; i++) {
+      entry = g_array_index (mdb->catalog, MdbCatalogEntry, i);
+      if ((entry.object_type == MDB_TABLE) &&
+            (strncmp (entry.object_name, "MSysRelationships", 17) == 0))
+{
+    table = mdb_read_table (&entry);
+           if ( table->num_rows > 0 ) {
+             mdb_read_columns(table);
+             mdb_rewind_table(table);
+             for (k=0;k<table->num_cols;k++) {
+               bound_values[k] = (char *) malloc(256);
+			bound_values[k][0] = '\0';
+               mdb_bind_column(table,k+1,bound_values[k]);
+             }
+             relationships[0] = (char *) malloc(256); /* child column */
+
+             relationships[1] = (char *) malloc(256); /* child table */
+             relationships[2] = (char *) malloc(256); /* parent column
+*/
+             relationships[3] = (char *) malloc(256); /* parent table */
+
+          }
+          did_first = 1;
+          return;
+      }
+    }
+  }
+/*
+ * generate relationships by "reading" the MSysRelationships table
+ *   szColumn contains the column name of the child table
+ *   szObject contains the table name of the child table
+ *   szReferencedColumn contains the column name of the parent table
+ *   szReferencedObject contains the table name of the parent table
+ */
+  sprintf(text,"%c",0);
+  if ( did_first == 0)
+    do_first();
+  if (table->cur_row < table->num_rows) {
+    if (mdb_fetch_row(table)) {
+       relationships[0][0] = '\0';
+       relationships[1][0] = '\0';
+       relationships[2][0] = '\0';
+       relationships[3][0] = '\0';
+       for (k=0;k<table->num_cols;k++) {
+          col=g_ptr_array_index(table->columns,k);
+          if (strncmp(col->name,"szColumn",8) == 0)
+             strcpy(relationships[0],bound_values[k]);
+          else if (strncmp(col->name,"szObject",8) == 0)
+             strcpy(relationships[1],bound_values[k]);
+          else if (strncmp(col->name,"szReferencedColumn",18) == 0)
+             strcpy(relationships[2],bound_values[k]);
+          else if (strncmp(col->name,"szReferencedObject",18) == 0)
+             strcpy(relationships[3],bound_values[k]);
+       }
+       if (strncmp(mdb->backend_name,"oracle",6) == 0)
+         sprintf(text,"alter table %s add constraint %s_%s foreign key
+(%s) references %s(%s)",
+
+relationships[1],relationships[3],relationships[1],
+
+relationships[0],relationships[3],relationships[2]);
+        else
+          sprintf(text,"relationships are not supported for
+%s",mdb->backend_name);
+    } /* got a row */
+  }
+  else {
+    for (k=0;k<table->num_cols;k++) {
+       free(bound_values[k]);
+    }
+    free(relationships[0]);
+    free(relationships[1]);
+    free(relationships[2]);
+    free(relationships[3]);
+    did_first = 0;
+  }
+  return text;
+}
+
+

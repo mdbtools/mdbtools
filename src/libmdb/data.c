@@ -244,6 +244,7 @@ int mdb_is_fixed_col(MdbColumn *col)
 }
 char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 {
+/* FIX ME -- not thread safe */
 static char text[256];
 
 	switch (datatype) {

@@ -47,6 +47,7 @@ void mdb_free_handle(MdbHandle *mdb)
 
 	if (mdb->filename) free(mdb->filename);
 	if (mdb->catalog) mdb_free_catalog(mdb);
+	if (mdb->backend_name) free(mdb->backend_name);
 	free(mdb);
 }
 void mdb_free_catalog(MdbHandle *mdb)

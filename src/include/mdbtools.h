@@ -47,10 +47,10 @@ enum {
 	MDB_QUERY,
 	MDB_LINKED_TABLE,
 	MDB_MODULE,
-	MDB_UNKNOWN_08,
+	MDB_RELATIONSHIP,
 	MDB_UNKNOWN_09,
 	MDB_UNKNOWN_0A,
-	MDB_UNKNOWN_0B
+	MDB_DATABASE_PROPERTY
 };
 enum {
 	MDB_BOOL = 0x01,
@@ -88,6 +88,7 @@ typedef struct {
 	guint32		db_key;
 	char		db_passwd[14];
 	MdbBackend	*default_backend;
+	char			*backend_name;
 } MdbHandle; 
 
 typedef struct {
@@ -168,5 +169,6 @@ extern char *mdb_get_coltype_string(MdbBackend *backend, int col_type);
 extern void mdb_init_backends();
 extern void mdb_register_backend(MdbBackend *backend, char *backend_name);
 extern int  mdb_set_default_backend(MdbHandle *mdb, char *backend_name);
+extern char *mdb_get_relationships(MdbHandle *mdb);
 
 #endif /* _mdbtools_h_ */
