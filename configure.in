@@ -5,7 +5,7 @@ AM_INIT_AUTOMAKE(mdbtools,0.3)
 AC_PROG_CC(gcc)
 dnl Checks for programs.
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
+#AC_PROG_RANLIB
 AM_PROG_LIBTOOL
 AM_PROG_LEX
 AC_PROG_YACC
@@ -58,24 +58,32 @@ dnl gnome check modified from gnome-db
 AC_MSG_CHECKING(for Gnome >= 1.2.0)
 if gnome-config --version > /dev/null 2>&1
 then
-        verstxt=`gnome-config --version`
-        vers=`echo "$verstxt" | sed -e "s/^gnome-libs //" | \
-                   awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-        if test "$vers" -ge 1002000
-        then
-                AC_MSG_RESULT(found)
-               CFLAGS="$CFLAGS -DHAVE_GNOME"
-          havegnome=true
-        else
-                AC_MSG_RESULT(not found)
-          havegnome=false
-        fi
+	verstxt=`gnome-config --version`
+	vers=`echo "$verstxt" | sed -e "s/^gnome-libs //" | \
+		awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+	if test "$vers" -ge 1002000
+	then
+		AC_MSG_RESULT(found)
+		CFLAGS="$CFLAGS -DHAVE_GNOME"
+		GTK_LIBS=`gnome-config gnome gnomeui --libs`	
+		GTK_CFLAGS=`gnome-config gnome gnomeui --cflags`	
+		havegnome=true
+	else
+		AC_MSG_RESULT(not found)
+		GTK_LIBS=`gtk-config --libs`	
+		GTK_CFLAGS=`gtk-config --cflags`	
+		havegnome=false
+	fi
 else
-     AC_MSG_RESULT(not found)
-     havegnome=false
+	AC_MSG_RESULT(not found)
+	havegnome=false
+	GTK_LIBS=`gtk-config --libs`	
+	GTK_CFLAGS=`gtk-config --cflags`	
 fi
 AM_CONDITIONAL(HAVE_GNOME, test x$havegnome = xtrue)
 AC_SUBST(HAVE_GNOME)
+AC_SUBST(GTK_LIBS)
+AC_SUBST(GTK_CFLAGS)
 
 dnl Checks for library functions.
 

@@ -9,11 +9,39 @@ typedef struct GMdbTableExportDialog {
 	GtkWidget *lineterm;
 	GtkWidget *colsep;
 	GtkWidget *quote;
+	GtkWidget *quotechar;
 	GtkWidget *headers;
 	GtkWidget *filesel;
 } GMdbTableExportDialog;
 
 GMdbTableExportDialog *export;
+
+#define COMMA	"Comma (,)"
+#define TAB		"Tab"
+#define SPACE	"Space"
+#define COLON	"Colon (:)"
+#define SEMICOLON	"Semicolon (;)"
+#define PIPE	"Pipe (|)"
+
+#define LF "Unix (linefeed only)"
+#define CR "Mac (carriage return only)"
+#define CRLF "Windows (CR + LF)"
+
+#define ALWAYS "Always"
+#define NEVER "Never"
+#define AUTOMAT "Automatic (where necessary)"
+
+void
+print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *str)
+{
+	if (need_quote==1) {
+		fprintf(outfile, "%c", quotechar);
+	} else if (need_quote==-1) {
+		if (strstr(str,colsep)) {
+			fprintf(outfile, "%c", quotechar);
+		}
+	}
+}
 
 void
 gmdb_export_file_cb(GtkWidget *selector, GMdbTableExportDialog *export)
@@ -24,9 +52,47 @@ gchar *bound_data[256];
 MdbTableDef *table;
 MdbColumn *col;
 int i;
+int need_headers = 0;
+int need_quote = 0;
+gchar delimiter[11];
+gchar quotechar;
+gchar lineterm[5];
+gchar *str;
+int rows=0;
+char msg[100];
+
+	
+	str = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(export->colsep)->entry));
+	if (!strcmp(str,COMMA)) { strcpy(delimiter, ","); }
+	else if (!strcmp(str,TAB)) { strcpy(delimiter, "\t"); }
+	else if (!strcmp(str,SPACE)) { strcpy(delimiter, " "); }
+	else if (!strcmp(str,COLON)) { strcpy(delimiter, ":"); }
+	else if (!strcmp(str,SEMICOLON)) { strcpy(delimiter, ";"); }
+	else if (!strcmp(str,PIPE)) { strcpy(delimiter, "|"); }
+	else {
+		strncpy(delimiter,str, 10);
+		delimiter[10]='\0';
+	}
+
+	str = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(export->lineterm)->entry));
+	if (!strcmp(str,LF)) { strcpy(lineterm, "\n"); }
+	else if (!strcmp(str,CR)) { strcpy(lineterm, "\r"); }
+	else if (!strcmp(str,CRLF)) { strcpy(lineterm, "\r\n"); }
+
+	str = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(export->quote)->entry));
+	if (!strcmp(str,ALWAYS)) { need_quote = 1; }
+	else if (!strcmp(str,NEVER)) { need_quote = 0; }
+	else if (!strcmp(str,AUTOMAT)) { need_quote = -1; }
+
+	str = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(export->quotechar)->entry));
+	quotechar = str[0];
+
+	/* headers */
+	str = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(export->headers)->entry));
+	if (str && str[0]=='Y') need_headers = 1;
 
 	file_path = gtk_file_selection_get_filename (GTK_FILE_SELECTION(export->filesel));
-	printf("file path %s\n",file_path);
+	// printf("file path %s\n",file_path);
 	if ((outfile=fopen(file_path, "w"))==NULL) {
 		gmdb_info_msg("Unable to Open File!");
 		return;
@@ -45,18 +111,25 @@ int i;
 
 		/* display column titles */
 		col=g_ptr_array_index(table->columns,i);
-		if (i>0) fprintf(outfile,"\t");
-		fprintf(outfile,"%s", col->name);
+		if (need_headers)  {
+			if (i>0) fprintf(outfile,delimiter);
+			print_quote(outfile, need_quote, quotechar, delimiter, col->name);
+			fprintf(outfile,"%s", col->name);
+			print_quote(outfile, need_quote, quotechar, delimiter, col->name);
+		}
 	}
-	fprintf(outfile,"\n");
+	if (need_headers) fprintf(outfile,lineterm);
 
 	/* fetch those rows! */
 	while(mdb_fetch_row(table)) {
 		for (i=0;i<table->num_cols;i++) {
-			if (i>0) fprintf(outfile,"\t");
+			if (i>0) fprintf(outfile,delimiter);
+			print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
 			fprintf(outfile,"%s", bound_data[i]);
+			print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
 		}
-		fprintf(outfile,"\n");
+		fprintf(outfile,lineterm);
+		rows++;
 	}
 
 	/* free the memory used to bind */
@@ -66,6 +139,8 @@ int i;
 
 	fclose(outfile);
 	gtk_widget_destroy(export->dialog);
+	sprintf(msg,"%d Rows exported successfully.\n", rows);
+	gmdb_info_msg(msg);
 }
 void
 gmdb_export_button_cb(GtkWidget *w, GMdbTableExportDialog *export)
@@ -126,27 +201,27 @@ GtkWidget *table;
     table = gtk_table_new(3,2,FALSE);
     gtk_widget_show(table);
 
-	glist = g_list_append(glist, "Unix (linefeed only)");
-	glist = g_list_append(glist, "Mac (carriage return only)");
-	glist = g_list_append(glist, "Windows (CR + LF)");
+	glist = g_list_append(glist, LF);
+	glist = g_list_append(glist, CR);
+	glist = g_list_append(glist, CRLF);
 	export->lineterm = gmdb_export_add_combo(table, 0, "Line Terminator:",glist);
 	g_list_free(glist);
 	gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(export->lineterm)->entry), FALSE);
 
 	glist = NULL;
-	glist = g_list_append(glist, "Comma (,)");
-	glist = g_list_append(glist, "Tab");
-	glist = g_list_append(glist, "Space");
-	glist = g_list_append(glist, "Colon (:)");
-	glist = g_list_append(glist, "Semicolon (;)");
-	glist = g_list_append(glist, "Pipe (|)");
+	glist = g_list_append(glist, COMMA);
+	glist = g_list_append(glist, TAB);
+	glist = g_list_append(glist, SPACE);
+	glist = g_list_append(glist, COLON);
+	glist = g_list_append(glist, SEMICOLON);
+	glist = g_list_append(glist, PIPE);
 	export->colsep = gmdb_export_add_combo(table, 1, "Column Separator:",glist);
 	g_list_free(glist);
 
 	glist = NULL;
-	glist = g_list_append(glist, "Always");
-	glist = g_list_append(glist, "Never");
-	glist = g_list_append(glist, "Automatic (where necessary)");
+	glist = g_list_append(glist, ALWAYS);
+	glist = g_list_append(glist, NEVER);
+	glist = g_list_append(glist, AUTOMAT);
 	export->quote = gmdb_export_add_combo(table, 2, "Quotes:",glist);
 	g_list_free(glist);
 	gtk_entry_set_editable(GTK_ENTRY(GTK_COMBO(export->quote)->entry), FALSE);
@@ -155,7 +230,7 @@ GtkWidget *table;
 	glist = g_list_append(glist, "\"");
 	glist = g_list_append(glist, "'");
 	glist = g_list_append(glist, "`");
-	export->quote = gmdb_export_add_combo(table, 3, "Quote Character:",glist);
+	export->quotechar = gmdb_export_add_combo(table, 3, "Quote Character:",glist);
 	g_list_free(glist);
 
 	glist = NULL;

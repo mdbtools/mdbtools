@@ -62,6 +62,8 @@ host_triplet = @host@
 AS = @AS@
 CC = @CC@
 DLLTOOL = @DLLTOOL@
+GTK_CFLAGS = @GTK_CFLAGS@
+GTK_LIBS = @GTK_LIBS@
 HAVE_GNOME = @HAVE_GNOME@
 LD = @LD@
 LEX = @LEX@
@@ -77,13 +79,13 @@ RANLIB = @RANLIB@
 READLINE_LIBS = @READLINE_LIBS@
 SQL = @SQL@
 VERSION = @VERSION@
-YACC = @YACC@
 
 lib_LTLIBRARIES = libmdbsql.la
 libmdbsql_la_SOURCES = mdbsql.c parser.y lexer.l 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LIBS = `glib-config --libs`
 LDADD = ../libmdb/libmdb.la 
+YACC = bison -y -d
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 LTLIBRARIES =  $(lib_LTLIBRARIES)
@@ -353,7 +355,6 @@ uninstall-am uninstall all-redirect all-am all installdirs \
 mostlyclean-generic distclean-generic clean-generic \
 maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
-#YACC = yacc -d
 
 dist-hook:
 	rm -f $(distdir)/parser.c $(distdir)/parser.h $(distdir)/lexer.c

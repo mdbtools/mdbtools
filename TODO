@@ -45,5 +45,4 @@ GMDB:
 . Finish debug dissectors
 . Export schema not implemented
 . Printing not implemented
-. Test for SQL engine and pop up message when not present.
 . Export needs finishing

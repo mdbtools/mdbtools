@@ -62,6 +62,8 @@ host_triplet = i686-pc-linux-gnu
 AS = @AS@
 CC = gcc
 DLLTOOL = @DLLTOOL@
+GTK_CFLAGS = -I/usr/include -DNEED_GNOMESUPPORT_H -I/usr/lib/gnome-libs/include -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include -I/usr/X11R6/include
+GTK_LIBS = -rdynamic -L/usr/lib -L/usr/X11R6/lib -lgnomeui -lart_lgpl -lgdk_imlib -lSM -lICE -lgtk -lgdk -lgmodule -lXi -lXext -lX11 -lgnome -lgnomesupport -lesd -laudiofile -lm -ldb1 -lglib -ldl
 HAVE_GNOME = 
 LD = /usr/bin/ld
 LEX = flex
@@ -77,13 +79,13 @@ RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
 SQL = 
 VERSION = 0.3
-YACC = bison -y
 
 lib_LTLIBRARIES = libmdbsql.la
 libmdbsql_la_SOURCES = mdbsql.c parser.y lexer.l 
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LIBS = `glib-config --libs`
 LDADD = ../libmdb/libmdb.la 
+YACC = bison -y -d
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 LTLIBRARIES =  $(lib_LTLIBRARIES)
@@ -353,7 +355,6 @@ uninstall-am uninstall all-redirect all-am all installdirs \
 mostlyclean-generic distclean-generic clean-generic \
 maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
-#YACC = yacc -d
 
 dist-hook:
 	rm -f $(distdir)/parser.c $(distdir)/parser.h $(distdir)/lexer.c

@@ -45,6 +45,23 @@ GMdbValStr table_types[] = {
 	{ 0x53, "User Table" },
 	{ 0, NULL }
 };
+GMdbValStr column_types[] = {
+	{ 0x01, "boolean" },
+	{ 0x02, "byte" },
+	{ 0x03, "int" },
+	{ 0x04, "longint" },
+	{ 0x05, "money" },
+	{ 0x06, "float" },
+	{ 0x07, "double" },
+	{ 0x08, "short datetime" },
+	{ 0x09, "binary" },
+	{ 0x0a, "text" },
+	{ 0x0b, "OLE" },
+	{ 0x0c, "memo/hyperlink" },
+	{ 0x0d, "Unknown" },
+	{ 0x0f, "GUID" },
+	{ 0, NULL }
+};
 GMdbValStr object_types[] = {
 	{ 0x00, "Database Definition Page" },
 	{ 0x01, "Data Page" },
@@ -63,6 +80,9 @@ int start_col, end_col;
 int i;
 
 	range = gtk_ctree_node_get_row_data(tree, GTK_CTREE_NODE(node));
+	/* container node or otherwise non-represented in the data */
+	if (range->start_byte == -1 || range->end_byte == -1) return;
+
 	start_row = range->start_byte / 16;
 	end_row = range->end_byte / 16;
 	start_col = 8 + (range->start_byte % 16) * 3;
@@ -100,6 +120,9 @@ int start_col, end_col;
 int i;
 
 	range = gtk_ctree_node_get_row_data(tree, GTK_CTREE_NODE(node));
+	/* container node or otherwise non-represented in the data */
+	if (range->start_byte == -1 || range->end_byte == -1) return;
+
 	start_row = range->start_byte / 16;
 	end_row = range->end_byte / 16;
 	start_col = 8 + (range->start_byte % 16) * 3;
@@ -232,6 +255,31 @@ l+=c[0];
 return l;
 }
 void 
+gmdb_debug_dissect_column(GMdbDebugTab *dbug, GtkCTreeNode *parent, char *fbuf, int offset)
+{
+gchar str[100];
+GtkCTreeNode *node;
+
+	snprintf(str, 100, "Column Type: 0x%02x (%s)", fbuf[offset],
+		gmdb_val_to_str(column_types, fbuf[offset]));
+	gmdb_debug_add_item(dbug, parent, str, offset, offset);
+	snprintf(str, 100, "Column #: %d", get_uint16(&fbuf[offset+1]));
+	gmdb_debug_add_item(dbug, parent, str, offset+1, offset+2);
+	snprintf(str, 100, "VarCol Offset: %d", get_uint16(&fbuf[offset+3]));
+	gmdb_debug_add_item(dbug, parent, str, offset+3, offset+4);
+	snprintf(str, 100, "Unknown", get_uint32(&fbuf[offset+5]));
+	gmdb_debug_add_item(dbug, parent, str, offset+5, offset+8);
+	snprintf(str, 100, "Unknown", get_uint32(&fbuf[offset+9]));
+	gmdb_debug_add_item(dbug, parent, str, offset+9, offset+12);
+	snprintf(str, 100, "Variable Column: %s", 
+		fbuf[offset+13] & 0x01  ? "No" : "Yes");
+	gmdb_debug_add_item(dbug, parent, str, offset+13, offset+13);
+	snprintf(str, 100, "Fixed Col Offset: %d", get_uint16(&fbuf[offset+14]));
+	gmdb_debug_add_item(dbug, parent, str, offset+14, offset+15);
+	snprintf(str, 100, "Column Length: %d", get_uint16(&fbuf[offset+16]));
+	gmdb_debug_add_item(dbug, parent, str, offset+16, offset+17);
+}
+void 
 gmdb_debug_dissect_index1(GMdbDebugTab *dbug, GtkCTreeNode *parent, char *fbuf, int offset)
 {
 gchar str[100];
@@ -260,9 +308,9 @@ void
 gmdb_debug_dissect_tabledef_pg(GMdbDebugTab *dbug, char *fbuf, int offset, int len)
 {
 gchar str[100];
-guint32 i, num_idx;
+guint32 i, num_idx, num_cols;
 int newbase;
-GtkCTreeNode *node;
+GtkCTreeNode *node, *container;
 
 	snprintf(str, 100, "Next TDEF Page: 0x%06x (%lu)", 
 		get_uint32(&fbuf[offset+4]), get_uint32(&fbuf[offset+4]));
@@ -276,8 +324,8 @@ GtkCTreeNode *node;
 	snprintf(str, 100, "Table Type: 0x%02x (%s)", fbuf[offset+20],
 		gmdb_val_to_str(table_types, fbuf[offset+20]));
 	gmdb_debug_add_item(dbug, NULL, str, offset+20, offset+20);
-	snprintf(str, 100, "# of Columns: %u", 
-		get_uint16(&fbuf[offset+21]));
+	num_cols = get_uint16(&fbuf[offset+21]);
+	snprintf(str, 100, "# of Columns: %u", num_cols);
 	gmdb_debug_add_item(dbug, NULL, str, offset+21, offset+22);
 	snprintf(str, 100, "# of VarCols: %u", 
 		get_uint16(&fbuf[offset+23]));
@@ -295,12 +343,37 @@ GtkCTreeNode *node;
 	gmdb_debug_add_item(dbug, NULL, str, offset+31, offset+34);
 	gmdb_debug_add_page_ptr(dbug, NULL, fbuf, "Used Pages Pointer", offset+35);
 
+	container = gmdb_debug_add_item(dbug, NULL, "Index Entries", -1, -1);
 	for (i=0;i<num_idx;i++) {
-		snprintf(str, 100, "Index %d", i);
-		node = gmdb_debug_add_item(dbug, NULL, str, offset+43+(8*i), offset+43+(8*i)+8);
+		snprintf(str, 100, "Index %d", i+1);
+		node = gmdb_debug_add_item(dbug, container, str, offset+43+(8*i), offset+43+(8*i)+7);
 		gmdb_debug_dissect_index1(dbug, node, fbuf, offset+43+(8*i));
 	}
 	newbase = offset + 43 + (8*i);
+
+	container = gmdb_debug_add_item(dbug, NULL, "Column Data", -1, -1);
+	for (i=0;i<num_cols;i++) {
+		snprintf(str, 100, "Column %d", i+1);
+		node = gmdb_debug_add_item(dbug, container, str, newbase + (18*i), newbase + (18*i) + 17);
+		gmdb_debug_dissect_column(dbug, node, fbuf, newbase + (18*i));
+	}
+
+	newbase += 18*num_cols;
+
+	container = gmdb_debug_add_item(dbug, NULL, "Column Names", -1, -1);
+	for (i=0;i<num_cols;i++) {
+		char *tmpstr;
+		int namelen;
+
+		namelen = fbuf[newbase];
+		tmpstr = malloc(namelen + 1);
+		strncpy(tmpstr, &fbuf[newbase+1], namelen);
+		tmpstr[namelen]=0;
+		snprintf(str, 100, "Column %d: %s", i+1, tmpstr);
+		free(tmpstr);
+		node = gmdb_debug_add_item(dbug, container, str, newbase + 1, newbase + namelen);
+		newbase += namelen + 1;
+	}
 }
 void gmdb_debug_dissect(GMdbDebugTab *dbug, char *fbuf, int offset, int len)
 {
@@ -328,16 +401,30 @@ gchar str[100];
 	}
 }
 
+gmdb_clear_node_cb(GtkWidget *ctree, GtkCTreeNode *node, gpointer data)
+{
+gpointer rowdata;
+
+	rowdata = gtk_ctree_node_get_row_data(GTK_CTREE(ctree), node);
+	g_free(rowdata);
+	gtk_ctree_remove_node(GTK_CTREE(ctree), node);
+}
+
 void
 gmdb_debug_clear(GMdbDebugTab *dbug)
 {
 GtkCTreeNode *node;
 gpointer data;
 
+	/* clear the tree */ 
+	gtk_ctree_post_recursive(dbug->ctree, NULL, gmdb_clear_node_cb, NULL);
+
+/*
 	node = gtk_ctree_node_nth(GTK_CTREE(dbug->ctree), 0);
 	data = gtk_ctree_node_get_row_data(GTK_CTREE(dbug->ctree), node);
 	g_free(data);
 	gtk_ctree_remove_node(GTK_CTREE(dbug->ctree), node);
+*/
 
 	/* call delete text last because remove_node fires unselect signal */
 	gtk_editable_delete_text(GTK_EDITABLE(dbug->textbox),0, -1);
@@ -388,6 +475,7 @@ GtkWidget *hbox;
 GtkWidget *hpane;
 GtkWidget *vbox;
 GtkWidget *scroll;
+GtkWidget *scroll2;
 GdkPixmap *pixmap;
 GdkBitmap *mask;
 GdkColormap *cmap;
@@ -433,9 +521,15 @@ GdkColormap *cmap;
 	gtk_widget_show(hpane);
 	gtk_box_pack_start (GTK_BOX (vbox), hpane, TRUE, TRUE, 10);
 
+	scroll = gtk_scrolled_window_new(NULL,NULL);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
+		GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+	gtk_widget_show (scroll);
+	gtk_container_add(GTK_CONTAINER(hpane), scroll);
+
 	dbug->ctree = gtk_ctree_new (1, 0);
 	gtk_widget_show (dbug->ctree);
-	gtk_container_add (GTK_CONTAINER (hpane), dbug->ctree);
+	gtk_container_add (GTK_CONTAINER (scroll), dbug->ctree);
 
 	gtk_signal_connect ( GTK_OBJECT (dbug->ctree),
 		"tree-select-row", GTK_SIGNAL_FUNC (gmdb_debug_select_cb), dbug);
@@ -449,15 +543,15 @@ GdkColormap *cmap;
 	gtk_widget_show (frame);
 	gtk_container_add (GTK_CONTAINER (hpane), frame);
 
-	scroll = gtk_scrolled_window_new(NULL,NULL);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
+	scroll2 = gtk_scrolled_window_new(NULL,NULL);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll2),
 		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_widget_show (scroll);
-	gtk_container_add(GTK_CONTAINER(frame), scroll);
+	gtk_widget_show (scroll2);
+	gtk_container_add(GTK_CONTAINER(frame), scroll2);
 
 	dbug->textbox = gtk_text_new (NULL,NULL);
 	gtk_widget_show (dbug->textbox);
-	gtk_container_add(GTK_CONTAINER(scroll), dbug->textbox);
+	gtk_container_add(GTK_CONTAINER(scroll2), dbug->textbox);
 
 	/* set selection callback for list */
 	//gtk_signal_connect ( GTK_OBJECT (table_hlist),
