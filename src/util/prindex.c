@@ -79,20 +79,18 @@ page_name(int page_type)
 void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char *idxrow, int len)
 {
 	MdbField fields[256];
-	MdbFormatConstants *fmt;
 	unsigned int num_fields, i, j;
-	int row_start, row_end;
+	int row_start, row_size;
 	MdbColumn *col;
 	guchar buf[256], key[256];
 	int elem;
 	MdbTableDef *table = idx->table; 
 	
-	fmt = mdb->fmt;
 	mdb_read_pg(mdb, pg);
-	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2));
-	row_end = mdb_find_end_of_row(mdb, row);
+	mdb_find_row(mdb, row, &row_start, &row_size);
 
-	num_fields = mdb_crack_row(table, row_start, row_end, fields);
+	num_fields = mdb_crack_row(table, row_start, row_start + row_size - 1,
+		fields);
 	for (i=0;i<idx->num_keys;i++) {
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
 		if (col->col_type==MDB_TEXT) {

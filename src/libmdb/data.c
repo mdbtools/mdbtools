@@ -96,47 +96,57 @@ int mdb_find_pg_row(MdbHandle *mdb, int pg_row, char **buf, int *off, int *len)
 	if (mdb_read_alt_pg(mdb, pg) != mdb->fmt->pg_size)
 		return 1;
 	mdb_swap_pgbuf(mdb);
-	*off = mdb_pg_get_int16(mdb, mdb->fmt->row_count_offset + 2 + (row*2));
-	*len = mdb_find_end_of_row(mdb, row) - *off + 1;
+	mdb_find_row(mdb, row, off, len);
 	mdb_swap_pgbuf(mdb);
 	*buf = mdb->alt_pg_buf;
+	return 0;
+}
+
+int mdb_find_row(MdbHandle *mdb, int row, int *start, int *len)
+{
+	int rco = mdb->fmt->row_count_offset;
+	int next_start;
+
+	if (row > 1000) return -1;
+
+	*start = mdb_get_int16(mdb->pg_buf, rco + 2 + row*2);
+	next_start = (row == 0) ? mdb->fmt->pg_size :
+		mdb_get_int16(mdb->pg_buf, rco + row*2) & OFFSET_MASK;
+	*len = next_start - *start;
 	return 0;
 }
 
 int 
 mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
-	MdbFormatConstants *fmt = mdb->fmt;
+	int rco = mdb->fmt->row_count_offset;
 	int row_end;
 
-	/* Search the previous "row start" values for the first non-'lookupflag' one.
-	* If we don't find one, then the end of the page is the correct value.
-	*/
 #if 1
-	if (row==0) {
-		row_end = fmt->pg_size - 1;
-	} else {
-		row_end = (mdb_pg_get_int16(mdb, ((fmt->row_count_offset + 2) + (row - 1) * 2)) & OFFSET_MASK) - 1;
-	}
-	return row_end;
-#else
-		int i, row_start;
+	if (row > 1000) return -1;
 
-		/* if lookupflag is	not set, it's good (deleteflag is ok) */
-        for (i = row - 1; i >= 0; i--) {
-                row_start = mdb_pg_get_int16(mdb, ((fmt->row_count_offset + 2) + i * 2));
+	row_end = (row == 0) ? mdb->fmt->pg_size :
+		mdb_get_int16(mdb->pg_buf, rco + row*2) & OFFSET_MASK;
+#else
+	/* Search the previous "row start" values for the first non-'lookupflag'
+	 * one. If we don't find one, then the end of the page is the correct
+	 * value.
+	 */
+	int i, row_start;
+
+	if (row > 1000) return -1;
+
+	/* if lookupflag is not set, it's good (deleteflag is ok) */
+        for (i = row; i > 0; i--) {
+                row_start = mdb_get_int16(mdb->pg_buf, (rco + i*2));
                 if (!(row_start & 0x8000)) {
                         break;
                 }
         }
 
-        if (i == -1) {
-                row_end = fmt->pg_size - 1;
-        } else {
-                row_end = (row_start & OFFSET_MASK) - 1;
-        }
-	return row_end;
+	row_end = (i == 0) ? mdb->fmt->pg_size : row_start & OFFSET_MASK;
 #endif
+	return row_end - 1;
 }
 int mdb_is_null(unsigned char *null_mask, int col_num)
 {
@@ -226,7 +236,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbColumn *col;
 	unsigned int i;
 	int rc;
-	int row_start, row_end;
+	int row_start, row_size;
 	int delflag, lookupflag;
 	MdbField fields[256];
 	int num_fields;
@@ -234,8 +244,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	if (table->num_rows == 0) 
 		return 0;
 
-	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2)); 
-	row_end = mdb_find_end_of_row(mdb, row);
+	mdb_find_row(mdb, row, &row_start, &row_size);
 
 	delflag = lookupflag = 0;
 	if (row_start & 0x8000) lookupflag++;
@@ -243,17 +252,17 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	row_start &= OFFSET_MASK; /* remove flags */
 #if MDB_DEBUG
 	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
-		row, row_start, row_end,
+		row, row_start, row_start + row_size - 1,
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
 #endif	
 
 	if (!table->noskip_del && delflag) {
-		row_end = row_start-1;
 		return 0;
 	}
 
-	num_fields = mdb_crack_row(table, row_start, row_end, fields);
+	num_fields = mdb_crack_row(table, row_start, row_start + row_size - 1,
+		fields);
 	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
 	
 #if MDB_DEBUG
@@ -261,7 +270,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 #endif 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, row_start, row_end);
+	buffer_dump(mdb->pg_buf, row_start, row_start + row_size - 1);
 #endif
 
 	/* take advantage of mdb_crack_row() to clean up binding */

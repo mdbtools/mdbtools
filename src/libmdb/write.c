@@ -593,7 +593,7 @@ guint16
 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size)
 {
 	unsigned char *new_pg;
-	int num_rows, i, pos, row_start, row_end, row_size;
+	int num_rows, i, pos, row_start, row_size;
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
@@ -622,9 +622,7 @@ mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_siz
 
 		/* copy existing rows */
 		for (i=0;i<num_rows;i++) {
-			row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
-			row_end = mdb_find_end_of_row(mdb, i);
-			row_size = row_end - row_start + 1;
+			mdb_find_row(mdb, i, &row_start, &row_size);
 			pos -= row_size;
 			memcpy(&new_pg[pos], &mdb->pg_buf[row_start], row_size);
 			_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
@@ -670,9 +668,8 @@ unsigned int num_fields;
 		fprintf(stderr, "File is not open for writing\n");
 		return 0;
 	}
-	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + ((table->cur_row-1)*2)); 
-	row_end = mdb_find_end_of_row(mdb, table->cur_row-1);
-	old_row_size = row_end - row_start;
+	mdb_find_row(mdb, table->cur_row-1, &row_start, &old_row_size);
+	row_end = row_start + old_row_size - 1;
 
 	row_start &= 0x0FFF; /* remove flags */
 
@@ -719,58 +716,55 @@ mdb_replace_row(MdbTableDef *table, int row, unsigned char *new_row, int new_row
 {
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
+int pg_size = mdb->fmt->pg_size;
+int rco = mdb->fmt->row_count_offset;
 unsigned char *new_pg;
 guint16 num_rows;
-int row_start, row_end, row_size;
+int row_start, row_size;
 int i, pos;
 
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
 		buffer_dump(mdb->pg_buf, 0, 39);
-		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+		buffer_dump(mdb->pg_buf, pg_size - 160, pg_size-1);
 	}
 	mdb_debug(MDB_DEBUG_WRITE,"updating row %d on page %lu", row, (unsigned long) table->cur_phys_pg);
 	new_pg = mdb_new_data_pg(entry);
 
-	num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
-	_mdb_put_int16(new_pg, fmt->row_count_offset, num_rows);
+	num_rows = mdb_pg_get_int16(mdb, rco);
+	_mdb_put_int16(new_pg, rco, num_rows);
 
-	pos = mdb->fmt->pg_size;
+	pos = pg_size;
 
 	/* rows before */
 	for (i=0;i<row;i++) {
-		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
-		row_end = mdb_find_end_of_row(mdb, i);
-		row_size = row_end - row_start + 1;
+		mdb_find_row(mdb, i, &row_start, &row_size);
 		pos -= row_size;
 		memcpy(&new_pg[pos], &mdb->pg_buf[row_start], row_size);
-		_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
+		_mdb_put_int16(new_pg, rco + 2 + i*2, pos);
 	}
 	
 	/* our row */
 	pos -= new_row_size;
 	memcpy(&new_pg[pos], new_row, new_row_size);
-	_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (row*2), pos);
+	_mdb_put_int16(new_pg, rco + 2 + row*2, pos);
 	
 	/* rows after */
 	for (i=row+1;i<num_rows;i++) {
-		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
-		row_end = mdb_find_end_of_row(mdb, i);
-		row_size = row_end - row_start + 1;
+		mdb_find_row(mdb, i, &row_start, &row_size);
 		pos -= row_size;
 		memcpy(&new_pg[pos], &mdb->pg_buf[row_start], row_size);
-		_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
+		_mdb_put_int16(new_pg, rco + 2 + i*2, pos);
 	}
 
 	/* almost done, copy page over current */
-	memcpy(mdb->pg_buf, new_pg, fmt->pg_size);
+	memcpy(mdb->pg_buf, new_pg, pg_size);
 
 	g_free(new_pg);
 
 	_mdb_put_int16(mdb->pg_buf, 2, mdb_pg_get_freespace(mdb));
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
 		buffer_dump(mdb->pg_buf, 0, 39);
-		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+		buffer_dump(mdb->pg_buf, pg_size - 160, pg_size-1);
 	}
 	/* drum roll, please */
 	if (!mdb_write_pg(mdb, table->cur_phys_pg)) {

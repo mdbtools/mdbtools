@@ -25,7 +25,7 @@ main(int argc, char **argv)
 {
 MdbHandle *mdb;
 int j;
-long int pgnum = 0, row_start, row_end, map_sz;
+long int pgnum = 0, row_start, map_sz;
 int coln = 1;
 unsigned char *map_buf;
 
@@ -38,10 +38,9 @@ unsigned char *map_buf;
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_read_pg (mdb, 1);
-	row_start = mdb_get_int16(mdb, (mdb->fmt->row_count_offset + 2));
-	row_end = mdb_find_end_of_row(mdb, 0);
+	mdb_find_row(mdb, 0, &row_start, &map_sz);
 	map_buf = &mdb->pg_buf[row_start];
-	map_sz = row_end - row_start;
+	map_sz --;
 	/*
 	 * trim the end of a type 0 map
 	 */
