@@ -1,6 +1,7 @@
 Sat Aug 21 21:21:56 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c: Clean up a bug in the new mdb_get_single/double
 	* src/libmdb/data.c: Clean out some stale code
+	* src/sql/parser.y: Simplify a couple of rules
 
 Thu Aug 19 21:37:21 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* configure.in:

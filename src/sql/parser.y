@@ -139,8 +139,7 @@ database:
 	;
 
 table:
-	NAME { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
-	| IDENT { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
+	identifier { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
 	;
 
 column_list:
@@ -150,8 +149,7 @@ column_list:
 	;
 	 
 column:
-	NAME { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
-	| IDENT { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
+	identifier { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
 	;
 
 %%
