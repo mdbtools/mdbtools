@@ -67,9 +67,8 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
-	int len;
-	int rownum, row_start, row_end;
-	guint32 pg;
+	int len, row_start, pg_row;
+	char *buf;
 
 	table = mdb_alloc_tabledef(entry);
 
@@ -83,36 +82,21 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	table->num_cols = mdb_pg_get_int16(mdb, fmt->tab_num_cols_offset);
 	table->num_idxs = mdb_pg_get_int32(mdb, fmt->tab_num_idxs_offset); 
 	table->num_real_idxs = mdb_pg_get_int32(mdb, fmt->tab_num_ridxs_offset); 
-
 	/* grab a copy of the usage map */
-	rownum = mdb->pg_buf[fmt->tab_usage_map_offset];
-	pg = mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1); 
-	mdb_read_alt_pg(mdb, pg);
-	mdb_swap_pgbuf(mdb);
-	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
-	row_end = mdb_find_end_of_row(mdb, rownum);
-	table->map_sz = row_end - row_start + 1;
-	table->usage_map = g_memdup(&mdb->pg_buf[row_start], table->map_sz);
+	pg_row = mdb_pg_get_int32(mdb, fmt->tab_usage_map_offset);
+	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
+	table->usage_map = g_memdup(buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
-		buffer_dump(mdb->pg_buf, row_start, row_end);
-	/* swap back */
-	mdb_swap_pgbuf(mdb);
-	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld rownum %d start %d end %d", mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1), rownum, row_start, row_end);
+		buffer_dump(buf, row_start, row_start+table->map_sz-1);
+	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld row %d start %d len %d",
+		pg_row >> 8, pg_row & 0xff, row_start, table->map_sz);
 
-
-	/* now grab the free space page map */
-#if 1
-	//mdb_swap_pgbuf(mdb);
-	rownum = mdb->pg_buf[fmt->tab_free_map_offset];
-	mdb_read_alt_pg(mdb, mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1));
-	mdb_swap_pgbuf(mdb);
-	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
-	row_end = mdb_find_end_of_row(mdb, rownum);
-	table->freemap_sz = row_end - row_start + 1;
-	table->free_usage_map = g_memdup(&mdb->pg_buf[row_start], table->freemap_sz);
-	mdb_swap_pgbuf(mdb);
-#endif
-	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1), rownum, row_start, row_end);
+	/* grab a copy of the free space page map */
+	pg_row = mdb_pg_get_int32(mdb, fmt->tab_free_map_offset);
+	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz));
+	table->free_usage_map = g_memdup(buf + row_start, table->freemap_sz);
+	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
+		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
 	table->first_data_pg = mdb_pg_get_int16(mdb, fmt->tab_first_dpg_offset);
 

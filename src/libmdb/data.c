@@ -76,6 +76,32 @@ MdbColumn *col;
 	col=g_ptr_array_index(table->columns, col_num - 1);
 	col->len_ptr = len_ptr;
 }
+
+/**
+ * mdb_find_pg_row
+ * @mdb: Database file handle
+ * @pg_row: Lower byte contains the row number, the upper three contain page
+ * @buf: Pointer for returning a pointer to the page
+ * @off: Pointer for returning an offset to the row
+ * @len: Pointer for returning the length of the row
+ * 
+ * Returns: 0 on success.  1 on failure.
+ */
+int mdb_find_pg_row(MdbHandle *mdb, int pg_row, char **buf, int *off, int *len)
+{
+	unsigned int pg = pg_row >> 8;
+	unsigned int row = pg_row & 0xff;
+
+	if (mdb_read_alt_pg(mdb, pg) != mdb->fmt->pg_size)
+		return 1;
+	mdb_swap_pgbuf(mdb);
+	*off = mdb_pg_get_int16(mdb, mdb->fmt->row_count_offset + 2 + (row*2));
+	*len = mdb_find_end_of_row(mdb, row) - *off + 1;
+	mdb_swap_pgbuf(mdb);
+	*buf = mdb->alt_pg_buf;
+	return 0;
+}
+
 int 
 mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
@@ -390,7 +416,8 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint16 ole_len;
 	guint16 ole_flags;
-	int row_stop, row_start;
+	char *buf;
+	int pg_row, row_start;
 	int len;
 
 	ole_len = mdb_get_int16(ole_ptr, 0);
@@ -404,23 +431,15 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 		 * should be handled entirely with mdb_ole_read() */
 		return 0;
 	} else if (ole_flags == 0x0000) {
-		if(mdb_read_alt_pg(mdb, col->cur_blob_pg) != mdb->fmt->pg_size) {
-			/* Failed to read */
+		pg_row = (col->cur_blob_pg << 8) & col->cur_blob_row;
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
 			return 0;
 		}
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
-		row_stop = mdb_find_end_of_row(mdb, col->cur_blob_row);
-		row_start = mdb_pg_get_int16(mdb, 10 + col->cur_blob_row * 2);
-		len = row_stop - row_start;
-		if (col->bind_ptr) 
-			memcpy(col->bind_ptr, &mdb->pg_buf[row_start], len);
-
-		col->cur_blob_row = mdb->pg_buf[row_start];
-		col->cur_blob_pg = mdb_pg_get_int24(mdb, row_start+1);
-
-		/* make sure to swap page back */
-		mdb_swap_pgbuf(mdb);
+		if (col->bind_ptr)
+			memcpy(col->bind_ptr, buf + row_start, len);
+		pg_row = mdb_get_int32(buf, row_start);
+		col->cur_blob_pg = pg_row >> 8;
+		col->cur_blob_row = pg_row & 0xff;
 
 		return len;
 	}
@@ -431,12 +450,14 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint16 ole_len;
 	guint16 ole_flags;
-	int row_stop, row_start;
+	char *buf;
+	int pg_row, row_start;
 	int len;
 
 	ole_len = mdb_get_int16(ole_ptr, 0);
 	ole_flags = mdb_get_int16(ole_ptr, 2);
-	mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %08x", ole_len, ole_flags);
+	mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %08x",
+		ole_len, ole_flags);
 
 	col->chunk_size = chunk_size;
 
@@ -454,47 +475,38 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 			return 0;
 		}
 	} else if (ole_flags == 0x4000) {
-		col->cur_blob_row = ((char *)ole_ptr)[4];
-		col->cur_blob_pg = mdb_get_int24(ole_ptr, 5);
-		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld", col->cur_blob_row, col->cur_blob_pg);
-		if(mdb_read_alt_pg(mdb, col->cur_blob_pg) != mdb->fmt->pg_size) {
-			/* Failed to read */
+		pg_row = mdb_get_int32(ole_ptr, 4);
+		col->cur_blob_pg = pg_row >> 8;
+		col->cur_blob_row = pg_row & 0xff;
+		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
+			col->cur_blob_row, col->cur_blob_pg);
+
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
 			return 0;
 		}
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
-		row_stop = mdb_find_end_of_row(mdb, col->cur_blob_row);
-		row_start = mdb_pg_get_int16(mdb, 10 + col->cur_blob_row * 2);
-		len = row_stop - row_start + 1;
-		mdb_debug(MDB_DEBUG_OLE,"start %d stop %d len %d", row_start, row_stop, len);
+		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
+
 		if (col->bind_ptr) {
-			memcpy(col->bind_ptr, &mdb->pg_buf[row_start], len);
+			memcpy(col->bind_ptr, buf + row_start, len);
 			if (mdb_get_option(MDB_DEBUG_OLE))
 				buffer_dump(col->bind_ptr, 0, 16);
 		}
-		/* make sure to swap page back */
-		mdb_swap_pgbuf(mdb);
 		return len;
 	} else if (ole_flags == 0x0000) {
-		col->cur_blob_row = ((char *)ole_ptr)[4];
-		col->cur_blob_pg = mdb_get_int24(ole_ptr, 5);
-		if(mdb_read_alt_pg(mdb, col->cur_blob_pg) != mdb->fmt->pg_size) {
-			/* Failed to read */
+		pg_row = mdb_get_int32(ole_ptr, 4);
+		col->cur_blob_pg = pg_row >> 8;
+		col->cur_blob_row = pg_row & 0xff;
+
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
 			return 0;
 		}
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
-		row_stop = mdb_find_end_of_row(mdb, col->cur_blob_row);
-		row_start = mdb_pg_get_int16(mdb, 10 + col->cur_blob_row * 2);
-		len = row_stop - row_start;
+
 		if (col->bind_ptr) 
-			memcpy(col->bind_ptr, &mdb->pg_buf[row_start], len);
+			memcpy(col->bind_ptr, buf + row_start, len);
 
-		col->cur_blob_row = mdb->pg_buf[row_start];
-		col->cur_blob_pg = mdb_pg_get_int24(mdb, row_start+1);
-
-		/* make sure to swap page back */
-		mdb_swap_pgbuf(mdb);
+		pg_row = mdb_get_int32(buf, row_start);
+		col->cur_blob_pg = pg_row >> 8;
+		col->cur_blob_row = pg_row & 0xff;
 
 		return len;
 	} else {
@@ -504,17 +516,19 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 }
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 {
-guint16 ole_len;
-guint16 ole_flags;
-guint16 row_start, row_stop;
-guint8 ole_row;
-guint32 lval_pg;
-guint16 len, cur;
+	guint16 ole_len;
+	guint16 ole_flags;
+	guint32 row_start, pg_row;
+	guint32 len;
+	char *buf;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return 0;
 	} 
 
+	/* The 16 bit integer at offset 0 is the length of the memo field.
+	 * The 32 bit integer at offset 4 contains page and row information.
+	 */
 	ole_len = mdb_pg_get_int16(mdb, start);
 	ole_flags = mdb_pg_get_int16(mdb, start+2);
 
@@ -525,62 +539,37 @@ guint16 len, cur;
 			size - MDB_MEMO_OVERHEAD);
 		return len;
 	} else if (ole_flags == 0x4000) {
-		/* The 16 bit integer at offset 0 is the length of the memo field.
-		* The 24 bit integer at offset 5 is the page it is stored on.
-		*/
-		ole_row = mdb->pg_buf[start+4];
-		
-		lval_pg = mdb_pg_get_int24(mdb, start+5);
-		mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", lval_pg);
-		if(mdb_read_alt_pg(mdb, lval_pg) != mdb->fmt->pg_size) {
-			/* Failed to read */
+		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
+		mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", pg_row >> 8);
+
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
 			return 0;
 		}
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
-		if (ole_row) {
-			row_stop = mdb_pg_get_int16(mdb, 10 + (ole_row - 1) * 2) & 0x0FFF;
-		} else {
-			row_stop = mdb->fmt->pg_size - 1;
-		}
-		row_start = mdb_pg_get_int16(mdb, 10 + ole_row * 2);
-		mdb_debug(MDB_DEBUG_OLE,"row num %d row start %d row stop %d", ole_row, row_start, row_stop);
-			len = row_stop - row_start;
-			if (dest) memcpy(dest, &mdb->pg_buf[row_start], len);
-			/* make sure to swap page back */
-			mdb_swap_pgbuf(mdb);
-			return len;
-		} else if (ole_flags == 0x0000) {
-			ole_row = mdb->pg_buf[start+4];
-			lval_pg = mdb_pg_get_int24(mdb, start+5);
-			mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", lval_pg);
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
-		cur=0;
+		mdb_debug(MDB_DEBUG_OLE,"row num %d start %d len %d",
+			pg_row & 0xff, row_start, len);
+
+		if (dest)
+			memcpy(dest, buf + row_start, len);
+		return len;
+	} else if (ole_flags == 0x0000) {
+		int cur = 0;
+		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
+		mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x", pg_row >> 8);
 		do {
-			if(mdb_read_pg(mdb, lval_pg) != mdb->fmt->pg_size) {
-				/* Failed to read */
+			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
 				return 0;
 			}
-			if (ole_row) {
-				row_stop = mdb_pg_get_int16(mdb, 10 + (ole_row - 1) * 2) & 0x0FFF;
-			} else {
-				row_stop = mdb->fmt->pg_size - 1;
-			}
-			row_start = mdb_pg_get_int16(mdb, 10 + ole_row * 2);
-			mdb_debug(MDB_DEBUG_OLE,"row num %d row start %d row stop %d", ole_row, row_start, row_stop);
-			len = row_stop - row_start;
+
+			mdb_debug(MDB_DEBUG_OLE,"row num %d start %d len %d",
+				pg_row & 0xff, row_start, len);
+
 			if (dest) 
-				memcpy(&dest[cur], &mdb->pg_buf[row_start+4], 
-				len - 4);
+				memcpy(dest+cur, buf + row_start + 4, len - 4);
 			cur += len - 4;
 
 			/* find next lval page */
-			ole_row = mdb->pg_buf[row_start];
-			lval_pg = mdb_pg_get_int24(mdb, row_start+1);
-		} while (lval_pg);
-		/* make sure to swap page back */
-		mdb_swap_pgbuf(mdb);
+			pg_row = mdb_get_int32(buf, row_start);
+		} while ((pg_row >> 8));
 		return cur;
 	} else {
 		fprintf(stderr,"Unhandled ole field flags = %04x\n", ole_flags);
@@ -589,14 +578,12 @@ guint16 len, cur;
 }
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
-MdbFormatConstants *fmt = mdb->fmt;
-guint16 memo_len;
-static char text[MDB_BIND_SIZE];
-guint16 memo_flags;
-guint16 row_start, row_stop;
-guint8 memo_row;
-guint32 lval_pg;
-guint16 len;
+	guint16 memo_len;
+	static char text[MDB_BIND_SIZE];
+	guint16 memo_flags;
+	guint32 row_start, pg_row;
+	guint32 len;
+	char *buf;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return "";
@@ -606,6 +593,9 @@ guint16 len;
 	buffer_dump(mdb->pg_buf, start, start + 12);
 #endif
 
+	/* The 16 bit integer at offset 0 is the length of the memo field.
+	 * The 32 bit integer at offset 4 contains page and row information.
+	 */
 	memo_len = mdb_pg_get_int16(mdb, start);
 	memo_flags = mdb_pg_get_int16(mdb, start+2);
 
@@ -616,77 +606,46 @@ guint16 len;
 		text[size - MDB_MEMO_OVERHEAD]='\0';
 		return text;
 	} else if (memo_flags & 0x4000) {
-		/* The 16 bit integer at offset 0 is the length of the memo field.
-		* The 24 bit integer at offset 5 is the page it is stored on.
-		*/
-		memo_row = mdb->pg_buf[start+4];
-		
-		lval_pg = mdb_pg_get_int24(mdb, start+5);
+		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
 #if MDB_DEBUG
-		printf("Reading LVAL page %06x\n", lval_pg);
+		printf("Reading LVAL page %06x\n", pg_row >> 8);
 #endif
-		if(mdb_read_alt_pg(mdb, lval_pg) != fmt->pg_size) {
-			/* Failed to read */
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &len)) {
 			return "";
 		}
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
-		row_stop = 0;
-		if (memo_row) {
-			row_stop = mdb_pg_get_int16(mdb, fmt->row_count_offset + 2 + (memo_row - 1) * 2) & 0x0FFF;
-		} 
-		if (row_stop == 0) 
-			row_stop = fmt->pg_size - 1;
-
-		row_start = mdb_pg_get_int16(mdb, fmt->row_count_offset + 2 + memo_row * 2);
-		len = row_stop - row_start;
 #if MDB_DEBUG
-		printf("row num %d row start %d row stop %d\n", memo_row, row_start, row_stop);
-		buffer_dump(mdb->pg_buf,row_start, row_start + len);
+		printf("row num %d start %d len %d\n",
+			pg_row & 0xff, row_start, len);
+		buffer_dump(mdb->pg_buf, row_start, row_start + len);
 #endif
 		if (IS_JET3(mdb)) {
-			strncpy(text, &mdb->pg_buf[row_start], len);
+			strncpy(text, buf + row_start, len);
 			text[len]='\0';
 		} else {
-			mdb_unicode2ascii(mdb, mdb->pg_buf, row_start, len, text);
+			mdb_unicode2ascii(mdb, buf, row_start, len, text);
 		}
-		/* make sure to swap page back */
-		mdb_swap_pgbuf(mdb);
 		return text;
 	} else { /* if (memo_flags == 0x0000) { */
-		memo_row = mdb->pg_buf[start+4];
-		lval_pg = mdb_pg_get_int24(mdb, start+5);
+		pg_row = mdb_get_int32(mdb->pg_buf, start+4);
 #if MDB_DEBUG
-		printf("Reading LVAL page %06x\n", lval_pg);
+		printf("Reading LVAL page %06x\n", pg_row >> 8);
 #endif
-		/* swap the alt and regular page buffers, so we can call get_int16 */
-		mdb_swap_pgbuf(mdb);
 		text[0]='\0';
 		do {
-			if(mdb_read_pg(mdb, lval_pg) != fmt->pg_size) {
-				/* Failed to read */
+			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
 				return "";
 			}
-			if (memo_row) {
-				row_stop = mdb_pg_get_int16(mdb, 10 + (memo_row - 1) * 2) & 0x0FFF;
-			} else {
-				row_stop = fmt->pg_size - 1;
-			}
-			row_start = mdb_pg_get_int16(mdb, 10 + memo_row * 2);
 #if MDB_DEBUG
-		printf("row num %d row start %d row stop %d\n", memo_row, row_start, row_stop);
+			printf("row num %d start %d len %d\n",
+				pg_row & 0xff, row_start, len);
 #endif
-			len = row_stop - row_start;
-			strncat(text, &mdb->pg_buf[row_start+4], 
+			strncat(text, buf + row_start + 4, 
 				strlen(text) + len - 4 > MDB_BIND_SIZE ?
 				MDB_BIND_SIZE - strlen(text) : len - 4);
 
 			/* find next lval page */
-			memo_row = mdb->pg_buf[row_start];
-			lval_pg = mdb_pg_get_int24(mdb, row_start+1);
-		} while (lval_pg);
-		/* make sure to swap page back */
-		mdb_swap_pgbuf(mdb);
+			pg_row = mdb_get_int32(mdb->pg_buf, row_start);
+		} while ((pg_row >> 8));
 		return text;
 /*
 	} else {

@@ -1,3 +1,8 @@
+Wed Sep  8 07:37:08 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/data.c:
+	* src/libmdb/table.c: Add function mdb_find_pg_row
+
 Thu Sep  2 23:04:02 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* doc/reference/libmdb/libmdb-sections.txt:
 	* include/mdbtools.h:

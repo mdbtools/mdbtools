@@ -435,6 +435,7 @@ extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
 extern int mdb_is_fixed_col(MdbColumn *col);
 extern char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size);
+extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, char **buf, int *off, int *len);
 extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 extern int mdb_col_fixed_size(MdbColumn *col);
 extern int mdb_col_disp_size(MdbColumn *col);
