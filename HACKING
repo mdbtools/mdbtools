@@ -11,18 +11,47 @@ Pages
 -----
 
 MDB files are a set of pages.  These pages are 2K (2048 bytes) in size, so in a
-hex dump of the data they start on adreeses like xxx000 and xxx800.  
+hex dump of the data they start on adreeses like xxx000 and xxx800.  Acess 2000
+has increased the page size to 4K.
+
+Each page is known by a page_id of 3 bytes (max value is 0x07FFFF). 
+The start adresse of a page is at page_id * 0x800.
+So the maximum of data storage for Access97 database is near 
+0x080000 * 0x800 = 0x40000000 bytes (1 Go)
+
+We have two differents structures which use page_id :
+
+1) Data pointer structure (_dp):
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 1 byte  | row_id      | The row id in the data page              |
+| ???? | 3 bytes | page_id     | Max value is 0x07FFFF                    |
++-------------------------------------------------------------------------+
+
+2) Page pointer structure (_pg):
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 3 bytes | page_id     | Max value is 0x07FFFF                    |
+| ???? | 1 byte  | flags       | If not null, indicate a system object.   |
++-------------------------------------------------------------------------+
 
 The first byte of each page seems to be a type indentifier for instance the 
 first page in the mdb file is 0x00, which no other pages seems to share.  Other
-pages have values of 0x01, 0x02, 0x03, 0x04 though the exact meaning of these
-is currently a mystery. (0x04 seems to be data I guess).
+pages have the following values:
+
+0x00 Database definition page.  (Page 0)
+0x01 Data page
+0x02 Table definition
+0x03 Index pages
+0x04 Index pages (Leaf nodes?)
 
 The second byte is always 0x01 as far as I can tell.
 
 At some point in the file the page layout is apparently abandoned though the 
 very last 2K in the file again looks like a valid page.  The purpose of this
-non-paged region is so far unknown .
+non-paged region is so far unknown. Could be a corrupt db as well.
 
 Bytes after the first and second seemed to depend on the type of page, although bytes 4-7 seem to indicate a page type of some sort.  02 00 00 00 is found on all catalog pages.
 
@@ -38,6 +67,13 @@ All offsets to data within the file are in little endian (intel) order
 
 Catalogs
 --------
+
+Note: This section was written fairly early in the process of determining the file
+format.  It is now understood that the catalog pages are data for the MSysObjects
+system table (with a table definition starting at page 2).  The rest of this 
+section is presented for the understanding of the current code until it may be 
+replaced by a more proper implementation.
+
 
 So far the first page of the catalog has always been seen at 0x9000 bytes into
 the file.  It is unclear whether this is always where it occurs, or whether a 
@@ -93,64 +129,120 @@ course of action has been to stop at the first non-printable character
 After the name there is sometimes have (not yet determined why only sometimes) 
 a page pointer and offset to the KKD records (see below).  There is also pointer to other catalog pages, but I'm not really sure how to parse those.
 
-Table Definition
------------------
+TDEF Pages (Table Definition)
+-----------------------------
+A table definition, includes name, type, size, number of datarows, a pointer 
+to the first data page, and possibly more.  
 
-The second and third bytes of each catalog entry store a 16 bit page pointer to 
-a table definition, including name, type, size, number of datarows, a pointer 
-to the first data page, and possibly more.  I haven't fully figured this out so what follows is rough.  
+The header of each Tdef page looks like this (8 bytes) :
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| 0x02 | 1 bytes | page_type   | 0x02 indicate a tabledef page            |
+| 0x01 | 1 bytes | unknown     |                                          |
+| 'VC' | 2 bytes | tdef_id     | The word 'VC'                            |
+| 0x00 | 4 bytes | next_pg     | Next tdef page pointer (0 if none)       |
++------+---------+-------------+------------------------------------------+
 
-The header to table definition pages start look something like this:
+Note: The tabledef is very long, so it can take many TDEF pages linked
+with the next_pg pointer.
 
-+------+---------+--------------------------------------------------------+
-| 0x02 | 1 byte  | Page type                                              |
-| 0x01 | 1 byte  | Unknown                                                |
-| 'VC' | 2 bytes | ???                                                    |
-| 0x00 | 4 bytes | Pointer to continuation page (if multipage table def)  |
-| ???? | 4 bytes | appears to be a length of the data                     |
-| ???? | 4 bytes | number of rows of data in this table                   |
-| 0x00 | 4 bytes | ???                                                    |
-| 0x4e | 1 byte  | ???                                                    |
-| ???? | 2 bytes | generally same as # of cols but not always             |
-| ???? | 2 bytes | ???                                                    |
-| ???? | 2 bytes | number of columns in table                             |
-| ???? | 4 bytes | number of indexes for this table                       |
-| ???? | 4 bytes | number of index entries for this table                 |
-| 0x00 | 1 byte  | ???                                                    |
-| ???? | 2 bytes | page number of first datapage for table                |
-| ???? | 2 bytes | ???                                                    |
-| ???? | 2 bytes | page number of first datapage for table                |
-| 0x00 | 1 byte  | ???                                                    |
 +-------------------------------------------------------------------------+
-| Iterate for 2 x number of indexes                                       |
+| Table definition bloc (35 bytes)                                        |
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 4 bytes | tdef_len    | Length of the data for this page         |
+| ???? | 4 bytes | num_rows    | Number of records in this table          |
+| 0x00 | 4 bytes | autonumber  | value for the next value of the          |
+|      |         |             | autonumber column, if any. 0 otherwise   |
+| 0x4e | 1 byte  | table_type  | 0x53: user table, 0x4e: system table     |
+| ???? | 2 bytes | num_real_col| Number of columns in table (not always)  |
+| ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
+| ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
+| ???? | 4 bytes | num_idx     | Number of indexes in table               |
+| ???? | 4 bytes | num_real_idx| Number of indexes in table (repeat)      |
+| ???? | 4 bytes | used_pages  | Points to a record containing the        |
+|      |         |             | usage bitmask for this table.            |
+| ???? | 4 bytes |             | Points to a similar record as above,     |
+|      |         |             | might contain info about partly used     |
+|      |         |             | pages?                                   |
 +-------------------------------------------------------------------------+
-| ???? | 4 bytes | number of rows in table                                |
-| ???? | 4 bytes | number of rows in the index                            |
+| Iterate for the number of num_real_idx (8 bytes per idxs)               |
 +-------------------------------------------------------------------------+
-
-The next few bytes are somewhat of a mystery right now, but around 0x2B from 
-the start of the page (though not always) begins a series of 18 byte records
-one for each column present.  It's format is as follows:
-+------+---------+--------------------------------------------------------+
-| ???? | 1 byte  | Column Type (see table below)                          |
-| ???? | 2 bytes | Column Number, ascending sequential number, starts at 0|
-| ???? | 1 byte  | unknown. 1 is sometimes seen in text types             |
-| ???? | 1 byte  | unknown                                                |
-| ???? | 4 bytes | Column Number (again)                                  |
-| ???? | 6 bytes | ??? (timestamp?)                                       |
-| ???? | 1 bytes | bitmask of some sort. low order bit indicates variable |
-|      |         | length column                                          |
-| ???? | 2 bytes | length of column                                       |
+| 0x00 | 4 bytes | ???         |                                          |
+| ???? | 4 bytes | num_idx_rows| (not sure)                               |
 +-------------------------------------------------------------------------+
+| Iterate for the number of num_cols (18 bytes per column)                |
++-------------------------------------------------------------------------+
+| ???? | 1 byte  | col_type    | Column Type (see table below)            |
+| ???? | 2 bytes | col_num     | Column Number, (not always)              |
+| ???? | 2 bytes | offset_V    | Offset for variable length columns       |
+| ???? | 4 bytes | ???         |                                          |
+| ???? | 4 bytes | ???         |                                          |
+| ???? | 1 byte  | bitmask     | low order bit indicates variable columns |
+| ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
+| ???? | 2 bytes | col_len     | Length of the column (0 if memo)         |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_cols (n bytes per column)                 |
++-------------------------------------------------------------------------+
+| ???? | 1 byte  | col_name_len| len of the name of the column            |
+| ???? | n bytes | col_name    | Name of the column                       |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx (30+5 = 35 bytes)                |
++-------------------------------------------------------------------------+
+|     Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
++-------------------------------------------------------------------------+
+| ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
+| ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
++-------------------------------------------------------------------------+
+| ???? | 4 bytes | first_dp    | Data pointer of the index page           |
+| ???? | 1 byte  | flags       | See flags table for indexes              |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx                                  |
++-------------------------------------------------------------------------+
+| ???? | 4 bytes | index_num   | Number of the index                      |
+|      |         |             |(warn: not always in the sequential order)|
+| ???? | 4 bytes | index_num2  | Number of the index (repeat)             |
+| 0xFF | 4 bytes | ???         |                                          |
+| 0x00 | 4 bytes | ???         |                                          |
+| 0x04 | 2 bytes | ???         |                                          |
+| ???? | 1 byte  | primary_key | 0x01 if this index is primary            |
++-------------------------------------------------------------------------+
+| Iterate for the number of num_real_idx                                  |
++-------------------------------------------------------------------------+
+| ???? | 1 byte  | idx_name_len| len of the name of the index             |
+| ???? | n bytes | idx_name    | Name of the index                        |
++-------------------------------------------------------------------------+
+| ???? | n bytes | ???         |                                          |
+| 0xFF | 2 bytes | ???         | End of the tableDef  ?                   |
++-------------------------------------------------------------------------+
+Index flags (not complete):
+0x01 Unique     
+0x02 IgnoreNuls
+0x08 Required
 
-Column Type may be one of the following (not complete).
 
-0x03   Integer (16 bit)
-0x04   Long Integer (32 bit)
-0x08   Short Date/Time
-0x0a   Text
-0x0c   Hyperlink
+Column Type may be one of the following (not complete):
 
+    BOOL            = 0x01 /* boolean         ( 1 bit  ) */
+    BYTE            = 0x02 /* byte            ( 8 bits ) */
+    INT             = 0x03 /* Integer         (16 bits ) */
+    LONGINT         = 0x04 /* Long Integer    (32 bits ) */
+    MONEY           = 0x05 /* Currency        ( 8 bytes) */
+    FLOAT           = 0x06 /* Single          ( 4 bytes) */
+    DOUBLE          = 0x07 /* Double          ( 8 bytes) */
+    SDATETIME       = 0x08 /* Short Date/Time ( 8 bytes) */
+    BINARY          = 0x09 /* binay          (255 bytes) */
+    TEXT            = 0x0A /* Text           (255 bytes) */
+    OLE             = 0x0B /* OLE */
+    MEMO            = 0x0C /* Memo, Hyperlink */
+    UNKNOWN_0D      = 0x0D
+    REPID           = 0x0F /* GUID */
+
+Note: this is were my stuff didn't mesh with Yves Maingoy's who reworked the section above.
+
+(start old stuff)
 Following the 18 byte column records begins the column names, listed in order
 with a 1 byte size prefix preceding each name.
 
@@ -159,42 +251,124 @@ After this are a series of 39 byte fields for each index.  At offset 34 is a 4 b
 Beyond this are a series of 20 byte fields for each 'index entry'.  There may be more entrys than indexes and byte 20 represents its type (0x00 for normal index, 0x01 for Primary Key, and 0x02 otherwise).
 
 It is currently unknown how indexes are mapped to columns or the format of the index pages.
+(end old stuff)
 
-Data Rows
----------
+Data Pages
+----------
 
 The header of a data page looks like this:
 
-+------+---------+--------------------------------------------------------+
-| 0x01 | 1 byte  | Page type                                              |
-| 0x01 | 1 byte  | Unknown                                                |
-| ???? | 2 bytes | Unknown                                                |
-| ???? | 2 bytes | Page pointer to table definition                       |
-| 0x00 | 2 bytes | Unknown                                                |
-| ???? | 4 bytes | number of rows of data in this table                   |
-+------+---------+--------------------------------------------------------+
-| Iterate for the number of records                                       |
-+-------------------------------------------------------------------------+
-| ???? | 2 bytes | offset to the records location on this page            |
-+-------------------------------------------------------------------------+
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| 0x01 | 1 byte  | page_type  | 0x01 indicates a data page.                |
+| 0x01 | 1 byte  | unknown    |                                            |
+| ???? | 2 bytes | free_space | Free space in this page                    |
+| ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
+| ???? | 4 bytes | num_rows   | number of records on this page             |
++------+---------+---------------------------------------------------------+
+| Iterate for the number of records                                        |
++--------------------------------------------------------------------------+
+| ???? | 2 bytes | offset_row | The records location on this page          |
++--------------------------------------------------------------------------+
+
+Notes for offset_row:
+- Offsets that have 0x40 in the high order byte point to a location within 
+  the page where a Data Pointer (4 bytes) to another data page is stored.
+- Offsets that have 0x80 in the high order byte are deleted rows.
+ (These flags are delflag and lookupflag in source code)
+
 
 Each data row looks like this:
 
-+------+---------+--------------------------------------------------------+
-| ???? | 1 byte  | Number of columns stored in this row                   |
-| ???? | n bytes | Fixed length columns                                   |
-| ???? | n bytes | Variable length columns                                |
-| ???? | 1 byte  | length of data from beginning of record                |
-| ???? | n bytes | offset from start of row for each variable length col  |
-| ???? | 1 byte  | number of variable length columns                      |
-| ???? | n bytes | Null indicator.  size is 1 byte per 8 columns.         |
-|      |         | 0 indicates a null value.                              |
-+------+---------+--------------------------------------------------------+
++------+---------+----------------------------------------------------------+
+| data | length  | name        | description                                |
++------+---------+----------------------------------------------------------+
+| ???? | 1 byte  | num_cols    | Number of columns stored in this row       |
+| ???? | n bytes |             | Fixed length columns                       |
+| ???? | n bytes |             | Variable length columns                    |
+| ???? | 1 byte  | fixed_len   | length of data from beginning of record    |
+| ???? | n bytes | var_table[] | offset from start of row for each variable |
+|      |         |             | length column                              |
+| ???? | 1 byte  | var_len     | number of variable length columns          |
+| ???? | n bytes | null_table[]| Null indicator. size is 1 byte per 8 cols. |
+|      |         |             | 0 indicates a null value.                  |
++------+---------+----------------------------------------------------------+
+
+Note: For boolean fixed columns, the values are in null_table[]:
+0 indicates a false value
+1 indicates a true value
 
 Note: it is possible for the offset to the beginning of a variable length 
 column to require more than one byte (if the sum of the lengths of columns is
 greater than 255).  I have no idea how this is represented in the data as I
 have not looked at tables large enough for this to occur yet. 
+
+Each memo column (or other long binary data) in a row 
+looks like this (12 bytes):
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 2 bytes | memo_len    | Total length of the memo                 |
+| ???? | 2 bytes | bitmask     | See values                               |
+| ???? | 4 bytes | lval_dp     | Data pointer to LVAL page (if needed)    |
+| 0x00 | 4 bytes | unknown     |                                          |
++------+---------+-------------+------------------------------------------+
+Values for the bitmask:
+
+0x8000= the memo is in a string at the end of this header (memo_len bytes)
+0x4000= the memo is in a unique LVAL page in a record type 1
+0x0000= the memo is in n LVAL pages in a record type 2
+
+If the memo is in a LVAL page, we use row_id of lval_dp to find the row.
+offset_start of memo = (int16*) LVAL_page[ 10 + row_id * 2]
+if (rowid=0) 
+     offset_stop  of memo = 2048
+else
+     offset_stop  of memo = (int16*) LVAL_page[ 10 + row_id * 2 - 2]
+
+The length (partial if type 2) for the memo is:
+memo_page_len = offset_stop - offset_start 
+
+LVAL Pages
+----------
+(LVAL Page are particular data pages for long data storages )
+
+The header of a LVAL page looks like this (10 bytes) :
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| 0x01 | 1 bytes | page_type   | 0x01 indicate a data page                |
+| 0x01 | 1 bytes | unknown     |                                          |
+| ???? | 2 bytes | free_space  | The free space in this page              |
+| LVAL | 4 bytes | lval_id     | The word  'LVAL'                         |
+| ???? | 2 bytes | num_rows    | Number of rows in this page              |
++-------------------------------------------------------------------------+
+| Iterate for the number of records                                       |
++-------------------------------------------------------------------------+
+| ???? | 2 bytes | row_offset  | to the records location on this page     |
++-------------------------------------------------------------------------+
+
+Each memo record type 1 looks like this:
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | n bytes | memo_value  | A string which is the memo               |
++-------------------------------------------------------------------------+
+
+Each memo record type 2 looks like this:
++------+---------+-------------+------------------------------------------+
+| data | length  | name        | description                              |
++------+---------+-------------+------------------------------------------+
+| ???? | 4 bytes | lval_dp     | Next page LVAL type 2 if memo is too long|
+| ???? | n bytes | memo_value  | A string which is the memo (partial)     |
++-------------------------------------------------------------------------+
+
+In a LVAL type 2 data page, you have 
+   10 bytes for the header of the data page, 
+    2 bytes for an offset,
+    4 bytes for the next lval_pg
+So you have a bloc of 2048 - (10+2+4) = 2032 bytes max in a page.
 
 Indices
 -------
