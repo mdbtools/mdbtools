@@ -62,7 +62,6 @@ void mdb_free_catalog(MdbHandle *mdb)
 	mdb->catalog = NULL;
 }
 
-/* new method */
 GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 {
 	MdbCatalogEntry *entry, msysobj;
@@ -117,124 +116,6 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	return mdb->catalog;
 }
 
-/* old method */
-
-#if 0
-
-MdbCatalogEntry *mdb_read_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry)
-{
-int offset;
-int rows;
-int i,j;
-
-	rows = mdb_get_int16(mdb, mdb->row_count_offset);
-
-	if (rowid < 0 || rowid > rows) return NULL;
-
-	offset = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + 2 * rowid);
-	if (IS_JET4(mdb)) offset++;
-	/* 
-	** ??? this happens, don't know what it means 
-	*/
-	if (offset & 0xF000) offset &= ~0xF000;
-
-/*
-for (j=offset;j<offset+32;j++)
-	fprintf(stdout,"%02x ",mdb->pg_buf[j]);
-fprintf(stdout,"\n");
-*/
-
-	memset(entry, '\0', sizeof(MdbCatalogEntry));
-	entry->object_type = (mdb->pg_buf[offset+0x09] & 0x7F);
-	j=0;
-	entry->mdb = mdb;
-	entry->table_pg = mdb_get_int16(mdb,offset+1);
-	for (i=offset+31;isprint(mdb->pg_buf[i]);i++) {
-		if (j<=MDB_MAX_OBJ_NAME) {
-			entry->object_name[j++]=mdb->pg_buf[i];
-		}
-		if (IS_JET4(mdb)) i++;
-	}
-	//fprintf(stderr,"name: %s type: %d\n",entry->object_name, entry->object_type);
-	//fprintf(stderr,"cur page: %d row; %d\n", entry->table_pg, rowid);
-	entry->object_name[j] = '\0';
-	entry->kkd_pg = mdb_get_int16(mdb,offset+31+strlen(entry->object_name)+7);
-	entry->kkd_rowid = mdb->pg_buf[offset+31+strlen(entry->object_name)+6];
-
-	return entry;
-}
-int mdb_catalog_rows(MdbHandle *mdb)
-{
-	return mdb_get_int16(mdb, mdb->row_count_offset);
-}
-GPtrArray *
-mdb_read_catalog(MdbHandle *mdb, int obj_type)
-{
-int i;
-int rows;
-MdbCatalogEntry entry;
-gpointer data;
-int next_pg, next_pg_off;
-
-/* 
-** We are doing it the brute force way, since I can't make sense of the page
-** linkage on catalog pages. What I know (or think I know) is this: some row
-** offsets in the row offset table (that list of offsets at the begining of 
-** the page) that the high order nibble of 0x4.  The offset then represents
-** the location of a page pointer to another catalog page, however not all
-** catalog pages are linked in this manner.
-**
-** So, we simply read the entire mdb file for pages that start 0x01 0x01 and 
-** have a 32bit value of 2 (02 00 00 00) in bytes 4-7.
-*/
-/*
-	next_pg = MDB_CATALOG_PG;
-	mdb_free_catalog(mdb);
-	mdb->num_catalog = 0;
-
-	while (next_pg) {
-		mdb_read_pg(mdb, next_pg);
-		next_pg = 0;
-		rows = mdb_catalog_rows(mdb);
-		for (i=0;i<rows;i++) {
-			if (mdb->pg_buf[11 + 2 * i] & 0x40) {
-				next_pg_off = mdb_get_int16(mdb, 10 + 2 * i) & 0x0FFF;
-				next_pg = mdb_get_int16(mdb, next_pg_off+1);
-				fprintf(stdout,"YES! next pg = %04x %d\n",next_pg, next_pg); 
-				continue;
-			}
-			if (mdb_read_catalog_entry(mdb, i, &entry)) {
-				data = g_memdup(&entry,sizeof(MdbCatalogEntry));
-				mdb->catalog = g_list_append(mdb->catalog, data);
-			}
-		}
-	}
-	return (mdb->catalog);
-*/
-	mdb_free_catalog(mdb);
-	mdb->num_catalog = 0;
-
-	mdb->catalog = g_ptr_array_new();
-	next_pg=0;
-	while (mdb_read_pg(mdb,next_pg)) {
-		if (mdb->pg_buf[0]==0x01 && 
-		mdb->pg_buf[1]==0x01 &&
-		mdb_get_int32(mdb,4)==2) {
-			// fprintf(stderr,"cat page %d\n", next_pg);
-			rows = mdb_catalog_rows(mdb);
-			for (i=0;i<rows;i++) {
-				if (mdb->pg_buf[11 + 2 * i] & 0x40) continue;
-				if (mdb_read_catalog_entry(mdb, i, &entry)) {
-					//printf("page %d\n",next_pg);
-					mdb->num_catalog++;
-					g_ptr_array_add(mdb->catalog, entry);
-				}
-			}
-		}
-		next_pg++;
-	}
-}
-#endif
 void 
 mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
