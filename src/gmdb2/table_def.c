@@ -52,6 +52,7 @@ int i,j;
 gchar *titles[] = { "", "Column", "Name", "Type", "Size", "Allow Nulls" };
 gchar *row[6];
 GMdbDefWindow *defw;
+GtkStyle *style;
 
 	/* do we have an active window for this object? if so raise it */
 	for (i=0;i<g_list_length(window_list);i++) {
@@ -121,15 +122,21 @@ GMdbDefWindow *defw;
 		}
 		gtk_clist_append(GTK_CLIST(clist), row);
 	}
-	pixmap = gdk_pixmap_colormap_create_from_xpm_d( NULL,
-		gtk_widget_get_colormap(app), &mask, NULL, pk_xpm);
+	style = gtk_widget_get_style(clist);
+	pixmap = gdk_pixmap_create_from_xpm(clist->window,
+		&mask,
+		&style->bg[GTK_STATE_NORMAL], 
+		GMDB_ICONDIR "pk.xpm");
+	printf("pixmap %lu\n",pixmap);
+	//pixmap = gdk_pixmap_colormap_create_from_xpm_d( NULL,
+		//gtk_widget_get_colormap(app), &mask, NULL, pk_xpm);
 
 	mdb_read_indices(table);
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
 		if (idx->index_type==1) {
     		for (j=0;j<idx->num_keys;j++) {
-				gtk_clist_set_pixmap(GTK_CLIST(clist), idx->key_col_num[j]-1,0, pixmap, mask);
+			if (pixmap) gtk_clist_set_pixmap(GTK_CLIST(clist), idx->key_col_num[j]-1,0, pixmap, mask);
     		}
 		// } else {
     		//for (j=0;j<idx->num_keys;j++) {

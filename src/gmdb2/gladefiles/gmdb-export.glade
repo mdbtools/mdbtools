@@ -6,7 +6,7 @@
 
 <widget class="GtkDialog" id="export_dialog">
   <property name="visible">True</property>
-  <property name="title" translatable="yes">dialog1</property>
+  <property name="title" translatable="yes">Export Table Data</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
@@ -22,7 +22,6 @@
 
       <child internal-child="action_area">
 	<widget class="GtkHButtonBox" id="dialog-action_area1">
-	  <property name="visible">True</property>
 	  <property name="layout_style">GTK_BUTTONBOX_END</property>
 
 	  <child>
@@ -30,11 +29,24 @@
 	      <property name="visible">True</property>
 	      <property name="can_default">True</property>
 	      <property name="can_focus">True</property>
+	      <property name="label">gtk-help</property>
+	      <property name="use_stock">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="response_id">-11</property>
+	      <signal name="clicked" handler="gmdb_export_help_cb" after="yes" last_modification_time="Tue, 14 Jan 2003 14:53:11 GMT"/>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="export_button">
+	      <property name="visible">True</property>
+	      <property name="can_default">True</property>
+	      <property name="can_focus">True</property>
 	      <property name="label">gtk-cancel</property>
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="response_id">-6</property>
-	      <signal name="clicked" handler="gtk_widget_destroy" after="yes" object="export_dialog" last_modification_time="Mon, 30 Dec 2002 13:09:35 GMT"/>
+	      <signal name="clicked" handler="gtk_widget_destroy" object="export_dialog" last_modification_time="Tue, 14 Jan 2003 14:54:21 GMT"/>
 	    </widget>
 	  </child>
 
@@ -45,10 +57,10 @@
 	      <property name="can_focus">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="response_id">-5</property>
-	      <signal name="clicked" handler="gmdb_table_export_button_cb" last_modification_time="Mon, 30 Dec 2002 14:44:28 GMT"/>
+	      <signal name="clicked" handler="gmdb_table_export_button_cb" last_modification_time="Tue, 14 Jan 2003 14:54:10 GMT"/>
 
 	      <child>
-		<widget class="GtkAlignment" id="alignment1">
+		<widget class="GtkAlignment" id="alignment2">
 		  <property name="visible">True</property>
 		  <property name="xalign">0.5</property>
 		  <property name="yalign">0.5</property>
@@ -56,7 +68,7 @@
 		  <property name="yscale">0</property>
 
 		  <child>
-		    <widget class="GtkHBox" id="hbox1">
+		    <widget class="GtkHBox" id="hbox2">
 		      <property name="visible">True</property>
 		      <property name="homogeneous">False</property>
 		      <property name="spacing">2</property>
@@ -102,6 +114,17 @@
 		  </child>
 		</widget>
 	      </child>
+	    </widget>
+	  </child>
+
+	  <child>
+	    <widget class="GtkButton" id="save_button">
+	      <property name="can_default">True</property>
+	      <property name="can_focus">True</property>
+	      <property name="label">gtk-save</property>
+	      <property name="use_stock">True</property>
+	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="response_id">0</property>
 	    </widget>
 	  </child>
 	</widget>

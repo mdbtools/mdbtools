@@ -87,7 +87,6 @@ gmdb_help_cb(GtkWidget *button, gpointer data)
 {
 	GError *error = NULL;
 
-	g_print("got here\n");
 	gnome_help_display("gmdb.xml", NULL, &error);
 	if (error != NULL) {
 		g_warning (error->message);

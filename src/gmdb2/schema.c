@@ -50,7 +50,7 @@ char            *the_relation;
 	
 	printf("file path %s\n",file_path);
 	if ((outfile=fopen(file_path, "w"))==NULL) {
-		gmdb_info_msg("Unable to Open File!");
+		gnome_warning_dialog("Unable to Open File!");
 		return;
 	}
 	mdb_set_default_backend(mdb,backend);
@@ -119,7 +119,7 @@ char            *the_relation;
 
 	fclose(outfile);
 	sprintf(msg,"Schema exported successfully.\n");
-	gmdb_info_msg(msg);
+	gnome_ok_dialog(msg);
 }
 void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)
@@ -154,13 +154,25 @@ GtkWidget *schemawin, *combo, *checkbox, *entry;
 	gtk_widget_destroy(schemawin);
 	gmdb_schema_export();
 }
+void
+gmdb_schema_help_cb(GtkWidget *w, gpointer data) 
+{
+	GError *error = NULL;
+
+	gnome_help_display("gmdb.xml", "gmdb-schema", &error);
+	if (error != NULL) {
+		g_warning (error->message);
+		g_error_free (error);
+	}
+}
 
 void 
-gmdb_schema_new_cb(GtkWidget *w, gpointer data) {
-GList *glist = NULL;
-GtkWidget *combo;
-MdbCatalogEntry *entry;
-int i;
+gmdb_schema_new_cb(GtkWidget *w, gpointer data) 
+{
+	GList *glist = NULL;
+	GtkWidget *combo;
+	MdbCatalogEntry *entry;
+	int i;
    
 	/* load the interface */
 	schemawin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-schema.glade", NULL, NULL);

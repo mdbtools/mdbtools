@@ -109,7 +109,7 @@ gmdb_file_open(gchar *file_path)
 	gmdb_reset_widgets();
 	mdb = mdb_open(file_path);
 	if (!mdb) {
-		gmdb_info_msg("Unable to open file.");
+		gnome_warning_dialog("Unable to open file.");
 		return;
 	}
 	gmdb_file_shuffle_recent(file_path);

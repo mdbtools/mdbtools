@@ -38,7 +38,7 @@ MdbCatalogEntry *cat_entry;
 #define AUTOMAT "Automatic (where necessary)"
 
 void
-print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *str)
+gmdb_print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *str)
 {
 	if (need_quote==1) {
 		fprintf(outfile, "%c", quotechar);
@@ -49,6 +49,98 @@ print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *s
 	}
 }
 
+gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
+{
+	GtkWidget *combo;
+	gchar *str;
+
+	combo = glade_xml_get_widget(xml, "sep_combo");
+	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	if (!strcmp(str,COMMA)) { strcpy(delimiter, ","); }
+	else if (!strcmp(str,TAB)) { strcpy(delimiter, "\t"); }
+	else if (!strcmp(str,SPACE)) { strcpy(delimiter, " "); }
+	else if (!strcmp(str,COLON)) { strcpy(delimiter, ":"); }
+	else if (!strcmp(str,SEMICOLON)) { strcpy(delimiter, ";"); }
+	else if (!strcmp(str,PIPE)) { strcpy(delimiter, "|"); }
+	else {
+		strncpy(delimiter,str, 10);
+		delimiter[10]='\0';
+	}
+}
+
+void
+gmdb_export_get_lineterm(GladeXML *xml, gchar *lineterm, int max_buf)
+{
+	GtkWidget *combo;
+	gchar *str;
+
+	combo = glade_xml_get_widget(xml, "term_combo");
+	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	if (!strcmp(str,LF)) { strcpy(lineterm, "\n"); }
+	else if (!strcmp(str,CR)) { strcpy(lineterm, "\r"); }
+	else if (!strcmp(str,CRLF)) { strcpy(lineterm, "\r\n"); }
+}
+
+int
+gmdb_export_get_quote(GladeXML *xml)
+{
+	GtkWidget *combo;
+	int need_quote = 0;
+	gchar *str;
+
+	combo = glade_xml_get_widget(xml, "quote_combo");
+	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	if (!strcmp(str,ALWAYS)) { need_quote = 1; }
+	else if (!strcmp(str,NEVER)) { need_quote = 0; }
+	else if (!strcmp(str,AUTOMAT)) { need_quote = -1; }
+
+	return need_quote;
+}
+
+char
+gmdb_export_get_quotechar(GladeXML *xml)	
+{
+	GtkWidget *combo;
+	gchar *str;
+	char quotechar;
+
+	combo = glade_xml_get_widget(xml, "qchar_combo");
+	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	quotechar = str[0];
+
+	return quotechar;
+}
+int
+gmdb_export_get_headers(GladeXML *xml)	
+{
+	GtkWidget *checkbox;
+
+	checkbox = glade_xml_get_widget(xml, "headers_checkbox");
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox)))
+		return 1;
+	else
+		return 0;
+}
+gchar *
+gmdb_export_get_filepath(GladeXML *xml)	
+{
+	GtkWidget *fentry;
+
+	fentry = glade_xml_get_widget(xml, "filename_entry");
+	return (gchar *) gtk_entry_get_text(GTK_ENTRY(fentry));
+}
+
+void
+gmdb_export_help_cb(GtkWidget *w, gpointer data)
+{
+	GError *error = NULL;
+
+	gnome_help_display("gmdb.xml", "gmdb-table-export", &error);
+	if (error != NULL) {
+		g_warning (error->message);
+		g_error_free (error);
+	}
+}
 void
 gmdb_table_export_button_cb(GtkWidget *w, gpointer data)
 {
@@ -66,52 +158,19 @@ gchar lineterm[5];
 gchar *str;
 int rows=0;
 char msg[100];
-GtkWidget *combo, *fentry, *checkbox;
 GtkWidget *exportwin;
 
 	
-	combo = glade_xml_get_widget (exportwin_xml, "sep_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
-	if (!strcmp(str,COMMA)) { strcpy(delimiter, ","); }
-	else if (!strcmp(str,TAB)) { strcpy(delimiter, "\t"); }
-	else if (!strcmp(str,SPACE)) { strcpy(delimiter, " "); }
-	else if (!strcmp(str,COLON)) { strcpy(delimiter, ":"); }
-	else if (!strcmp(str,SEMICOLON)) { strcpy(delimiter, ";"); }
-	else if (!strcmp(str,PIPE)) { strcpy(delimiter, "|"); }
-	else {
-		strncpy(delimiter,str, 10);
-		delimiter[10]='\0';
-	}
-
-	combo = glade_xml_get_widget (exportwin_xml, "term_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
-	if (!strcmp(str,LF)) { strcpy(lineterm, "\n"); }
-	else if (!strcmp(str,CR)) { strcpy(lineterm, "\r"); }
-	else if (!strcmp(str,CRLF)) { strcpy(lineterm, "\r\n"); }
-
-	combo = glade_xml_get_widget (exportwin_xml, "quote_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
-	if (!strcmp(str,ALWAYS)) { need_quote = 1; }
-	else if (!strcmp(str,NEVER)) { need_quote = 0; }
-	else if (!strcmp(str,AUTOMAT)) { need_quote = -1; }
-
-	combo = glade_xml_get_widget (exportwin_xml, "qchar_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
-	quotechar = str[0];
-
-	/* headers */
-	checkbox = glade_xml_get_widget (exportwin_xml, "header_checkbox");
-	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox)))
-		need_headers = 1;
-	else
-		need_headers = 0;
-
-	fentry = glade_xml_get_widget (exportwin_xml, "filename_entry");
-	file_path = (gchar *) gtk_entry_get_text(GTK_ENTRY(fentry));
+	gmdb_export_get_delimiter(exportwin_xml, delimiter, 10);
+	gmdb_export_get_lineterm(exportwin_xml, lineterm, 5);
+	need_quote = gmdb_export_get_quote(exportwin_xml);
+	quotechar = gmdb_export_get_quotechar(exportwin_xml);
+	need_headers = gmdb_export_get_headers(exportwin_xml);
+	file_path = gmdb_export_get_filepath(exportwin_xml);
 
 	// printf("file path %s\n",file_path);
 	if ((outfile=fopen(file_path, "w"))==NULL) {
-		gmdb_info_msg("Unable to Open File!");
+		gnome_warning_dialog("Unable to Open File!");
 		return;
 	}
 
@@ -130,9 +189,9 @@ GtkWidget *exportwin;
 		col=g_ptr_array_index(table->columns,i);
 		if (need_headers)  {
 			if (i>0) fprintf(outfile,delimiter);
-			print_quote(outfile, need_quote, quotechar, delimiter, col->name);
+			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, col->name);
 			fprintf(outfile,"%s", col->name);
-			print_quote(outfile, need_quote, quotechar, delimiter, col->name);
+			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, col->name);
 		}
 	}
 	if (need_headers) fprintf(outfile,lineterm);
@@ -141,9 +200,9 @@ GtkWidget *exportwin;
 	while(mdb_fetch_row(table)) {
 		for (i=0;i<table->num_cols;i++) {
 			if (i>0) fprintf(outfile,delimiter);
-			print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
+			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
 			fprintf(outfile,"%s", bound_data[i]);
-			print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
+			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
 		}
 		fprintf(outfile,lineterm);
 		rows++;
@@ -158,14 +217,12 @@ GtkWidget *exportwin;
 	exportwin = glade_xml_get_widget (exportwin_xml, "export_dialog");
 	gtk_widget_destroy(exportwin);
 	sprintf(msg,"%d Rows exported successfully.\n", rows);
-	gmdb_info_msg(msg);
+	gnome_ok_dialog(msg);
 }
 void gmdb_table_export(MdbCatalogEntry *entry) 
 {
 GtkWidget *export_button;
 GtkWidget *close_button;
-GList *glist = NULL;
-GtkWidget *combo;
    
 	cat_entry = entry;
 
@@ -173,17 +230,23 @@ GtkWidget *combo;
 	exportwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-export.glade", NULL, NULL);
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(exportwin_xml);
-	
+	gmdb_table_export_populate_dialog(exportwin_xml);
+}
+void
+gmdb_table_export_populate_dialog(GladeXML *xml)
+{
+	GList *glist = NULL;
+	GtkWidget *combo;
 
 	/* Create the widgets */
-	combo = glade_xml_get_widget (exportwin_xml, "term_combo");
+	combo = glade_xml_get_widget (xml, "term_combo");
 	glist = g_list_append(glist, LF);
 	glist = g_list_append(glist, CR);
 	glist = g_list_append(glist, CRLF);
     	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
 	g_list_free(glist);
 
-	combo = glade_xml_get_widget (exportwin_xml, "sep_combo");
+	combo = glade_xml_get_widget (xml, "sep_combo");
 	glist = NULL;
 	glist = g_list_append(glist, COMMA);
 	glist = g_list_append(glist, TAB);
@@ -194,7 +257,7 @@ GtkWidget *combo;
     	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
 	g_list_free(glist);
 
-	combo = glade_xml_get_widget (exportwin_xml, "quote_combo");
+	combo = glade_xml_get_widget (xml, "quote_combo");
 	glist = NULL;
 	glist = g_list_append(glist, ALWAYS);
 	glist = g_list_append(glist, NEVER);
@@ -202,7 +265,7 @@ GtkWidget *combo;
     	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
 	g_list_free(glist);
 
-	combo = glade_xml_get_widget (exportwin_xml, "qchar_combo");
+	combo = glade_xml_get_widget (xml, "qchar_combo");
 	glist = NULL;
 	glist = g_list_append(glist, "\"");
 	glist = g_list_append(glist, "'");

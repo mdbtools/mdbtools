@@ -332,7 +332,7 @@ gchar *s;
 		page = atol(gtk_entry_get_text(GTK_ENTRY(entry)));
 	}
 	if (page>gmdb_get_max_page(mdb) || page<0) {
-		gmdb_info_msg("Page entered is outside valid page range.");
+		gnome_warning_dialog("Page entered is outside valid page range.");
 	}
 
 	/* add to the navigation list */

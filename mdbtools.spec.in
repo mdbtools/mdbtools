@@ -49,7 +49,7 @@ The mdbtools-gui package contains the gmdb2 graphical user interface for MDB Too
 %setup 
  
 %build 
-%configure --with-unixodbc=/usr/local
+%configure --with-unixodbc=/usr/local 
 make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
  
 %install 
@@ -80,6 +80,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mdb-dump
 %{_bindir}/mdb-sql
 %{_bindir}/mdb-ver
+%{_bindir}/mdb-array
+%{_mandir}/man1/*
  
 %files devel 
 %defattr (-,root,root) 
@@ -88,6 +90,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files odbc
 %defattr(-,root,root)
+%{_libdir}/libmdbodbc.la
 %{_libdir}/libmdbodbc.a
 %{_libdir}/libmdbodbc.so*
 
