@@ -408,10 +408,9 @@ extern long _mdb_get_int32(unsigned char *buf, int offset);
 /* catalog.c */
 extern void mdb_alloc_catalog(MdbHandle *mdb);
 extern void mdb_free_catalog(MdbHandle *mdb);
-GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
+extern GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
 extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 extern char *mdb_get_objtype_string(int obj_type);
-extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 
 /* table.c */
 extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
@@ -517,7 +516,7 @@ extern void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fi
 
 /* options.c */
 extern int mdb_get_option(unsigned long optnum);
-void mdb_debug(int klass, char *fmt, ...);
+extern void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
 extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
