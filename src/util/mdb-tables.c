@@ -108,7 +108,6 @@ main (int argc, char **argv)
 				fprintf (stderr, "Valid types are: %s\n",valid_types());
 				exit(1);
 			}
-			printf("objtype is %d\n", objtype);
         break;
         case 'd':
             delimiter = (char *) malloc(strlen(optarg)+1);

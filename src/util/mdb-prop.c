@@ -57,7 +57,7 @@ main(int argc, char **argv)
 	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		exit(1);
 	}
-	mdb_read_catalog(mdb, MDB_TABLE);
+	mdb_read_catalog(mdb, MDB_ANY);
 	
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);

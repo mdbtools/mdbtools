@@ -26,7 +26,8 @@
 #endif
 
 
-static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
+//static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
+static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields);
 
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
@@ -615,12 +616,15 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fi
 	int idx_xref[16];
 	int i, j;
 	MdbIndexChain *chain;
+	MdbField idx_fields[10];
 
 	for (i = 0; i < idx->num_keys; i++) {
 		for (j = 0; j < num_fields; j++) {
 			// key_col_num is 1 based, can't remember why though
-			if (fields[j].colnum == idx->key_col_num[i]-1)
+			if (fields[j].colnum == idx->key_col_num[i]-1) {
 				idx_xref[i] = j;
+				idx_fields[i] = fields[j];
+			}
 		}
 	}
 	for (i = 0; i < idx->num_keys; i++) {
@@ -639,7 +643,8 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fi
 	mdb_index_find_row(mdb, idx, chain, pgnum, rownum);
 	printf("chain depth = %d\n", chain->cur_depth);
 	printf("pg = %lu\n", chain->pages[chain->cur_depth-1].pg);
-	mdb_copy_index_pg(table, idx, &chain->pages[chain->cur_depth-1]);
+	//mdb_copy_index_pg(table, idx, &chain->pages[chain->cur_depth-1]);
+	mdb_add_row_to_leaf_pg(table, idx, &chain->pages[chain->cur_depth-1], idx_fields);
 	
 	return 1;
 }
@@ -859,9 +864,12 @@ int i, pos;
 	}
 	return 0;
 }
-/*mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbRow row,  guint32 pgnum, guint16 rownum) */
+static int
+mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields) 
+/*,  guint32 pgnum, guint16 rownum) 
 static int
 mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
+*/
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
@@ -894,10 +902,12 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 
 	while (mdb_index_find_next_on_page(mdb, ipg)) {
 
+		/* check for compressed indexes.  */
 		if (ipg->len < col->col_size + 1) {
 			fprintf(stderr,"compressed indexes not yet supported, aborting\n");
 			return 0;
 		}
+
 		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 		row = mdb->pg_buf[ipg->offset + ipg->len - 1];
 		iflag = mdb->pg_buf[ipg->offset];
