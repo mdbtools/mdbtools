@@ -56,14 +56,16 @@ main(int argc, char **argv)
 	MdbColumn *col;
 	/* doesn't handle tables > 256 columns.  Can that happen? */
 	char *bound_values[256]; 
+	int  bound_lens[256]; 
 	char *delimiter = ",";
 	char *row_delimiter = "\n";
 	char header_row = 1;
 	char quote_text = 1;
 	char insert_statements = 0;
+	char sanitize = 0;
 	int  opt;
 
-	while ((opt=getopt(argc, argv, "HQd:D:R:I"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQd:D:R:IS"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -82,6 +84,9 @@ main(int argc, char **argv)
 		case 'I':
 			insert_statements = 1;
 			header_row = 0;
+		break;
+		case 'S':
+			sanitize = 1;
 		break;
 		case 'D':
 			mdb_set_date_fmt(optarg);
@@ -104,6 +109,7 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -R <delimiter> specify a row delimiter\n");
 		fprintf(stderr,"  -I             INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
+		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		exit(1);
 	}
 
@@ -130,6 +136,7 @@ main(int argc, char **argv)
                 	bound_values[j] = (char *) malloc(MDB_BIND_SIZE);
 				bound_values[j][0] = '\0';
                 		mdb_bind_column(table, j+1, bound_values[j]);
+                		mdb_bind_len(table, j+1, &bound_lens[j]);
         		}
 			if (header_row) {
 				col=g_ptr_array_index(table->columns,0);
@@ -145,11 +152,11 @@ main(int argc, char **argv)
 
 				if (insert_statements) {
 					fprintf(stdout, "INSERT INTO %s (",
-						sanitize_name(argv[optind + 1],1));
+						sanitize_name(argv[optind + 1],sanitize));
         			for (j=0;j<table->num_cols;j++) {
 						if (j>0) fprintf(stdout, ", ");
 						col=g_ptr_array_index(table->columns,j);
-						fprintf(stdout,"%s", sanitize_name(col->name,1));
+						fprintf(stdout,"%s", sanitize_name(col->name,sanitize));
 					} 
 					fprintf(stdout, ") VALUES (");
 				}
@@ -159,7 +166,10 @@ main(int argc, char **argv)
 					mdb_ole_read(mdb, col, bound_values[0], MDB_BIND_SIZE);	
 				}
 
-				print_col(bound_values[0], 
+				if (insert_statements && !bound_lens[0]) 
+					print_col("NULL",0,col->col_type);
+				else 	
+					print_col(bound_values[0], 
 					quote_text, 
 					col->col_type);
 
@@ -170,7 +180,10 @@ main(int argc, char **argv)
 						mdb_ole_read(mdb, col, bound_values[j], MDB_BIND_SIZE);	
 					}
 					fprintf(stdout,"%s",delimiter);
-					print_col(bound_values[j], 
+					if (insert_statements && !bound_lens[j]) 
+						print_col("NULL",0,col->col_type);
+					else 
+						print_col(bound_values[j], 
 						quote_text, 
 						col->col_type);
 				}

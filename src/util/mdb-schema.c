@@ -25,15 +25,14 @@
 #endif
 
 static char *sanitize_name(char *str, int sanitize);
+static void generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize);
 
 int
 main (int argc, char **argv)
 {
-	int   i, k;
+	int   i;
 	MdbHandle *mdb;
 	MdbCatalogEntry *entry;
-	MdbTableDef *table;
-	MdbColumn *col;
 	char		*the_relation;
 	char *tabname = NULL;
 	char *namespace = "";
@@ -41,7 +40,11 @@ main (int argc, char **argv)
 	int opt;
 
 	if (argc < 2) {
-		fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
+		fprintf (stderr, "Usage: [options] %s <file> [<backend>]\n",argv[0]);
+		fprintf (stderr, "where options are:\n");
+		fprintf (stderr, "  -T <table>     Only create schema for named table\n");
+		fprintf (stderr, "  -N <namespace> Prefix identifiers with namespace\n");
+		fprintf (stderr, "  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		exit (1);
 	}
 
@@ -80,64 +83,33 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
- /* loop over each entry in the catalog */
+	/* Print out a little message to show that this came from mdb-tools.
+	   I like to know how something is generated. DW */
+	fprintf(stdout,"-------------------------------------------------------------\n");
+	fprintf(stdout,"-- MDB Tools - A library for reading MS Access database files\n");
+	fprintf(stdout,"-- Copyright (C) 2000-2004 Brian Bruns\n");
+	fprintf(stdout,"-- Files in libmdb are licensed under LGPL and the utilities under\n");
+	fprintf(stdout,"-- the GPL, see COPYING.LIB and COPYING files respectively.\n");
+	fprintf(stdout,"-- Check out http://mdbtools.sourceforge.net\n");
+	fprintf(stdout,"-------------------------------------------------------------\n\n");
 
- for (i=0; i < mdb->num_catalog; i++) 
-   {
-     entry = g_ptr_array_index (mdb->catalog, i);
+	/* loop over each entry in the catalog */
 
-     /* if it's a table */
+	for (i=0; i < mdb->num_catalog; i++) {
+		entry = g_ptr_array_index (mdb->catalog, i);
 
-     if (entry->object_type == MDB_TABLE)
-       {
-	 /* skip the MSys tables */
-       if ((tabname && !strcmp(entry->object_name,tabname)) ||
-           (!tabname && strncmp (entry->object_name, "MSys", 4)))
-	 {
+		/* if it's a table */
+
+		if (entry->object_type == MDB_TABLE) {
+			/* skip the MSys tables */
+			if ((tabname && !strcmp(entry->object_name,tabname)) ||
+				(!tabname && strncmp (entry->object_name, "MSys", 4))) {
 	   
-	   /* make sure it's a table (may be redundant) */
-
-	   if (!strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
-	     {
-	       /* drop the table if it exists */
-	       fprintf (stdout, "DROP TABLE %s%s;\n", namespace, sanitize_name(entry->object_name,s));
-
-	       /* create the table */
-	       fprintf (stdout, "CREATE TABLE %s%s\n", namespace, sanitize_name(entry->object_name,s));
-	       fprintf (stdout, " (\n");
-	       	       
-	       table = mdb_read_table (entry);
-
-	       /* get the columns */
-	       mdb_read_columns (table);
-
-	       /* loop over the columns, dumping the names and types */
-
-		for (k = 0; k < table->num_cols; k++) {
-			col = g_ptr_array_index (table->columns, k);
-		   
-			fprintf (stdout, "\t%s\t\t\t%s", sanitize_name(col->name,s), 
-				mdb_get_coltype_string (mdb->default_backend, col->col_type));
-		   
-			if (col->col_size != 0 && 
-				mdb_coltype_takes_length(mdb->default_backend, col->col_type)) {
-
-		    	fprintf (stdout, " (%d)", col->col_size);
+				   generate_table_schema(entry, namespace, s);
 			}
-		   
-		   if (k < table->num_cols - 1)
-		     fprintf (stdout, ", \n");
-		   else
-		     fprintf (stdout, "\n");
-		 }
+		}
+	}
 
-	       fprintf (stdout, ");\n");
-	       fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
-	       fprintf (stdout, "\n");
-	     }
-	 }
-     }
-   }
 	fprintf (stdout, "\n\n");
 	fprintf (stdout, "-- CREATE ANY Relationships ...\n");
 	fprintf (stdout, "\n");
@@ -147,10 +119,65 @@ main (int argc, char **argv)
 		the_relation=mdb_get_relationships(mdb);
 	}            
  
- mdb_free_handle (mdb);
- mdb_exit();
 
- exit(0);
+	mdb_free_handle (mdb);
+	mdb_exit();
+
+	exit(0);
+}
+static void
+generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
+{
+	MdbTableDef *table;
+	MdbHandle *mdb = entry->mdb;
+	int i;
+	MdbColumn *col;
+
+	/* make sure it's a table (may be redundant) */
+
+	if (strcmp (mdb_get_objtype_string (entry->object_type), "Table"))
+		   return;
+
+	/* drop the table if it exists */
+	fprintf (stdout, "DROP TABLE %s%s;\n", namespace, sanitize_name(entry->object_name,sanitize));
+
+	/* create the table */
+	fprintf (stdout, "CREATE TABLE %s%s\n", namespace, sanitize_name(entry->object_name,sanitize));
+	fprintf (stdout, " (\n");
+	       	       
+	table = mdb_read_table (entry);
+
+	/* get the columns */
+	mdb_read_columns (table);
+
+	/* loop over the columns, dumping the names and types */
+
+	for (i = 0; i < table->num_cols; i++) {
+		col = g_ptr_array_index (table->columns, i);
+		   
+		fprintf (stdout, "\t%s\t\t\t%s", sanitize_name(col->name,sanitize), 
+		mdb_get_coltype_string (mdb->default_backend, col->col_type));
+		   
+		if (mdb_coltype_takes_length(mdb->default_backend, 
+			col->col_type)) {
+
+			/* more portable version from DW patch */	
+			if (col->col_size == 0) 
+	    			fprintf (stdout, " (255)");
+			else 
+	    			fprintf (stdout, " (%d)", col->col_size);
+		}
+		   
+		if (i < table->num_cols - 1)
+			fprintf (stdout, ", \n");
+		else
+			fprintf (stdout, "\n");
+	} /* for */
+
+	fprintf (stdout, ");\n");
+	fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
+	fprintf (stdout, "\n");
+
 }
 
 static char *sanitize_name(char *str, int sanitize)
