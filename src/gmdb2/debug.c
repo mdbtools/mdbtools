@@ -35,6 +35,8 @@ static guint16 get_uint16(unsigned char *c);
 static guint32 get_uint24(unsigned char *c);
 static guint32 get_uint32(unsigned char *c);
 static long gmdb_get_max_page(MdbHandle *mdb);
+void gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml);
+void gmdb_debug_display(GladeXML *xml, guint32 page);
 
 /* value to string stuff */
 typedef struct GMdbValStr {
@@ -134,6 +136,95 @@ GtkWidget *textview;
 	}
 }
 void
+gmdb_debug_forward_cb(GtkWidget *w, GladeXML *xml)
+{
+	guint *nav_elem;
+	gchar *page;
+	GtkWidget *win;
+	GList *nav_list = NULL;
+	guint32 page_num;
+	guint num_items;
+
+	win = glade_xml_get_widget (xml, "debug_window");
+	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
+	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
+	num_items = g_list_length(nav_list);
+	if (!nav_elem || *nav_elem == num_items)
+		return;
+	(*nav_elem)++;
+	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
+	page = g_list_nth_data(nav_list,(*nav_elem) - 1);
+
+	page_num = atol(page);
+	gmdb_debug_display(xml, page_num);
+}
+void
+gmdb_debug_back_cb(GtkWidget *w, GladeXML *xml)
+{
+	guint *nav_elem;
+	gchar *page;
+	GtkWidget *win;
+	GList *nav_list = NULL;
+	guint32 page_num;
+
+	win = glade_xml_get_widget (xml, "debug_window");
+	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
+	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
+	if (!nav_elem || *nav_elem==1)
+		return; /* at top of list already */
+	(*nav_elem)--;
+	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
+	page = g_list_nth_data(nav_list,(*nav_elem) - 1);
+	
+	page_num = atol(page);
+	gmdb_debug_display(xml, page_num);
+}
+void
+gmdb_nav_add_page(GladeXML *xml, guint32 page_num)
+{
+	GList *nav_list = NULL;
+	GList *link = NULL;
+	GtkWidget *win;
+	guint *nav_elem;
+	guint num_items;
+	char buf[100];
+	int i;
+
+	win = glade_xml_get_widget (xml, "debug_window");
+
+	nav_elem = g_object_get_data(G_OBJECT(win),"nav_elem");
+	if (!nav_elem) {
+		nav_elem = g_malloc0(sizeof(guint));
+	}
+
+	sprintf(buf, "%lu", page_num);
+	nav_list = g_object_get_data(G_OBJECT(win),"nav_list");
+	
+	/*
+	 * If we are positioned in the middle of the list and jumping from here
+	 * clear the end of the list first.
+	 */
+	num_items = g_list_length(nav_list);
+	if (num_items > *nav_elem) {
+		for (i=num_items - 1; i >= *nav_elem; i--) {
+			printf("freeing element %d\n",i);
+			link = g_list_nth(nav_list,i);
+			nav_list = g_list_remove_link(nav_list, link);
+			g_free(link->data);
+			g_list_free_1(link);
+		}
+	}
+
+	*nav_elem = g_list_length(nav_list);
+
+	nav_list = g_list_append(nav_list, g_strdup(buf));
+
+	*nav_elem = g_list_length(nav_list);
+
+	g_object_set_data(G_OBJECT(win), "nav_list", nav_list);
+	g_object_set_data(G_OBJECT(win), "nav_elem", nav_elem);
+}
+void
 gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkTextView *textview;
@@ -155,7 +246,6 @@ gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 		return;
 	}
 	text = g_strdup(gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE));
-	fprintf(stderr, "selected text = %s\n",text);
 	hex_digit = strtok(text, " ");
 	strcpy(page, "0x");
 	do {
@@ -169,7 +259,7 @@ gmdb_debug_jump_cb(GtkWidget *w, GladeXML *xml)
 		strcat(page, digits[i]);
 	}
 	g_free(text);
-	fprintf(stderr, "going to page %s\n",page);
+	//fprintf(stderr, "going to page %s\n",page);
 	entry = glade_xml_get_widget (xml, "debug_entry");
 	gtk_entry_set_text(GTK_ENTRY(entry),page);
 	gmdb_debug_display_cb(w, xml);
@@ -219,24 +309,14 @@ void
 gmdb_debug_display_cb(GtkWidget *w, GladeXML *xml)
 {
 int page;
-off_t pos;
-unsigned char *fbuf;
-unsigned char *tbuf;
 int i,j;
-int length;
-char line[80];
-char field[10];
-GtkTextBuffer *buffer;
-GtkTextIter iter;
 GtkWidget *entry;
-GtkTextView *textview;
 gchar *s;
 
 
 	if (!mdb) return;
 
 	entry = glade_xml_get_widget (xml, "debug_entry");
-	textview = glade_xml_get_widget (xml, "debug_textview");
 	
 	s = g_strdup(gtk_entry_get_text(GTK_ENTRY(entry)));
 	
@@ -255,7 +335,33 @@ gchar *s;
 		gmdb_info_msg("Page entered is outside valid page range.");
 	}
 
+	/* add to the navigation list */
+	gmdb_nav_add_page(xml, page);
+	/* gmdb_debug_display handles the mechanics of getting the page up */
+	gmdb_debug_display(xml, page);
+}
+void
+gmdb_debug_display(GladeXML *xml, guint32 page)
+{
+	unsigned char *fbuf;
+	unsigned char *tbuf;
+	int length;
+	int i, j;
+	off_t pos;
+	gchar line[80];
+	gchar field[10];
+	GtkTextBuffer *buffer;
+	GtkTextIter iter;
+	GtkTextView *textview;
+	GtkWidget *entry;
+	char pagestr[20];
+
+	textview = (GtkTextView *) glade_xml_get_widget (xml, "debug_textview");
 	gmdb_debug_clear(xml);
+
+	sprintf(pagestr, "%lu", page);
+	entry = glade_xml_get_widget (xml, "debug_entry");
+	gtk_entry_set_text(GTK_ENTRY(entry),pagestr);
 
 	pos = lseek(mdb->f->fd, 0, SEEK_CUR);
 	lseek(mdb->f->fd, page * mdb->fmt->pg_size, SEEK_SET);
@@ -290,9 +396,9 @@ gchar *s;
 	gtk_text_buffer_insert(buffer,&iter,tbuf,strlen(tbuf));
 	
 	GtkWidget *tree = glade_xml_get_widget(xml, "debug_treeview");
-	GtkTreeView *store = gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
+	GtkTreeView *store = (GtkTreeView *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
-	gmdb_debug_dissect(store, fbuf, 0, length);
+	gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
 
 	free(fbuf);
 	free(tbuf);
@@ -406,6 +512,7 @@ gmdb_debug_dissect_index2(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, 
 	snprintf(str, 100, "Root index page");
 	gmdb_debug_add_item(store, parent, str, offset+34, offset+37);
 	flags = fbuf[offset+38];
+	flagstr[0]=0;
 	if (flags & MDB_IDX_UNIQUE) { 
 		strcat(flagstr, "Unique"); mod++; 
 	}
@@ -673,7 +780,7 @@ GtkWidget *treeview, *textview, *store;
 
 	textview = glade_xml_get_widget (xml, "debug_textview");
 	treeview = glade_xml_get_widget (xml, "debug_treeview");
-	store = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
+	store = (GtkWidget *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 
 	/* clear the tree */ 
 	gtk_tree_store_clear(GTK_TREE_STORE(store));
@@ -755,7 +862,6 @@ gmdb_debug_close_cb(GtkWidget *w, GladeXML *xml)
 	debug_list = g_list_remove(debug_list, xml);
 	win = glade_xml_get_widget (xml, "debug_window");
 	if (win) gtk_widget_destroy(win);
-	return FALSE;
 }
 void
 gmdb_debug_close_all()
@@ -811,6 +917,22 @@ GladeXML *debugwin_xml;
 	g_signal_connect (G_OBJECT (button), "clicked",
 		G_CALLBACK (gmdb_debug_jump_cb), debugwin_xml);
 
+	mi = glade_xml_get_widget (debugwin_xml, "back_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_debug_back_cb), debugwin_xml);
+
+	button = glade_xml_get_widget (debugwin_xml, "back_button");
+	g_signal_connect (G_OBJECT (button), "clicked",
+		G_CALLBACK (gmdb_debug_back_cb), debugwin_xml);
+
+	mi = glade_xml_get_widget (debugwin_xml, "forward_menu");
+	g_signal_connect (G_OBJECT (mi), "activate",
+		G_CALLBACK (gmdb_debug_forward_cb), debugwin_xml);
+
+	button = glade_xml_get_widget (debugwin_xml, "forward_button");
+	g_signal_connect (G_OBJECT (button), "clicked",
+		G_CALLBACK (gmdb_debug_forward_cb), debugwin_xml);
+
 	button = glade_xml_get_widget (debugwin_xml, "debug_button");
 	g_signal_connect (G_OBJECT (button), "clicked",
 		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
@@ -830,6 +952,14 @@ GladeXML *debugwin_xml;
 	gtk_tree_view_set_model(GTK_TREE_VIEW(tree), GTK_TREE_MODEL(store));
 
 	GtkCellRenderer *renderer;
+	button = glade_xml_get_widget (debugwin_xml, "debug_button");
+	g_signal_connect (G_OBJECT (button), "clicked",
+		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
+	
+	debugwin = glade_xml_get_widget (debugwin_xml, "debug_window");
+	gtk_signal_connect (GTK_OBJECT (debugwin), "delete_event",
+		GTK_SIGNAL_FUNC (gmdb_debug_delete_cb), debugwin_xml);
+
 	GtkTreeViewColumn *column;
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Field",

@@ -23,16 +23,6 @@
 
 #define MDB_DEBUG_WRITE 1
 
-typedef struct {
-	void *value;
-	int siz;
-	int start;
-	unsigned char is_null;
-	unsigned char is_fixed;
-	int colnum;
-	int offset;
-} MdbField;
-
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
 {
@@ -141,7 +131,7 @@ int eod, len; /* end of data */
 		bit_num = i % 8;
 		/* logic on nulls is reverse, 1 is not null, 0 is null */
 		fields[i].is_null = nullmask[byte_num] & 1 << bit_num ? 0 : 1;
-		printf("col %d is %s\n", i, fields[i].is_null ? "null" : "not null");
+		//printf("col %d is %s\n", i, fields[i].is_null ? "null" : "not null");
 	}
 
 	/* find the end of data pointer */
@@ -150,7 +140,7 @@ int eod, len; /* end of data */
 	} else {
 		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
 	}
-	printf("eod is %d\n", eod);
+	//printf("eod is %d\n", eod);
 
 	if (IS_JET4(mdb)) {
 		col_start = 2;
@@ -178,7 +168,7 @@ int eod, len; /* end of data */
 		if (!mdb_is_fixed_col(col) && ++var_cols_found <= var_cols) {
 			if (var_cols_found==var_cols)  {
 				len=eod - col_start;
-				printf("len = %d eod %d col_start %d\n",len, eod, col_start);
+				//printf("len = %d eod %d col_start %d\n",len, eod, col_start);
 			} else  {
 				if (IS_JET4(mdb)) {
 					/* position of the var table 
@@ -195,7 +185,7 @@ int eod, len; /* end of data */
 						bitmask_sz -
 						var_cols_found - 1;
 					len=mdb->pg_buf[var_entry_pos] - mdb->pg_buf[var_entry_pos+1];
-					printf("%d %d %d %d\n", mdb->pg_buf[var_entry_pos-1],mdb->pg_buf[var_entry_pos],len, col_start);
+					//printf("%d %d %d %d\n", mdb->pg_buf[var_entry_pos-1],mdb->pg_buf[var_entry_pos],len, col_start);
 				}
 			} /* if found==var_cols */
 			if (len<0) len+=256;

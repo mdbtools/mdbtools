@@ -41,6 +41,14 @@
 #define MDB_BIND_SIZE 16384
 
 enum {
+	MDB_PAGE_DB = 0,
+	MDB_PAGE_DATA,
+	MDB_PAGE_TABLE,
+	MDB_PAGE_INDEX,
+	MDB_PAGE_LEAF,
+	MDB_PAGE_MAP
+};
+enum {
 	MDB_VER_JET3 = 0,
 	MDB_VER_JET4 = 1
 };
@@ -210,7 +218,24 @@ typedef struct {
 	short	key_col_num[MDB_MAX_IDX_COLS];
 	unsigned char	key_col_order[MDB_MAX_IDX_COLS];
 	unsigned char	flags;
+	MdbTableDef	*table;
 } MdbIndex;
+
+typedef struct {
+	guint32 pg;
+	int mask_pos;	
+	unsigned char mask_byte;
+	int mask_bit;
+	int offset;
+	int len;
+} MdbIndexPage;
+
+#define MDB_MAX_INDEX_DEPTH 10
+
+typedef struct {
+	int cur_depth;
+	MdbIndexPage pages[MDB_MAX_INDEX_DEPTH];
+} MdbIndexChain;
 
 typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];
@@ -225,6 +250,7 @@ typedef struct {
 	GHashTable	*properties;
 	int		num_sargs;
 	GPtrArray	*sargs;
+	GPtrArray	*idx_sarg_cache;
 	unsigned char   is_fixed;
 	int		query_order;
 	int		col_num;
@@ -234,6 +260,16 @@ typedef struct {
 	int		col_prec;
 	int		col_scale;
 } MdbColumn;
+
+typedef struct {
+	void *value;
+	int siz;
+	int start;
+	unsigned char is_null;
+	unsigned char is_fixed;
+	int colnum;
+	int offset;
+} MdbField;
 
 typedef union {
 	int	i;
@@ -265,6 +301,7 @@ extern long   mdb_get_int32(MdbHandle *mdb, int offset);
 extern float  mdb_get_single(MdbHandle *mdb, int offset);
 extern double mdb_get_double(MdbHandle *mdb, int offset);
 extern MdbHandle *mdb_open(char *filename);
+extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
 
 /* catalog.c */
