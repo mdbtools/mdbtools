@@ -69,3 +69,15 @@ clean:
 
 .c.o:
 	$(CC) -g -c $< $(INC)
+
+install: 
+	@for prog in $(PROGS); do \
+	 echo "               copying $$prog to $(bindir)"; \
+	 cp $$prog $(bindir); \
+        done
+
+uninstall: 
+	@for prog in $(PROGS); do \
+	 echo "               removing $$prog from $(bindir)"; \
+	 rm -f $(bindir)/$$prog; \
+        done

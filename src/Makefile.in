@@ -22,7 +22,7 @@ ACLOCAL = @ACLOCAL@
 AUTOCONF = @AUTOCONF@
 AUTOMAKE = @AUTOMAKE@
 AUTOHEADER = @AUTOHEADER@
-
+RM = @RM@
 subdirs = libmdb util extras
 
 all: 
@@ -31,9 +31,21 @@ all:
          || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
         done && test -z "$$fail"
 clean: 
-	cd extras; make clean
-	cd util; make clean
-	cd libmdb; make clean
+	@for dir in ${subdirs} include; do \
+	 (cd $$dir && $(MAKE) clean && rm -f Makefile) \
+         || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
+         rm -f config.log config.status Makefile config.cache; \
+        done && test -z "$$fail"
+install: 
+	@for dir in ${subdirs} include; do \
+	 (cd $$dir && $(MAKE) install) \
+         || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
+        done && test -z "$$fail"
+uninstall: 
+	@for dir in ${subdirs} include; do \
+	 (cd $$dir && $(MAKE) uninstall) \
+         || case "$(MFLAGS)" in *k*) fail=yes;; *) exit 1;; esac; \
+        done && test -z "$$fail"
 
 # automatic re-running of configure if the configure.in file has changed
 ${srcdir}/configure: configure.in

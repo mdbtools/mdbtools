@@ -21,4 +21,4 @@ AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
 
-AC_OUTPUT(util/Makefile extras/Makefile Makefile libmdb/Makefile)
+AC_OUTPUT(util/Makefile extras/Makefile Makefile libmdb/Makefile include/Makefile)
