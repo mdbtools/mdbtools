@@ -33,7 +33,7 @@ schema: $(SCHEMAOBJS)
 	$(CC) -g -o $@ $(SCHEMAOBJS) $(LIBS)
 
 mdb-export: $(EXPORTOBJS)
-	$(CC) -g -o $@ $(EXPORTOBJS) ../libmdb/*.o `glib-config --libs`
+	$(CC) -g -o $@ $(EXPORTOBJS) $(LIBS)
 
 clean: 
 	rm -f core *.o $(PROGS)
