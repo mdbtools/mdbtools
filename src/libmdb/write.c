@@ -21,6 +21,10 @@
 #include "time.h"
 #include "math.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 #define MDB_DEBUG_WRITE 1
 
 void

@@ -19,6 +19,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 void mdb_init()
 {
 	mdb_init_backends();

@@ -17,8 +17,11 @@
  */
 
 /* this utility dumps the schema for an existing database */
-
 #include "mdbtools.h"
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 int
 main (int argc, char **argv)
@@ -84,7 +87,8 @@ int opt;
 	if (!line_break) 
 		fprintf (stdout, "\n");
  
-	mdb_free_handle (mdb);
+	mdb_close(mdb);
+	mdb_free_handle(mdb);
 	mdb_exit();
 	if (delimiter) free(delimiter);
 

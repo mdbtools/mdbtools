@@ -2,6 +2,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 void buffer_dump(const unsigned char* buf, int start, int end)
 {
 	char asc[20];

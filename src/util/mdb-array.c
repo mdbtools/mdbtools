@@ -23,6 +23,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 int
 main (int argc, char **argv)
 {

@@ -16,13 +16,16 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
 #include <stdio.h>
 #ifdef HAVE_READLINE
 #include <readline/readline.h>
 #endif
 #include <string.h>
 #include "mdbsql.h"
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 void dump_results(MdbSQL *sql);
 void dump_results_pp(MdbSQL *sql);
@@ -415,6 +418,8 @@ FILE *in = NULL, *out = NULL;
 	}
 	mdb_sql_exit(sql);	
 
+	free(mybuf);
+	free(s);
 	myexit(0);
 
 	return 0; /* make gcc -Wall happy */

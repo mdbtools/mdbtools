@@ -20,6 +20,10 @@
 #include "mdbsql.h"
 #include <stdarg.h>
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 void mdb_dump_results(MdbSQL *sql);
 
 #ifdef HAVE_WORDEXP_H
@@ -74,19 +78,29 @@ MdbSQLSarg *sql_sarg;
 	memset(sql_sarg->sarg,0,sizeof(MdbSarg));
 	return sql_sarg;
 }
+void mdb_sql_free_column(MdbSQLColumn *c)
+{
+	if (c->name) g_free(c->name);
+	g_free(c);
+}
 MdbSQLColumn *mdb_sql_alloc_column()
 {
 MdbSQLColumn *c;
 
-	c = (MdbSQLColumn *) malloc(sizeof(MdbSQLColumn));
+	c = (MdbSQLColumn *) g_malloc(sizeof(MdbSQLColumn));
 	memset(c,0,sizeof(MdbSQLColumn));
 	return c;
+}
+void mdb_sql_free_table(MdbSQLTable *t)
+{
+	if (t->name) g_free(t->name);
+	g_free(t);
 }
 MdbSQLTable *mdb_sql_alloc_table()
 {
 MdbSQLTable *t;
 
-	t = (MdbSQLTable *) malloc(sizeof(MdbSQLTable));
+	t = (MdbSQLTable *) g_malloc(sizeof(MdbSQLTable));
 	memset(t,0,sizeof(MdbSQLTable));
 	return t;
 }
@@ -387,6 +401,8 @@ MdbSQLSarg *sql_sarg;
 	g_ptr_array_free(sql->columns,TRUE);
 	g_ptr_array_free(sql->tables,TRUE);
 	g_ptr_array_free(sql->sargs,TRUE);
+	mdb_close(sql->mdb);	
+	mdb_free_handle(sql->mdb);	
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
@@ -402,11 +418,11 @@ MdbSQLSarg *sql_sarg;
 	}
 	for (i=0;i<sql->num_columns;i++) {
 		c = g_ptr_array_index(sql->columns,i);
-		if (c->name) g_free(c->name);
+		mdb_sql_free_column(c);
 	}
 	for (i=0;i<sql->num_tables;i++) {
 		t = g_ptr_array_index(sql->tables,i);
-		if (t->name) g_free(t->name);
+		mdb_sql_free_table(t);
 	}
 	for (i=0;i<sql->num_sargs;i++) {
 		sql_sarg = g_ptr_array_index(sql->sargs,i);

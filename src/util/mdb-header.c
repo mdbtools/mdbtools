@@ -18,9 +18,12 @@
 
 /* this utility dumps the C headers for an existing database */
 /* it will create three files - types.h and dump_types.[ch] */
-
 #include "mdbtools.h"
 #include <string.h>
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 void copy_header (FILE *f)
 {

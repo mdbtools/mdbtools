@@ -21,6 +21,10 @@
 #include "time.h"
 #include "math.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 #define MDB_DEBUG_OLE 1
 
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);

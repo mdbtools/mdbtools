@@ -19,6 +19,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 MdbFormatConstants MdbJet4Constants = {
 	4096, 0x0c, 12, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25
 };
@@ -143,7 +147,10 @@ mdb_close(MdbHandle *mdb)
 {
 	if (mdb->f) {
 		mdb->f->refs--;
-		if (mdb->f->refs<=0) mdb_free_file(mdb->f);
+		if (mdb->f->refs<=0) {
+			mdb_free_file(mdb->f);
+			mdb->f = NULL;
+		}
 	}
 }
 MdbHandle *mdb_clone_handle(MdbHandle *mdb)

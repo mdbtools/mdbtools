@@ -17,8 +17,11 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
 #include "mdbtools.h"
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 #define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
 int
@@ -129,9 +132,11 @@ char *s;
         		for (j=0;j<table->num_cols;j++) {
 				free(bound_values[j]);
 			}
+			mdb_free_tabledef(table);
 		}
 	}
 
+	mdb_close(mdb);
 	mdb_free_handle(mdb);
 	mdb_exit();
 

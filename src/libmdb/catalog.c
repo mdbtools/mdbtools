@@ -19,6 +19,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 char *
 mdb_get_objtype_string(int obj_type)
 {
@@ -91,6 +95,9 @@ int type;
 	}
  }
  //mdb_dump_catalog(mdb, MDB_TABLE);
+ 
+ mdb_free_tabledef(table);
+
  return mdb->catalog;
 }
 

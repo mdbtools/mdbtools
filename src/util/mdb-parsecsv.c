@@ -19,10 +19,13 @@
 /* this utility converts a CSV from an existing database to a C file */
 /* input FOO.txt, output FOO.c */
 /* generates an array of type FOO */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 #define FILENAMESIZE 128
 #define BUFFERSIZE 4096

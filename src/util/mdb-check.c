@@ -20,6 +20,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 int
 dbcc_page_usage(MdbTableDef *table)
 {

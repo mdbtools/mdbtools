@@ -19,6 +19,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 
 /*
 ** Note: This code is mostly garbage right now...just a test to parse out the

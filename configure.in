@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/extras/mdb-dump.c)
 AM_INIT_AUTOMAKE(mdbtools,0.5)
+AM_CONFIG_HEADER(include/config.h)
 
 AC_PROG_CC(gcc)
 dnl Checks for programs.
@@ -122,5 +123,8 @@ AC_CHECK_LIB(readline, add_history, [
 LDFLAGS=$OLDLDFLAGS
 
 AC_SUBST(READLINE_LIBS)
+
+localedir=${datadir}/locale
+AC_SUBST(localedir)
 
 AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile doc/Makefile src/gmdb2/Makefile src/gmdb2/gladefiles/Makefile src/gmdb2/pixmaps/Makefile src/gmdb2/help/Makefile src/gmdb2/help/C/Makefile mdbtools.spec)

@@ -17,8 +17,13 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
-
 #include "mdbtools.h"
+#include "mdbprivate.h"
+#include <locale.h>
+
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
 
 int
 main(int argc, char **argv)
@@ -26,12 +31,15 @@ main(int argc, char **argv)
 MdbHandle *mdb;
 /* doesn't handle tables > 256 columns.  Can that happen? */
 
+  	/* setlocale (LC_ALL, ""); */
+    	bindtextdomain (PACKAGE, LOCALEDIR);
+      	textdomain (PACKAGE);
 	/* 
 	** optind is now the position of the first non-option arg, 
 	** see getopt(3) 
 	*/
 	if (argc < 2) {
-		fprintf(stderr,"Usage: %s <file>\n",argv[0]);
+		fprintf(stderr,_("Usage: %s <file>\n"),argv[0]);
 		exit(1);
 	}
 
@@ -45,7 +53,7 @@ MdbHandle *mdb;
 	} else if (IS_JET4(mdb)) {
 		printf("JET4\n");
 	} else {
-		printf("unknown\n");
+		printf(_("unknown database version\n"));
 	}
 	
 	mdb_free_handle(mdb);

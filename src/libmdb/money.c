@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 #define MAXPRECISION 9
 /* 
 ** these routines are copied from the freetds project which does something

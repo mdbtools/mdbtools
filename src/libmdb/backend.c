@@ -23,6 +23,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
    /*    Access data types */
 char *mdb_access_types[] = 
 	{"Unknown 0x00",

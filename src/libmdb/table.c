@@ -19,6 +19,10 @@
 
 #include "mdbtools.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 #define MDB_DEBUG_USAGE 0
 
 static gint mdb_col_comparer(MdbColumn *a, MdbColumn *b)
@@ -86,7 +90,8 @@ int rownum, row_start, row_end;
 ** read the next page if offset is > pg_size
 ** return true if page was read
 */ 
-static int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
+int 
+read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
 {
 	if (*cur_pos + offset >= mdb->fmt->pg_size) {
 		mdb_read_pg(mdb, mdb_get_int32(mdb,4));
@@ -94,6 +99,47 @@ static int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
 		return 1;
 	}
 	return 0;
+}
+guint32 
+read_pg_if_32(MdbHandle *mdb, int *cur_pos)
+{
+	unsigned char c[4];
+	int i, rc = 0;
+
+	for (i=0;i<4;i++) {
+		rc += read_pg_if(mdb, cur_pos, i);
+		c[i] = mdb->pg_buf[(*cur_pos) + i];
+	}
+	return _mdb_get_int32(c, 0);
+}
+guint16 
+read_pg_if_16(MdbHandle *mdb, int *cur_pos)
+{
+	unsigned char low_byte, high_byte;
+	int rc = 0;
+
+	rc += read_pg_if(mdb, cur_pos, 0);
+	low_byte = mdb->pg_buf[*cur_pos];
+	rc += read_pg_if(mdb, cur_pos, 1);
+	high_byte = mdb->pg_buf[(*cur_pos) + 1];
+
+	return (high_byte * 256 + low_byte);
+}
+guint16 
+read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len)
+{
+	int half;
+
+	if (*cur_pos + len < mdb->fmt->pg_size) {
+		memcpy(buf, &mdb->pg_buf[*cur_pos], len);
+		return 0;
+	}
+	half = (mdb->fmt->pg_size - *cur_pos - 1);
+	memcpy(buf, &mdb->pg_buf[*cur_pos], half);
+	mdb_read_pg(mdb, mdb_get_int32(mdb,4));
+	memcpy(buf, &mdb->pg_buf[8], len - half);
+	*cur_pos = 8 - (mdb->fmt->pg_size - (*cur_pos));
+	return 1;
 }
 
 GPtrArray *mdb_read_columns(MdbTableDef *table)

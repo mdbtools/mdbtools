@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 //#define MDB_DEBUG_LIKE 1
 
 int mdb_like_cmp(char *s, char *r)
