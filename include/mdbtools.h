@@ -384,8 +384,6 @@ extern void mdb_init();
 extern void mdb_exit();
 extern MdbStatistics *mdb_alloc_stats(MdbHandle *mdb);
 extern void mdb_free_stats(MdbHandle *mdb);
-extern void mdb_alloc_catalog(MdbHandle *mdb);
-extern void mdb_free_catalog(MdbHandle *mdb);
 extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
 extern void mdb_free_tabledef(MdbTableDef *table);
 extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
@@ -414,6 +412,8 @@ extern void mdb_swap_pgbuf(MdbHandle *mdb);
 extern long _mdb_get_int32(unsigned char *buf, int offset);
 
 /* catalog.c */
+extern void mdb_alloc_catalog(MdbHandle *mdb);
+extern void mdb_free_catalog(MdbHandle *mdb);
 GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
 extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 extern char *mdb_get_objtype_string(int obj_type);

@@ -47,6 +47,21 @@ static char *type_name[] = {"Form",
 	}
 }
 
+void mdb_alloc_catalog(MdbHandle *mdb)
+{
+	mdb->catalog = g_ptr_array_new();
+}
+void mdb_free_catalog(MdbHandle *mdb)
+{
+	unsigned int i;
+
+	if (!mdb->catalog) return;
+	for (i=0; i<mdb->catalog->len; i++)
+		g_free (g_ptr_array_index(mdb->catalog, i));
+	g_ptr_array_free(mdb->catalog, TRUE);
+	mdb->catalog = NULL;
+}
+
 /* new method */
 GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 {

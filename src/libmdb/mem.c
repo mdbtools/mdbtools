@@ -65,21 +65,6 @@ mdb_free_stats(MdbHandle *mdb)
 	mdb->stats = NULL;
 }
 
-void mdb_alloc_catalog(MdbHandle *mdb)
-{
-	mdb->catalog = g_ptr_array_new();
-}
-void mdb_free_catalog(MdbHandle *mdb)
-{
-	unsigned int i;
-
-	if (!mdb->catalog) return;
-	for (i=0; i<mdb->catalog->len; i++)
-		g_free (g_ptr_array_index(mdb->catalog, i));
-	g_ptr_array_free(mdb->catalog, TRUE);
-	mdb->catalog = NULL;
-}
-
 MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 {
 	MdbTableDef *table;
