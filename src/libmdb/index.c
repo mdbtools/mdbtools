@@ -247,7 +247,7 @@ int lastchar;
 int
 mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, unsigned char *buf, int len)
 {
-	int i, j;
+	unsigned int i, j;
 	MdbColumn *col;
 	MdbTableDef *table = idx->table;
 	MdbSarg *idx_sarg;
@@ -686,7 +686,7 @@ MdbHandle *mdb = table->entry->mdb;
 int cur_pos = 0;
 unsigned char marker;
 MdbColumn *col;
-int i;
+unsigned int i;
 
 	if (idx->num_keys!=1) return;
 
@@ -702,7 +702,7 @@ int i;
 void 
 mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
 {
-	int i;
+	unsigned int i;
 	MdbColumn *col;
 
 	fprintf(stdout,"index number     %d\n", idx->index_num);
@@ -731,7 +731,7 @@ mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
  */
 int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 {
-	int i;
+	unsigned int i;
 	MdbColumn *col;
 	MdbSarg *sarg = NULL;
 	int not_all_equal = 0;

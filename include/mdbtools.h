@@ -260,7 +260,7 @@ typedef struct {
 	void	*bind_ptr;
 	int		*len_ptr;
 	GHashTable	*properties;
-	int		num_sargs;
+	unsigned int	num_sargs;
 	GPtrArray	*sargs;
 	GPtrArray	*idx_sarg_cache;
 	unsigned char   is_fixed;
@@ -353,7 +353,7 @@ struct mdbindex {
 	unsigned char	index_type;
 	guint32		first_pg;
 	int		num_rows;  /* number rows in index */
-	int		num_keys;
+	unsigned int	num_keys;
 	short	key_col_num[MDB_MAX_IDX_COLS];
 	unsigned char	key_col_order[MDB_MAX_IDX_COLS];
 	unsigned char	flags;
@@ -495,7 +495,7 @@ extern int mdb_like_cmp(char *s, char *r);
 /* write.c */
 extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
 extern guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
-extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
+extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
 extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
 extern int mdb_replace_row(MdbTableDef *table, int row, unsigned char *new_row, int new_row_size);
 extern int mdb_pg_get_freespace(MdbHandle *mdb);

@@ -80,7 +80,7 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 {
 	MdbField fields[256];
 	MdbFormatConstants *fmt;
-	int num_fields, i, j;
+	unsigned int num_fields, i, j;
 	int row_start, row_end;
 	MdbColumn *col;
 	guchar buf[256], key[256];

@@ -1,3 +1,9 @@
+Sat Jul 17 09:21:13 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/index.c:
+	* src/libmdb/write.c:
+	* src/util/prindex.c: Warnings fixes
+
 Sat Jul 17 02:47:16 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/data.c:

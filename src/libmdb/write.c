@@ -609,12 +609,12 @@ mdb_init_index_chain(MdbTableDef *table, MdbIndex *idx)
 }
 
 int
-mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum)
+mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	int idx_xref[16];
-	int i, j;
+	unsigned int i, j;
 	MdbIndexChain *chain;
 	MdbField idx_fields[10];
 
