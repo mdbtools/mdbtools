@@ -20,7 +20,6 @@
 
 extern GtkWidget *app;
 extern MdbHandle *mdb;
-extern char *mdb_access_types[];
 
 typedef struct GMdbDefWindow {
     gchar table_name[MDB_MAX_OBJ_NAME];
@@ -113,7 +112,7 @@ GtkStyle *style;
 		strcpy(row[0],"");
 		sprintf(row[1],"%d", col->col_num+1);
 		strcpy(row[2],col->name);
-		strcpy(row[3],mdb_access_types[col->col_type]);
+		strcpy(row[3], mdb_get_coltype_string(mdb->default_backend, col->col_type));
 		sprintf(row[4],"%d",col->col_size);
 		if (col->is_fixed) {
 			strcpy(row[5],"No");
@@ -127,7 +126,6 @@ GtkStyle *style;
 		&mask,
 		&style->bg[GTK_STATE_NORMAL], 
 		GMDB_ICONDIR "pk.xpm");
-	printf("pixmap %lu\n",pixmap);
 	//pixmap = gdk_pixmap_colormap_create_from_xpm_d( NULL,
 		//gtk_widget_get_colormap(app), &mask, NULL, pk_xpm);
 

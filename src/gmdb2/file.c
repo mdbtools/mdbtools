@@ -52,7 +52,7 @@ int i, index=0;
 		}
 		g_free(text);
 	}
-	printf("found file %slocation at menu %d\n",file_path, index);
+	/* printf("found file %slocation at menu %d\n",file_path, index); */
 	/* it is the most recently used file, we're done */
 	if (index==1) return;
 
@@ -112,6 +112,7 @@ gmdb_file_open(gchar *file_path)
 		gnome_warning_dialog("Unable to open file.");
 		return;
 	}
+	mdb_set_default_backend(mdb, "access");
 	gmdb_file_shuffle_recent(file_path);
 	gmdb_file_add_recent(file_path);
 
