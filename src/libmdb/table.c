@@ -105,11 +105,14 @@ GSList	*slist = NULL;
 		read_pg_if(mdb, &cur_col, 13);
 		col.is_fixed = mdb->pg_buf[cur_col + mdb->col_fixed_offset] & 
 			0x01 ? 1 : 0;
-		read_pg_if(mdb, &cur_col, 17);
-		low_byte = mdb->pg_buf[cur_col + mdb->col_size_offset];
-		read_pg_if(mdb, &cur_col, 18);
-		high_byte = mdb->pg_buf[cur_col + mdb->col_size_offset + 1];
-		col.col_size += high_byte * 256 + low_byte;
+		if (col.col_type != MDB_BOOL) {
+			read_pg_if(mdb, &cur_col, 17);
+			low_byte = mdb->pg_buf[cur_col + mdb->col_size_offset];
+			read_pg_if(mdb, &cur_col, 18);
+			high_byte = mdb->pg_buf[cur_col + mdb->col_size_offset + 1];
+			col.col_size += high_byte * 256 + low_byte;
+		} else
+			col.col_size=0;
 		
 		pcol = g_memdup(&col, sizeof(MdbColumn));
 		slist = g_slist_insert_sorted(slist,pcol,(GCompareFunc)mdb_col_comparer);

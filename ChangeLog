@@ -1,3 +1,9 @@
+2002-03-15  Brian Bruns <camber@ais.org>
+
+	* src/libmdb/money.c: Two's complement fix from 
+	* src/libmdb/data.c: BOOL fixes from Mike Finger and Ben McKeegan
+	* src/libmdb/table.c: BOOL fixes from Mike Finger
+
 2001-09-29  Brian Bruns <camber@ais.org>
 
     * src/odbc/odbc.c:

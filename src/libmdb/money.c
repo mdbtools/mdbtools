@@ -45,17 +45,20 @@ int neg=0;
 	multiplier[0]=1;
 
 	money = &mdb->pg_buf[start];
+
 	if (money[7] && 0x01) {
 		/* negative number -- preform two's complement */
 		neg = 1;
-		for (i=0;i<8;i++) {
+		for (i=0;i<num_bytes;i++) {
 			money[i] = ~money[i];
 		}
-		for (i=7; i>=0; i--) {
-			money[7] += 1;
+		for (i=0; i<num_bytes; i++) {
+			money[i] += 1;
 			if (money[i]!=0) break;
 		}
 	}
+
+	money[7]=0;
 	for (pos=0;pos<num_bytes;pos++) {
 		multiply_byte(product, money[pos], multiplier);
 

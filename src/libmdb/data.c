@@ -193,7 +193,8 @@ unsigned char isnull;
 			rc = _mdb_attempt_bind(mdb, col, isnull,
 				row_start + col_start, col->col_size);
 			if (!rc) return 0;
-			col_start += col->col_size;
+			if (col->col_type != MDB_BOOL) 
+				col_start += col->col_size;
 		}
 	}
 
@@ -245,6 +246,8 @@ unsigned char isnull;
 				len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found
 					- 1 - num_of_jumps ] - col_start;
 			}
+			if (len<0)
+				len+=256;
 		}
 
 			isnull = mdb_is_null(null_mask, j+1); 
