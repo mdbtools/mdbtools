@@ -1,3 +1,6 @@
+Sun Mar  6 22:09:09 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/table.c: Fix memory leak
+
 Fri Feb 25 23:02:42 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/money.c: Fix bad declaration
 	* src/libmdb/write.c: Rework of mdb_crack_row

@@ -79,10 +79,10 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	int len, row_start, pg_row;
 	char *buf;
 
-	table = mdb_alloc_tabledef(entry);
-
 	mdb_read_pg(mdb, entry->table_pg);
-	if (mdb->pg_buf[0] != 0x02) return NULL; /* not a valid table def page */
+	if (mdb->pg_buf[0] != 0x02)  /* not a valid table def page */
+		return NULL;
+	table = mdb_alloc_tabledef(entry);
 
 	len = mdb_pg_get_int16(mdb,8);
 
