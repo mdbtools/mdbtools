@@ -134,12 +134,8 @@ int eod, len; /* end of data */
 	/* find the end of data pointer */
 	eod = mdb_pg_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
 
-	if (IS_JET4(mdb)) {
-		col_start = 2;
-	} else {
-		/* data starts at 1 */
-		col_start = 1;
-	}
+	col_start = 2;
+
 	/* actual cols on this row */
 	fixed_cols_found = 0;
 	var_cols_found = 0;
@@ -199,7 +195,11 @@ int num_of_jumps = 0, jumps_used = 0;
 int eod, len; /* end of data */
 
 	num_cols = mdb->pg_buf[row_start];
+	if (num_cols != table->num_cols) {
+		fprintf(stderr,"WARNING: number of table columns does not match number of row columns, strange results may occur\n");
+	}
 
+	/* how many fixed cols? */
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index (table->columns, i);
 		if (mdb_is_fixed_col(col)) {
@@ -209,6 +209,7 @@ int eod, len; /* end of data */
 			fields[totcols++].is_fixed = 1;
 		}
 	}
+	/* how many var cols? */
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index (table->columns, i);
 		if (!mdb_is_fixed_col(col)) {
@@ -251,7 +252,6 @@ int eod, len; /* end of data */
 		}
 	}
 
-	//fprintf(stderr, "col_start: %d\n", col_start);
 	/* if fixed columns add up to more than 256, we need a jump */
 	int col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
 	if (col_start >= 256) {
@@ -261,6 +261,9 @@ int eod, len; /* end of data */
 	}
 	col_start = row_start;
 	
+	/* compute the number of jumps (row size - overhead) / 256 
+	 * but you have to include the jump table itself, thus
+	 * the loop.  */
 	while (col_start+256 < row_end-bitmask_sz-1-var_cols-num_of_jumps){
 		col_start += 256;
 		num_of_jumps++;
@@ -268,12 +271,18 @@ int eod, len; /* end of data */
 	if (mdb->pg_buf[col_ptr]==0xFF) {
 		col_ptr--;
 	}
+	/* col_start is now the offset to the first variable length field */
 	col_start = mdb->pg_buf[col_ptr];
 
 	for (j=0;j<table->num_cols;j++) {
 		col = g_ptr_array_index(table->columns,j);
+		/* if it's a var_col and we aren't looking at a column
+		 * added after this row was created */
 		if (!mdb_is_fixed_col(col) && ++var_cols_found <= var_cols) {
 
+			/* if the position of this var_col matches the number
+			 * in the current jump table entry, then increment
+			 * the jump_used and adjust the col/row_start */
 			if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
 				jumps_used < num_of_jumps) {
 				row_start += 256;
@@ -281,6 +290,8 @@ int eod, len; /* end of data */
 				jumps_used++;
 			}
 
+			/* if we have the last var_col, use the eod offset to
+			 * figure out where the end is */
 			if (var_cols_found==var_cols)  {
 				len=eod - col_start;
 				//printf("len = %d eod %d col_start %d\n",len, eod, col_start);

@@ -23,6 +23,25 @@
 #include "dmalloc.h"
 #endif
 
+/*
+typedef struct {
+	int		pg_size;
+	guint16		row_count_offset; 
+	guint16		tab_num_rows_offset;
+	guint16		tab_num_cols_offset;
+	guint16		tab_num_idxs_offset;
+	guint16		tab_num_ridxs_offset;
+	guint16		tab_usage_map_offset;
+	guint16		tab_first_dpg_offset;
+	guint16		tab_cols_start_offset;
+	guint16		tab_ridx_entry_size;
+	guint16		col_fixed_offset;
+	guint16		col_size_offset;
+	guint16		col_num_offset;
+	guint16		tab_col_entry_size;
+	guint16         tab_free_map_offset;
+} MdbFormatConstants; 
+*/
 MdbFormatConstants MdbJet4Constants = {
 	4096, 0x0c, 16, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59
 };

@@ -44,13 +44,15 @@ unsigned char mdb_col_needs_size(int col_type)
 	}
 }
 
-MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
+MdbTableDef *
+mdb_read_table(MdbCatalogEntry *entry)
 {
-MdbTableDef *table;
-MdbHandle *mdb = entry->mdb;
-MdbFormatConstants *fmt = mdb->fmt;
-int len;
-int rownum, row_start, row_end;
+	MdbTableDef *table;
+	MdbHandle *mdb = entry->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
+	int len;
+	int rownum, row_start, row_end;
+	guint32 pg;
 
 	table = mdb_alloc_tabledef(entry);
 
@@ -66,7 +68,8 @@ int rownum, row_start, row_end;
 
 	/* grab a copy of the usage map */
 	rownum = mdb->pg_buf[fmt->tab_usage_map_offset];
-	mdb_read_alt_pg(mdb, mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1)); 
+	pg = mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1); 
+	mdb_read_alt_pg(mdb, pg);
 	mdb_swap_pgbuf(mdb);
 	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (rownum*2));
 	row_end = mdb_find_end_of_row(mdb, rownum);
@@ -79,7 +82,7 @@ int rownum, row_start, row_end;
 	/* swap back */
 	mdb_swap_pgbuf(mdb);
 #if MDB_DEBUG_USAGE
-	printf ("usage map found on page %ld start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1), row_start, row_end);
+	printf ("usage map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_usage_map_offset + 1), rownum, row_start, row_end);
 #endif
 
 
@@ -95,6 +98,9 @@ int rownum, row_start, row_end;
 	table->free_usage_map = malloc(table->freemap_sz);
 	memcpy(table->free_usage_map, &mdb->pg_buf[row_start], table->freemap_sz);
 	mdb_swap_pgbuf(mdb);
+#endif
+#if MDB_DEBUG_USAGE
+	printf ("free map found on page %ld rownum %d start %d end %d\n", mdb_pg_get_int24(mdb, fmt->tab_free_map_offset + 1), rownum, row_start, row_end);
 #endif
 
 	table->first_data_pg = mdb_pg_get_int16(mdb, fmt->tab_first_dpg_offset);
@@ -326,6 +332,8 @@ guint32 pgnum;
 	}
 	if (table->usage_map) {
 		printf("pages reserved by this object\n");
+		printf("usage map pg %lu\n", table->map_base_pg);
+		printf("free map pg %lu\n", table->freemap_base_pg);
 		pgnum = mdb_get_int32(table->usage_map,1);
 		/* the first 5 bytes of the usage map mean something */
 		coln = 0;
@@ -342,5 +350,6 @@ guint32 pgnum;
 				pgnum++;
 			}
 		}
+		printf("\n");
 	}
 }

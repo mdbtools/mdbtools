@@ -212,7 +212,7 @@ mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		//cache_int = sarg->value.i * -1;
 		c = (unsigned char *) &(idx_sarg->value.i);
 		c[0] |= 0x80;
-		printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
+		//printf("int %08x %02x %02x %02x %02x\n", sarg->value.i, c[0], c[1], c[2], c[3]);
 		break;	
 
 		case MDB_INT:
@@ -252,7 +252,7 @@ int lastchar;
 }
 #endif
 int
-mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
+mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, unsigned char *buf, int len)
 {
 	int i, j;
 	MdbColumn *col;
@@ -265,16 +265,17 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 
 	//fprintf(stderr,"mdb_index_test_sargs called on ");
 	//for (i=0;i<len;i++)
-		//fprintf(stderr,"%02x ",mdb->pg_buf[offset+i]);
+		//fprintf(stderr,"%02x ",buf[i]); //mdb->pg_buf[offset+i]);
 	//fprintf(stderr,"\n");
 	for (i=0;i<idx->num_keys;i++) {
-		c_offset++; /* the per column null indicator/flags */
+		//c_offset++; /* the per column null indicator/flags */
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
 		/*
 		 * This will go away eventually
 		 */
 		if (col->col_type==MDB_TEXT) {
-			c_len = strlen(&mdb->pg_buf[offset + c_offset]);
+			//c_len = strlen(&mdb->pg_buf[offset + c_offset]);
+			c_len = strlen(buf);
 		} else {
 			c_len = col->col_size;
 			//fprintf(stderr,"Only text types currently supported.  How did we get here?\n");
@@ -299,7 +300,8 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 			/* XXX - kludge */
 			node.op = sarg->op;
 			node.value = sarg->value;
-			field.value = &mdb->pg_buf[offset + c_offset];
+			//field.value = &mdb->pg_buf[offset + c_offset];
+			field.value = buf;
 		       	field.siz = c_len;
 		       	field.is_null = FALSE;
 			if (!mdb_test_sarg(mdb, col, &node, &field)) {
@@ -364,8 +366,13 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 	 * we are simply done. (there is no page to find
 	 */
 
-	if (mdb->pg_buf[0]==MDB_PAGE_LEAF) 
+	if (mdb->pg_buf[0]==MDB_PAGE_LEAF) {
+		/* Indexes can have leaves at the end that don't appear
+		 * in the upper tree, stash the last index found so
+		 * we can follow it at the end.  */
+		chain->last_leaf_found = ipg->pg;
 		return ipg;
+	}
 
 	/*
 	 * apply sargs here, currently we don't
@@ -387,7 +394,7 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 		 */
 		newipg = mdb_chain_add_page(mdb, chain, pg);
 		newipg = mdb_find_next_leaf(mdb, idx, chain);
-		printf("returning pg %lu\n",newipg->pg);
+		//printf("returning pg %lu\n",newipg->pg);
 		return newipg;
 	} while (!passed);
 	/* no more pages */
@@ -439,6 +446,35 @@ mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 	return ipg;
 }
 /*
+ * unwind the stack and search for new leaf node
+ */
+MdbIndexPage *
+mdb_index_unwind(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
+{
+	MdbIndexPage *ipg;
+
+	//printf("page %lu finished\n",ipg->pg);
+	if (chain->cur_depth==1) {
+		//printf("cur_depth == 1 we're out\n");
+		return NULL;
+	}
+	/* 
+	* unwind the stack until we find something or reach 
+	* the top.
+	*/
+	ipg = NULL;
+	while (chain->cur_depth>1 && ipg==NULL) {
+		//printf("chain depth %d\n", chain->cur_depth);
+		chain->cur_depth--;
+		ipg = mdb_find_next_leaf(mdb, idx, chain);
+		if (ipg) mdb_index_find_next_on_page(mdb, ipg);
+	}
+	if (chain->cur_depth==1) {
+		//printf("last leaf %lu\n", chain->last_leaf_found);
+		return NULL;
+	}
+}
+/*
  * the main index function.
  * caller provides an index chain which is the current traversal of index
  * pages from the root page to the leaf.  Initially passed as blank, 
@@ -455,7 +491,8 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 {
 	MdbIndexPage *ipg;
 	int passed = 0;
-
+	int idx_sz;
+	int idx_start = 0;
 
 	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
 
@@ -468,30 +505,44 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		 * if no more rows on this leaf, try to find a new leaf
 		 */
 		if (!mdb_index_find_next_on_page(mdb, ipg)) {
-			//printf("page %lu finished\n",ipg->pg);
-			if (chain->cur_depth==1) {
-				//printf("cur_depth == 1 we're out\n");
-				return 0;
+			if (!chain->clean_up_mode) {
+				if (!(ipg = mdb_index_unwind(mdb, idx, chain)))
+					chain->clean_up_mode = 1;
 			}
-			/* 
-			 * unwind the stack until we find something or reach 
-			 * the top.
-			 */
-			ipg = 0;
-			while (chain->cur_depth>1 && ipg==0) {
-				//printf("chain depth %d\n", chain->cur_depth);
-				chain->cur_depth--;
-				ipg = mdb_find_next_leaf(mdb, idx, chain);
-				if (ipg) mdb_index_find_next_on_page(mdb, ipg);
+			if (chain->clean_up_mode) {
+				//printf("in cleanup mode\n");
+
+				if (!chain->last_leaf_found) return 0;
+				mdb_read_pg(mdb, chain->last_leaf_found);
+				chain->last_leaf_found = mdb_pg_get_int24(mdb, 0x0c);
+				//printf("next leaf %lu\n", chain->last_leaf_found);
+				mdb_read_pg(mdb, chain->last_leaf_found);
+				/* reuse the chain for cleanup mode */
+				chain->cur_depth = 1;
+				ipg = &chain->pages[0];
+				mdb_index_page_init(ipg);
+				ipg->pg = chain->last_leaf_found;
+				//printf("next on page %d\n",
+				if (!mdb_index_find_next_on_page(mdb, ipg))
+					return 0;
 			}
-			if (chain->cur_depth==1)
-				return 0;
 		}
 		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
 		*pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
 		//printf("row = %d pg = %lu ipg->pg = %lu offset = %lu len = %d\n", *row, *pg, ipg->pg, ipg->offset, ipg->len);
+		idx_sz = 4;
+		if (ipg->len - 4 < idx_sz) {
+			//printf("short index found\n");
+			//buffer_dump(ipg->cache_value, 0, idx_sz);
+			memcpy(&ipg->cache_value[idx_sz - (ipg->len - 4)], &mdb->pg_buf[ipg->offset], ipg->len);
+			//buffer_dump(ipg->cache_value, 0, idx_sz);
+		} else {
+			idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
+			memcpy(ipg->cache_value, &mdb->pg_buf[idx_start], idx_sz);
+		}
 
-		passed = mdb_index_test_sargs(mdb, idx, ipg->offset, ipg->len);
+		//idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
+		passed = mdb_index_test_sargs(mdb, idx, ipg->cache_value, idx_sz);
 
 		ipg->offset += ipg->len;
 	} while (!passed);

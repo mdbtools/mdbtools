@@ -525,13 +525,18 @@ mdb_read_next_dpg(MdbTableDef *table)
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
 int map_type;
+guint32 pg;
 
 #ifndef SLOW_READ
 	map_type = table->usage_map[0];
 	if (map_type==0) {
-		return mdb_read_next_dpg_by_map0(table);
+		pg = mdb_read_next_dpg_by_map0(table);
+		//printf("Next dpg = %lu\n", pg);
+		return pg;
 	} else if (map_type==1) {
-		return mdb_read_next_dpg_by_map1(table);
+		pg = mdb_read_next_dpg_by_map1(table);
+		//printf("Next dpg = %lu\n", pg);
+		return pg;
 	} else {
 		fprintf(stderr,"Warning: unrecognized usage map type: %d, defaulting to brute force read\n",table->usage_map[0]);
 	}
@@ -541,7 +546,7 @@ int map_type;
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
 	} while (mdb->pg_buf[0]!=0x01 || mdb_pg_get_int32(mdb, 4)!=entry->table_pg);
-	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg);  */
+	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
 	return table->cur_phys_pg;
 }
 int mdb_rewind_table(MdbTableDef *table)
