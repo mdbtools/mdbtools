@@ -11,3 +11,5 @@ libtool
 ltmain.sh
 mdbtools.spec
 autom4te.cache
+libmdb.pc
+libmdbsql.pc

@@ -10,6 +10,13 @@ Sat May  1 00:02:09 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/stats.c: Fold several functions into mdb_open/mdb_close
 	* doc/reference/libmdb/.cvsignore: Added this file
 
+2004-04-29  Michael Meeks  <michael@ximian.com>
+       * configure.in
+       * Makefile.am: add mdbtools pkgconfig bits
+       * libmdb.pc.in
+       * libmdbsql.pc.in: add mdbtools pkgconfig templates.
+
+
 Sat Apr 24 21:39:10 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/file.c:
 	* src/libmdb/mem.c: Moving some NULL pointer tests
