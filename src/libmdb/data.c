@@ -448,3 +448,39 @@ int mdb_col_disp_size(MdbColumn *col)
 	}
 	return 0;
 }
+int mdb_col_fixed_size(MdbColumn *col)
+{
+	switch (col->col_type) {
+		case MDB_BOOL:
+			return 1;
+		break;
+		case MDB_BYTE:
+			return -1;
+		break;
+		case MDB_INT:
+			return 2;
+		break;
+		case MDB_LONGINT:
+			return 4;
+		break;
+		case MDB_FLOAT:
+			return 4;
+		break;
+		case MDB_DOUBLE:
+			return 8;
+		break;
+		case MDB_TEXT:
+			return -1;
+		break;
+		case MDB_SDATETIME:
+			return 4;
+		break;
+		case MDB_MEMO:
+			return -1; 
+		break;
+		case MDB_MONEY:
+			return 8;
+		break;
+	}
+	return 0;
+}

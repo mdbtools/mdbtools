@@ -148,6 +148,8 @@ typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];
 	unsigned char	index_type;
 	int		first_pg;
+	int		num_rows;  /* number rows in index */
+	int		num_keys;
 	short	key_col_num[MDB_MAX_IDX_COLS];
 	unsigned char	key_col_order[MDB_MAX_IDX_COLS];
 } MdbIndex;

@@ -18,6 +18,24 @@
  */
 
 #include "mdbtools.h"
+char idx_to_text[] = {
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0-7     0x00-0x07 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 8-15    0x09-0x0f */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 16-23   0x10-0x17 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 24-31   0x19-0x1f */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 32-39   0x20-0x27 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 40-47   0x29-0x2f */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 48-55   0x30-0x37 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 56-63   0x39-0x3f */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 64-71   0x40-0x47 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 72-79   0x49-0x4f */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '0',  '1',  /* 80-87   0x50-0x57 */
+'2',  '3',  '4',  '5',  '6',  '7',  '8',  '9',  /* 88-95   0x59-0x5f */
+'A',  'B',  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 96-103  0x60-0x67 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 104-111 0x69-0x6f */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 112-119 0x70-0x77 */
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  /* 120-127 0x79-0x7f */
+};
 
 GPtrArray *mdb_read_indices(MdbTableDef *table)
 {
@@ -66,6 +84,9 @@ int name_sz;
 			table->num_real_idxs--;
 			continue;
 		}
+
+		pidx->num_rows = mdb_get_int32(mdb, 43+(i*8) );
+
 		key_num=0;
 		for (j=0;j<MDB_MAX_IDX_COLS;j++) {
 			col_num=mdb_get_int16(mdb,cur_pos);
@@ -82,9 +103,29 @@ int name_sz;
 			}
 			cur_pos++;
 		}
+		pidx->num_keys = key_num;
 		cur_pos += 4;
 		pidx->first_pg = mdb_get_int32(mdb, cur_pos);
 		cur_pos += 5;
+	}
+}
+void mdb_index_walk(MdbTableDef *table, MdbIndex *idx)
+{
+MdbHandle *mdb = table->entry->mdb;
+int cur_pos = 0;
+unsigned char marker;
+MdbColumn *col;
+int i;
+
+	if (idx->num_keys!=1) return;
+
+	mdb_read_pg(mdb, idx->first_pg);
+	cur_pos = 0xf8;
+	
+	for (i=0;i<idx->num_keys;i++) {
+		marker = mdb->pg_buf[cur_pos++];
+		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
+		printf("column %d coltype %d col_size %d\n",i,col->col_type, mdb_col_fixed_size(col));
 	}
 }
 void mdb_index_dump(MdbTableDef *table, MdbIndex *idx)
@@ -95,15 +136,15 @@ MdbColumn *col;
 	fprintf(stdout,"index number     %d\n", idx->index_num);
 	fprintf(stdout,"index name       %s\n", idx->name);
 	fprintf(stdout,"index first page %d\n", idx->first_pg);
+	fprintf(stdout,"index rows       %d\n", idx->num_rows);
 	if (idx->index_type==1) fprintf(stdout,"index is a primary key\n");
-	for (i=0;i<MDB_MAX_IDX_COLS;i++) {
-		if (idx->key_col_num[i]) {
-			col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
-			fprintf(stdout,"Column %s(%d) Sorted %s\n", 
-				col->name,
-				idx->key_col_num[i], 
-				idx->key_col_order[i]==MDB_ASC ? "ascending" : "descending"
-				);
-		}
+	for (i=0;i<idx->num_keys;i++) {
+		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
+		fprintf(stdout,"Column %s(%d) Sorted %s\n", 
+			col->name,
+			idx->key_col_num[i], 
+			idx->key_col_order[i]==MDB_ASC ? "ascending" : "descending"
+			);
 	}
+	mdb_index_walk(table, idx);
 }
