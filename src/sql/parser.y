@@ -41,7 +41,7 @@ static MdbSQL *g_sql;
 
 
 
-%token <name> NAME PATH STRING NUMBER 
+%token <name> IDENT NAME PATH STRING NUMBER 
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE
@@ -112,6 +112,7 @@ database:
 
 table:
 	NAME { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
+	| IDENT { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
 	;
 
 column_list:
@@ -122,6 +123,7 @@ column_list:
 	 
 column:
 	NAME { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
+	| IDENT { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
 	;
 
 %%

@@ -39,7 +39,13 @@ describe	{ return DESCRIBE; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }
 [ \t\r]	;
+\"[A-z][A-z0-9 ]*\"   {
+				yylval.name = strdup(&yytext[1]);
+				yylval.name[strlen(yylval.name)-1]='\0';
+				return IDENT;
+			}
 [A-z][A-z0-9]*		{ yylval.name = strdup(yytext); return NAME; }
+
 '.*'			{ yylval.name = strdup(yytext); return STRING; }
 ([0-9]+|([0-9]*\.[0-9+)([eE][-+]?[0-9]+)?) { 
 				yylval.name = strdup(yytext); return NUMBER; 

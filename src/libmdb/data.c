@@ -21,8 +21,6 @@
 #include "time.h"
 #include "math.h"
 
-//#define FAST_READ 1
-
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s);
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
@@ -77,7 +75,7 @@ int row_end;
 	return row_end;
 #endif
 }
-static int mdb_is_null(unsigned char *null_mask, int col_num)
+int mdb_is_null(unsigned char *null_mask, int col_num)
 {
 int byte_num = (col_num - 1) / 8;
 int bit_num = (col_num - 1) % 8;
@@ -98,6 +96,24 @@ static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 	}
 
 	return 0;
+}
+static int mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
+{
+int ret;
+	if (len) {
+		col->cur_value_start = start;
+		col->cur_value_len = len;
+	} else {
+		col->cur_value_start = 0;
+		col->cur_value_len = 0;
+	}
+	if (col->bind_ptr || col->len_ptr) {
+		ret = mdb_copy_ole(mdb, col->bind_ptr, start, len);
+	}
+	if (col->len_ptr) {
+		*col->len_ptr = ret;
+	}
+	return ret;
 }
 static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
@@ -329,6 +345,8 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 {
 	if (col->col_type == MDB_BOOL) {
 		mdb_xfer_bound_bool(mdb, col, isnull);
+	} else if (col->col_type == MDB_OLE) {
+		mdb_xfer_bound_ole(mdb, offset, col, len);
 	} else if (isnull) {
 		mdb_xfer_bound_data(mdb, 0, col, 0);
 	} else {
@@ -339,12 +357,11 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	}
 	return 1;
 }
-int mdb_read_next_dpg(MdbTableDef *table)
+int 
+mdb_read_next_dpg_by_map0(MdbTableDef *table)
 {
 MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
-
-#if FAST_READ
 int pgnum, i, bitn;
 
 	pgnum = _mdb_get_int32(table->usage_map,1);
@@ -364,14 +381,71 @@ int pgnum, i, bitn;
 	}
 	/* didn't find anything */
 	return 0;
-#else
+}
+int 
+mdb_read_next_dpg_by_map1(MdbTableDef *table)
+{
+MdbCatalogEntry *entry = table->entry;
+MdbHandle *mdb = entry->mdb;
+guint32 pgnum, i, j, bitn, map_pg;
+unsigned char map_byte;
+
+	pgnum = 0;
+	//printf("map size %ld\n", table->map_sz);
+	for (i=1;i<table->map_sz-1;i+=4) {
+		map_pg = _mdb_get_int32(table->usage_map, i);
+		//printf("loop %d pg %ld %02x%02x%02x%02x\n",i, map_pg,table->usage_map[i],table->usage_map[i+1],table->usage_map[i+2],table->usage_map[i+3]);
+
+		if (!map_pg) continue;
+
+		if(mdb_read_alt_pg(mdb, map_pg) != mdb->pg_size) {
+			fprintf(stderr, "Oops! didn't get a full page at %d\n", map_pg);
+			exit(1);
+		} 
+		//printf("reading page %ld\n",map_pg);
+		for (j=4;j<mdb->pg_size;j++) {
+			for (bitn=0;bitn<8;bitn++) {
+				if (mdb->alt_pg_buf[j] & 1 << bitn && pgnum > table->cur_phys_pg) {
+					table->cur_phys_pg = pgnum;
+					if (!mdb_read_pg(mdb, pgnum)) {
+						return 0;
+					} else {
+						//printf("page found at %04x %d\n",pgnum, pgnum);
+						return pgnum;
+					}
+				}
+				pgnum++;
+			}
+		}
+	}
+	/* didn't find anything */
+	//printf("returning 0\n");
+	return 0;
+}
+int 
+mdb_read_next_dpg(MdbTableDef *table)
+{
+MdbCatalogEntry *entry = table->entry;
+MdbHandle *mdb = entry->mdb;
+int map_type;
+
+#ifndef SLOW_READ
+	map_type = table->usage_map[0];
+	if (map_type==0) {
+		return mdb_read_next_dpg_by_map0(table);
+	} else if (map_type==1) {
+		return mdb_read_next_dpg_by_map1(table);
+	} else {
+		fprintf(stderr,"Warning: unrecognized usage map type: %d, defaulting to brute force read\n",table->usage_map[0]);
+	}
+#endif 
+	/* can't do a fast read, go back to the old way */
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
 	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb, 4)!=entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg);  */
 	return table->cur_phys_pg;
-#endif
 }
 int mdb_rewind_table(MdbTableDef *table)
 {
@@ -452,6 +526,99 @@ int i;
 	text[(i-start)*2]='\0';
 
 	return text;
+}
+int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
+{
+guint16 ole_len;
+guint16 ole_flags;
+guint16 row_start, row_stop;
+guint8 ole_row;
+guint32 lval_pg;
+guint16 len, cur;
+
+	if (size<MDB_MEMO_OVERHEAD) {
+		return 0;
+	} 
+
+	ole_len = mdb_get_int16(mdb, start);
+	ole_flags = mdb_get_int16(mdb, start+2);
+
+	if (ole_flags == 0x8000) {
+		len = size - MDB_MEMO_OVERHEAD;
+		/* inline ole field */
+		if (dest) memcpy(dest, &mdb->pg_buf[start + MDB_MEMO_OVERHEAD],
+			size - MDB_MEMO_OVERHEAD);
+		return len;
+	} else if (ole_flags == 0x4000) {
+		/* The 16 bit integer at offset 0 is the length of the memo field.
+		* The 24 bit integer at offset 5 is the page it is stored on.
+		*/
+		ole_row = mdb->pg_buf[start+4];
+		
+		lval_pg = mdb_get_int24(mdb, start+5);
+#if MDB_DEBUG
+		printf("Reading LVAL page %06x\n", lval_pg);
+#endif
+		if(mdb_read_alt_pg(mdb, lval_pg) != mdb->pg_size) {
+			/* Failed to read */
+			return 0;
+		}
+		/* swap the alt and regular page buffers, so we can call get_int16 */
+		mdb_swap_pgbuf(mdb);
+		if (ole_row) {
+			row_stop = mdb_get_int16(mdb, 10 + (ole_row - 1) * 2) & 0x0FFF;
+		} else {
+			row_stop = mdb->pg_size - 1;
+		}
+		row_start = mdb_get_int16(mdb, 10 + ole_row * 2);
+#if MDB_DEBUG
+			printf("row num %d row start %d row stop %d\n", ole_row, row_start, row_stop);
+#endif
+			len = row_stop - row_start;
+			if (dest) memcpy(dest, &mdb->pg_buf[row_start], len);
+			/* make sure to swap page back */
+			mdb_swap_pgbuf(mdb);
+			return len;
+		} else if (ole_flags == 0x0000) {
+			ole_row = mdb->pg_buf[start+4];
+			lval_pg = mdb_get_int24(mdb, start+5);
+#if MDB_DEBUG
+			printf("Reading LVAL page %06x\n", lval_pg);
+#endif
+		/* swap the alt and regular page buffers, so we can call get_int16 */
+		mdb_swap_pgbuf(mdb);
+		cur=0;
+		do {
+			if(mdb_read_pg(mdb, lval_pg) != mdb->pg_size) {
+				/* Failed to read */
+				return 0;
+			}
+			if (ole_row) {
+				row_stop = mdb_get_int16(mdb, 10 + (ole_row - 1) * 2) & 0x0FFF;
+			} else {
+				row_stop = mdb->pg_size - 1;
+			}
+			row_start = mdb_get_int16(mdb, 10 + ole_row * 2);
+#if MDB_DEBUG
+		printf("row num %d row start %d row stop %d\n", ole_row, row_start, row_stop);
+#endif
+			len = row_stop - row_start;
+			if (dest) 
+				memcpy(&dest[cur], &mdb->pg_buf[row_start+4], 
+				len - 4);
+			cur += len - 4;
+
+			/* find next lval page */
+			ole_row = mdb->pg_buf[row_start];
+			lval_pg = mdb_get_int24(mdb, row_start+1);
+		} while (lval_pg);
+		/* make sure to swap page back */
+		mdb_swap_pgbuf(mdb);
+		return cur;
+	} else {
+		fprintf(stderr,"Unhandled ole field flags = %04x\n", ole_flags);
+		return 0;
+	}
 }
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {

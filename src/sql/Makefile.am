@@ -1,7 +1,7 @@
 lib_LTLIBRARIES	=	libmdbsql.la
 libmdbsql_la_SOURCES=	mdbsql.c parser.y lexer.l 
-INCLUDES	=	-I$(top_srcdir)/include `glib-config --cflags`
-LIBS	=	`glib-config --libs`
+INCLUDES	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
+LIBS	=	$(GLIB_LIBS)
 LDADD	=	../libmdb/libmdb.la 
 YACC = bison -y -d
 

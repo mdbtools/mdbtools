@@ -1,7 +1,3 @@
-if SQL
-SUBDIRS	=	libmdb sql util extras odbc gmdb
+SUBDIRS	=	libmdb extras $(OPTDIRS) util
+DIST_SUBDIRS = libmdb extras sql odbc gmdb2 util
 DEFDIR	=	$(prefix)
-else
-SUBDIRS	=	libmdb util extras 
-DEFDIR	=	$(prefix)
-endif

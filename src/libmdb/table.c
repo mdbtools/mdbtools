@@ -19,6 +19,8 @@
 
 #include "mdbtools.h"
 
+#define MDB_DEBUG_USAGE 0
+
 static gint mdb_col_comparer(MdbColumn *a, MdbColumn *b)
 {
 	if (a->col_num > b->col_num)
@@ -61,13 +63,17 @@ int rownum, row_start, row_end;
 	mdb_swap_pgbuf(mdb);
 	row_start = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + (rownum*2));
    row_end = mdb_find_end_of_row(mdb, rownum);
-	table->map_sz = row_end - row_start;
+	table->map_sz = row_end - row_start + 1;
 	table->usage_map = malloc(table->map_sz);
 	memcpy(table->usage_map, &mdb->pg_buf[row_start], table->map_sz);
+#if MDB_DEBUG_USAGE
 	buffer_dump(mdb->pg_buf, row_start, row_end);
+#endif
 	/* swap back */
 	mdb_swap_pgbuf(mdb);
+#if MDB_DEBUG_USAGE
 	printf ("usage map found on page %ld start %d end %d\n", mdb_get_int24(mdb, mdb->tab_usage_map_offset + 1), row_start, row_end);
+#endif
 
 
 	table->first_data_pg = mdb_get_int16(mdb, mdb->tab_first_dpg_offset);

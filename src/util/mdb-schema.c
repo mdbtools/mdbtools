@@ -28,19 +28,34 @@ MdbCatalogEntry *entry;
 MdbTableDef *table;
 MdbColumn *col;
 char		*the_relation;
+char *tabname = NULL;
+int opt;
 
  if (argc < 2) {
    fprintf (stderr, "Usage: %s <file> [<backend>]\n",argv[0]);
    exit (1);
  }
+ if (argc < 2) {
+   fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] <file>\n",argv[0]);
+   exit (1);
+ }
+
+  while ((opt=getopt(argc, argv, "T:"))!=-1) {
+     switch (opt) {
+       case 'T':
+         tabname = (char *) malloc(strlen(optarg)+1);
+         strcpy(tabname, optarg);
+         break;
+     }
+  }
  
  mdb_init();
 
  /* open the database */
 
- mdb = mdb_open (argv[1]);
- if (argc>2) {
-	if (!mdb_set_default_backend(mdb, argv[2])) {
+ mdb = mdb_open (argv[optind]);
+ if (argc - optind >2) {
+	if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
 		fprintf(stderr,"Invalid backend type\n");
 		mdb_exit();
 		exit(1);
@@ -62,7 +77,8 @@ char		*the_relation;
      if (entry->object_type == MDB_TABLE)
        {
 	 /* skip the MSys tables */
-       if (strncmp (entry->object_name, "MSys", 4))
+       if ((tabname && !strcmp(entry->object_name,tabname)) ||
+           (!tabname && strncmp (entry->object_name, "MSys", 4)))
 	 {
 	   
 	   /* make sure it's a table (may be redundant) */

@@ -17,12 +17,13 @@ libmdb:
 . Sargs need to support all datatypes
 . Need a way to express logical relationships between sargs (tree)
 . Add support for index scanning when using sargs
-. Use allocation maps to read tables, should be more efficient
+. Use allocation maps to read tables, should be more efficient (done 
+  if -DFAST_READ specified)
 . write support
 
 utils:
 
-. need program to unpack VBA script to file
+. need program to unpack VBA script to file (see prole)
 . Access forms to glade converter ?
 
 SQL Engine:
@@ -32,6 +33,7 @@ SQL Engine:
 . OR clauses using sarg trees from above
 . insert/updates
 . bogus column name in where clause not caught
+. const = const type operations not working (e.g. WHERE 0=1)
 
 ODBC:
 

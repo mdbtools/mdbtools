@@ -79,13 +79,13 @@ int type;
 
  while (mdb_fetch_row(table)) {
 	type = atoi(tobjtype);
-	if (type == objtype) {
+	if (objtype==MDB_ANY || type == objtype) {
 		// fprintf(stdout, "parentid: %10ld objtype: %-3d objname: %s\n", 
 		// (atol(parentid) & 0x00FFFFFF), type, objname); 
 		memset(&entry,0,sizeof(entry));
 		entry.mdb = mdb;
 		strcpy(entry.object_name, objname);
-		entry.object_type = type;
+		entry.object_type = (type & 0x7F);
 		entry.table_pg = atol(parentid) & 0x00FFFFFF;
 		mdb->num_catalog++;
 		data = g_memdup(&entry,sizeof(MdbCatalogEntry));
@@ -124,7 +124,7 @@ fprintf(stdout,"\n");
 */
 
 	memset(entry, '\0', sizeof(MdbCatalogEntry));
-	entry->object_type = mdb->pg_buf[offset+0x09];
+	entry->object_type = (mdb->pg_buf[offset+0x09] & 0x7F);
 	j=0;
 	entry->mdb = mdb;
 	entry->table_pg = mdb_get_int16(mdb,offset+1);
@@ -221,7 +221,7 @@ MdbCatalogEntry *entry;
 	mdb_read_catalog(mdb, obj_type);
 	for (i=0;i<mdb->num_catalog;i++) {
                 entry = g_ptr_array_index(mdb->catalog,i);
-		if (obj_type==-1 || entry->object_type==obj_type) {
+		if (obj_type==MDB_ANY || entry->object_type==obj_type) {
 			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x KKD pg: %04x row: %2d\n",
 			mdb_get_objtype_string(entry->object_type),
 			entry->object_name,

@@ -30,6 +30,7 @@ prcat      -- prints the catalog table from an mdb file,
 prkkd      -- dump of information about design view data given the offset to it.
 prtable    -- dump of a table definition.
 prdata     -- dump of the data given a table name.
+prole      -- dump of ole columns given a table name and sargs.
 
 Once MDB Tools has been compiled, libmdb.[so|a] will be in the src/libmdb 
 directory and the utility programs will be in the src/util directory.
@@ -42,8 +43,8 @@ Installation Options
 configure can be passed any of the following flags to turn on other 
 capabilities.
 
---enable-sql     will cause the SQL engine to be built, you must have flex and 
-                 bison installed for this option.
+--enable-sql     will cause the SQL engine to be built, you must have flex 
+                 and bison installed for this option.
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
                  causes the ODBC driver to be built.
 

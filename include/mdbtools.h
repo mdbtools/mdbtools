@@ -56,7 +56,8 @@ enum {
 	MDB_RELATIONSHIP,
 	MDB_UNKNOWN_09,
 	MDB_UNKNOWN_0A,
-	MDB_DATABASE_PROPERTY
+	MDB_DATABASE_PROPERTY,
+	MDB_ANY = -1
 };
 enum {
 	MDB_BOOL = 0x01,
@@ -114,6 +115,9 @@ typedef struct {
 	char		db_passwd[14];
 	MdbBackend	*default_backend;
 	char			*backend_name;
+	/* free map */
+	int  map_sz;
+	unsigned char *free_map;
 	/* offset to row count on data pages...version dependant */
 	guint16		row_count_offset; 
 	guint16		tab_num_rows_offset;

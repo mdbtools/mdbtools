@@ -17,92 +17,71 @@ AC_CHECK_HEADERS(wordexp.h)
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
-
 AC_C_BIGENDIAN
+
+dnl no optional stuff by default
+OPTDIRS=""
 
 dnl ---------------------------------------------------------------------
 dnl Compile time options
 dnl ---------------------------------------------------------------------
-AC_ARG_WITH(iodbc,
-[  --with-iodbc=/path/to/iodbc build odbc driver against iODBC])
-if test "$with_iodbc"; then
-     CFLAGS="$CFLAGS -DIODBC";
-     ODBC_INC=$with_iodbc/include;
-     odbc=true
-fi
-
-AC_ARG_WITH(iodbc,
-[  --with-unixodbc=/path/to/unixodbc build odbc driver against unixODBC])
-if test "$with_unixodbc"; then
-     CFLAGS="$CFLAGS -DUNIXODBC"
-     ODBC_INC=$with_unixodbc/include
-     odbc=true
-fi
-AM_CONDITIONAL(HAVE_ODBC, test x$odbc = xtrue)
-AC_SUBST(HAVE_ODBC)
-AC_SUBST(ODBC_INC)
-
 AC_ARG_ENABLE(sql,
   [  --enable-sql Enable SQL engine])
 
 if test "$enable_sql" = "yes" ; then
      CFLAGS="$CFLAGS -DSQL"
 	sql=true
+     OPTDIRS="$OPTDIRS sql"
 fi
 AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 
-dnl gnome check modified from gnome-db
-AC_MSG_CHECKING(for GTK >= 1.2.0)
-if gnome-config --version > /dev/null 2>&1
-then
-	verstxt=`gtk-config --version`
-	vers=`echo "$verstxt" | \
-		awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-	if test "$vers" -ge 1002000
-	then
-		AC_MSG_RESULT(found)
-		GMDB_LIBS=`gtk-config --libs`	
-		GMDB_CFLAGS=`gtk-config --cflags`	
-		havegtk=true
-	else
-		AC_MSG_RESULT(not found)
-		havegtk=false
-	fi
-else
-	AC_MSG_RESULT(not found)
-	havegtk=false
+dnl check for iODBC
+
+AC_ARG_WITH(iodbc,
+[  --with-iodbc=/path/to/iodbc build odbc driver against iODBC])
+if test "$with_iodbc"; then
+     CFLAGS="$CFLAGS -DIODBC";
+     ODBC_INC=$with_iodbc/include;
+     odbc=true
+     OPTDIRS="$OPTDIRS odbc"
+     if test "$enable_sql" != "yes" ; then
+          echo
+          echo ODBC requires the --enable-sql flag 
+          exit 1
+     fi
 fi
-AM_CONDITIONAL(HAVE_GTK, test x$havegtk = xtrue)
+
+dnl check for unixODBC
+AC_ARG_WITH(unixodbc,
+[  --with-unixodbc=/path/to/unixodbc build odbc driver against unixODBC])
+if test "$with_unixodbc"; then
+     CFLAGS="$CFLAGS -DUNIXODBC"
+     ODBC_INC=$with_unixodbc/include
+     odbc=true
+     OPTDIRS="$OPTDIRS odbc"
+     if test "$enable_sql" != "yes" ; then
+          echo
+          echo ODBC requires the --enable-sql flag 
+          exit 1
+     fi
+fi
+AM_CONDITIONAL(HAVE_ODBC, test x$odbc = xtrue)
+AC_SUBST(HAVE_ODBC)
+AC_SUBST(ODBC_INC)
+
+dnl check for glib/gtk/gnome
+AM_PATH_GLIB_2_0(2.0.0)
+AM_PATH_GTK_2_0(2.0.0)
+AM_CONDITIONAL(HAVE_GTK, test x$no_gtk = xtrue) 
 AC_SUBST(HAVE_GTK)
 
-dnl gnome check modified from gnome-db
-AC_MSG_CHECKING(for Gnome >= 1.2.0)
-if gnome-config --version > /dev/null 2>&1
-then
-	verstxt=`gnome-config --version`
-	vers=`echo "$verstxt" | sed -e "s/^gnome-libs //" | \
-		awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
-	if test "$vers" -ge 1002000
-	then
-		AC_MSG_RESULT(found)
-		CFLAGS="$CFLAGS -DHAVE_GNOME"
-		GMDB_LIBS=`gnome-config gnome gnomeui --libs`	
-		GMDB_CFLAGS=`gnome-config gnome gnomeui --cflags`	
-		havegnome=true
-	else
-		AC_MSG_RESULT(not found)
-		havegnome=false
-	fi
-else
-	AC_MSG_RESULT(not found)
-	havegnome=false
+if test "$no_gtk" != yes; then
+	OPTDIRS="$OPTDIRS gmdb2"
 fi
-AM_CONDITIONAL(HAVE_GNOME, test x$havegnome = xtrue)
-AC_SUBST(HAVE_GNOME)
 
-AC_SUBST(GMDB_LIBS)
-AC_SUBST(GMDB_CFLAGS)
+AC_SUBST([OPTDIRS])
+AC_CONFIG_FILES([src/Makefile])
 
 dnl Checks for library functions.
 
@@ -122,4 +101,4 @@ LDFLAGS=$OLDLDFLAGS
 
 AC_SUBST(READLINE_LIBS)
 
-AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb/Makefile)
+AC_OUTPUT(src/util/Makefile src/extras/Makefile Makefile include/Makefile src/Makefile src/libmdb/Makefile include/Makefile src/sql/Makefile src/odbc/Makefile src/gmdb2/Makefile)

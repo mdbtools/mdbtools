@@ -26,11 +26,26 @@ int main(int argc, char **argv)
    int                  pg=0;
    char                 addr[10];
    int                  jet4 = 0;
+   int			pg_size = 2048;
 
    if (argc < 1) {
-	fprintf(stderr, "Usage: mdb-dump <filename>\n\n");
+	fprintf(stderr, "Usage: mdb-dump <filename> [<page number>]\n\n");
 	exit(1);
    }
+   if (argc>2) {
+	   if (!strncmp(argv[2],"0x",2)) {
+		   for (i=2;i<strlen(argv[2]);i++) {
+			   pg *= 16;
+			   //if (islower(argv[2][i]))
+				//argv[2][i] += 0x20;
+			   printf("char %c\n", (int)argv[2][i]);
+		   	   pg += argv[2][i] > '9' ? argv[2][i] - 'a' + 10 : argv[2][i] - '0';
+		   }
+	   } else {
+		   pg = atol(argv[2]);
+	   }
+   }
+   printf("page num %d\n", pg);
    if ((in = fopen(argv[1],"r"))==NULL) {
 	fprintf(stderr, "Couldn't open file %s\n", argv[1]);
 	exit(1);
@@ -39,10 +54,14 @@ int main(int argc, char **argv)
    fread(data,1,1,in);
    if (data[0]==0x01) {
 	jet4 = 1;
+	pg_size = 4096;
    } 
-   fseek(in,0,SEEK_SET);
+   fseek(in,(pg*pg_size),SEEK_SET);
+   i = 0;
    while (length = fread(data,1,16,in)) {
       sprintf(addr, "%06x", i);
+      //if (!strcmp(&addr[3],"000") || (!jet4 && !strcmp(&addr[3],"800")) &&
+		      //pg) break;
       if (!strcmp(&addr[3],"000") || (!jet4 && !strcmp(&addr[3],"800"))) {
 	fprintf(stdout,"-- Page 0x%04x (%d) --\n", pg, pg);
 	pg++;

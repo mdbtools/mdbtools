@@ -29,15 +29,18 @@ MdbTableDef *table;
 MdbColumn *col;
 char *delimiter = NULL;
 int line_break=0;
+int skip_sys=1;
 int opt;
 
 	if (argc < 2) {
-		fprintf (stderr, "Usage: %s [-1 | -d<delimiter>] <file>\n",argv[0]);
+		fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] <file>\n",argv[0]);
 		exit (1);
 	}
 
-	while ((opt=getopt(argc, argv, "1d:"))!=-1) {
+	while ((opt=getopt(argc, argv, "S1d:"))!=-1) {
         switch (opt) {
+        case 'S':
+            skip_sys = 0;
         case '1':
             line_break = 1;
         break;
@@ -65,7 +68,7 @@ int opt;
      	/* if it's a table */
      	if (entry->object_type == MDB_TABLE) {
 	 		/* skip the MSys tables */
-			if (strncmp (entry->object_name, "MSys", 4)) {
+			if (!skip_sys || strncmp (entry->object_name, "MSys", 4)) {
 	       		if (line_break) 
 					fprintf (stdout, "%s\n", entry->object_name);
 				else if (delimiter) 

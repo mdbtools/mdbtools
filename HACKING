@@ -47,6 +47,7 @@ pages have the following values:
 0x02 Table definition
 0x03 Index pages
 0x04 Index pages (Leaf nodes?)
+0x05 Page Usage Bitmaps (extended page usage)
 
 The second byte is always 0x01 as far as I can tell.
 
@@ -256,6 +257,65 @@ Beyond this are a series of 20 byte fields for each 'index entry'.  There may be
 It is currently unknown how indexes are mapped to columns or the format of the index pages.
 (end old stuff)
 
+Page Usage Map
+--------------
+
+The purpose of the page usage bitmap (called object allocation map (OAM) by 
+SQL Server, not sure what the official terminology is for Access) is to store 
+a bitmap of page allocations for a table.  This determines quickly which pages 
+are owned by the table and helps speed up access to the data.
+
+The table definition contains a data pointer to a usage bitmap of pages 
+allocated to this table.  It appears to be of a fixed size for both Jet 3 
+and 4 (128 and 64 bytes respectively).  The first byte of the map is a type 
+field.
+
+Type 0 page usage map definition follows:
+ 
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| 0x00 | 1 byte  | map_type   | 0x00 indicates map stored within.          |
+| ???? | 4 byte  | page_start | first page for which this map applies      |
++------+---------+---------------------------------------------------------+
+| Iterate for the length of map                                            |
++--------------------------------------------------------------------------+
+| ???? | 1 byte  | bitmap     | each bit encodes the allocation status of a|
+|      |         |            | page. 1 indicates allocated to this table. |
+|      |         |            | Pages are stored from msb to lsb.          |
++--------------------------------------------------------------------------+
+
+If you're paying attention then you'll realize that the relatively small size of the map (128*8*2048 or 64*8*4096 = 2 Meg) means that this scheme won't work with larger database files although the initial start page helps a bit.  To overcome this there is a second page usage map scheme with the map_type of 0x01 as follows:
+
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| 0x01 | 1 byte  | map_type   | 0x01 indicates this is a indirection list. |
++------+---------+---------------------------------------------------------+
+| Iterate for the length of map                                            |
++--------------------------------------------------------------------------+
+| ???? | 4 bytes | map_page   | pointer to page type 0x05 containing map   |
++--------------------------------------------------------------------------+
+
+Note that the intial start page is gone and is reused for the first page indirection.  The 0x05 type page header looks like:
+
++------+---------+---------------------------------------------------------+
+| data | length  | name       | description                                |
++------+---------+---------------------------------------------------------+
+| 0x05 | 1 byte  | page_type  | allocation map page                        |
+| 0x01 | 1 byte  | unknown    | always 1 as with other page types          |
+| 0x00 | 2 bytes | unknown    |                                            |
++------+---------+---------------------------------------------------------+
+
+The rest of the page is the allocation bitmap following the same scheme (lsb 
+to msb order, 1 bit per page) as a type 0 map.  This yields a maximum of 
+2044*8=16352 (jet3) or 4092*8 = 32736 (jet4) pages mapped per type 0x05 page. 
+Given 128/4+1 = 33 or 64/4+1 = 17 page pointers per indirection row (remember 
+the start page field is reused, thus the +1), this yields 33*16352*2048 = 1053 
+Meg (jet3) or 17*32736*4096 = 2173 Meg (jet4) or enough to cover the maximum 
+size of each of the database formats comfortably, so there is no reason to 
+believe any other page map schemes exist.
+
 Data Pages
 ----------
 
@@ -322,6 +382,8 @@ Note: it is possible for the offset to the beginning of a variable length
 column to require more than one byte (if the sum of the lengths of columns is
 greater than 255).  I have no idea how this is represented in the data as I
 have not looked at tables large enough for this to occur yet. 
+Update: This is currently implemented using a jump counter for Jet 3 files, see
+src/libmdb/data.c for details. 
 
 Each memo column (or other long binary data) in a row 
 looks like this (12 bytes):
@@ -421,13 +483,15 @@ Design View table definitions appear to be stored in 'KKD' records (my name for
 them...they always start with 'KKD\0'). Again these reside on pages, packed to 
 the end of the page. 
 
+Update: The KKD records are stored in LvProp column of MSysObjects so they are stored as other OLE/Memo fields are.
+
 They look a little like this: (this needs work...see the kkd.c)
 
 'K' 'K' 'D' 0x00
 16 bit length value    (this includes the length)
 0x00 0x00
 0x80 0x00              (0x80 seems to indicate a header)
-Then one of more of: 16 bit length field and a value of that size.
+Then one or more of: 16 bit length field and a value of that size.
 For instance: 
 0x0d 0x00 and 'AccessVersion' (AccessVersion is 13 bytes, 0x0d 0x00 intel order)
 
