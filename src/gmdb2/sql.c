@@ -362,20 +362,29 @@ gmdb_sql_select_hist_cb(GtkList *list, GladeXML *xml)
 void
 gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 {
-guint len;
-gchar *buf;
-gchar *bound_data[256];
-int i;
-MdbSQLColumn *sqlcol;
-gchar *titles[256];
-GtkTextBuffer *txtbuffer;
-GtkTextIter start, end;
-GtkWidget *textview, *combo, *treeview, *store;
-GList *history;
-GType *gtypes;
-GtkTreeIter iter;
-GtkTreeViewColumn *column;
-long row, maxrow;
+	guint len;
+	gchar *buf;
+	gchar *bound_data[256];
+	int i;
+	MdbSQLColumn *sqlcol;
+	gchar *titles[256];
+	GtkTextBuffer *txtbuffer;
+	GtkTextIter start, end;
+	GtkWidget *textview, *combo, *treeview, *store;
+	GtkWidget *window;
+	GList *history;
+	GType *gtypes;
+	GtkTreeIter iter;
+	GtkTreeViewColumn *column;
+	long row, maxrow;
+	/* GdkCursor *watch, *pointer; */
+
+	/*  need to figure out how to clock during the treeview recalc/redraw
+	window = glade_xml_get_widget(xml, "sql_window");
+	watch = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(window)->window, watch);
+	gdk_cursor_unref(watch);
+	*/
 
 	/* stuff this query on the history */
 	textview = glade_xml_get_widget(xml, "sql_textview");
@@ -455,6 +464,13 @@ long row, maxrow;
 
 	mdb_sql_reset(sql);
 	g_free(buf);
+
+	/*
+	pointer = gdk_cursor_new(GDK_LEFT_PTR);
+	gdk_window_set_cursor(GTK_WIDGET(window)->window, pointer);
+	gdk_cursor_unref(pointer);
+	*/
+	
 }
 
 void

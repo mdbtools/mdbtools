@@ -313,12 +313,64 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, unsigned char *buf, int len)
 	return 1;
 }
 /*
+ * unpack the pages bitmap
+ */
+int
+mdb_index_unpack_page(MdbHandle *mdb, MdbIndexPage *ipg)
+{
+	int mask_bit = 0;
+	int mask_pos = 0x16;
+	int mask_byte;
+	int start = 0xf8;
+	int elem = 0;
+	int len = 0;
+
+	ipg->idx_starts[elem++]=start;
+
+	//fprintf(stdout, "Unpacking index page %lu\n", ipg->pg);
+	do {
+		len = 0;
+		do {
+			mask_bit++;
+			if (mask_bit==8) {
+				mask_bit=0;
+				mask_pos++;
+			}
+			mask_byte = mdb->pg_buf[mask_pos];
+			len++;
+		} while (mask_pos <= 0xf8 && !((1 << mask_bit) & mask_byte));
+		//fprintf(stdout, "%d %d %d %d\n", mask_pos, mask_bit, mask_byte, len);
+
+		start += len;
+		if (mask_pos < 0xf8) ipg->idx_starts[elem++]=start;
+
+	} while (mask_pos < 0xf8);
+
+	return elem;
+}
+/*
  * find the next entry on a page (either index or leaf). Uses state information
  * stored in the MdbIndexPage across calls.
  */
 int
 mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 {
+	int offset, len;
+	int ret = 0;
+
+	if (!ipg->pg) return 0;
+
+	/* if this page has not been unpacked to it */
+	if (!ipg->idx_starts[0])
+		mdb_index_unpack_page(mdb, ipg);
+
+	
+	if (ipg->idx_starts[ipg->start_pos + 1]==0) return 0; 
+	ipg->len = ipg->idx_starts[ipg->start_pos+1] - ipg->idx_starts[ipg->start_pos];
+	ipg->start_pos++;
+
+
+	/*
 	do {
 		//fprintf(stdout, "%d %d\n", ipg->mask_bit, ipg->mask_byte);
 		ipg->mask_bit++;
@@ -333,7 +385,7 @@ mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 
 	if (ipg->mask_pos>=0xf8) 
 		return 0;
-	
+*/
 	return ipg->len;
 }
 void mdb_index_page_reset(MdbIndexPage *ipg)
@@ -341,6 +393,7 @@ void mdb_index_page_reset(MdbIndexPage *ipg)
 	ipg->offset = 0xf8; /* start byte of the index entries */
 	ipg->mask_pos = 0x16; 
 	ipg->mask_bit=0;
+	ipg->start_pos=0;
 	ipg->len = 0; 
 }
 void mdb_index_page_init(MdbIndexPage *ipg)

@@ -123,7 +123,7 @@ unknown.
 Notes for offset_row:
 - Offsets that have 0x40 in the high order byte point to a location within
   the page where a Data Pointer (4 bytes) to another data page is stored.  Also
-  know as an overflow page.
+  known as an overflow page.
 - Offsets that have 0x80 in the high order byte are deleted rows.
  (These flags are delflag and lookupflag in source code)
 
@@ -165,11 +165,13 @@ Notes:
 . The var_len field indicates the size of the var_table[].
 . The eod field points at the last byte of the var_cols field.  It is used to
   determine where the last var_col ends.
-. For boolean fixed columns, the values are in null_table[]: 0 indicates a false  value, 1 indicates a true value
+. For boolean fixed columns, the values are in null_table[]: 0 indicates a false  
+  value, 1 indicates a true value
 . An 0xFF stored in the var_table indicates that this column has been deleted.
 
 In Jet3 offsets are stored as 1 byte fields yielding a maximum of 256 bytes.  To
-get around this offsets are computed using a jump table.  The jump table stores the number of the first column in this jump segment.  If the size of the data is
+get around this offsets are computed using a jump table.  The jump table stores 
+the number of the first column in this jump segment.  If the size of the data is
 less than 256 then no jump table will be present.
 
 For example if the row contains 45 columns and the offset of the 14th column is 
@@ -271,7 +273,8 @@ or 4096 - (12+2+4)  = 4078(jet4) bytes max in a page.
 TDEF Pages (Table Definition)
 -----------------------------
 
-Every table in the database has a TDEF page.  It contains a definition of the columns, types, sizes, indexes, and similar information.
+Every table in the database has a TDEF page.  It contains a definition of 
+the columns, types, sizes, indexes, and similar information.
 
 +-------------------------------------------------------------------------+
 | Jet3/Jet4 TDEF Header
@@ -381,7 +384,7 @@ next_pg field.
 | ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
 |      |         |             | listing pages which contain free space.  |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (12 bytes per idxs)               |
+| Iterate for the number of num_real_idx (12 bytes per idxs)              |
 +-------------------------------------------------------------------------+
 | 0x00 | 4 bytes | ???         |                                          |
 | ???? | 4 bytes | num_idx_rows| (not sure)                               |
@@ -410,7 +413,7 @@ next_pg field.
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | ???         |                                          |
 +-------------------------------------------------------------------------+
-|    Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
+| Iterate 10 times for 10 possible columns (10*3 = 30 bytes)              |
 +-------------------------------------------------------------------------+
 | ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
 | ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
@@ -515,7 +518,8 @@ follows:
 | ???? | 4 bytes | map_page   | pointer to page type 0x05 containing map   |
 +--------------------------------------------------------------------------+
 
-Note that the intial start page is gone and is reused for the first page indirection.  The 0x05 type page header looks like:
+Note that the intial start page is gone and is reused for the first page 
+indirection.  The 0x05 type page header looks like:
 
 +--------------------------------------------------------------------------+
 | Usage Map Page (type 0x05)                                               |
@@ -572,7 +576,8 @@ the count starts from the low order bit.  For example take the data:
 
 00 20 00 04 80 00 ...
 
-This first entry starts at 0xf8 (always).  Convert the bytes to binary starting with the low order bit and stopping at the first "on" bit:
+This first entry starts at 0xf8 (always).  Convert the bytes to binary starting 
+with the low order bit and stopping at the first "on" bit:
 
 0000 0000  0000 01
 -- 00 ---  -- 20 -->
@@ -587,9 +592,13 @@ starts 13 (0xd) bytes further in at 0x112.  The final entry starts at
    0 0000  0000 0001
 <-- 04 --  -- 80 ---
 
-or 13 (0xd) bytes more at 0x120.  In this example the rest of the mask (up to offset 0xf8) would be zero filled and thus this last entry at 0x120 isn't an actual entry but the stopping point of the data.
+or 13 (0xd) bytes more at 0x120.  In this example the rest of the mask (up 
+to offset 0xf8) would be zero filled and thus this last entry at 0x120 isn't 
+an actual entry but the stopping point of the data.
 
-Since 0xf8 = 248 and 0x16 = 22, (248 - 22) * 8 = 1808 and 2048 - 1808 = 240 leaving just enough space for the bit mask to encode the remainder of the page.  One wonders why MS didn't use a row offset table like they did on data pages, 
+Since 0xf8 = 248 and 0x16 = 22, (248 - 22) * 8 = 1808 and 2048 - 1808 = 240 
+leaving just enough space for the bit mask to encode the remainder of the page.  
+One wonders why MS didn't use a row offset table like they did on data pages, 
 seems like it would have been easier and more flexible.
 
 So now we come to the index entries for type 0x03 pages which look like this:
@@ -613,13 +622,16 @@ The flag field is generally either 0x00, 0x7f, 0x80.  0x80 is the one's
 complement of 0x7f and all text data in the index would then need to be negated.
 The reason for this negation is unknown, although I suspect it has to do with 
 descending order.  The 0x00 flag indicates that the key column is null, and no 
-data will follow, only the page pointer.  In multicolumn indexes the flag field plus data is repeated for the number of columns participating in the key.
+data will follow, only the page pointer.  In multicolumn indexes the flag field 
+plus data is repeated for the number of columns participating in the key.
 
 Update: There is a compression scheme utilized on leaf pages as follows:
-Normally an index entry with an integer primary key would be 9 bytes (1 for the flags field, 4 for the integer, 3 for page, and 1 for row).  The entry can be shorter than 9, containing only 5 bytes, the first byte is the last octet of the
-encoded primary key field (integer) and the last four are the page/row pointer.
-Thus if the first key value on the page is 1 and it points to page 261 (00 01 05
-) row 3, it becomes
+Normally an index entry with an integer primary key would be 9 bytes (1 
+for the flags field, 4 for the integer, 3 for page, and 1 for row).  The 
+entry can be shorter than 9, containing only 5 bytes, the first byte is the last 
+octet of the encoded primary key field (integer) and the last four are the page/row 
+pointer.  Thus if the first key value on the page is 1 and it points to page 261 
+(00 01 05) row 3, it becomes
 7f 00 00 00 01 00 01 05 03
 
 the next index entry can be:
@@ -627,9 +639,11 @@ the next index entry can be:
 
 that is, the key value is 2 (the last octet changes to 02) page 261 row 4.
 
-Access stores an 'alphabetic sort order' version of the text key columns in the index.  Basically this means that upper and lower case characters A-Z are merged and start at 0x60. Digits are 0x56 through 0x5f. Once converted into this 
-(non-ascii) character set, the text value is able to be sorted in 'alphabetic'
-order.  A text column will end with a NULL (0x00 or 0xff if negated).  
+Access stores an 'alphabetic sort order' version of the text key columns in the index.  
+Basically this means that upper and lower case characters A-Z are merged and start at 
+0x60. Digits are 0x56 through 0x5f. Once converted into this (non-ascii) character set, 
+the text value is able to be sorted in 'alphabetic' order.  A text column will end with 
+a NULL (0x00 or 0xff if negated).  
 
 The leaf page entries store the key column and the 3 byte page and 1 byte row
 number.
@@ -644,10 +658,13 @@ character set, compare against each index entry, and on successful comparison
 follow the page and row number to the data.  Because text data is managled 
 during this conversion there is no 'covered querys' possible on text columns.
 
-To conserve on frequent index updates, Jet also does something special when creating new leaf pages at the end of a primary key 
-(maybe others as well) index.  The next leaf page pointer of the last leaf node points to the new leaf page but the index tree
-is not otherwise updated.  In src/libmdb/index.c, the last leaf read is stored, once the index search has been exhausted by the 
-normal search routine, it enters a "clean up mode" and reads the next leaf page pointer until it's null.
+To conserve on frequent index updates, Jet also does something special when 
+creating new leaf pages at the end of a primary key (maybe others as well) index.  
+The next leaf page pointer of the last leaf node points to the new leaf page but 
+the index tree is not otherwise updated.  In src/libmdb/index.c, the last leaf 
+read is stored, once the index search has been exhausted by the normal search 
+routine, it enters a "clean up mode" and reads the next leaf page pointer until 
+it's null.
  
 KKD Records
 -----------
@@ -656,7 +673,8 @@ Design View table definitions appear to be stored in 'KKD' records (my name for
 them...they always start with 'KKD\0'). Again these reside on pages, packed to 
 the end of the page. 
 
-Update: The KKD records are stored in LvProp column of MSysObjects so they are stored as other OLE/Memo fields are.
+Update: The KKD records are stored in LvProp column of MSysObjects so they are 
+stored as other OLE/Memo fields are.
 
 They look a little like this: (this needs work...see the kkd.c)
 

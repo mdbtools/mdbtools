@@ -2,4 +2,4 @@ Makefile
 Makefile.in
 .deps
 .libs
-mdb-dump
+mdb-hexdump

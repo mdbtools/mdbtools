@@ -650,7 +650,47 @@ GtkTreeIter *container;
 	}
 }
 void 
-gmdb_debug_dissect_tabledef_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
+gmdb_debug_dissect_tabledef_pg4(GtkTreeStore *store, char *fbuf, int offset, int len)
+{
+gchar str[100];
+guint32 i, num_idx, num_cols, idx_entries;
+int newbase;
+GtkTreeIter *node, *container;
+
+	snprintf(str, 100, "Next TDEF Page: 0x%06x (%lu)", 
+		get_uint32(&fbuf[offset+4]), get_uint32(&fbuf[offset+4]));
+	gmdb_debug_add_item(store, NULL, str, offset+4, offset+7);
+	snprintf(str, 100, "Length of Data: %lu", get_uint32(&fbuf[offset+8]));
+	gmdb_debug_add_item(store, NULL, str, offset+8, offset+11);
+	snprintf(str, 100, "# of Records: %lu", get_uint32(&fbuf[offset+16]));
+	gmdb_debug_add_item(store, NULL, str, offset+16, offset+19);
+	snprintf(str, 100, "Autonumber Value: %lu", get_uint32(&fbuf[offset+20]));
+	gmdb_debug_add_item(store, NULL, str, offset+20, offset+23);
+	snprintf(str, 100, "Table Type: 0x%02x (%s)", fbuf[offset+40],
+		gmdb_val_to_str(table_types, fbuf[offset+40]));
+	gmdb_debug_add_item(store, NULL, str, offset+40, offset+40);
+	num_cols = get_uint16(&fbuf[offset+41]);
+	snprintf(str, 100, "Max # of Columns: %u", num_cols);
+	gmdb_debug_add_item(store, NULL, str, offset+41, offset+42);
+	snprintf(str, 100, "# of VarCols: %u", 
+		get_uint16(&fbuf[offset+43]));
+	gmdb_debug_add_item(store, NULL, str, offset+43, offset+44);
+	snprintf(str, 100, "# of Columns: %u", 
+		get_uint16(&fbuf[offset+45]));
+	gmdb_debug_add_item(store, NULL, str, offset+45, offset+46);
+	idx_entries = get_uint32(&fbuf[offset+47]);
+	snprintf(str, 100, "# of Index Entries: %lu", idx_entries);
+	gmdb_debug_add_item(store, NULL, str, offset+47, offset+50);
+
+	num_idx = get_uint32(&fbuf[offset+51]);
+	snprintf(str, 100, "# of Real Indices: %lu", num_idx);
+	gmdb_debug_add_item(store, NULL, str, offset+51, offset+54);
+
+	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Used Pages Pointer", offset+55);
+	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Pages Freespace Pointer", offset+59);
+}
+void 
+gmdb_debug_dissect_tabledef_pg3(GtkTreeStore *store, char *fbuf, int offset, int len)
 {
 gchar str[100];
 guint32 i, num_idx, num_cols, idx_entries;
@@ -670,7 +710,7 @@ GtkTreeIter *node, *container;
 		gmdb_val_to_str(table_types, fbuf[offset+20]));
 	gmdb_debug_add_item(store, NULL, str, offset+20, offset+20);
 	num_cols = get_uint16(&fbuf[offset+21]);
-	snprintf(str, 100, "# of Columns: %u", num_cols);
+	snprintf(str, 100, "Max # of Columns: %u", num_cols);
 	gmdb_debug_add_item(store, NULL, str, offset+21, offset+22);
 	snprintf(str, 100, "# of VarCols: %u", 
 		get_uint16(&fbuf[offset+23]));
@@ -687,6 +727,7 @@ GtkTreeIter *node, *container;
 
 	gmdb_debug_add_item(store, NULL, str, offset+31, offset+34);
 	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Used Pages Pointer", offset+35);
+	gmdb_debug_add_page_ptr(store, NULL, fbuf, "Pages Freespace Pointer", offset+39);
 
 	container = gmdb_debug_add_item(store, NULL, "Index Entries", -1, -1);
 	for (i=0;i<num_idx;i++) {
@@ -746,6 +787,14 @@ GtkTreeIter *node, *container;
 		free(tmpstr);
 		newbase += namelen + 1;
 	}
+}
+void 
+gmdb_debug_dissect_tabledef_pg(GtkTreeStore *store, char *fbuf, int offset, int len)
+{
+	if (IS_JET3(mdb))
+		gmdb_debug_dissect_tabledef_pg3(store, fbuf, offset, len);
+	else
+		gmdb_debug_dissect_tabledef_pg4(store, fbuf, offset, len);
 }
 void 
 gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len)

@@ -1,3 +1,18 @@
+Fri Feb 13 12:51:50 EST 2004	Brian Bruns <brian@bruns.com>
+
+	* src/extras/.cvsignore: change mdb-dump to mdb-hexdump
+	* include/Makefile.am: 
+	* include/mdbver.h.in: new file
+	* configure.in: add mdbver.h to AC_OUTPUT
+	* src/util/mdb-ver.c: add -M flag to show MDB Tools version to help support
+	* src/gmdb2/main2.c: change version number to mdbtools version number
+	* src/gmdb2/sql.c: added some (commented) code to change cursor on execute.
+	* src/gmdb2/table.c: right mouse click selects before calling popup.
+	* src/gmdb2/debug.c: add separate dissector for jet4 tdef pages
+	* src/gmdb2/gladefiles/gmdb2-prefs.glade: add help button
+	* src/libmdb/index.c: pre-compute index page bitmap in mdb_index_unpack_page() in preparation for index writes.
+	* include/mdbtools.h: change IndexPage structure for new algorithm
+
 Wed Feb 11 15:30:42 EST 2004 	Brian Bruns <brian@bruns.com>
 
 	* HACKING: rewritten to better reflect Jet4

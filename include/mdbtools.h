@@ -266,8 +266,10 @@ typedef struct {
 	int mask_pos;	
 	unsigned char mask_byte;
 	int mask_bit;
+	int start_pos;
 	int offset;
 	int len;
+	guint16 idx_starts[2000];	
 	unsigned char cache_value[256];
 } MdbIndexPage;
 

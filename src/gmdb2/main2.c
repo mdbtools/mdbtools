@@ -1,5 +1,5 @@
 /* MDB Tools - A library for reading MS Access database file
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2004 Brian Bruns
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #include <libgnome/gnome-help.h>
 #include <glade/glade.h>
 #include <mdbtools.h>
+#include <mdbver.h>
 #include <mdbsql.h>
 #include "gmdb.h"
 
@@ -52,8 +53,8 @@ GdkPixbuf *pixbuf;
 
 pixbuf = gdk_pixbuf_new_from_file (GMDB_ICONDIR "logo.xpm", NULL);
 
-gtk_widget_show (gnome_about_new ("Gnome MDB Viewer", "0.2",
-                 "Copyright 2002-2003 Brian Bruns",
+gtk_widget_show (gnome_about_new ("Gnome MDB Viewer", MDB_VERSION_NO,
+                 "Copyright 2002-2004 Brian Bruns",
                  _("The Gnome-MDB Viewer is the grapical interface to "
                    "MDB Tools.  It lets you view and export data and schema"
 		   "from MDB files produced by MS Access 97/2000/XP."),

@@ -41,7 +41,7 @@ MdbCatalogEntry *entry;
 	}
 
 	entry = g_ptr_array_index(mdb->catalog,selected_table);
-	gmdb_debug_new_cb(w, &entry->table_pg);
+	gmdb_debug_new_cb(w, (gpointer *) &entry->table_pg);
 }
 void
 gmdb_table_def_cb(GtkList *list, GtkWidget *w, gpointer data)
@@ -94,9 +94,9 @@ gmdb_table_unselect_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data)
 void
 gmdb_table_select_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data)
 {
-int i;
-MdbCatalogEntry *entry;
-gchar *text;
+	int i;
+	MdbCatalogEntry *entry;
+	gchar *text;
 
 	text = (gchar *) gnome_icon_list_get_icon_data(gil, num);
 
@@ -116,13 +116,25 @@ gchar *text;
 	}
 	
 }
+gboolean
 gmdb_table_popup_cb(GtkWidget *menu, GdkEvent *event)
 {
-GdkEventButton *event_button;
-//GtkWidget *menu;
+	GdkEventButton *event_button;
+	GnomeIconList *gil;
+	gdouble x,y;
+	int num;
 	
+	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "table_iconlist");
+
+	if (selected_table == -1) return FALSE;
 	if (event->type == GDK_BUTTON_PRESS) {
 		event_button = (GdkEventButton *) event;
+		x = event_button->x;
+		y = event_button->y;
+		num = gnome_icon_list_get_icon_at(gil, x, y);
+		if (num != -1) {
+			gnome_icon_list_select_icon(gil, num);
+		}
 		if (event_button->button == 3) {
 			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 
 				event_button->button, event_button->time);

@@ -1,5 +1,5 @@
 /* MDB Tools - A library for reading MS Access database file
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2004 Brian Bruns
  *
  *
  * This library is free software; you can redistribute it and/or 
@@ -18,6 +18,7 @@
  * Boston, MA 02111-1307, USA.
  */
 #include "mdbtools.h"
+#include "mdbver.h"
 #include "mdbprivate.h"
 #include <locale.h>
 
@@ -28,24 +29,41 @@
 int
 main(int argc, char **argv)
 {
-MdbHandle *mdb;
-/* doesn't handle tables > 256 columns.  Can that happen? */
+	MdbHandle *mdb;
+	int print_mdbver = 0;
+	int opt;
 
   	/* setlocale (LC_ALL, ""); */
     	bindtextdomain (PACKAGE, LOCALEDIR);
       	textdomain (PACKAGE);
+	while ((opt=getopt(argc, argv, "M"))!=-1) {
+		switch (opt) {
+			case 'M':
+				print_mdbver = 1;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (print_mdbver) {
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		if (argc-optind < 1) exit(0);
+	}
+
 	/* 
 	** optind is now the position of the first non-option arg, 
 	** see getopt(3) 
 	*/
-	if (argc < 2) {
-		fprintf(stderr,_("Usage: %s <file>\n"),argv[0]);
+	if (argc-optind < 1) {
+		fprintf(stderr,_("Usage: %s [-M] <file>\n"),argv[0]);
 		exit(1);
 	}
 
 	mdb_init();
 
 	if (!(mdb = mdb_open(argv[optind]))) {
+		fprintf(stderr,_("Error: unable to open file %s\n"),argv[optind]);
 		exit(1);
 	}
 	if (IS_JET3(mdb)) {
