@@ -24,9 +24,9 @@
 #endif
 
 int
-mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest)
+mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest)
 {
-	int i;
+	unsigned int i;
 
 	if (buf[offset]==0xff && buf[offset+1]==0xfe) {
 		strncpy(dest, &buf[offset+2], len-2);
@@ -41,9 +41,9 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char 
 }
 
 int
-mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest)
+mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest)
 {
-	int i = 0;
+	unsigned int i = 0;
 
 	if (!buf) return 0;
 

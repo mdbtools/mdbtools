@@ -170,7 +170,7 @@ mdb_read_indices(MdbTableDef *table)
 void
 mdb_index_hash_text(guchar *text, guchar *hash)
 {
-	int k;
+	unsigned int k;
 
 	for (k=0;k<strlen(text);k++) {
 		hash[k] = idx_to_text[text[k]];
@@ -314,7 +314,7 @@ mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 {
 	int mask_bit = 0;
 	int mask_pos = 0x16;
-	int mask_byte;
+	int mask_byte = 0;
 	int elem = 0;
 	int len, start, i;
 
@@ -733,7 +733,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 {
 	int i;
 	MdbColumn *col;
-	MdbSarg *sarg;
+	MdbSarg *sarg = NULL;
 	int not_all_equal = 0;
 
 	if (!idx->num_keys) return 0;

@@ -520,7 +520,7 @@ extern int mdb_get_option(unsigned long optnum);
 extern void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
-extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, int len, char *dest);
+extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest);
+extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *buf, int offset, unsigned int len, char *dest);
 
 #endif /* _mdbtools_h_ */

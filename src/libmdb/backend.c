@@ -162,8 +162,6 @@ int mdb_coltype_takes_length(MdbBackend *backend, int col_type)
  */
 void mdb_init_backends()
 {
-	MdbBackend *backend;
-
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
 	mdb_register_backend(mdb_access_types, "access");
@@ -238,7 +236,7 @@ int mdb_set_default_backend(MdbHandle *mdb, char *backend_name)
 char *mdb_get_relationships(MdbHandle *mdb)
 {
 	unsigned int i;
-	gchar *text;  /* String to be returned */
+	gchar *text = NULL;  /* String to be returned */
 	static char *bound[4];  /* Bound values */
 	static MdbTableDef *table;  /* Relationships table */
 	int backend = 0;  /* Backends: 1=oracle */
