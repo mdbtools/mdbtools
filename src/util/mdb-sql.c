@@ -321,21 +321,7 @@ dump_results_pp(MdbSQL *sql)
 	fprintf(stdout,"\n");
 
 	/* print each row */
-	/*
-	if (sql->kludge_ttable_pg) {
-		memcpy(mdb->pg_buf, sql->kludge_ttable_pg, fmt->pg_size);
-		rows = mdb_pg_get_int16(mdb,fmt->row_count_offset);
-	for (i = 0; i < rows; i++) {
-		rc = mdb_read_row(sql->cur_table, i);
-		row_count++;
-  		for (j=0;j<sql->num_columns;j++) {
-			sqlcol = g_ptr_array_index(sql->columns,j);
-			print_value(sql->bound_values[j],sqlcol->disp_size,!j);
-		}
-		fprintf(stdout,"\n");
-	}
-	*/
-	while(mdb_sql_fetch_row(sql, sql->cur_table)) {
+	while(mdb_fetch_row(sql->cur_table)) {
 		row_count++;
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);

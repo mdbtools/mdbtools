@@ -342,12 +342,26 @@ mdb_fetch_row(MdbTableDef *table)
 	if (!table->cur_pg_num) {
 		table->cur_pg_num=1;
 		table->cur_row=0;
-		if (table->strategy!=MDB_INDEX_SCAN) 
+		if ((!table->is_temp_table)&&(table->strategy!=MDB_INDEX_SCAN))
 			if (!mdb_read_next_dpg(table)) return 0;
 	}
 
 	do {
-		if (table->strategy==MDB_INDEX_SCAN) {
+		if (table->is_temp_table) {
+			GPtrArray *pages = table->temp_table_pages;
+			rows = mdb_get_int16(
+				g_ptr_array_index(pages, table->cur_pg_num-1),
+				fmt->row_count_offset);
+			if (table->cur_row >= rows) {
+				table->cur_row = 0;
+				table->cur_pg_num++;
+				if (table->cur_pg_num > pages->len)
+					return 0;
+			}
+			memcpy(mdb->pg_buf,
+				g_ptr_array_index(pages, table->cur_pg_num-1),
+				fmt->pg_size);
+		} else if (table->strategy==MDB_INDEX_SCAN) {
 		
 			if (!mdb_index_find_next(table->mdbidx, table->scan_idx, table->chain, &pg, (guint16 *) &(table->cur_row))) {
 				mdb_index_scan_free(table);

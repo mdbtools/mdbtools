@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.18 2004/05/30 08:06:43 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.19 2004/09/09 03:44:36 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -851,7 +851,7 @@ struct _henv *env = (struct _henv *) dbc->henv;
         //cur = cur->next;
 	//}
 
-	if (mdb_sql_fetch_row(env->sql, env->sql->cur_table)) {
+	if (mdb_fetch_row(env->sql->cur_table)) {
 		stmt->rows_affected++;
 		return SQL_SUCCESS;
 	} else {
@@ -1293,11 +1293,6 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 	mdb_sql_add_temp_col(sql, ttable, 17, "NUM_PREC_RADIX", MDB_INT, 0, 1);
 	mdb_sql_add_temp_col(sql, ttable, 18, "INTERVAL_PRECISION", MDB_INT, 0, 1);
 
-	/* blank out the pg_buf */
-	new_pg = mdb_new_data_pg(ttable->entry);
-	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
-	g_free(new_pg);
-
 	for (i=0; i<MAX_TYPE_INFO; i++) {
 		if (!fSqlType || fSqlType == type_info[i].data_type) {
 			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].type_name, 0, 100, tmpstr);
@@ -1330,7 +1325,6 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 			ttable->num_rows++;
 		}
 	}
-	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
 	sql->cur_table = ttable;
 	
 	/* return _SQLExecute(hstmt); */

@@ -62,6 +62,8 @@ mdb_create_temp_table(MdbHandle *mdb, char *name)
 
 	table = mdb_alloc_tabledef(entry);
 	table->columns = g_ptr_array_new();
+	table->is_temp_table = 1;
+	table->temp_table_pages = g_ptr_array_new();
 
 	return table;
 }

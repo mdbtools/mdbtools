@@ -449,14 +449,14 @@ mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int unsigned num_fie
 int
 mdb_pg_get_freespace(MdbHandle *mdb)
 {
-MdbFormatConstants *fmt = mdb->fmt;
-int rows, free_start, free_end;
+	int rows, free_start, free_end;
+	int row_count_offset = mdb->fmt->row_count_offset;
 
-	rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
-	free_start = fmt->row_count_offset + 2 + (rows * 2);
-        free_end = mdb_pg_get_int16(mdb, (fmt->row_count_offset + rows * 2)) -1;
+	rows = mdb_pg_get_int16(mdb, row_count_offset);
+	free_start = row_count_offset + 2 + (rows * 2);
+        free_end = mdb_pg_get_int16(mdb, row_count_offset + (rows * 2));
 	mdb_debug(MDB_DEBUG_WRITE,"free space left on page = %d", free_end - free_start);
-	return (free_end - free_start + 1);
+	return (free_end - free_start);
 }
 unsigned char *
 mdb_new_leaf_pg(MdbCatalogEntry *entry)
@@ -475,13 +475,14 @@ mdb_new_leaf_pg(MdbCatalogEntry *entry)
 unsigned char *
 mdb_new_data_pg(MdbCatalogEntry *entry)
 {
-	MdbHandle *mdb = entry->mdb;
+	MdbFormatConstants *fmt = entry->mdb->fmt;
 	unsigned char *new_pg;
 
-	new_pg = (unsigned char *) g_malloc0(mdb->fmt->pg_size);
+	new_pg = (unsigned char *) g_malloc0(fmt->pg_size);
 		
 	new_pg[0]=0x01;
 	new_pg[1]=0x01;
+	_mdb_put_int16(new_pg, 2, fmt->pg_size - fmt->row_count_offset - 2);
 	_mdb_put_int32(new_pg, 4, entry->table_pg);
 	
 	return new_pg;
@@ -613,19 +614,37 @@ mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_siz
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 
-	new_pg = mdb_new_data_pg(entry);
+	if (table->is_temp_table) {
+		GPtrArray *pages = table->temp_table_pages;
+		if (pages->len == 0) {
+			new_pg = mdb_new_data_pg(entry);
+			g_ptr_array_add(pages, new_pg);
+		} else {
+			new_pg = g_ptr_array_index(pages, pages->len - 1);
+			if (mdb_get_int16(new_pg, 2) < new_row_size + 2) {
+				new_pg = mdb_new_data_pg(entry);
+				g_ptr_array_add(pages, new_pg);
+			}
+		}
 
-	num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
-	pos = mdb->fmt->pg_size;
+		num_rows = mdb_get_int16(new_pg, fmt->row_count_offset);
+		pos = (num_rows == 0) ? fmt->pg_size :
+			mdb_get_int16(new_pg, fmt->row_count_offset + (num_rows*2));
+	} else {  /* is not a temp table */
+		new_pg = mdb_new_data_pg(entry);
 
-	/* copy existing rows */
-	for (i=0;i<num_rows;i++) {
-		row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
-		row_end = mdb_find_end_of_row(mdb, i);
-		row_size = row_end - row_start + 1;
-		pos -= row_size;
-		memcpy(&new_pg[pos], &mdb->pg_buf[row_start], row_size);
-		_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
+		num_rows = mdb_pg_get_int16(mdb, fmt->row_count_offset);
+		pos = fmt->pg_size;
+
+		/* copy existing rows */
+		for (i=0;i<num_rows;i++) {
+			row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (i*2));
+			row_end = mdb_find_end_of_row(mdb, i);
+			row_size = row_end - row_start + 1;
+			pos -= row_size;
+			memcpy(&new_pg[pos], &mdb->pg_buf[row_start], row_size);
+			_mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
+		}
 	}
 
 	/* add our new row */
@@ -638,12 +657,14 @@ mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_siz
 	num_rows++;
 	_mdb_put_int16(new_pg, fmt->row_count_offset, num_rows);
 
-	/* copy new page over old */
-	memcpy(mdb->pg_buf, new_pg, fmt->pg_size);
-	g_free(new_pg);
-
 	/* update the freespace */
-	_mdb_put_int16(mdb->pg_buf, 2, mdb_pg_get_freespace(mdb));
+	_mdb_put_int16(new_pg,2,pos - fmt->row_count_offset - 2 - (num_rows*2));
+
+	/* copy new page over old */
+	if (!table->is_temp_table) {
+		memcpy(mdb->pg_buf, new_pg, fmt->pg_size);
+		g_free(new_pg);
+	}
 
 	return num_rows;
 }

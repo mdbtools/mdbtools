@@ -436,11 +436,6 @@ void mdb_sql_reset(MdbSQL *sql)
 		sql->cur_table = NULL;
 	}
 
-	if (sql->kludge_ttable_pg) {
-		g_free(sql->kludge_ttable_pg);
-		sql->kludge_ttable_pg = NULL;
-	}
-
 	/* Reset columns */
 	g_ptr_array_foreach(sql->columns, mdb_sql_free_column, NULL);
 	g_ptr_array_free(sql->columns, TRUE);
@@ -511,11 +506,6 @@ void mdb_sql_listtables(MdbSQL *sql)
 	ttable = mdb_create_temp_table(mdb, "#listtables");
 	mdb_sql_add_temp_col(sql, ttable, 0, "Tables", MDB_TEXT, 30, 0);
 
-	/* blank out the pg_buf */
-	new_pg = mdb_new_data_pg(ttable->entry);
-	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
-	g_free(new_pg);
-
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {
      		entry = g_ptr_array_index (mdb->catalog, i);
@@ -530,7 +520,6 @@ void mdb_sql_listtables(MdbSQL *sql)
 			ttable->num_rows++;
 		}
 	}
-	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
 	sql->cur_table = ttable;
 
 }
@@ -586,11 +575,6 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	mdb_sql_add_temp_col(sql, ttable, 1, "Type", MDB_TEXT, 20, 0);
 	mdb_sql_add_temp_col(sql, ttable, 2, "Size", MDB_TEXT, 10, 0);
 
-	/* blank out the pg_buf */
-	new_pg = mdb_new_data_pg(ttable->entry);
-	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
-	g_free(new_pg);
-
      for (i=0;i<table->num_cols;i++) {
 
         col = g_ptr_array_index(table->columns,i);
@@ -612,7 +596,6 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
 	/* the column and table names are no good now */
 	//mdb_sql_reset(sql);
-	sql->kludge_ttable_pg = g_memdup(mdb->pg_buf, mdb->fmt->pg_size);
 	sql->cur_table = ttable;
 }
 
@@ -755,28 +738,13 @@ mdb_sql_bind_all(MdbSQL *sql)
 	}
 }
 /*
- * mdb_sql_fetch_row should be called instead of mdb_fetch_row when there may be 
- * work tables involved (currently implemented as kludge_ttable_pg)
+ * mdb_sql_fetch_row is now just a wrapper around mdb_fetch_row.
+ *   It is left here only for backward compatibility.
  */
 int
 mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table)
 {
-	MdbHandle *mdb = table->entry->mdb;
-	MdbFormatConstants *fmt = mdb->fmt;
-	unsigned int rows;
-
-        if (sql->kludge_ttable_pg) {
-                memcpy(mdb->pg_buf, sql->kludge_ttable_pg, fmt->pg_size);
-
-		rows = mdb_pg_get_int16(mdb,fmt->row_count_offset);
-		if (rows > table->cur_row) {
-			mdb_read_row(sql->cur_table, table->cur_row++);
-			return 1;
-		}
-		return 0;
-	} else {
-		return mdb_fetch_row(table);
-	}
+	return mdb_fetch_row(table);
 }
 
 void 

@@ -56,6 +56,12 @@ MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 void mdb_free_tabledef(MdbTableDef *table)
 {
 	if (!table) return;
+	if (table->is_temp_table) {
+		unsigned int i;
+		for (i=0; i<table->temp_table_pages->len; i++)
+			g_free(g_ptr_array_index(table->temp_table_pages,i));
+		g_ptr_array_free(table->temp_table_pages, TRUE);
+	}
 	mdb_free_columns(table->columns);
 	mdb_free_indices(table->indices);
 	g_free(table->usage_map);
