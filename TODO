@@ -24,7 +24,7 @@ libmdb:
 . Use allocation maps to read tables, should be more efficient (done)
 . write support
 . iconv conversion to utf-8, et al.
-. multipage work tables
+. multipage work tables (done)
 
 utils:
 
@@ -41,7 +41,7 @@ SQL Engine:
 . insert/updates
 . bogus column name in where clause not caught
 . const = const type operations not working (e.g. WHERE 0=1) (done)
-. list tables/describe table shouldn't directly write to stdout (done, but will blow up on big tables)
+. list tables/describe table shouldn't directly write to stdout (done)
 
 ODBC:
 

@@ -14,6 +14,7 @@ Wed Sep 15 22:59:26 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-schema.c:
 	* src/util/mdb-tables.c:
 	* HACKING: Use 'Flags' field in MSysObjects to recognize system tables
+	* TODO: Update TODO to reflect status of multipage work tables
 
 Wed Sep 15 07:33:34 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/odbc/Makefile.am: Fix a bug in ODBC Makefile
