@@ -93,7 +93,7 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	MdbHandle *mdb = entry->mdb;
 	MdbColumn *col;
 	int i;
-	int var_cols = 0, fixed_cols = 0, num_cols;
+	int var_cols = 0, row_var_cols, fixed_cols = 0, row_fixed_cols, num_cols;
 	int var_cols_found, fixed_cols_found, var_entry_pos;
 	int col_start, next_col;
 	unsigned char *nullmask;
@@ -115,12 +115,12 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index (table->columns, i);
-		row_pos = col->row_col_num;
+		row_pos = col->col_num;
 		byte_num = row_pos / 8;
 		bit_num = row_pos % 8;
 		/* logic on nulls is reverse, 1 is not null, 0 is null */
 		fields[i].is_null = nullmask[byte_num] & 1 << bit_num ? 0 : 1;
-		//printf("col %d is %s\n", i, fields[i].is_null ? "null" : "not null");
+		//printf("row_pos %d col %d is %s\n", row_pos, i, fields[i].is_null ? "null" : "not null");
 	}
 
 	/* fields are ordered fixed then variable */
@@ -141,6 +141,7 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 			fields[i].is_fixed = 0;
 		}
 	}
+	row_var_cols = mdb_pg_get_int16(mdb, row_end - bitmask_sz - 1);
 
 	/* find the end of data pointer */
 	eod = mdb_pg_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
@@ -148,52 +149,57 @@ mdb_crack_row4(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	/* actual cols on this row */
 	fixed_cols_found = 0;
 	var_cols_found = 0;
+	row_fixed_cols = num_cols - row_var_cols;
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
-		if (mdb_is_fixed_col(col) && fixed_cols_found <= fixed_cols) {
-			real_offset += col->col_size;
-			fields[i].start = row_start + col->fixed_offset + 2;
-			fields[i].value = &mdb->pg_buf[row_start + col->fixed_offset + 2];
+		if (mdb_is_fixed_col(col)) {
+			if (fixed_cols_found <= row_fixed_cols) {
+				real_offset += col->col_size;
+				fields[i].start = row_start + col->fixed_offset + 2;
+				fields[i].value = &mdb->pg_buf[row_start + col->fixed_offset + 2];
+			} else {
+				fields[i].start = 0;
+				fields[i].value = NULL;
+				fields[i].siz = 0;
+				fields[i].is_null = 1;
+			}
 			fixed_cols_found++;
 		}
 	}
-
-	/* loop through fixed columns and add values to fields[] */
-	/*
-	for (j=0;j<table->num_cols;j++) {
-		col = g_ptr_array_index(table->columns,j);
-		if (mdb_is_fixed_col(col) && ++fixed_cols_found <= fixed_cols) {
-			fields[totcols].start = row_start + col_start;
-			fields[totcols++].value = &mdb->pg_buf[row_start + col_start];
-			if (col->col_type != MDB_BOOL)
-				col_start += col->col_size;
-		}
-	}
-	*/
 
 	col_start = mdb_pg_get_int16(mdb, row_end - 3 - bitmask_sz);
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
-		if (!mdb_is_fixed_col(col) && ++var_cols_found <= var_cols) {
-			if (var_cols_found==var_cols)  {
-				len=eod - col_start;
+		if (!mdb_is_fixed_col(col)) {
+			var_cols_found++;
+			if (var_cols_found <= row_var_cols)  {
+				if (var_cols_found==row_var_cols)  {
+					len=eod - col_start;
+					//printf("len = %d eod %d col_start %d\n",len, eod, col_start);
+				} else  {
+					/* position of the var table 
+				 	* entry for this column */
+					var_entry_pos = 
+						row_end - 
+						bitmask_sz - 
+						var_cols_found * 2 - 2 - 1;
+					next_col = mdb_pg_get_int16(mdb, var_entry_pos);
+					len = next_col - col_start;
+				} /* if found==var_cols */
 				//printf("len = %d eod %d col_start %d\n",len, eod, col_start);
-			} else  {
-				/* position of the var table 
-				 * entry for this column */
-				var_entry_pos = 
-					row_end - 
-					bitmask_sz - 
-					var_cols_found * 2 - 2 - 1;
-				next_col = mdb_pg_get_int16(mdb, var_entry_pos);
-				len = next_col - col_start;
-			} /* if found==var_cols */
-			fields[i].start = row_start + col_start;
-			fields[i].value = &mdb->pg_buf[row_start +col_start];
-			fields[i].siz = len;
-			col_start += len;
+				//printf("is_null %d\n",fields[i].is_null);
+				fields[i].start = row_start + col_start;
+				fields[i].value = &mdb->pg_buf[row_start +col_start];
+				fields[i].siz = len;
+				col_start += len;
+			} else {
+				fields[i].start = 0;
+				fields[i].value = NULL;
+				fields[i].siz = 0;
+				fields[i].is_null = 1;
+			}
 		} /* if !fixed */
 	} /* for */
 
@@ -208,6 +214,7 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	MdbColumn *col;
 	int i;
 	int var_cols = 0, fixed_cols = 0, num_cols;
+	int row_var_cols = 0, row_fixed_cols = 0;
 	int var_cols_found, fixed_cols_found, var_entry_pos;
 	int col_start;
 	unsigned char *nullmask;
@@ -223,9 +230,9 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 
 	num_cols = mdb->pg_buf[row_start];
 
-	if (num_cols != table->num_cols) {
-		fprintf(stderr,"WARNING: number of table columns does not match number of row columns, strange results may occur\n");
-	}
+	//if (num_cols != table->num_cols) {
+		//fprintf(stderr,"WARNING: number of table columns does not match number of row columns, strange results may occur\n");
+	//}
 
 	/* compute nulls first to help with fixed colnum's */
 	bitmask_sz = (num_cols - 1) / 8 + 1;
@@ -233,7 +240,7 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index (table->columns, i);
-		row_pos = col->row_col_num;
+		row_pos = col->col_num;
 		byte_num = row_pos / 8;
 		bit_num = row_pos % 8;
 		/* logic on nulls is reverse, 1 is not null, 0 is null */
@@ -271,78 +278,125 @@ mdb_crack_row3(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	fixed_cols_found = 0;
 	var_cols_found = 0;
 
-	/* loop through fixed columns and add values to fields[] */
-	for (i=0;i<table->num_cols;i++) {
-		col = g_ptr_array_index(table->columns,i);
-		if (mdb_is_fixed_col(col) && ++fixed_cols_found <= fixed_cols) {
-			fields[i].start = row_start + col_start;
-			fields[i].value = &mdb->pg_buf[row_start + col_start];
-			if (col->col_type != MDB_BOOL)
-				col_start += col->col_size;
-		}
-	}
-
 	/* if fixed columns add up to more than 256, we need a jump */
-	col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
 	if (col_start >= 256) {
 		num_of_jumps++;
 		jumps_used++;
 		row_start = row_start + col_start - (col_start % 256);
 	}
-	col_start = row_start;
-	
+
 	/* compute the number of jumps (row size - overhead) / 256 
 	 * but you have to include the jump table itself, thus
 	 * the loop.  */
+	col_start = row_start;
 	while (col_start+256 < row_end-bitmask_sz-1-var_cols-num_of_jumps){
 		col_start += 256;
 		num_of_jumps++;
 	}
+
+	col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
 	if (mdb->pg_buf[col_ptr]==0xFF) {
 		col_ptr--;
 	}
+
+	row_var_cols = mdb->pg_buf[row_end - bitmask_sz - num_of_jumps];
+	row_fixed_cols = num_cols - row_var_cols;
+
+	if (mdb_get_option(MDB_DEBUG_ROW)) {
+		fprintf(stdout,"bitmask_sz %d num_of_jumps %d\n",bitmask_sz, num_of_jumps);
+		fprintf(stdout,"var_cols %d row_var_cols %d\n",var_cols, row_var_cols);
+		fprintf(stdout,"fixed_cols %d row_fixed_cols %d\n",fixed_cols, row_fixed_cols);
+	}
+	/* loop through fixed columns and add values to fields[] */
+	for (i=0;i<table->num_cols;i++) {
+		col = g_ptr_array_index(table->columns,i);
+		if (mdb_is_fixed_col(col)) {
+			if (fixed_cols_found <= row_fixed_cols) {
+				fields[i].start = row_start + col->fixed_offset + 1;
+				fields[i].value = &mdb->pg_buf[row_start + col->fixed_offset + 1];
+				if (col->col_type != MDB_BOOL)
+					col_start += col->col_size;
+			} else {
+				fields[i].start = 0;
+				fields[i].value = NULL;
+				fields[i].siz = 0;
+				fields[i].is_null = 1;
+			}
+			fixed_cols_found++;
+		}
+	}
+
 	/* col_start is now the offset to the first variable length field */
 	col_start = mdb->pg_buf[col_ptr];
+	//fprintf(stdout,"col_ptr %d col_start %d\n",col_ptr, col_start);
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
 		/* if it's a var_col and we aren't looking at a column
 		 * added after this row was created */
-		if (!mdb_is_fixed_col(col) && ++var_cols_found <= var_cols) {
+		if (!mdb_is_fixed_col(col)) {
+			var_cols_found++;
+			if (var_cols_found <= row_var_cols) {
 
-			/* if the position of this var_col matches the number
-			 * in the current jump table entry, then increment
-			 * the jump_used and adjust the col/row_start */
-			if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
-				jumps_used < num_of_jumps) {
-				row_start += 256;
-				col_start -= 256;
-				jumps_used++;
+				/* if the position of this var_col matches the number
+			 	* in the current jump table entry, then increment
+			 	* the jump_used and adjust the col/row_start */
+				if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
+					jumps_used < num_of_jumps) {
+					row_start += 256;
+					col_start -= 256;
+					jumps_used++;
+				}
+
+				/* if we have the last var_col, use the eod offset to
+			 	* figure out where the end is */
+				if (var_cols_found==row_var_cols)  {
+					len=eod - col_start;
+					//printf("len = %d eod %d col_start %d\n",len, eod, col_start);
+				} else  {
+					var_entry_pos = 
+						row_end - 
+						bitmask_sz -
+						var_cols_found - 1;
+					len=mdb->pg_buf[var_entry_pos] - col_start;
+				} /* if found==var_cols */
+				while (len<0) len+=256;
+				fields[i].start = row_start + col_start;
+				fields[i].value = &mdb->pg_buf[row_start +col_start];
+				fields[i].siz = len;
+				col_start += len;
+			} else {
+				fields[i].start = 0;
+				fields[i].value = NULL;
+				fields[i].siz = 0;
+				fields[i].is_null = 1;
 			}
-
-			/* if we have the last var_col, use the eod offset to
-			 * figure out where the end is */
-			if (var_cols_found==var_cols)  {
-				len=eod - col_start;
-				//printf("len = %d eod %d col_start %d\n",len, eod, col_start);
-			} else  {
-				var_entry_pos = 
-					row_end - 
-					bitmask_sz -
-					var_cols_found - 1;
-				len=mdb->pg_buf[var_entry_pos] - mdb->pg_buf[var_entry_pos+1];
-			} /* if found==var_cols */
-			while (len<0) len+=256;
-			fields[i].start = row_start + col_start;
-			fields[i].value = &mdb->pg_buf[row_start +col_start];
-			fields[i].siz = len;
-			col_start += len;
 		} /* if !fixed */
 	} /* for */
-
 	return num_cols;
 
 }
+/**
+ * mdb_crack_row:
+ * @mdb: Database handle
+ * @row_start: offset to start of row on current page
+ * @row_end: offset to end of row on current page
+ * @fields: pointer to MdbField array to be popluated by mdb_crack_row
+ *
+ * Cracks a row buffer apart into its component fields.  
+ * 
+ * A row buffer is that portion of a data page which contains the values for
+ * that row.  Its beginning and end can be found in the row offset table.
+ *
+ * The resulting MdbField array contains pointers into the row for each field 
+ * present.  Be aware that by modifying field[]->value, you would be modifying 
+ * the row buffer itself, not a copy.
+ *
+ * This routine is mostly used internally by mdb_fetch_row() but may have some
+ * applicability for advanced application programs.
+ *
+ * Return value: number of fields present.
+ */
 int
 mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 {

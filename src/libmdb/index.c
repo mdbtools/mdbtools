@@ -186,7 +186,7 @@ mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest)
 {
 	int i, j = 0;
 
-	for (i = sz; i > 0; i++) {
+	for (i = sz; i > 0; i--) {
 		dest[j++] = src[i];
 	}
 }

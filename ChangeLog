@@ -1,3 +1,8 @@
+Fri Apr 16 10:48:05 EDT 2004	Brian Bruns <brian@bruns.com>
+	* src/libmdb/write.c: restructuring of mdb_crack_row?() to accomodate 
+	columns deletes/adds
+	* src/libmdb/index.c: fix stupid bug in mdb_swap_n()
+
 Tue Apr 13 19:08:51 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-check.c: Make mdb-check compilable
 	* configure.in:
