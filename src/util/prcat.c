@@ -31,7 +31,7 @@ MdbHandle *mdb;
 
 
 	if (argc<2) {
-		fprintf(stderr,"Usage: prcat <file> [<objtype>]\n");
+		fprintf(stderr,"Usage: %s <file> [<objtype>]\n",argv[0]);
 		exit(1);
 	}
 	

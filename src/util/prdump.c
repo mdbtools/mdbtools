@@ -33,7 +33,7 @@ int j;
 int page, start, stop;
 
 	if (argc<4) {
-		fprintf(stderr,"Usage: prdump <file> <page> <start> <stop>\n");
+		fprintf(stderr,"Usage: %s <file> <page> <start> <stop>\n",argv[0]);
 		exit(1);
 	}
 	

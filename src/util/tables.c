@@ -60,42 +60,12 @@ MdbColumn *col;
 	   if (!strcmp (mdb_get_objtype_string (entry.object_type), "Table"))
 	     {
 	       /* drop the table if it exists */
-	       fprintf (stdout, "DROP TABLE %s;\n", entry.object_name);
-
-	       /* create the table */
-	       fprintf (stdout, "CREATE TABLE %s\n", entry.object_name);
-	       fprintf (stdout, " (\n");
-	       	       
-	       table = mdb_read_table (&entry);
-
-	       /* get the columns */
-	       mdb_read_columns (table);
-
-	       /* loop over the columns, dumping the names and types */
-
-	       for (k = 0; k < table->num_cols; k++)
-		 {
-		   col = g_ptr_array_index (table->columns, k);
-		   
-		   fprintf (stdout, "\t%s\t\t\t%s", col->name, 
-			    mdb_get_coltype_string (col->col_type));
-		   
-		   if (col->col_size != 0)
-		     fprintf (stdout, " (%d)", col->col_size);
-		   
-		   if (k < table->num_cols - 1)
-		     fprintf (stdout, ", \n");
-		   else
-		     fprintf (stdout, "\n");
-		 }
-
-	       fprintf (stdout, "\n);\n");
-	       fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
-	       fprintf (stdout, "\n");
+	       fprintf (stdout, "%s ", entry.object_name);
 	     }
 	 }
      }
    }
+ fprintf (stdout, "\n");
  
  mdb_free_handle (mdb);
 }
