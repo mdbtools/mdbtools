@@ -53,9 +53,8 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	MdbColumn *col;
-	/* doesn't handle tables > 256 columns.  Can that happen? */
-	char *bound_values[256]; 
-	int  bound_lens[256]; 
+	char **bound_values;
+	int  *bound_lens; 
 	char *delimiter = NULL;
 	char *row_delimiter = NULL;
 	char header_row = 1;
@@ -113,6 +112,8 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -I             INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
 		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
+		g_free (delimiter);
+		g_free (row_delimiter);
 		exit(1);
 	}
 
@@ -137,6 +138,8 @@ main(int argc, char **argv)
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 	
+	bound_values = (char **) g_malloc(table->num_cols * sizeof(char *));
+	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
 	for (j=0;j<table->num_cols;j++) {
 		bound_values[j] = (char *) g_malloc0(MDB_BIND_SIZE);
 		mdb_bind_column(table, j+1, bound_values[j], &bound_lens[j]);
@@ -185,6 +188,8 @@ main(int argc, char **argv)
 	for (j=0;j<table->num_cols;j++) {
 		g_free(bound_values[j]);
 	}
+	g_free(bound_values);
+	g_free(bound_lens);
 	mdb_free_tabledef(table);
 
 	g_free (delimiter);

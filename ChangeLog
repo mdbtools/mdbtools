@@ -1,3 +1,7 @@
+Sun Mar 13 15:22:11 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-export.c:
+	* src/util/mdb-ver.c: Fix a couple of leaks
+
 Sat Mar 12 23:25:48 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/file.c:

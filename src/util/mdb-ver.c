@@ -64,6 +64,7 @@ main(int argc, char **argv)
 
 	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		fprintf(stderr,_("Error: unable to open file %s\n"),argv[optind]);
+		mdb_exit();
 		exit(1);
 	}
 	if (IS_JET3(mdb)) {
