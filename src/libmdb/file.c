@@ -271,6 +271,8 @@ char tmpbuf[MDB_PGSIZE];
 	memcpy(mdb->pg_buf,mdb->alt_pg_buf, MDB_PGSIZE);
 	memcpy(mdb->alt_pg_buf,tmpbuf,MDB_PGSIZE);
 }
+
+
 /* really stupid, just here for consistancy */
 unsigned char mdb_get_byte(unsigned char *buf, int offset)
 {
@@ -278,153 +280,83 @@ unsigned char mdb_get_byte(unsigned char *buf, int offset)
 }
 unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 {
-unsigned char c;
-
-	c = mdb->pg_buf[offset];
+	if (offset < 0 || offset+1 > mdb->fmt->pg_size) return -1;
 	mdb->cur_pos++;
-	return c;
+	return mdb->pg_buf[offset];
 }
-int 
-mdb_get_int16(unsigned char *buf, int offset)
+
+int mdb_get_int16(unsigned char *buf, int offset)
 {
 	return buf[offset+1]*256+buf[offset];
 }
-int 
-mdb_pg_get_int16(MdbHandle *mdb, int offset)
+int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 {
-int           i;
-
 	if (offset < 0 || offset+2 > mdb->fmt->pg_size) return -1;
-
-	i = mdb_get_int16(mdb->pg_buf, offset);
-
 	mdb->cur_pos+=2;
-	return i;
-	
+	return mdb_get_int16(mdb->pg_buf, offset);
 }
-gint32 
-mdb_pg_get_int24_msb(MdbHandle *mdb, int offset)
-{
-gint32 l;
-unsigned char *c;
 
+gint32 mdb_pg_get_int24_msb(MdbHandle *mdb, int offset)
+{
+	gint32 l = 0;
 	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
-	c = &mdb->pg_buf[offset];
-	l =c[0]; l<<=8;
-	l+=c[1]; l<<=8;
-	l+=c[2];
-
 	mdb->cur_pos+=3;
-	return l;
+	memcpy(&l, &(mdb->pg_buf[offset]), 3);
+	return GINT32_FROM_BE(l);
 }
-gint32
-mdb_get_int24(unsigned char *buf, int offset)
+gint32 mdb_get_int24(unsigned char *buf, int offset)
 {
-gint32 l = 0;
-unsigned char *c;
-
-	c = &buf[offset];
-
-	l =c[2]; l<<=8;
-	l+=c[1]; l<<=8;
-	l+=c[0];
-
-	return l;
+	gint32 l = 0;
+	memcpy(&l, &buf[offset], 3);
+	return GINT32_FROM_LE(l);
 }
 gint32 mdb_pg_get_int24(MdbHandle *mdb, int offset)
 {
-	guint32 l;
-
-	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
-
-	l = mdb_get_int24(mdb->pg_buf, offset);
+	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
 	mdb->cur_pos+=3;
-	return l;
+	return mdb_get_int24(mdb->pg_buf, offset);
 }
+
 long mdb_get_int32(unsigned char *buf, int offset)
 {
-long l;
-unsigned char *c;
-
-	c = &buf[offset];
-	l =c[3]; l<<=8;
-	l+=c[2]; l<<=8;
-	l+=c[1]; l<<=8;
-	l+=c[0];
-
-	return l;
+	guint32 l;
+	memcpy(&l, &buf[offset], 4);
+	return (long)GINT32_FROM_LE(l);
 }
 long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 {
-long l;
-
 	if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
-
-	l = mdb_get_int32(mdb->pg_buf, offset);
 	mdb->cur_pos+=4;
-	return l;
+	return mdb_get_int32(mdb->pg_buf, offset);
 }
-float 
-mdb_get_single(unsigned char *buf, int offset)
+
+float mdb_get_single(unsigned char *buf, int offset)
 {
-#ifdef WORDS_BIGENDIAN
-	float f2;
-	int i;
-	unsigned char *c;
-#endif
-	float f;
-
-
-       memcpy(&f, &buf[offset], 4);
-
-#ifdef WORDS_BIGENDIAN
-       f2 = f;
-       for (i=0; i<sizeof(f); i++) {
-               *(((unsigned char *)&f)+i) =
-               *(((unsigned char *)&f2)+sizeof(f)-1-i);
-       }
-#endif
-       return f;
+	guint32 f;
+	memcpy(&f, &buf[offset], 4);
+	return (float)GINT32_FROM_LE(f);
 }
-float 
-mdb_pg_get_single(MdbHandle *mdb, int offset)
+float mdb_pg_get_single(MdbHandle *mdb, int offset)
 {
        if (offset <0 || offset+4 > mdb->fmt->pg_size) return -1;
-
        mdb->cur_pos+=4;
        return mdb_get_single(mdb->pg_buf, offset);
 }
 
-double 
-mdb_get_double(unsigned char *buf, int offset)
+double mdb_get_double(unsigned char *buf, int offset)
 {
-#ifdef WORDS_BIGENDIAN
-	double d2;
-	int i;
-	unsigned char *c;
-#endif
-	double d;
-
-
+	guint64 d;
 	memcpy(&d, &buf[offset], 8);
-
-#ifdef WORDS_BIGENDIAN
-	d2 = d;
-	for (i=0; i<sizeof(d); i++) {
-		*(((unsigned char *)&d)+i) =
-		*(((unsigned char *)&d2)+sizeof(d)-1-i);
-	}
-#endif
-	return d;
-
+	return (double)GINT64_FROM_LE(d);
 }
-double 
-mdb_pg_get_double(MdbHandle *mdb, int offset)
+double mdb_pg_get_double(MdbHandle *mdb, int offset)
 {
 	if (offset <0 || offset+8 > mdb->fmt->pg_size) return -1;
 	mdb->cur_pos+=8;
 	return mdb_get_double(mdb->pg_buf, offset);
 }
+
+
 int 
 mdb_set_pos(MdbHandle *mdb, int pos)
 {

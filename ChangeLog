@@ -1,3 +1,7 @@
+Thu Aug 19 21:37:21 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* configure.in:
+	* src/libmdb/file.c: Use GLib to deal with endian issues
+
 Thu Aug 19 07:50:56 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c:
 	* src/libmdb/map.c: Factorizing usage map functions
