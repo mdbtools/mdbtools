@@ -48,6 +48,7 @@ enum {
 	MDB_UNKNOWN_0B
 };
 enum {
+	MDB_BOOL = 0x01,
 	MDB_INT = 0x03,
 	MDB_LONGINT = 0x04,
 	MDB_SDATETIME = 0x08,
@@ -96,6 +97,7 @@ typedef struct {
 	char		name[MDB_MAX_OBJ_NAME+1];
 	int		col_type;
 	int		col_size;
+	void		*bind_ptr;
 	GHashTable	*properties;
 } MdbColumn;
 
