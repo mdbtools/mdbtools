@@ -21,8 +21,6 @@
 
 #define MDB_DEBUG 0
 
-char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size);
-
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr)
 {
 MdbColumn *col;
