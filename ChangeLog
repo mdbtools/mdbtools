@@ -3,6 +3,7 @@ Fri Jun 18 00:08:24 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/index.c:
 	* src/libmdb/mem.c:
 	* include/mdbtools.h: Reconcile code/documentation inconsistencies
+	* src/util/mdb-schema.c: Fix a bug and a typo in mdb-schema
 
 Thu Jun 17 20:56:44 EDT 2004	Brian Bruns <brian@bruns.com>
 	* configure.in: temporarily remove building of reference manual. It broke 'make dist'

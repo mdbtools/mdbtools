@@ -40,7 +40,7 @@ main (int argc, char **argv)
 	int opt;
 
 	if (argc < 2) {
-		fprintf (stderr, "Usage: [options] %s <file> [<backend>]\n",argv[0]);
+		fprintf (stderr, "Usage: %s [options] <file> [<backend>]\n",argv[0]);
 		fprintf (stderr, "where options are:\n");
 		fprintf (stderr, "  -T <table>     Only create schema for named table\n");
 		fprintf (stderr, "  -N <namespace> Prefix identifiers with namespace\n");
@@ -48,7 +48,7 @@ main (int argc, char **argv)
 		exit (1);
 	}
 
-	while ((opt=getopt(argc, argv, "T:N:S:"))!=-1) {
+	while ((opt=getopt(argc, argv, "T:N:S"))!=-1) {
 		switch (opt) {
 			case 'T':
 				tabname = (char *) g_strdup(optarg);
