@@ -79,7 +79,7 @@ bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-heade
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LDADD = ../libmdb/libmdb.la 
 LIBS = `glib-config --libs`
-mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
 

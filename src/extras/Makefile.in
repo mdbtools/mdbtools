@@ -80,7 +80,7 @@ mdb_dump_SOURCES = mdb-dump.c mdbsupport.c
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LDADD = ../libmdb/libmdb.la 
 LIBS = `glib-config --libs`
-mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 PROGRAMS =  $(bin_PROGRAMS)
 

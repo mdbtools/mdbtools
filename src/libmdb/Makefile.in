@@ -79,7 +79,7 @@ lib_LTLIBRARIES = libmdb.la
 libmdb_la_SOURCES = catalog.c mem.c file.c kkd.c table.c data.c dump.c backend.c money.c sargs.c index.c
 INCLUDES = -I$(top_srcdir)/include `glib-config --cflags`
 LIBS = `glib-config --libs`
-mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 LTLIBRARIES =  $(lib_LTLIBRARIES)
 
