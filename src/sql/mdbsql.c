@@ -532,8 +532,8 @@ void mdb_sql_listtables(MdbSQL *sql)
 	int i;
 	MdbCatalogEntry *entry;
 	MdbHandle *mdb = sql->mdb;
-	MdbField fields[4];
-	unsigned char row_buffer[4096];
+	MdbField fields[1];
+	unsigned char row_buffer[MDB_PGSIZE];
 	unsigned char *new_pg;
 	int row_size;
 	MdbTableDef *ttable;
@@ -595,7 +595,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	MdbHandle *mdb = sql->mdb;
 	MdbColumn *col;
 	int i;
-	MdbField fields[4];
+	MdbField fields[3];
 	char tmpstr[256];
 	unsigned char row_buffer[MDB_PGSIZE];
 	unsigned char *new_pg;
