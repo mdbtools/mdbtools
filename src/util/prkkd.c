@@ -26,7 +26,7 @@ unsigned char buf[2048];
 MdbHandle *mdb;
 MdbCatalogEntry entry;
 
-
+#if 0
 	if (argc<2) {
 		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);
 		exit(1);
@@ -48,5 +48,6 @@ MdbCatalogEntry entry;
 
 	mdb_free_handle(mdb);
 	mdb_exit();
+#endif
 }
 

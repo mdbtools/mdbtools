@@ -19,6 +19,15 @@
 
 #include "mdbtools.h"
 
+static gint mdb_col_comparer(MdbColumn *a, MdbColumn *b)
+{
+	if (a->col_num > b->col_num)
+		return 1;
+	else if (a->col_num < b->col_num)
+		return -1;
+	else
+		return 0;
+}
 
 unsigned char mdb_col_needs_size(int col_type)
 {
@@ -40,11 +49,11 @@ int len, i;
 	mdb_read_pg(mdb, entry->table_pg);
 	len = mdb_get_int16(mdb,8);
 
-	table->num_rows = mdb_get_int32(mdb,12);
-	table->num_cols = mdb_get_int16(mdb,25);
-	table->num_idxs = mdb_get_int32(mdb,27); 
-	table->num_real_idxs = mdb_get_int32(mdb,31); 
-	table->first_data_pg = mdb_get_int16(mdb,36);
+	table->num_rows = mdb_get_int32(mdb, mdb->tab_num_rows_offset);
+	table->num_cols = mdb_get_int16(mdb, mdb->tab_num_cols_offset);
+	table->num_idxs = mdb_get_int32(mdb, mdb->tab_num_idxs_offset); 
+	table->num_real_idxs = mdb_get_int32(mdb, mdb->tab_num_ridxs_offset); 
+	table->first_data_pg = mdb_get_int16(mdb, mdb->tab_first_dpg_offset);
 
 	return table;
 }
@@ -67,39 +76,44 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 {
 MdbHandle *mdb = table->entry->mdb;
 MdbColumn col, *pcol;
-int len, i;
+int len, i,j;
 unsigned char low_byte, high_byte;
 int cur_col, cur_name;
 int col_type, col_size;
 char name[MDB_MAX_OBJ_NAME+1];
-int name_sz;
+int name_sz, col_num;
+GSList	*slist = NULL;
 	
 	table->columns = g_ptr_array_new();
 
-	cur_col = 43 + (table->num_real_idxs * 8);
+	cur_col = mdb->tab_cols_start_offset + 
+		(table->num_real_idxs * mdb->tab_ridx_entry_size);
 
 	/* new code based on patch submitted by Tim Nelson 2000.09.27 */
 
 	/* 
 	** column attributes 
 	*/
-	for (i=0; i<table->num_cols;i++) {
-		memset(&col,'\0', sizeof(MdbColumn));
+	for (i=0;i<table->num_cols;i++) {
+		memset(&col, 0, sizeof(col));
+		col.col_num = mdb->pg_buf[cur_col + mdb->col_num_offset];
 
 		read_pg_if(mdb, &cur_col, 0);
 		col.col_type = mdb->pg_buf[cur_col];
 
+
 		read_pg_if(mdb, &cur_col, 13);
-		col.is_fixed = mdb->pg_buf[cur_col+13] & 0x01 ? 1 : 0;
-
+		col.is_fixed = mdb->pg_buf[cur_col + mdb->col_fixed_offset] & 
+			0x01 ? 1 : 0;
 		read_pg_if(mdb, &cur_col, 17);
-		low_byte = mdb->pg_buf[cur_col+16];
+		low_byte = mdb->pg_buf[cur_col + mdb->col_size_offset];
 		read_pg_if(mdb, &cur_col, 18);
-		high_byte = mdb->pg_buf[cur_col+17];
+		high_byte = mdb->pg_buf[cur_col + mdb->col_size_offset + 1];
 		col.col_size += high_byte * 256 + low_byte;
-
-		mdb_append_column(table->columns, &col);
-		cur_col += 18;
+		
+		pcol = g_memdup(&col, sizeof(MdbColumn));
+		slist = g_slist_insert_sorted(slist,pcol,(GCompareFunc)mdb_col_comparer);
+		cur_col += mdb->tab_col_entry_size;
 	}
 
 	cur_name = cur_col;
@@ -109,32 +123,70 @@ int name_sz;
 	*/
 	for (i=0;i<table->num_cols;i++) {
 		/* fetch the column */
-		pcol = g_ptr_array_index (table->columns, i);
+		pcol = g_slist_nth_data (slist, i);
 
 		/* we have reached the end of page */
 		read_pg_if(mdb, &cur_name, 0);
 		name_sz = mdb->pg_buf[cur_name];
 		
-		/* determine amount of name on this page */
-		len = ((cur_name + name_sz) > mdb->pg_size) ? 
-			mdb->pg_size - cur_name :
-			name_sz;
+		if (mdb->jet_version==MDB_VER_JET4) {
+			/* FIX ME - for now just skip the high order byte */
+			cur_name += 2;
+			/* determine amount of name on this page */
+			len = ((cur_name + name_sz) > mdb->pg_size) ? 
+				mdb->pg_size - cur_name :
+				name_sz;
+	
+			/* strip high order (second) byte from unicode string */
+			for (j=0;j<len;j+=2) {
+				pcol->name[j/2] = mdb->pg_buf[cur_name + j];
+			}
+			/* name wrapped over page */
+			if (len < name_sz) {
+				/* read the next pg */
+				mdb_read_pg(mdb, mdb_get_int32(mdb,4)); 
+				cur_name = 8 - (mdb->pg_size - cur_name);
+				if (len % 2) cur_name++;
+				/* get the rest of the name */
+				for (j=0;j<len;j+=2) {
+				}
+				memcpy(&pcol->name[len], &mdb->pg_buf[cur_name], name_sz - len);
+			}
+			pcol->name[name_sz]='\0';
 
-		if (len) {
-			memcpy(pcol->name, &mdb->pg_buf[cur_name+1], len);
-		}
-		/* name wrapped over page */
-		if (len < name_sz) {
-			/* read the next pg */
-			mdb_read_pg(mdb, mdb_get_int32(mdb,4)); 
-			cur_name = 8 - (mdb->pg_size - cur_name);
-			/* get the rest of the name */
-			memcpy(&pcol->name[len], &mdb->pg_buf[cur_name], name_sz - len);
-		}
-		pcol->name[name_sz]='\0';
+			cur_name += name_sz;
+		} else if (mdb->jet_version==MDB_VER_JET3) {
+			/* determine amount of name on this page */
+			len = ((cur_name + name_sz) > mdb->pg_size) ? 
+				mdb->pg_size - cur_name :
+				name_sz;
+	
+			if (len) {
+				memcpy(pcol->name, &mdb->pg_buf[cur_name+1], len);
+			}
+			/* name wrapped over page */
+			if (len < name_sz) {
+				/* read the next pg */
+				mdb_read_pg(mdb, mdb_get_int32(mdb,4)); 
+				cur_name = 8 - (mdb->pg_size - cur_name);
+				/* get the rest of the name */
+				memcpy(&pcol->name[len], &mdb->pg_buf[cur_name], name_sz - len);
+			}
+			pcol->name[name_sz]='\0';
 
-		cur_name += name_sz + 1;
+			cur_name += name_sz + 1;
+		} else {
+			fprintf(stderr,"Unknown MDB version\n");
+		}
 	}
+	/* turn this list into an array */
+	for (i=0;i<table->num_cols;i++) {
+		pcol = g_slist_nth_data (slist, i);
+		g_ptr_array_add(table->columns, pcol);
+	}
+
+	g_slist_free(slist);
+
 	table->index_start = cur_name;
 	return table->columns;
 }

@@ -160,6 +160,7 @@ typedef struct {
 	GPtrArray	*sargs;
 	unsigned char   is_fixed;
 	int		query_order;
+	int		col_num;
 } MdbColumn;
 
 typedef union {

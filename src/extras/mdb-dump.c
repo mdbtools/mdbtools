@@ -31,7 +31,7 @@ int main(int argc, char **argv)
    }
    while (length = fread(data,1,16,in)) {
       sprintf(addr, "%06x", i);
-      if (!strcmp(&addr[3],"000") || ! strcmp(&addr[3],"800")) {
+      if (!strcmp(&addr[3],"000") ) { //|| ! strcmp(&addr[3],"800")) {
 	fprintf(stdout,"-- Page 0x%04x (%d) --\n", pg, pg);
 	pg++;
       }

@@ -44,9 +44,31 @@ int j,pos;
 	if (mdb->jet_version == MDB_VER_JET4) {
 		mdb->pg_size = 4096;
 		mdb->row_count_offset = 0x0c;
+		mdb->tab_num_rows_offset = 12;
+		mdb->tab_num_cols_offset = 45;
+		mdb->tab_num_idxs_offset = 47;
+		mdb->tab_num_ridxs_offset = 51;
+		mdb->tab_first_dpg_offset = 56;
+		mdb->tab_cols_start_offset = 63;
+		mdb->tab_ridx_entry_size = 12;
+		mdb->col_fixed_offset = 15;
+		mdb->col_size_offset = 23;
+		mdb->col_num_offset = 5;
+		mdb->tab_col_entry_size = 25;
 	} else {
 		mdb->pg_size = 2048;
 		mdb->row_count_offset = 0x08;
+		mdb->tab_num_rows_offset = 12;
+		mdb->tab_num_cols_offset = 25;
+		mdb->tab_num_idxs_offset = 27;
+		mdb->tab_num_ridxs_offset = 31;
+		mdb->tab_first_dpg_offset = 36;
+		mdb->tab_cols_start_offset = 43;
+		mdb->tab_ridx_entry_size = 8;
+		mdb->col_fixed_offset = 13;
+		mdb->col_size_offset = 16;
+		mdb->col_num_offset = 1;
+		mdb->tab_col_entry_size = 18;
 	}
 
 	/* get the db encryption key and xor it back to clear text */

@@ -50,6 +50,10 @@ void mdb_free_handle(MdbHandle *mdb)
 	if (mdb->backend_name) free(mdb->backend_name);
 	free(mdb);
 }
+void mdb_alloc_catalog(MdbHandle *mdb)
+{
+	mdb->catalog = g_array_new(FALSE,FALSE,sizeof(MdbCatalogEntry));
+}
 void mdb_free_catalog(MdbHandle *mdb)
 {
 GList *l;

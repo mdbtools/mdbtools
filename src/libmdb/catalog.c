@@ -42,6 +42,65 @@ static char *type_name[] = {"Form",
 	}
 }
 
+/* new method */
+#if 1
+GArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
+{
+int   i, j, k;
+MdbCatalogEntry entry, msysobj;
+MdbTableDef *table;
+MdbColumn *col;
+char parentid[256];
+char objname[256];
+char tobjtype[256];
+int type;
+gpointer data;
+
+ mdb_free_catalog(mdb);
+ mdb_alloc_catalog(mdb);
+ mdb->num_catalog = 0;
+
+ /* dummy up a catalog entry so we may read the table def */
+ memset(&msysobj, 0, sizeof(MdbCatalogEntry));
+ msysobj.mdb = mdb;
+ msysobj.object_type = MDB_TABLE;
+ msysobj.table_pg = 2;
+ strcpy(msysobj.object_name, "MSysObjects");
+
+ /* mdb_table_dump(&msysobj); */
+
+ table = mdb_read_table(&msysobj);
+ mdb_read_columns(table);
+
+ mdb_bind_column(table, 1, parentid);
+ mdb_bind_column(table, 3, objname);
+ mdb_bind_column(table, 4, tobjtype);
+
+ mdb_rewind_table(table);
+
+ while (mdb_fetch_row(table)) {
+	type = atoi(tobjtype);
+	if (type == objtype) {
+		// fprintf(stdout, "parentid: %10ld objtype: %-3d objname: %s\n", 
+		// (atol(parentid) & 0x00FFFFFF), type, objname); 
+		memset(&entry,0,sizeof(entry));
+		entry.mdb = mdb;
+		strcpy(entry.object_name, objname);
+		entry.object_type = type;
+		entry.table_pg = atol(parentid) & 0x00FFFFFF;
+		mdb->num_catalog++;
+		//data = g_memdup(&entry,sizeof(MdbCatalogEntry));
+		mdb->catalog = g_array_append_val(mdb->catalog, entry); 
+	}
+ }
+ //mdb_dump_catalog(mdb, MDB_TABLE);
+ return mdb->catalog;
+}
+
+/* old method */
+
+#else
+
 MdbCatalogEntry *mdb_read_catalog_entry(MdbHandle *mdb, int rowid, MdbCatalogEntry *entry)
 {
 int offset;
@@ -77,6 +136,7 @@ fprintf(stdout,"\n");
 		if (mdb->jet_version==MDB_VER_JET4) i++;
 	}
 	//fprintf(stderr,"name: %s type: %d\n",entry->object_name, entry->object_type);
+	//fprintf(stderr,"cur page: %d row; %d\n", entry->table_pg, rowid);
 	entry->object_name[j] = '\0';
 	entry->kkd_pg = mdb_get_int16(mdb,offset+31+strlen(entry->object_name)+7);
 	entry->kkd_rowid = mdb->pg_buf[offset+31+strlen(entry->object_name)+6];
@@ -106,7 +166,7 @@ int next_pg, next_pg_off;
 ** So, we simply read the entire mdb file for pages that start 0x01 0x01 and 
 ** have a 32bit value of 2 (02 00 00 00) in bytes 4-7.
 */
-#if 0
+/*
 	next_pg = MDB_CATALOG_PG;
 	mdb_free_catalog(mdb);
 	mdb->num_catalog = 0;
@@ -129,7 +189,7 @@ int next_pg, next_pg_off;
 		}
 	}
 	return (mdb->catalog);
-#endif
+*/
 	mdb_free_catalog(mdb);
 	mdb->num_catalog = 0;
 
@@ -144,6 +204,7 @@ int next_pg, next_pg_off;
 			for (i=0;i<rows;i++) {
 				if (mdb->pg_buf[11 + 2 * i] & 0x40) continue;
 				if (mdb_read_catalog_entry(mdb, i, &entry)) {
+					//printf("page %d\n",next_pg);
 					mdb->num_catalog++;
 					mdb->catalog = g_array_append_val(mdb->catalog, entry);
 				}
@@ -152,6 +213,7 @@ int next_pg, next_pg_off;
 		next_pg++;
 	}
 }
+#endif
 void mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
 int rows, i;

@@ -39,12 +39,19 @@ int mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
 int row_start, row_end, i;
 
-        /* Search the previous "row start" values for the first non-deleted
-one.
-         * If we don't find one, then the end of the page is the correct value.
-         */
+	/* Search the previous "row start" values for the first non-deleted one.
+	* If we don't find one, then the end of the page is the correct value.
+	*/
+#if 1
+	if (row==0) {
+		row_end = mdb->pg_size - 1;
+	} else {
+		row_end = (mdb_get_int16(mdb, ((mdb->row_count_offset + 2) + (row - 1) * 2)) & 0x0FFF) - 1;
+	}
+	return row_end;
+#else
         for (i = row - 1; i >= 0; i--) {
-                row_start = mdb_get_int16(mdb, (10 + i * 2));
+                row_start = mdb_get_int16(mdb, ((mdb->row_count_offset + 2) + i * 2));
                 if (!(row_start & 0x8000)) {
                         break;
                 }
@@ -56,8 +63,8 @@ one.
         } else {
                 row_end = row_start - 1;
         }
-
 	return row_end;
+#endif
 }
 static int mdb_is_null(unsigned char *null_mask, int col_num)
 {
@@ -80,6 +87,9 @@ static int mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 }
 static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
+	//if (!strcmp("Name",col->name)) {
+		//printf("start %d %d\n",start, len);
+	//}
 	if (col->bind_ptr) {
 		if (len) {
 			strcpy(col->bind_ptr, 
@@ -107,12 +117,12 @@ int bitmask_sz;
 unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
 unsigned char isnull;
 
-	row_start = mdb_get_int16(mdb, 10+(row*2)); 
+	row_start = mdb_get_int16(mdb, (mdb->row_count_offset + 2) + (row*2)); 
 	row_end = mdb_find_end_of_row(mdb, row);
 
 	delflag = lookupflag = 0;
-	if (row_start & 0x8000) delflag++;
-	if (row_start & 0x4000) lookupflag++;
+	if (row_start & 0x8000) lookupflag++;
+	if (row_start & 0x4000) delflag++;
 	row_start &= 0x0FFF; /* remove flags */
 #if DEBUG
 	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
@@ -120,7 +130,8 @@ unsigned char isnull;
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
 #endif	
-	if (!table->noskip_del && (delflag || lookupflag)) {
+	//if (!table->noskip_del && (delflag || lookupflag)) {
+	if (!table->noskip_del && delflag) {
 		row_end = row_start-1;
 		return 0;
 	}
@@ -130,7 +141,11 @@ unsigned char isnull;
 #endif
 
 	/* find out all the important stuff about the row */
-	num_cols = mdb->pg_buf[row_start];
+	if (mdb->jet_version==MDB_VER_JET4) {
+		num_cols = mdb_get_int16(mdb, row_start);
+	} else {
+		num_cols = mdb->pg_buf[row_start];
+	}
 	var_cols = 0; /* mdb->pg_buf[row_end-1]; */
 	fixed_cols = 0; /* num_cols - var_cols; */
 	for (j = 0; j < table->num_cols; j++) {
@@ -141,7 +156,11 @@ unsigned char isnull;
 			var_cols++;
 	}
 	bitmask_sz = (num_cols - 1) / 8 + 1;
-	eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
+	if (mdb->jet_version==MDB_VER_JET4) {
+		eod = mdb->pg_buf[row_end-2-var_cols*2-bitmask_sz];
+	} else {
+		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
+	}
 	for (i=0;i<bitmask_sz;i++) {
 		null_mask[i]=mdb->pg_buf[row_end - bitmask_sz + i + 1];
 	}
@@ -151,8 +170,12 @@ unsigned char isnull;
 		num_cols, var_cols, eod);
 #endif
 
-	/* data starts at 1 */
-	col_start = 1;
+	if (mdb->jet_version==MDB_VER_JET4) {
+		col_start = 2;
+	} else {
+		/* data starts at 1 */
+		col_start = 1;
+	}
 	fixed_cols_found = 0;
 	var_cols_found = 0;
 
@@ -161,6 +184,11 @@ unsigned char isnull;
 		col = g_ptr_array_index(table->columns,j);
 		if (mdb_is_fixed_col(col) &&
 		    ++fixed_cols_found <= fixed_cols) {
+/* 
+			if (!strcmp(col->name, "Type")) {
+				printf("column Type, col_start %d row_start %d data %d %d\n",col_start, row_start, mdb->pg_buf[row_start + col_start], mdb->pg_buf[row_start + col_start + 1]); 
+			}
+*/
 			isnull = mdb_is_null(null_mask, j+1); 
 			rc = _mdb_attempt_bind(mdb, col, isnull,
 				row_start + col_start, col->col_size);
@@ -180,9 +208,13 @@ unsigned char isnull;
                col_start += 256;
                num_of_jumps++;
        }
-       eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz-num_of_jumps];
-
-       col_start = mdb->pg_buf[row_end-bitmask_sz-1-num_of_jumps];
+	if (mdb->jet_version==MDB_VER_JET4) {
+		eod = mdb_get_int16(mdb, row_end - 2 - var_cols*2 -bitmask_sz - num_of_jumps - 1);
+		col_start = mdb_get_int16(mdb, row_end - bitmask_sz - 2 - num_of_jumps - 1);
+	} else {
+		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz-num_of_jumps];
+		col_start = mdb->pg_buf[row_end-bitmask_sz-1-num_of_jumps];
+	}
 
 
 	/* variable columns */
@@ -193,23 +225,30 @@ unsigned char isnull;
 			/* col_start = mdb->pg_buf[row_end-bitmask_sz-var_cols_found]; */
 			/* more code goes here but the diff is mangled */
 			
+/*
 			if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
 				jumps_used < num_of_jumps) {
 				row_start += 256;
 				col_start -= 256;
 				jumps_used++;
 			}
+*/
 
 
-			if (var_cols_found==var_cols) 
+		if (var_cols_found==var_cols)  {
 				len=eod - col_start;
-			else 
-				len=mdb->pg_buf[row_end 
-					- bitmask_sz 
-					- var_cols_found 
+		} else  {
+			if (mdb->jet_version==MDB_VER_JET4) {
+				len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
+					- 2 - 1 - num_of_jumps * 2] - col_start;
+			} else {
+				len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found
 					- 1 - num_of_jumps ] - col_start;
+			}
+		}
 
 			isnull = mdb_is_null(null_mask, j+1); 
+			//printf("binding len %d isnull %d col_start %d row_start %d row_end %d bitmask %d var_cols_found %d buf %d\n", len, isnull,col_start,row_start,row_end, bitmask_sz, var_cols_found, mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 1 - num_of_jumps ]);
 			rc = _mdb_attempt_bind(mdb, col, isnull,
 				row_start + col_start, len);
 			if (!rc) return 0;
@@ -246,7 +285,7 @@ MdbHandle *mdb = entry->mdb;
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
 	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb, 4)!=entry->table_pg);
-	/*fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg);  */
+	// fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); 
 	return table->cur_phys_pg;
 }
 int mdb_rewind_table(MdbTableDef *table)
@@ -272,7 +311,7 @@ int rc;
 	}
 
 	do { 
-		rows = mdb_get_int16(mdb,8);
+		rows = mdb_get_int16(mdb,mdb->row_count_offset);
 
 		/* if at end of page, find a new page */
 		if (table->cur_row >= rows) {
@@ -280,6 +319,7 @@ int rc;
 			if (!mdb_read_next_dpg(table)) return 0;
 		}
 
+		//printf("page %d row %d\n",table->cur_phys_pg, table->cur_row);
 		rc = mdb_read_row(table, table->cur_row);
 		table->cur_row++;
 	} while (!rc);
@@ -358,6 +398,7 @@ char *mdb_col_to_string(MdbHandle *mdb, int start, int datatype, int size)
 /* FIX ME -- not thread safe */
 static char text[MDB_BIND_SIZE];
 time_t t;
+int i;
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -388,8 +429,14 @@ time_t t;
 			if (size<0) {
 				return "";
 			}
-			strncpy(text, &mdb->pg_buf[start], size);
-			text[size]='\0';
+			if (mdb->jet_version==MDB_VER_JET4) {
+				for (i=0;i<size;i+=2)
+					text[i/2] = mdb->pg_buf[start + i];
+				text[size/2]='\0';
+			} else {
+				strncpy(text, &mdb->pg_buf[start], size);
+				text[size]='\0';
+			}
 			return text;
 		break;
 		case MDB_SDATETIME:

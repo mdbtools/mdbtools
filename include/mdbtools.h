@@ -112,6 +112,17 @@ typedef struct {
 	char			*backend_name;
 	/* offset to row count on data pages...version dependant */
 	guint16		row_count_offset; 
+	guint16		tab_num_rows_offset;
+	guint16		tab_num_cols_offset;
+	guint16		tab_num_idxs_offset;
+	guint16		tab_num_ridxs_offset;
+	guint16		tab_first_dpg_offset;
+	guint16		tab_cols_start_offset;
+	guint16		tab_ridx_entry_size;
+	guint16		col_fixed_offset;
+	guint16		col_num_offset;
+	guint16		col_size_offset;
+	guint16		tab_col_entry_size;
 } MdbHandle; 
 
 typedef struct {
@@ -121,9 +132,9 @@ typedef struct {
 	unsigned long  table_pg; /* misnomer since object may not be a table */
 	unsigned long  kkd_pg;
 	unsigned int   kkd_rowid;
-	int		num_props;
+	int			num_props;
 	GArray		*props;
-	GPtrArray	*columns;
+	GArray		*columns;
 } MdbCatalogEntry;
 
 typedef struct {
@@ -168,6 +179,7 @@ typedef struct {
 	GPtrArray	*sargs;
 	unsigned char   is_fixed;
 	int		query_order;
+	int		col_num;
 } MdbColumn;
 
 typedef union {
