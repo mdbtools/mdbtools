@@ -1,3 +1,11 @@
+Sat Oct 16 09:19:16 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* INSTALL:
+	* README:
+	* configure.in:
+	* include/mdbodbc.h:
+	* src/odbc/connectparams.c:
+	* src/odbc/odbc.c: Get ODBC driver to work for iODBC
+
 Fri Sep 24 00:07:10 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* doc/install.sgml: Document odbcinst.ini entry
 

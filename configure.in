@@ -60,6 +60,14 @@ if test "$with_iodbc"; then
 	ODBC_CFLAGS="-I$with_iodbc/include"
 	ODBC_LIBS="-L$with_iodbc/lib"
 	CFLAGS="$CFLAGS -DIODBC"
+
+	OLDLDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS $ODBC_LIBS"
+	AC_CHECK_LIB(iodbcinst, SQLGetPrivateProfileString,
+	 [ODBC_LIBS="$ODBC_LIBS -liodbcinst"
+	 AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1,
+	 [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	LDFLAGS=$OLDLDFLAGS
 fi
 
 dnl check for unixODBC
@@ -70,6 +78,14 @@ if test "$with_unixodbc"; then
 	ODBC_CFLAGS="-I$with_unixodbc/include"
 	ODBC_LIBS="-L$with_unixodbc/lib"
 	CFLAGS="$CFLAGS -DUNIXODBC"
+
+	OLDLDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS $ODBC_LIBS"
+	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString,
+	 [ODBC_LIBS="$ODBC_LIBS -lodbcinst"
+	 AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1,
+	 [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	LDFLAGS=$OLDLDFLAGS
 fi
 
 if test "x$HAVE_ODBC" = "xtrue"; then
@@ -78,12 +94,6 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 		echo ODBC requires flex and bison for the SQL engine
 		exit 1
 	fi
-
-	OLDLDFLAGS=$LDFLAGS
-	LDFLAGS="$LDFLAGS $ODBC_LIBS"
-	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBC_LIBS="$ODBC_LIBS -lodbcinst"
-	AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1, [Define to 1 if you have the SQLGetPrivateProfileString function.])])
-	LDFLAGS=$OLDLDFLAGS
 
 	AC_SUBST(ODBC_CFLAGS)
 	AC_SUBST(ODBC_LIBS)

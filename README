@@ -10,8 +10,8 @@ pieces are:
               and data, show the version of the files, and other useful stuff.
 . mdb-sql   - a command line SQL tool that allows one to type sql queries and
               get results.
-. odbc      - An ODBC driver for use with unixODBC driver manager.  Allows 
-              one to use MDB files with PHP for example.
+. odbc      - An ODBC driver for use with unixODBC or iODBC driver manager.
+              Allows one to use MDB files with PHP for example.
 . gmdb2     - The Gnome MDB File Viewer and debugger.  Still alpha, but making
               great progress.
 

@@ -93,7 +93,7 @@ void FreeConnectParams (ConnectParams* params)
 }
 
 #if !HAVE_SQLGETPRIVATEPROFILESTRING
-int LoadDSN (
+static int LoadDSN (
    const gchar* iniFileName, const gchar* dsnName, GHashTable* table)
 {
    FILE* stream;
@@ -500,6 +500,7 @@ static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
 #define	ODBCINST_PROMPTTYPE_COMBOBOX	3
 #define	ODBCINST_PROMPTTYPE_FILENAME	4
 #define	ODBCINST_PROMPTTYPE_HIDDEN	    5
+#define	ODBCINST_PROMPTTYPE_TEXTEDIT_PASSWORD 6
 
 typedef struct tODBCINSTPROPERTY
 {

@@ -41,12 +41,15 @@ Installation Options
 ====================
 
 configure can be passed any of the following flags to turn on other 
-capabilities.
+capabilities.  Note that the options --with-unixodbc and --with-iodbc are
+mutually exclusive.
 
 --enable-sql     will cause the SQL engine to be built, you must have flex 
                  and bison (or yacc) installed for this option.
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
-                 causes the ODBC driver to be built.
+                 causes the unixODBC driver to be built.
+--with-iodbc     specifies the location of the iODBC driver manager and 
+                 causes the iODBC driver to be built.
 
 
 Installation from CVS Sources

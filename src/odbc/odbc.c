@@ -17,13 +17,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifdef UNIXODBC
 #include <sql.h>
 #include <sqlext.h>
-#else
-#include "isql.h"
-#include "isqlext.h"
-#endif
 
 #include <mdbodbc.h>
 
@@ -32,7 +27,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.24 2004/09/23 05:07:12 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.25 2004/10/16 14:21:16 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
