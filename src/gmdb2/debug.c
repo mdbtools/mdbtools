@@ -356,6 +356,8 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	GtkWidget *entry;
 	char pagestr[20];
 	guint *dissect;
+	GtkWidget *tree;
+	GtkTreeView *store;
 
 	textview = (GtkTextView *) glade_xml_get_widget (xml, "debug_textview");
 	gmdb_debug_clear(xml);
@@ -396,8 +398,8 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	gtk_text_buffer_get_iter_at_offset (buffer, &iter, 0);
 	gtk_text_buffer_insert(buffer,&iter,tbuf,strlen(tbuf));
 	
-	GtkWidget *tree = glade_xml_get_widget(xml, "debug_treeview");
-	GtkTreeView *store = (GtkTreeView *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
+	tree = glade_xml_get_widget(xml, "debug_treeview");
+	store = (GtkTreeView *) gtk_tree_view_get_model(GTK_TREE_VIEW(tree));
 
 	dissect = g_object_get_data(G_OBJECT(xml),"dissect");
 	if (!dissect || *dissect==1)
@@ -948,11 +950,16 @@ gmdb_debug_close_all()
 void
 gmdb_debug_new_cb(GtkWidget *w, gpointer *data)
 {
-GtkTextView *textview;
-guint32 page;
-GtkWidget *entry, *mi, *button, *debugwin;
-gchar text[20];
-GladeXML *debugwin_xml;
+	GtkTextView *textview;
+	guint32 page;
+	GtkWidget *entry, *mi, *button, *debugwin;
+	gchar text[20];
+	GladeXML *debugwin_xml;
+	GtkWidget *tree;
+	GtkTreeStore *store;
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *column;
+	GtkTreeSelection *select;
 
 	/* load the interface */
 	debugwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-debug.glade", NULL, NULL);
@@ -1019,11 +1026,10 @@ GladeXML *debugwin_xml;
 		pango_font_description_from_string("Courier"));
 			                			                
 	/* set up treeview, libglade only gives us the empty widget */
-	GtkWidget *tree = glade_xml_get_widget(debugwin_xml, "debug_treeview");
-	GtkTreeStore *store = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
+	tree = glade_xml_get_widget(debugwin_xml, "debug_treeview");
+	store = gtk_tree_store_new(3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(tree), GTK_TREE_MODEL(store));
 
-	GtkCellRenderer *renderer;
 	button = glade_xml_get_widget (debugwin_xml, "debug_button");
 	g_signal_connect (G_OBJECT (button), "clicked",
 		G_CALLBACK (gmdb_debug_display_cb), debugwin_xml);
@@ -1032,14 +1038,12 @@ GladeXML *debugwin_xml;
 	gtk_signal_connect (GTK_OBJECT (debugwin), "delete_event",
 		GTK_SIGNAL_FUNC (gmdb_debug_delete_cb), debugwin_xml);
 
-	GtkTreeViewColumn *column;
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Field",
 		renderer, "text", 0, NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW (tree), column);
 
-	GtkTreeSelection *select = 
-		gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
+	select = gtk_tree_view_get_selection (GTK_TREE_VIEW (tree));
 	gtk_tree_selection_set_mode (select, GTK_SELECTION_SINGLE);
 	g_signal_connect (G_OBJECT (select), "changed",
 		G_CALLBACK (gmdb_debug_select_cb), debugwin_xml);
