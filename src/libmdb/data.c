@@ -196,17 +196,8 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbColumn *col;
 	unsigned int i;
 	int rc;
-	//int num_cols, var_cols, fixed_cols;
 	int row_start, row_end;
-	//int fixed_cols_found, var_cols_found;
-	//int col_start, len, next_col;
-	//int num_of_jumps=0, jumps_used=0;
-	//int eod; /* end of data */
 	int delflag, lookupflag;
-	//int bitmask_sz;
-	//int col_ptr, deleted_columns=0;
-	//unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
-	//unsigned char isnull;
 	MdbField fields[256];
 	int num_fields;
 
@@ -243,7 +234,6 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	buffer_dump(mdb->pg_buf, row_start, row_end);
 #endif
 
-#if 1
 	/* take advantage of mdb_crack_row() to clean up binding */
 	/* use num_cols instead of num_fields -- bsb 03/04/02 */
 	for (i = 0; i < table->num_cols; i++) {
@@ -260,158 +250,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 				fields[i].siz);
 		}
 	}
-#endif
 
-#if 0
-	/* find out all the important stuff about the row */
-	if (IS_JET4(mdb)) {
-		num_cols = mdb_pg_get_int16(mdb, row_start);
-	} else {
-		num_cols = mdb->pg_buf[row_start];
-	}
-	var_cols = 0; /* mdb->pg_buf[row_end-1]; */
-	fixed_cols = 0; /* num_cols - var_cols; */
-	for (j = 0; j < table->num_cols; j++) {
-		col = g_ptr_array_index (table->columns, j);
-		if (mdb_is_fixed_col(col)) 
-			fixed_cols++;
-		else
-			var_cols++;
-	}
-	bitmask_sz = (num_cols - 1) / 8 + 1;
-	if (IS_JET4(mdb)) {
-		eod = mdb_pg_get_int16(mdb, row_end - 3 - var_cols*2 - bitmask_sz);
-	} else {
-		eod = mdb->pg_buf[row_end-1-var_cols-bitmask_sz];
-	}
-	for (i=0;i<bitmask_sz;i++) {
-		null_mask[i]=mdb->pg_buf[row_end - bitmask_sz + i + 1];
-	}
-
-#if MDB_DEBUG
-	fprintf(stdout,"#cols: %-3d #varcols %-3d EOD %-3d\n", 
-		num_cols, var_cols, eod);
-#endif
-
-	if (IS_JET4(mdb)) {
-		col_start = 2;
-	} else {
-		/* data starts at 1 */
-		col_start = 1;
-	}
-	fixed_cols_found = 0;
-	var_cols_found = 0;
-
-	/* fixed columns */
-	for (j=0;j<table->num_cols;j++) {
-		col = g_ptr_array_index(table->columns,j);
-		if (mdb_is_fixed_col(col) &&
-		    ++fixed_cols_found <= fixed_cols) {
-/* 
-			if (!strcmp(col->name, "Type")) {
-				printf("column Type, col_start %d row_start %d data %d %d\n",col_start, row_start, mdb->pg_buf[row_start + col_start], mdb->pg_buf[row_start + col_start + 1]); 
-			}
-*/
-			isnull = mdb_is_null(null_mask, j+1); 
-			rc = _mdb_attempt_bind(mdb, col, isnull,
-				row_start + col_start, col->col_size);
-			if (!rc) return 0;
-			if (col->col_type != MDB_BOOL) 
-				col_start += col->col_size;
-		}
-	}
-
-	/* if fixed columns add up to more than 256, we need a jump */
-       if (IS_JET3(mdb) && col_start >= 256) {
-               num_of_jumps++;
-               jumps_used++;
-               row_start = row_start + col_start - (col_start % 256);
-       }
-
-       col_start = row_start;
-       /*  */
-       while (col_start+256 < row_end-bitmask_sz-1-var_cols-num_of_jumps){
-               col_start += 256;
-               num_of_jumps++;
-       }
-	if (IS_JET4(mdb)) {
-		col_ptr = row_end - 2 - bitmask_sz - 1;
-		eod = mdb_pg_get_int16(mdb, col_ptr - var_cols*2);
-		col_start = mdb_pg_get_int16(mdb, col_ptr);
-	} else {
-		col_ptr = row_end - bitmask_sz - num_of_jumps - 1;
-		if (mdb->pg_buf[col_ptr]==0xFF) {
-			col_ptr--;
-			deleted_columns++;
-		}
-		eod = mdb->pg_buf[col_ptr - var_cols];
-		col_start = mdb->pg_buf[col_ptr];
-	}
-
-#if MDB_DEBUG
-	fprintf(stdout,"col_start %d num_of_jumps %d\n", 
-		col_start, num_of_jumps);
-#endif
-
-	/* variable columns */
-	for (j=0;j<table->num_cols;j++) {
-		col = g_ptr_array_index(table->columns,j);
-		if (!mdb_is_fixed_col(col) &&
-		    ++var_cols_found <= var_cols) {
-			/* col_start = mdb->pg_buf[row_end-bitmask_sz-var_cols_found]; */
-			/* more code goes here but the diff is mangled */
-			
-/*
-			if (var_cols_found == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1] &&
-				jumps_used < num_of_jumps) {
-				row_start += 256;
-				col_start -= 256;
-				jumps_used++;
-			}
-*/
-
-
-		if (var_cols_found==var_cols)  {
-				len=eod - col_start;
-		} else  {
-			if (IS_JET4(mdb)) {
-				//next_col = mdb_pg_get_int16(mdb, row_end - bitmask_sz - var_cols_found * 2 - 2 - 1) ;
-				next_col = mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 2] * 256 + 
-				mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 2 - 1] ;
-				len = next_col - col_start;
-				/* len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
-					- 2 - 1] - col_start;  */
-				//len=mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
-					//- 2 - 1 - num_of_jumps * 2] - col_start; 
-/*
-				fprintf(stdout, "found %d fix %d new pos %d new start %d old start %d\n", 
-					var_cols_found,
-					row_end - bitmask_sz - var_cols_found * 2
-               - 2 - 1,
-					row_end - bitmask_sz - var_cols_found * 2
-               - 2 - 1 - num_of_jumps * 2,
-					mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2
-               - 2 - 1], col_start);
-*/
-			} else {
-				len=mdb->pg_buf[col_ptr - var_cols_found ] - col_start;
-			}
-			while (len<0)
-				len+=256;
-		}
-
-			isnull = mdb_is_null(null_mask, j+1); 
-#if MDB_DEBUG
-			printf("binding len %d isnull %d col_start %d row_start %d row_end %d bitmask %d var_cols_found %d buf %d\n", len, isnull,col_start,row_start,row_end, bitmask_sz, var_cols_found, mdb->pg_buf[row_end - bitmask_sz - var_cols_found * 2 - 1 - num_of_jumps ]);
-#endif
-			rc = _mdb_attempt_bind(mdb, col, isnull,
-				row_start + col_start, len);
-			if (!rc) return 0;
-			col_start += len;
-		}
-	}
-
-#endif
 	return 1;
 }
 static int _mdb_attempt_bind(MdbHandle *mdb, 
