@@ -95,19 +95,31 @@ int i;
 		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->white, &dbug->black,
 			dbug->linesz * start_row + start_col,
 			dbug->linesz * start_row + end_col + 2);
+		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->white, &dbug->black,
+			dbug->linesz * start_row + 59 + (range->start_byte % 16),
+			dbug->linesz * start_row + 59 + (range->end_byte % 16) + 1);
 	} else {
 		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->white, &dbug->black,
 			dbug->linesz * start_row + start_col,
 			/* 55 = 8 (addr) + 15 (bytes) * 3 (%02x " ") + 2 (last byte) */
 			dbug->linesz * start_row + 55); 
+		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->white, &dbug->black,
+			dbug->linesz * start_row + 59 + (range->start_byte % 16),
+			dbug->linesz * start_row + 75); 
 		for (i=start_row + 1; i < end_row; i++) {
 			gmdb_debug_redraw(dbug->textbox, dbug->font, 
 				&dbug->white, &dbug->black,
 				dbug->linesz * i + 8, dbug->linesz * i + 55);
+			gmdb_debug_redraw(dbug->textbox, dbug->font, 
+				&dbug->white, &dbug->black,
+				dbug->linesz * i + 59, dbug->linesz * i + 75);
 		}
 		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->white, &dbug->black,
 			dbug->linesz * end_row + 8,
 			dbug->linesz * end_row + end_col + 2); 
+		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->white, &dbug->black,
+			dbug->linesz * end_row + 59,
+			dbug->linesz * end_row + 59 + (range->end_byte % 16) + 1); 
 	}
 	gtk_text_thaw(GTK_TEXT(dbug->textbox));
 }
@@ -132,19 +144,31 @@ int i;
 		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->black, &dbug->white,
 			dbug->linesz * start_row + start_col,
 			dbug->linesz * start_row + end_col + 2);
+		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->black, &dbug->white,
+			dbug->linesz * start_row + 59 + (range->start_byte % 16),
+			dbug->linesz * start_row + 59 + (range->end_byte % 16) + 1);
 	} else {
 		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->black, &dbug->white,
 			dbug->linesz * start_row + start_col,
 			/* 55 = 8 (addr) + 15 (bytes) * 3 (%02x " ") + 2 (last byte) */
 			dbug->linesz * start_row + 55); 
+		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->black, &dbug->white,
+			dbug->linesz * start_row + 59 + (range->start_byte % 16),
+			dbug->linesz * start_row + 75); 
 		for (i=start_row + 1; i < end_row; i++) {
 			gmdb_debug_redraw(dbug->textbox, dbug->font, 
 				&dbug->black, &dbug->white,
 				dbug->linesz * i + 8, dbug->linesz * i + 55);
+			gmdb_debug_redraw(dbug->textbox, dbug->font, 
+				&dbug->black, &dbug->white,
+				dbug->linesz * i + 59, dbug->linesz * i + 75);
 		}
 		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->black, &dbug->white,
 			dbug->linesz * end_row + 8,
 			dbug->linesz * end_row + end_col + 2); 
+		gmdb_debug_redraw(dbug->textbox, dbug->font, &dbug->black, &dbug->white,
+			dbug->linesz * end_row + 59,
+			dbug->linesz * end_row + 59 + (range->end_byte % 16) + 1); 
 	}
 }
 void

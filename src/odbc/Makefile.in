@@ -62,9 +62,11 @@ host_triplet = @host@
 AS = @AS@
 CC = @CC@
 DLLTOOL = @DLLTOOL@
-GTK_CFLAGS = @GTK_CFLAGS@
-GTK_LIBS = @GTK_LIBS@
+GMDB_CFLAGS = @GMDB_CFLAGS@
+GMDB_LIBS = @GMDB_LIBS@
 HAVE_GNOME = @HAVE_GNOME@
+HAVE_GTK = @HAVE_GTK@
+HAVE_ODBC = @HAVE_ODBC@
 LD = @LD@
 LEX = @LEX@
 LIBTOOL = @LIBTOOL@
@@ -72,7 +74,6 @@ LN_S = @LN_S@
 MAKEINFO = @MAKEINFO@
 NM = @NM@
 OBJDUMP = @OBJDUMP@
-ODBC = @ODBC@
 ODBC_INC = @ODBC_INC@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
@@ -81,24 +82,22 @@ SQL = @SQL@
 VERSION = @VERSION@
 YACC = @YACC@
 
-include_HEADERS = connectparams.h
-SQLDIR = ../sql
-SQLSOURCES = mdbsql.c parser.c lexer.c
-MDBDIR = ../libmdb
-MDBSOURCES = backend.c index.c money.c catalog.c kkd.c sargs.c \
-				data.c like.c table.c dump.c file.c mem.c
-
-bin_PROGRAMS = unittest
-lib_LTLIBRARIES = libmdbodbc.la
-INCLUDES = -I ../../include `glib-config --cflags`
-libmdbodbc_la_SOURCES = odbc.c connectparams.c
-libmdbodbc_la_LIBADD = $(patsubst %, $(SQLDIR)/%, \
-				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
-				$(patsubst %, $(MDBDIR)/%, \
-				$(patsubst %.c, %.lo, $(MDBSOURCES))) -lglib
-
-LIBS = @LEXLIB@ `glib-config --libs`
-unittest_LDADD = libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
+@HAVE_ODBC_TRUE@include_HEADERS = @HAVE_ODBC_TRUE@connectparams.h
+@HAVE_ODBC_TRUE@SQLDIR = @HAVE_ODBC_TRUE@../sql
+@HAVE_ODBC_TRUE@SQLSOURCES = @HAVE_ODBC_TRUE@mdbsql.c parser.c lexer.c
+@HAVE_ODBC_TRUE@MDBDIR = @HAVE_ODBC_TRUE@../libmdb
+@HAVE_ODBC_TRUE@MDBSOURCES = @HAVE_ODBC_TRUE@backend.c index.c money.c catalog.c kkd.c sargs.c \
+@HAVE_ODBC_TRUE@				data.c like.c table.c dump.c file.c mem.c
+@HAVE_ODBC_TRUE@bin_PROGRAMS = @HAVE_ODBC_TRUE@unittest
+@HAVE_ODBC_TRUE@lib_LTLIBRARIES = @HAVE_ODBC_TRUE@libmdbodbc.la
+@HAVE_ODBC_TRUE@INCLUDES = @HAVE_ODBC_TRUE@-I ../../include `glib-config --cflags`
+@HAVE_ODBC_TRUE@libmdbodbc_la_SOURCES = @HAVE_ODBC_TRUE@odbc.c connectparams.c
+@HAVE_ODBC_TRUE@libmdbodbc_la_LIBADD = @HAVE_ODBC_TRUE@$(patsubst %, $(SQLDIR)/%, \
+@HAVE_ODBC_TRUE@				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
+@HAVE_ODBC_TRUE@				$(patsubst %, $(MDBDIR)/%, \
+@HAVE_ODBC_TRUE@				$(patsubst %.c, %.lo, $(MDBSOURCES))) -lglib
+@HAVE_ODBC_TRUE@LIBS = @HAVE_ODBC_TRUE@@LEXLIB@ `glib-config --libs`
+@HAVE_ODBC_TRUE@unittest_LDADD = @HAVE_ODBC_TRUE@libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_CLEAN_FILES = 
 LTLIBRARIES =  $(lib_LTLIBRARIES)
@@ -108,16 +107,16 @@ DEFS = @DEFS@ -I. -I$(srcdir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 libmdbodbc_la_LDFLAGS = 
-libmdbodbc_la_DEPENDENCIES =  $(patsubst %, $(SQLDIR)/%, $(patsubst %.c, \
-%.lo, $(SQLSOURCES))) $(patsubst %, $(MDBDIR)/%, $(patsubst %.c, %.lo, \
-$(MDBSOURCES)))
-libmdbodbc_la_OBJECTS =  odbc.lo connectparams.lo
+@HAVE_ODBC_TRUE@libmdbodbc_la_DEPENDENCIES =  $(patsubst %, $(SQLDIR)/%, \
+@HAVE_ODBC_TRUE@$(patsubst %.c, %.lo, $(SQLSOURCES))) $(patsubst %, \
+@HAVE_ODBC_TRUE@$(MDBDIR)/%, $(patsubst %.c, %.lo, $(MDBSOURCES)))
+@HAVE_ODBC_TRUE@libmdbodbc_la_OBJECTS =  odbc.lo connectparams.lo
 PROGRAMS =  $(bin_PROGRAMS)
 
 unittest_SOURCES = unittest.c
 unittest_OBJECTS =  unittest.o
-unittest_DEPENDENCIES =  libmdbodbc.la ../libmdb/libmdb.la \
-../sql/libmdbsql.la
+@HAVE_ODBC_TRUE@unittest_DEPENDENCIES =  libmdbodbc.la \
+@HAVE_ODBC_TRUE@../libmdb/libmdb.la ../sql/libmdbsql.la
 unittest_LDFLAGS = 
 CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -418,8 +417,8 @@ distclean-generic clean-generic maintainer-clean-generic clean \
 mostlyclean distclean maintainer-clean
 
 
-odbc: $(EXTRA_LTLIBRARIES)
-	@echo ''
+@HAVE_ODBC_TRUE@odbc: $(EXTRA_LTLIBRARIES)
+@HAVE_ODBC_TRUE@	@echo ''
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

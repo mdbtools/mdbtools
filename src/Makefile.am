@@ -1,5 +1,5 @@
 if SQL
-SUBDIRS	=	libmdb sql util extras 
+SUBDIRS	=	libmdb sql util extras odbc gmdb
 DEFDIR	=	$(prefix)
 else
 SUBDIRS	=	libmdb util extras 

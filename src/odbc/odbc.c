@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.6 2002/04/09 01:19:26 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.7 2002/04/14 23:35:39 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -1038,12 +1038,136 @@ int i;
 	return 0;
 }
 
+static void _set_func_exists(SQLUSMALLINT FAR *pfExists, SQLUSMALLINT fFunction)
+{
+SQLUSMALLINT FAR *mod;
+
+	mod = pfExists + (fFunction >> 4);
+	*mod |= (1 << (fFunction & 0x0f));
+}
 SQLRETURN SQL_API SQLGetFunctions(
     SQLHDBC            hdbc,
     SQLUSMALLINT       fFunction,
     SQLUSMALLINT FAR  *pfExists)
 {
+int i;
+
 	TRACE("SQLGetFunctions");
+	switch (fFunction) {
+#if ODBCVER >= 0x0300
+		case SQL_API_ODBC3_ALL_FUNCTIONS:
+ 
+/*			for (i=0;i<SQL_API_ODBC3_ALL_FUNCTIONS_SIZE;i++) {
+				pfExists[i] = 0xFFFF;
+			}
+*/
+			_set_func_exists(pfExists,SQL_API_SQLALLOCCONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLALLOCENV);
+			_set_func_exists(pfExists,SQL_API_SQLALLOCHANDLE);
+			_set_func_exists(pfExists,SQL_API_SQLALLOCSTMT);
+			_set_func_exists(pfExists,SQL_API_SQLBINDCOL);
+			_set_func_exists(pfExists,SQL_API_SQLBINDPARAMETER);
+			_set_func_exists(pfExists,SQL_API_SQLCANCEL);
+			_set_func_exists(pfExists,SQL_API_SQLCLOSECURSOR);
+			_set_func_exists(pfExists,SQL_API_SQLCOLATTRIBUTE);
+			_set_func_exists(pfExists,SQL_API_SQLCOLUMNS);
+			_set_func_exists(pfExists,SQL_API_SQLCONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLCOPYDESC);
+			_set_func_exists(pfExists,SQL_API_SQLDATASOURCES);
+			_set_func_exists(pfExists,SQL_API_SQLDESCRIBECOL);
+			_set_func_exists(pfExists,SQL_API_SQLDISCONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLENDTRAN);
+			_set_func_exists(pfExists,SQL_API_SQLERROR);
+			_set_func_exists(pfExists,SQL_API_SQLEXECDIRECT);
+			_set_func_exists(pfExists,SQL_API_SQLEXECUTE);
+			_set_func_exists(pfExists,SQL_API_SQLFETCH);
+			_set_func_exists(pfExists,SQL_API_SQLFETCHSCROLL);
+			_set_func_exists(pfExists,SQL_API_SQLFREECONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLFREEENV);
+			_set_func_exists(pfExists,SQL_API_SQLFREEHANDLE);
+			_set_func_exists(pfExists,SQL_API_SQLFREESTMT);
+			_set_func_exists(pfExists,SQL_API_SQLGETCONNECTATTR);
+			_set_func_exists(pfExists,SQL_API_SQLGETCONNECTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLGETCURSORNAME);
+			_set_func_exists(pfExists,SQL_API_SQLGETDATA);
+			_set_func_exists(pfExists,SQL_API_SQLGETDESCFIELD);
+			_set_func_exists(pfExists,SQL_API_SQLGETDESCREC);
+			_set_func_exists(pfExists,SQL_API_SQLGETDIAGFIELD);
+			_set_func_exists(pfExists,SQL_API_SQLGETDIAGREC);
+			_set_func_exists(pfExists,SQL_API_SQLGETENVATTR);
+			_set_func_exists(pfExists,SQL_API_SQLGETFUNCTIONS);
+			_set_func_exists(pfExists,SQL_API_SQLGETINFO);
+			_set_func_exists(pfExists,SQL_API_SQLGETSTMTATTR);
+			_set_func_exists(pfExists,SQL_API_SQLGETSTMTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLGETTYPEINFO);
+			_set_func_exists(pfExists,SQL_API_SQLNUMRESULTCOLS);
+			_set_func_exists(pfExists,SQL_API_SQLPARAMDATA);
+			_set_func_exists(pfExists,SQL_API_SQLPREPARE);
+			_set_func_exists(pfExists,SQL_API_SQLPUTDATA);
+			_set_func_exists(pfExists,SQL_API_SQLROWCOUNT);
+			_set_func_exists(pfExists,SQL_API_SQLSETCONNECTATTR);
+			_set_func_exists(pfExists,SQL_API_SQLSETCONNECTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLSETCURSORNAME);
+			_set_func_exists(pfExists,SQL_API_SQLSETDESCFIELD);
+			_set_func_exists(pfExists,SQL_API_SQLSETDESCREC);
+			_set_func_exists(pfExists,SQL_API_SQLSETENVATTR);
+			_set_func_exists(pfExists,SQL_API_SQLSETPARAM);
+			_set_func_exists(pfExists,SQL_API_SQLSETSTMTATTR);
+			_set_func_exists(pfExists,SQL_API_SQLSETSTMTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLSPECIALCOLUMNS);
+			_set_func_exists(pfExists,SQL_API_SQLSTATISTICS);
+			_set_func_exists(pfExists,SQL_API_SQLTABLES);
+			_set_func_exists(pfExists,SQL_API_SQLTRANSACT);
+
+			return SQL_SUCCESS;
+			break;
+#endif
+		case SQL_API_ALL_FUNCTIONS:
+			_set_func_exists(pfExists,SQL_API_SQLALLOCCONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLALLOCENV);
+			_set_func_exists(pfExists,SQL_API_SQLALLOCSTMT);
+			_set_func_exists(pfExists,SQL_API_SQLBINDCOL);
+			_set_func_exists(pfExists,SQL_API_SQLCANCEL);
+			_set_func_exists(pfExists,SQL_API_SQLCOLATTRIBUTES);
+			_set_func_exists(pfExists,SQL_API_SQLCOLUMNS);
+			_set_func_exists(pfExists,SQL_API_SQLCONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLDATASOURCES);
+			_set_func_exists(pfExists,SQL_API_SQLDESCRIBECOL);
+			_set_func_exists(pfExists,SQL_API_SQLDISCONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLERROR);
+			_set_func_exists(pfExists,SQL_API_SQLEXECDIRECT);
+			_set_func_exists(pfExists,SQL_API_SQLEXECUTE);
+			_set_func_exists(pfExists,SQL_API_SQLFETCH);
+			_set_func_exists(pfExists,SQL_API_SQLFREECONNECT);
+			_set_func_exists(pfExists,SQL_API_SQLFREEENV);
+			_set_func_exists(pfExists,SQL_API_SQLFREESTMT);
+			_set_func_exists(pfExists,SQL_API_SQLGETCONNECTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLGETCURSORNAME);
+			_set_func_exists(pfExists,SQL_API_SQLGETDATA);
+			_set_func_exists(pfExists,SQL_API_SQLGETFUNCTIONS);
+			_set_func_exists(pfExists,SQL_API_SQLGETINFO);
+			_set_func_exists(pfExists,SQL_API_SQLGETSTMTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLGETTYPEINFO);
+			_set_func_exists(pfExists,SQL_API_SQLNUMRESULTCOLS);
+			_set_func_exists(pfExists,SQL_API_SQLPARAMDATA);
+			_set_func_exists(pfExists,SQL_API_SQLPREPARE);
+			_set_func_exists(pfExists,SQL_API_SQLPUTDATA);
+			_set_func_exists(pfExists,SQL_API_SQLROWCOUNT);
+			_set_func_exists(pfExists,SQL_API_SQLSETCONNECTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLSETCURSORNAME);
+			_set_func_exists(pfExists,SQL_API_SQLSETPARAM);
+			_set_func_exists(pfExists,SQL_API_SQLSETSTMTOPTION);
+			_set_func_exists(pfExists,SQL_API_SQLSPECIALCOLUMNS);
+			_set_func_exists(pfExists,SQL_API_SQLSTATISTICS);
+			_set_func_exists(pfExists,SQL_API_SQLTABLES);
+			_set_func_exists(pfExists,SQL_API_SQLTRANSACT);
+			return SQL_SUCCESS;
+			break;
+		default:
+			*pfExists = 1; /* SQL_TRUE */
+			return SQL_SUCCESS;
+			break;
+	}
 	return SQL_SUCCESS;
 }
 

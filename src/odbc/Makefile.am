@@ -1,3 +1,4 @@
+if HAVE_ODBC
 include_HEADERS = connectparams.h
 SQLDIR         =    ../sql
 SQLSOURCES     =    mdbsql.c parser.c lexer.c
@@ -18,4 +19,4 @@ unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 ## Need blank statement to avoid compiling odbc.c
 odbc: $(EXTRA_LTLIBRARIES)
 	@echo ''
-
+endif

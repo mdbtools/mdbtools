@@ -62,9 +62,11 @@ host_triplet = @host@
 AS = @AS@
 CC = @CC@
 DLLTOOL = @DLLTOOL@
-GTK_CFLAGS = @GTK_CFLAGS@
-GTK_LIBS = @GTK_LIBS@
+GMDB_CFLAGS = @GMDB_CFLAGS@
+GMDB_LIBS = @GMDB_LIBS@
 HAVE_GNOME = @HAVE_GNOME@
+HAVE_GTK = @HAVE_GTK@
+HAVE_ODBC = @HAVE_ODBC@
 LD = @LD@
 LEX = @LEX@
 LIBTOOL = @LIBTOOL@
@@ -72,7 +74,6 @@ LN_S = @LN_S@
 MAKEINFO = @MAKEINFO@
 NM = @NM@
 OBJDUMP = @OBJDUMP@
-ODBC = @ODBC@
 ODBC_INC = @ODBC_INC@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
@@ -80,7 +81,7 @@ READLINE_LIBS = @READLINE_LIBS@
 SQL = @SQL@
 VERSION = @VERSION@
 YACC = @YACC@
-@SQL_TRUE@SUBDIRS = @SQL_TRUE@libmdb sql util extras 
+@SQL_TRUE@SUBDIRS = @SQL_TRUE@libmdb sql util extras odbc gmdb
 @SQL_FALSE@SUBDIRS = @SQL_FALSE@libmdb util extras 
 @SQL_TRUE@DEFDIR = @SQL_TRUE@$(prefix)
 @SQL_FALSE@DEFDIR = @SQL_FALSE@$(prefix)
@@ -93,7 +94,7 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DIST_SUBDIRS =  libmdb sql util extras libmdb util extras
+DIST_SUBDIRS =  libmdb sql util extras odbc gmdb libmdb util extras
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 

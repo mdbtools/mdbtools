@@ -242,8 +242,10 @@ gint nmenu_items = sizeof (menu_items) / sizeof (menu_items[0]);
 
 #endif
 
+#ifdef SQL
     /* initialize the SQL engine */
     sql = mdb_sql_init();
+#endif
 	/* initialize MDB Tools library */
 	mdb_init();
 
@@ -314,8 +316,10 @@ gint nmenu_items = sizeof (menu_items) / sizeof (menu_items[0]);
 	/* enter the main loop */
 	gtk_main ();
 
+#ifdef SQL
 	/* free MDB Tools library */
 	mdb_sql_exit(sql);
+#endif
 	mdb_exit();
         
 	return 0;

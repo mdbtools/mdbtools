@@ -1,6 +1,19 @@
 This is mdbtools version 0.4
 
-This software is still beta so don't expect too much.
+Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
+program to help you use Microsoft Access file in various settings.  The major
+pieces are:
+
+. libmdb    - the core library that allows access to MDB files programatically.
+. libmdbsql - builds on libmdb to provide a SQL engine (ala Jet)
+. utils     - provides command line utilities to list tables, export schema, 
+              and data, show the version of the files, and other useful stuff.
+. mdb-sql   - a command line SQL tool that allows one to type sql queries and
+              get results.
+. odbc      - An ODBC driver for use with unixODBC driver manager.  Allows 
+              one to use MDB files with PHP for example.
+. gmdb      - The GTK MDB File Viewer and debugger.  Still alpha, but making
+              great progress.
 
 If you are interested in helping, read the HACKING file for a description of 
 where the code stands and what has been gleened of the file format.

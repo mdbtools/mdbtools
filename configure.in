@@ -1,11 +1,10 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/extras/mdb-dump.c)
-AM_INIT_AUTOMAKE(mdbtools,0.3)
+AM_INIT_AUTOMAKE(mdbtools,0.4)
 
 AC_PROG_CC(gcc)
 dnl Checks for programs.
 AC_PROG_MAKE_SET
-#AC_PROG_RANLIB
 AM_PROG_LIBTOOL
 AM_PROG_LEX
 AC_PROG_YACC
@@ -39,20 +38,43 @@ if test "$with_unixodbc"; then
      ODBC_INC=$with_unixodbc/include
      odbc=true
 fi
-AM_CONDITIONAL(ODBC, test x$odbc = xtrue)
-AC_SUBST(ODBC)
+AM_CONDITIONAL(HAVE_ODBC, test x$odbc = xtrue)
+AC_SUBST(HAVE_ODBC)
 AC_SUBST(ODBC_INC)
 
 AC_ARG_ENABLE(sql,
   [  --enable-sql Enable SQL engine])
 
 if test "$enable_sql" = "yes" ; then
-	echo "SQL ENABLED!"
      CFLAGS="$CFLAGS -DSQL"
 	sql=true
 fi
 AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
+
+dnl gnome check modified from gnome-db
+AC_MSG_CHECKING(for GTK >= 1.2.0)
+if gnome-config --version > /dev/null 2>&1
+then
+	verstxt=`gtk-config --version`
+	vers=`echo "$verstxt" | \
+		awk -F. '{ printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+	if test "$vers" -ge 1002000
+	then
+		AC_MSG_RESULT(found)
+		GMDB_LIBS=`gtk-config --libs`	
+		GMDB_CFLAGS=`gtk-config --cflags`	
+		havegtk=true
+	else
+		AC_MSG_RESULT(not found)
+		havegtk=false
+	fi
+else
+	AC_MSG_RESULT(not found)
+	havegtk=false
+fi
+AM_CONDITIONAL(HAVE_GTK, test x$havegtk = xtrue)
+AC_SUBST(HAVE_GTK)
 
 dnl gnome check modified from gnome-db
 AC_MSG_CHECKING(for Gnome >= 1.2.0)
@@ -65,25 +87,22 @@ then
 	then
 		AC_MSG_RESULT(found)
 		CFLAGS="$CFLAGS -DHAVE_GNOME"
-		GTK_LIBS=`gnome-config gnome gnomeui --libs`	
-		GTK_CFLAGS=`gnome-config gnome gnomeui --cflags`	
+		GMDB_LIBS=`gnome-config gnome gnomeui --libs`	
+		GMDB_CFLAGS=`gnome-config gnome gnomeui --cflags`	
 		havegnome=true
 	else
 		AC_MSG_RESULT(not found)
-		GTK_LIBS=`gtk-config --libs`	
-		GTK_CFLAGS=`gtk-config --cflags`	
 		havegnome=false
 	fi
 else
 	AC_MSG_RESULT(not found)
 	havegnome=false
-	GTK_LIBS=`gtk-config --libs`	
-	GTK_CFLAGS=`gtk-config --cflags`	
 fi
 AM_CONDITIONAL(HAVE_GNOME, test x$havegnome = xtrue)
 AC_SUBST(HAVE_GNOME)
-AC_SUBST(GTK_LIBS)
-AC_SUBST(GTK_CFLAGS)
+
+AC_SUBST(GMDB_LIBS)
+AC_SUBST(GMDB_CFLAGS)
 
 dnl Checks for library functions.
 

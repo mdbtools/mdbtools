@@ -62,9 +62,11 @@ host_triplet = i686-pc-linux-gnu
 AS = @AS@
 CC = gcc
 DLLTOOL = @DLLTOOL@
-GTK_CFLAGS = -I/usr/include -DNEED_GNOMESUPPORT_H -I/usr/lib/gnome-libs/include -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include -I/usr/X11R6/include
-GTK_LIBS = -rdynamic -L/usr/lib -L/usr/X11R6/lib -lgnomeui -lart_lgpl -lgdk_imlib -lSM -lICE -lgtk -lgdk -lgmodule -lXi -lXext -lX11 -lgnome -lgnomesupport -lesd -laudiofile -lm -ldb1 -lglib -ldl
+GMDB_CFLAGS = -I/usr/include -DNEED_GNOMESUPPORT_H -I/usr/lib/gnome-libs/include -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include -I/usr/X11R6/include
+GMDB_LIBS = -rdynamic -L/usr/lib -L/usr/X11R6/lib -lgnomeui -lart_lgpl -lgdk_imlib -lSM -lICE -lgtk -lgdk -lgmodule -lXi -lXext -lX11 -lgnome -lgnomesupport -lesd -laudiofile -lm -ldb1 -lglib -ldl
 HAVE_GNOME = 
+HAVE_GTK = 
+HAVE_ODBC = 
 LD = /usr/bin/ld
 LEX = flex
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -72,15 +74,14 @@ LN_S = ln -s
 MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
-ODBC = 
 ODBC_INC = /usr/local/include
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
 SQL = 
-VERSION = 0.3
+VERSION = 0.4
 YACC = bison -y
-SUBDIRS = libmdb sql util extras 
+SUBDIRS = libmdb sql util extras odbc gmdb
 #SUBDIRS = #libmdb util extras 
 DEFDIR = $(prefix)
 #DEFDIR = #$(prefix)
@@ -93,7 +94,7 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DIST_SUBDIRS =  libmdb sql util extras libmdb util extras
+DIST_SUBDIRS =  libmdb sql util extras odbc gmdb libmdb util extras
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 

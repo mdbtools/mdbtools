@@ -4,6 +4,11 @@ Basic Installation
    $ ./configure 
    $ make 
 
+or for a complete install (requires bison, flex, and unixODBC):
+
+   $ ./configure --enable-sql --with-unixodbc=/usr/local
+   $ make 
+
 This will build some useful utilities:
 
 mdb-ver    -- prints the version (JET 3 or 4) of an mdb file
@@ -15,6 +20,7 @@ mdb-header -- generates a C header to be used in exporting mdb data to a C prog.
 mdb-parsecvs -- generates a C program given a CSV file made with mdb-export
 mdb-sql    -- if --enable-sql is specified, a simple SQL engine (also used by 
               ODBC and gmdb).
+gmdb       -- a graphical utility to browse MDB files.
 
 And some utilities useful for debugging:
 
@@ -38,4 +44,3 @@ capabilities.
                  bison installed for this option.
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
                  causes the ODBC driver to be built.
-

@@ -62,9 +62,11 @@ host_triplet = i686-pc-linux-gnu
 AS = @AS@
 CC = gcc
 DLLTOOL = @DLLTOOL@
-GTK_CFLAGS = -I/usr/include -DNEED_GNOMESUPPORT_H -I/usr/lib/gnome-libs/include -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include -I/usr/X11R6/include
-GTK_LIBS = -rdynamic -L/usr/lib -L/usr/X11R6/lib -lgnomeui -lart_lgpl -lgdk_imlib -lSM -lICE -lgtk -lgdk -lgmodule -lXi -lXext -lX11 -lgnome -lgnomesupport -lesd -laudiofile -lm -ldb1 -lglib -ldl
+GMDB_CFLAGS = -I/usr/include -DNEED_GNOMESUPPORT_H -I/usr/lib/gnome-libs/include -I/usr/include/gtk-1.2 -I/usr/include/glib-1.2 -I/usr/lib/glib/include -I/usr/X11R6/include
+GMDB_LIBS = -rdynamic -L/usr/lib -L/usr/X11R6/lib -lgnomeui -lart_lgpl -lgdk_imlib -lSM -lICE -lgtk -lgdk -lgmodule -lXi -lXext -lX11 -lgnome -lgnomesupport -lesd -laudiofile -lm -ldb1 -lglib -ldl
 HAVE_GNOME = 
+HAVE_GTK = 
+HAVE_ODBC = 
 LD = /usr/bin/ld
 LEX = flex
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -72,13 +74,12 @@ LN_S = ln -s
 MAKEINFO = makeinfo
 NM = /usr/bin/nm -B
 OBJDUMP = @OBJDUMP@
-ODBC = 
 ODBC_INC = /usr/local/include
 PACKAGE = mdbtools
 RANLIB = ranlib
 READLINE_LIBS =  -lncurses -lreadline
 SQL = 
-VERSION = 0.3
+VERSION = 0.4
 YACC = bison -y
 
 bin_PROGRAMS = mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql mdb-ver prtable prcat prdata prkkd prdump  
@@ -91,7 +92,7 @@ CONFIG_CLEAN_FILES =
 PROGRAMS =  $(bin_PROGRAMS)
 
 
-DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.3\" -DYYTEXT_POINTER=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_WORDEXP_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
+DEFS =  -DPACKAGE=\"mdbtools\" -DVERSION=\"0.4\" -DYYTEXT_POINTER=1 -DSTDC_HEADERS=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_UNISTD_H=1 -DHAVE_WORDEXP_H=1 -DHAVE_READLINE=1  -I. -I$(srcdir) 
 CPPFLAGS = 
 LDFLAGS = 
 mdb_export_SOURCES = mdb-export.c
