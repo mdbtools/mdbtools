@@ -268,16 +268,16 @@ int mdb_read_next_dpg(MdbTableDef *table)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
+	int next_pg;
 	int map_type;
 
 #ifndef SLOW_READ
-	table->cur_phys_pg = mdb_map_find_next(mdb, table->usage_map,
+	next_pg = mdb_map_find_next(mdb, table->usage_map,
 		table->map_sz, table->cur_phys_pg);
 
-	if (table->cur_phys_pg && mdb_read_pg(mdb, table->cur_phys_pg)) {
+	if (next_pg && mdb_read_pg(mdb, next_pg)) {
+		table->cur_phys_pg = next_pg;
 		return table->cur_phys_pg;
-	} else {
-		return 0;
 	}
 #endif 
 	/* can't do a fast read, go back to the old way */
@@ -815,7 +815,7 @@ int mdb_col_disp_size(MdbColumn *col)
 			return 5;
 		break;
 		case MDB_LONGINT:
-			return 7;
+			return 10;
 		break;
 		case MDB_FLOAT:
 			return 10;
