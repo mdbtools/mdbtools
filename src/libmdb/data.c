@@ -33,13 +33,26 @@ MdbColumn *col;
 }
 int mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
-int rows, row_end;
+int rows, row_start, row_end, i;
 
 	rows = mdb_get_int16(mdb,8);
 	if (row==0) 
 		row_end = mdb->pg_size - 1; /* end of page */
-	else 
+	else {
 		row_end = mdb_get_int16(mdb, (10 + (row-1) * 2)) - 1;
+
+		for (i = row - 1; i > 0; i--) {
+			row_start = mdb_get_int16(mdb, (10 + i * 2));
+			if (!(row_start & 0x8000)) {
+				break;
+			}
+		}
+		if (i == 0) {
+			row_end = mdb->pg_size - 1;
+		} else {
+			row_end = row_start - 1;
+		}
+	}
 
 	return row_end;
 }

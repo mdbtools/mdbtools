@@ -21,7 +21,14 @@ int main(int argc, char **argv)
    int                  pg=0;
    char                 addr[10];
 
-   in = fopen(argv[1],"r");
+   if (argc < 2) {
+	fprintf(stderr, "Usage: mdb-dump <filename>\n\n");
+	exit(1);
+   }
+   if ((in = fopen(argv[1],"r"))==NULL) {
+	fprintf(stderr, "Couldn't open file %s\n", argv[1]);
+	exit(1);
+   }
    while (length = fread(data,1,16,in)) {
       sprintf(addr, "%06x", i);
       if (!strcmp(&addr[3],"000") || ! strcmp(&addr[3],"800")) {
