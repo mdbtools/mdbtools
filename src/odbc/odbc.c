@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.19 2004/09/09 03:44:36 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.20 2004/09/12 20:56:35 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -49,11 +49,14 @@ static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 
 static void bind_columns (struct _hstmt*);
 
+#define FILL_FIELD(f,v,s) mdb_fill_temp_field(f,v,s,0,0,0,0)
+
 #ifndef MIN
 #define MIN(a,b) (a>b ? b : a)
 #endif
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
+static char sqlState[6];
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
@@ -1041,7 +1044,92 @@ SQLRETURN SQL_API SQLColumns(
     SQLCHAR FAR       *szColumnName,
     SQLSMALLINT        cbColumnName)
 {
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+	struct _henv *env = (struct _henv *) dbc->henv;
+	MdbSQL *sql = env->sql;
+	MdbHandle *mdb = sql->mdb;
+	MdbTableDef *ttable;
+	MdbField fields[18];
+	unsigned char row_buffer[MDB_PGSIZE];
+	int row_size;
+	unsigned int i, j, k;
+	MdbCatalogEntry *entry;
+	MdbTableDef *table;
+	MdbColumn *col;
+	unsigned int ts2, ts3, ts5;
+	unsigned char t2[MDB_BIND_SIZE],
+	              t3[MDB_BIND_SIZE],
+	              t5[MDB_BIND_SIZE];
+	SQLSMALLINT nullable;  /* SQL_NULLABLE or SQL_NO_NULLS */
+	SQLSMALLINT datatype;  /* For datetime, use concise data type */
+	SQLSMALLINT sqldatatype;  /* For datetime, use nonconcise data type */
+	SQLINTEGER ordinal;
+
 	TRACE("SQLColumns");
+
+	mdb_read_catalog(mdb, MDB_ANY);
+
+	ttable = mdb_create_temp_table(mdb, "#columns");
+	mdb_sql_add_temp_col(sql, ttable, 0, "TABLE_CAT", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 1, "TABLE_SCHEM", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 2, "TABLE_NAME", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 3, "COLUMN_NAME", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 4, "DATA_TYPE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 5, "TYPE_NAME", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 6, "COLUMN_SIZE", MDB_LONGINT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 7, "BUFFER_LENGTH", MDB_LONGINT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 8, "DECIMAL_DIGITS", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 9, "NUM_PREC_RADIX", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 10, "NULLABLE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 11, "REMARKS", MDB_TEXT, 254, 0);
+	mdb_sql_add_temp_col(sql, ttable, 12, "COLUMN_DEF", MDB_TEXT, 254, 0);
+	mdb_sql_add_temp_col(sql, ttable, 13, "SQL_DATA_TYPE", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 14, "SQL_DATETIME_SUB", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 15, "CHAR_OCTET_LENGTH", MDB_LONGINT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 16, "ORDINAL_POSITION", MDB_LONGINT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 17, "IS_NULLABLE", MDB_TEXT, 254, 0);
+	mdb_temp_columns_end(ttable);
+
+	for (i=0; i<mdb->num_catalog; i++) {
+     		entry = g_ptr_array_index(mdb->catalog, i);
+		/* TODO: Do more advanced matching */
+		if (strcasecmp(szTableName, entry->object_name) != 0)
+			continue;
+		table = mdb_read_table(entry);
+		mdb_read_columns(table);
+		for (j=0; j<table->num_cols; j++) {
+			col = g_ptr_array_index(table->columns, j);
+
+			ts2 = mdb_ascii2unicode(mdb, table->name, 0, 100, t2);
+			ts3 = mdb_ascii2unicode(mdb, col->name, 0, 100, t3);
+			ts5 = mdb_ascii2unicode(mdb, "FIX ME", 0, 100, t5);
+			nullable = SQL_NO_NULLS;
+			datatype = _odbc_get_client_type(col->col_type);
+			sqldatatype = _odbc_get_client_type(col->col_type);
+			ordinal = j+1;
+
+			/* Set all fields to NULL */
+			for (k=0; k<18; k++) {
+				FILL_FIELD(&fields[k], NULL, 0);
+			}
+
+			FILL_FIELD(&fields[2], t2, ts2);
+			FILL_FIELD(&fields[3], t3, ts3);
+			FILL_FIELD(&fields[4], &datatype, 0);
+			FILL_FIELD(&fields[5], t5, ts5);
+			FILL_FIELD(&fields[10], &nullable, 0);
+			FILL_FIELD(&fields[13], &sqldatatype, 0);
+			FILL_FIELD(&fields[16], &ordinal, 0);
+
+			row_size = mdb_pack_row(ttable, row_buffer, 18, fields);
+			mdb_add_row_to_pg(ttable, row_buffer, row_size);
+			ttable->num_rows++;
+		}
+		mdb_free_tabledef(table);
+	}
+	sql->cur_table = ttable;
+
 	return SQL_SUCCESS;
 }
 
@@ -1080,6 +1168,7 @@ SQLRETURN SQL_API SQLGetData(
 	mdb = sql->mdb;
 
 	if (icol<1 || icol>sql->num_columns) {
+		strcpy(sqlState, "07009");
 		return SQL_ERROR;
 	}
 
@@ -1092,12 +1181,22 @@ SQLRETURN SQL_API SQLGetData(
 		}
 	}
 	
-	strcpy(rgbValue,
-		mdb_col_to_string(mdb, mdb->pg_buf, col->cur_value_start, col->col_type, 
-		col->cur_value_len));
-	//*((char *)&rgbValue[col->cur_value_len])='\0';
-	*pcbValue = col->cur_value_len;
-	return 0;
+	if (col->cur_value_len) {
+		strcpy(rgbValue, mdb_col_to_string(mdb,mdb->pg_buf,
+			col->cur_value_start,col->col_type,col->cur_value_len));
+		//*((char *)&rgbValue[col->cur_value_len])='\0';
+		if (pcbValue)
+			*pcbValue = col->cur_value_len;
+	} else {
+		/* When NULL data is retrieved, non-null pcbValue is required */
+		if (pcbValue) {
+			*pcbValue = SQL_NULL_DATA;
+		} else {
+			strcpy(sqlState, "22002");
+			return SQL_ERROR;
+		}		
+	}
+	return SQL_SUCCESS;
 }
 
 static void _set_func_exists(SQLUSMALLINT FAR *pfExists, SQLUSMALLINT fFunction)
@@ -1262,15 +1361,18 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 	MdbTableDef *ttable;
 	MdbSQL *sql = env->sql;
 	MdbHandle *mdb = sql->mdb;
-	unsigned char *new_pg;
 	int row_size;
 	unsigned char row_buffer[MDB_PGSIZE];
-	unsigned char tmpstr[MDB_BIND_SIZE];
-	int i, tmpsiz;
+	unsigned int ts0, ts3, ts4, ts5, ts12;
+	unsigned char t0[MDB_BIND_SIZE],
+	              t3[MDB_BIND_SIZE],
+	              t4[MDB_BIND_SIZE],
+	              t5[MDB_BIND_SIZE],
+	              t12[MDB_BIND_SIZE];
+	int i;
 	MdbField fields[NUM_TYPE_INFO_COLS];
 
-	TRACE("SQLGetStmtOption");
-	stmt = (struct _hstmt *) hstmt;
+	TRACE("SQLGetTypeInfo");
 	
 	ttable = mdb_create_temp_table(mdb, "#typeinfo");
 	mdb_sql_add_temp_col(sql, ttable, 0, "TYPE_NAME", MDB_TEXT, 30, 0);
@@ -1292,38 +1394,41 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 	mdb_sql_add_temp_col(sql, ttable, 16, "SQL_DATETIME_SUB", MDB_INT, 0, 1);
 	mdb_sql_add_temp_col(sql, ttable, 17, "NUM_PREC_RADIX", MDB_INT, 0, 1);
 	mdb_sql_add_temp_col(sql, ttable, 18, "INTERVAL_PRECISION", MDB_INT, 0, 1);
+	mdb_temp_columns_end(ttable);
 
 	for (i=0; i<MAX_TYPE_INFO; i++) {
-		if (!fSqlType || fSqlType == type_info[i].data_type) {
-			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].type_name, 0, 100, tmpstr);
-			mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
-			mdb_fill_temp_field(&fields[1],&type_info[i].data_type, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[2],&type_info[i].column_size, sizeof(SQLINTEGER), 0,0,0,1);
-			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].literal_prefix, 0, 100, tmpstr);
-			mdb_fill_temp_field(&fields[3], tmpstr, tmpsiz, 0,0,0,0);
-			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].literal_suffix, 0, 100, tmpstr);
-			mdb_fill_temp_field(&fields[4], tmpstr, tmpsiz, 0,0,0,0);
-			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].create_params, 0, 100, tmpstr);
-			mdb_fill_temp_field(&fields[5], tmpstr, tmpsiz, 0,0,0,0);
-			mdb_fill_temp_field(&fields[6],&type_info[i].nullable, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[7],&type_info[i].case_sensitive, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[8],&type_info[i].searchable, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[9],type_info[i].unsigned_attribute, sizeof(SQLSMALLINT), 0,type_info[i].unsigned_attribute ? 0 : 1,0,1);
-			mdb_fill_temp_field(&fields[10],&type_info[i].fixed_prec_scale, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[11],&type_info[i].auto_unique_value, sizeof(SQLSMALLINT), 0,0,0,1);
-			tmpsiz = mdb_ascii2unicode(mdb, type_info[i].local_type_name, 0, 100, tmpstr);
-			mdb_fill_temp_field(&fields[12], tmpstr, tmpsiz, 0,0,0,0);
-			mdb_fill_temp_field(&fields[13],&type_info[i].minimum_scale, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[14],&type_info[i].maximum_scale, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[15],&type_info[i].sql_data_type, sizeof(SQLSMALLINT), 0,0,0,1);
-			mdb_fill_temp_field(&fields[16],type_info[i].sql_datetime_sub, sizeof(SQLSMALLINT), 0,type_info[i].sql_datetime_sub ? 0 : 1,0,1);
-			mdb_fill_temp_field(&fields[17],type_info[i].num_prec_radix, sizeof(SQLSMALLINT), 0,type_info[i].num_prec_radix ? 0 : 1,0,1);
-			mdb_fill_temp_field(&fields[18],type_info[i].interval_precision, sizeof(SQLSMALLINT), 0,type_info[i].interval_precision ? 0 : 1,0,1);
+		if (fSqlType && (fSqlType != type_info[i].data_type))
+			continue;
 
-			row_size = mdb_pack_row(ttable, row_buffer, NUM_TYPE_INFO_COLS, fields);
-			mdb_add_row_to_pg(ttable,row_buffer, row_size);
-			ttable->num_rows++;
-		}
+		ts0 = mdb_ascii2unicode(mdb, type_info[i].type_name, 0, 100, t0);
+		ts3 = mdb_ascii2unicode(mdb, type_info[i].literal_prefix, 0, 100, t3);
+		ts4 = mdb_ascii2unicode(mdb, type_info[i].literal_suffix, 0, 100, t4);
+		ts5 = mdb_ascii2unicode(mdb, type_info[i].create_params, 0, 100, t5);
+		ts12 = mdb_ascii2unicode(mdb, type_info[i].local_type_name, 0, 100, t12);
+
+		FILL_FIELD(&fields[0], t0, ts0);
+		FILL_FIELD(&fields[1],&type_info[i].data_type, 0);
+		FILL_FIELD(&fields[2],&type_info[i].column_size, 0);
+		FILL_FIELD(&fields[3], t3, ts3);
+		FILL_FIELD(&fields[4], t4, ts4);
+		FILL_FIELD(&fields[5], t5, ts5);
+		FILL_FIELD(&fields[6],&type_info[i].nullable, 0);
+		FILL_FIELD(&fields[7],&type_info[i].case_sensitive, 0);
+		FILL_FIELD(&fields[8],&type_info[i].searchable, 0);
+		FILL_FIELD(&fields[9],type_info[i].unsigned_attribute, 0);
+		FILL_FIELD(&fields[10],&type_info[i].fixed_prec_scale, 0);
+		FILL_FIELD(&fields[11],&type_info[i].auto_unique_value, 0);
+		FILL_FIELD(&fields[12], t12, ts12);
+		FILL_FIELD(&fields[13],&type_info[i].minimum_scale, 0);
+		FILL_FIELD(&fields[14],&type_info[i].maximum_scale, 0);
+		FILL_FIELD(&fields[15],&type_info[i].sql_data_type, 0);
+		FILL_FIELD(&fields[16],type_info[i].sql_datetime_sub, 0);
+		FILL_FIELD(&fields[17],type_info[i].num_prec_radix, 0);
+		FILL_FIELD(&fields[18],type_info[i].interval_precision, 0);
+
+		row_size = mdb_pack_row(ttable, row_buffer, NUM_TYPE_INFO_COLS, fields);
+		mdb_add_row_to_pg(ttable,row_buffer, row_size);
+		ttable->num_rows++;
 	}
 	sql->cur_table = ttable;
 	
@@ -1408,59 +1513,62 @@ SQLRETURN SQL_API SQLTables(
     SQLCHAR FAR       *szTableType,
     SQLSMALLINT        cbTableType)
 {
-char *query, *p;
-char *sptables = "exec sp_tables ";
-int querylen, clen, slen, tlen, ttlen;
-int first = 1;
-struct _hstmt *stmt;
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
+	struct _henv *env = (struct _henv *) dbc->henv;
+	MdbSQL *sql = env->sql;
+	MdbHandle *mdb = sql->mdb;
+	MdbTableDef *ttable;
+	MdbField fields[5];
+	MdbCatalogEntry *entry;
+	unsigned char row_buffer[MDB_PGSIZE];
+	unsigned char *table_types[] = {"TABLE", "SYSTEM TABLE", "VIEW"};
+	unsigned int i, j, row_size, ttype;
+	unsigned int ts2, ts3;
+	unsigned char t2[MDB_BIND_SIZE],
+	              t3[MDB_BIND_SIZE];
 
 	TRACE("SQLTables");
-	stmt = (struct _hstmt *) hstmt;
 
-	clen = _odbc_get_string_size(cbCatalogName, szCatalogName);
-	slen = _odbc_get_string_size(cbSchemaName, szSchemaName);
-	tlen = _odbc_get_string_size(cbTableName, szTableName);
-	ttlen = _odbc_get_string_size(cbTableType, szTableType);
+	mdb_read_catalog(mdb, MDB_ANY);
 
-	querylen = strlen(sptables) + clen + slen + tlen + ttlen + 40; /* a little padding for quotes and commas */
-	query = (char *) malloc(querylen);
-	p = query;
+	ttable = mdb_create_temp_table(mdb, "#tables");
+	mdb_sql_add_temp_col(sql, ttable, 0, "TABLE_CAT", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 1, "TABLE_SCHEM", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 2, "TABLE_NAME", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 3, "TABLE_TYPE", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 4, "REMARKS", MDB_TEXT, 254, 0);
+	mdb_temp_columns_end(ttable);
 
-	strcpy(p, sptables);
-	p += strlen(sptables);
+	for (i=0; i<mdb->num_catalog; i++) {
+     		entry = g_ptr_array_index(mdb->catalog, i);
+     		switch (entry->object_type) {
+			case MDB_TABLE: ttype = 1; break;
+			case MDB_SYSTEM_TABLE: ttype = 2; break;
+			case MDB_QUERY: ttype = 3; break;
+			default: ttype = 0; break;
+		}
+		if (!ttype)
+			continue;
 
-	if (tlen) {
-		*p++ = '"';
-		strncpy(p, szTableName, tlen); *p+=tlen;
-		*p++ = '"';
-		first = 0;
+		/* Set all fields to NULL */
+		for (j=0; j<5; j++) {
+			FILL_FIELD(&fields[j], NULL, 0);
+		}
+
+		ts2 = mdb_ascii2unicode(mdb, entry->object_name, 0, 100, t2);
+		ts3 = mdb_ascii2unicode(mdb, table_types[ttype-1], 0, 100, t3);
+
+		FILL_FIELD(&fields[2], t2, ts2);
+		FILL_FIELD(&fields[3], t3, ts3);
+		
+		row_size = mdb_pack_row(ttable, row_buffer, 5, fields);
+		mdb_add_row_to_pg(ttable, row_buffer, row_size);
+		ttable->num_rows++;
 	}
-	if (slen) {
-		if (!first) *p++ = ',';
-		*p++ = '"';
-		strncpy(p, szSchemaName, slen); *p+=slen;
-		*p++ = '"';
-		first = 0;
-	}
-	if (clen) {
-		if (!first) *p++ = ',';
-		*p++ = '"';
-		strncpy(p, szCatalogName, clen); *p+=clen;
-		*p++ = '"';
-		first = 0;
-	}
-	if (ttlen) {
-		if (!first) *p++ = ',';
-		*p++ = '"';
-		strncpy(p, szTableType, ttlen); *p+=ttlen;
-		*p++ = '"';
-		first = 0;
-	}
-	*p++ = '\0';
-	// fprintf(stderr,"\nquery = %s\n",query);
+	sql->cur_table = ttable;
 
-	strcpy(stmt->query, query);
-	return _SQLExecute(hstmt);
+	return SQL_SUCCESS;
 }
 
 
@@ -1578,4 +1686,3 @@ static SQLSMALLINT _odbc_get_client_type(int srv_type)
 	}
 	return -1;
 }
-
