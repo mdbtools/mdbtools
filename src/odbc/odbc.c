@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.10 2003/04/29 17:55:20 brianb Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.11 2004/01/06 03:18:19 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -47,7 +47,11 @@ static SQLRETURN SQL_API _SQLFreeConnect(SQLHDBC hdbc);
 static SQLRETURN SQL_API _SQLFreeEnv(SQLHENV henv);
 static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 
+static void bind_columns (struct _hstmt*);
+
+#ifndef MIN
 #define MIN(a,b) (a>b ? b : a)
+#endif
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
 
@@ -1445,6 +1449,8 @@ static int _odbc_get_server_type(int clt_type)
 	case SQL_DECIMAL:
 	case SQL_NUMERIC:
 	case SQL_FLOAT:
+	default:
+		break;
 	}
 }
 static SQLSMALLINT _odbc_get_client_type(int srv_type)
