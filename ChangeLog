@@ -1,3 +1,6 @@
+Tue Dec 28 21:25:24 CST 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/data.c: Handle dates from 1/1/100 to 12/31/9999
+
 Sat Dec 11 00:03:17 CST 2004	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING:
 	* include/mdbtools.h:
