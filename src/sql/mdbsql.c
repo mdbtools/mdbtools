@@ -98,17 +98,27 @@ void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
 	sql->max_rows = maxrow;
 }
 
-static void mdb_sql_free_column(gpointer d, gpointer u)
+static void mdb_sql_free_columns(GPtrArray *columns)
 {
-	MdbSQLColumn *c = (MdbSQLColumn *)d;
-	g_free(c->name);
-	g_free(c);
+	unsigned int i;
+	if (!columns) return;
+	for (i=0; i<columns->len; i++) {
+		MdbSQLColumn *c = (MdbSQLColumn *)g_ptr_array_index(columns, i);
+		g_free(c->name);
+		g_free(c);
+	}
+	g_ptr_array_free(columns, TRUE);
 }
-static void mdb_sql_free_table(gpointer d, gpointer u)
+static void mdb_sql_free_tables(GPtrArray *tables)
 {
-	MdbSQLTable *t = (MdbSQLTable *)d;
-	g_free(t->name);
-	g_free(t);
+	unsigned int i;
+	if (!tables) return;
+	for (i=0; i<tables->len; i++) {
+		MdbSQLTable *t = (MdbSQLTable *)g_ptr_array_index(tables, i);
+		g_free(t->name);
+		g_free(t);
+	}
+	g_ptr_array_free(tables, TRUE);
 }
 
 void
@@ -412,10 +422,8 @@ void mdb_sql_dump(MdbSQL *sql)
 }
 void mdb_sql_exit(MdbSQL *sql)
 {
-	g_ptr_array_foreach(sql->columns, mdb_sql_free_column, NULL);
-	g_ptr_array_free(sql->columns, TRUE);
-	g_ptr_array_foreach(sql->tables, mdb_sql_free_table, NULL);
-	g_ptr_array_free(sql->tables, TRUE);
+	mdb_sql_free_columns(sql->columns);
+	mdb_sql_free_tables(sql->tables);
 
 	if (sql->sarg_tree) {
 		mdb_sql_free_tree(sql->sarg_tree);
@@ -437,14 +445,12 @@ void mdb_sql_reset(MdbSQL *sql)
 	}
 
 	/* Reset columns */
-	g_ptr_array_foreach(sql->columns, mdb_sql_free_column, NULL);
-	g_ptr_array_free(sql->columns, TRUE);
+	mdb_sql_free_columns(sql->columns);
 	sql->num_columns = 0;
 	sql->columns = g_ptr_array_new();
 
 	/* Reset tables */
-	g_ptr_array_foreach(sql->tables, mdb_sql_free_table, NULL);
-	g_ptr_array_free(sql->tables, TRUE);
+	mdb_sql_free_tables(sql->tables);
 	sql->num_tables = 0;
 	sql->tables = g_ptr_array_new();
 

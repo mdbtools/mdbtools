@@ -1,3 +1,6 @@
+Wed Oct 20 21:49:04 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/sql/mdbsql.c: Get rid of GLib 2.4+ call
+
 Sat Oct 16 09:19:16 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* INSTALL:
 	* README:
