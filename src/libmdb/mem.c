@@ -112,6 +112,12 @@ void mdb_alloc_catalog(MdbHandle *mdb)
 }
 void mdb_free_catalog(MdbHandle *mdb)
 {
+	unsigned int i;
+	MdbCatalogEntry *entry;
+	for (i=0; i<mdb->catalog->len; i++) {
+		entry = g_ptr_array_index(mdb->catalog, i);
+		g_free (entry);
+	}
 	g_ptr_array_free(mdb->catalog, TRUE);
 	mdb->catalog = NULL;
 }

@@ -1,6 +1,8 @@
 Sat Apr 24 00:02:14 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/mem.c:
 	* src/libmdb/catalog.c: Setting various pointers to NULL after freeing.
+	* src/libmdb/mem.c:
+	* src/libmdb/file.c: Cleaning up memory for catalogs
 
 Fri Apr 16 10:48:05 EDT 2004	Brian Bruns <brian@bruns.com>
 	* src/libmdb/write.c: restructuring of mdb_crack_row?() to accomodate 

@@ -192,7 +192,7 @@ mdb_close(MdbHandle *mdb)
 MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 {
 	MdbHandle *newmdb;
-	MdbCatalogEntry *entry;
+	MdbCatalogEntry *entry, *data;
 	int i;
 
 	newmdb = mdb_alloc_handle();
@@ -201,7 +201,8 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
-		g_ptr_array_add(newmdb->catalog, entry);
+		data = g_memdup(entry,sizeof(MdbCatalogEntry));
+		g_ptr_array_add(newmdb->catalog, data);
 	}
 	mdb->backend_name = NULL;
 	if (mdb->f) {
