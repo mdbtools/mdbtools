@@ -26,7 +26,7 @@
 #endif
 
 
-static int mdb_copy_index_pg(MdbTableDef *table, MdbIndexPage *ipg);
+static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
 
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
@@ -585,7 +585,7 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fi
 	mdb_index_find_row(mdb, idx, chain, pgnum, rownum);
 	printf("chain depth = %d\n", chain->cur_depth);
 	printf("pg = %lu\n", chain->pages[chain->cur_depth-1].pg);
-	mdb_copy_index_pg(table, &chain->pages[chain->cur_depth-1]);
+	mdb_copy_index_pg(table, idx, &chain->pages[chain->cur_depth-1]);
 	
 	return 1;
 }
@@ -805,24 +805,58 @@ int i, pos;
 	}
 	return 0;
 }
+/*mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbRow row,  guint32 pgnum, guint16 rownum) */
 static int
-mdb_copy_index_pg(MdbTableDef *table, MdbIndexPage *ipg)
+mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
+	MdbColumn *col;
 	guint32 pg;
+	guint16 row;
 	unsigned char *new_pg;
+	unsigned char key_hash[256];
+	unsigned char iflag;
+	int keycol;
 
 	new_pg = mdb_new_leaf_pg(entry);
 
 	mdb_index_page_reset(ipg);
 	mdb_read_pg(mdb, ipg->pg);
+
+	/* do we support this index type yet? */
+	if (idx->num_keys > 1) {
+		fprintf(stderr,"multikey indexes not yet supported, aborting\n");
+		return 0;
+	}
+	keycol = idx->key_col_num[0];
+	col = g_ptr_array_index (table->columns, keycol - 1);
+	printf("keycol = %d (%s)\n", keycol, col->name);
+	if (!mdb_is_fixed_col(col)) {
+		fprintf(stderr,"variable length key columns not yet supported, aborting\n");
+		return 0;
+	}
+	printf("col size = %d\n", col->col_size);
+
 	while (mdb_index_find_next_on_page(mdb, ipg)) {
-		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 3);
+
+		if (ipg->len < col->col_size + 1) {
+			fprintf(stderr,"compressed indexes not yet supported, aborting\n");
+			return 0;
+		}
+		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
+		row = mdb->pg_buf[ipg->offset + ipg->len - 1];
+		iflag = mdb->pg_buf[ipg->offset];
+		mdb_index_swap_n(&mdb->pg_buf[ipg->offset + 1], col->col_size, key_hash);
+		key_hash[col->col_size - 1] &= 0x7f;
 		printf("length = %d\n", ipg->len);
+		printf("iflag = %d pg = %lu row = %d\n", iflag, pg, row);
 		buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset + ipg->len - 1);
+		buffer_dump(mdb->pg_buf, ipg->offset + 1, ipg->offset + col->col_size);
+		buffer_dump(key_hash, 0, col->col_size - 1);
 		ipg->offset += ipg->len;
 		ipg->len = 0;
+		row++;
 	}
 	g_free(new_pg);
 
