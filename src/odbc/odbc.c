@@ -32,7 +32,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.23 2004/09/22 03:08:46 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.24 2004/09/23 05:07:12 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -706,24 +706,7 @@ SQLRETURN SQL_API SQLColAttributes(
 			break;
 		//case SQL_COLUMN_DISPLAY_SIZE:
 		case SQL_DESC_DISPLAY_SIZE:
-			switch(_odbc_get_client_type(col->col_type)) {
-				case SQL_CHAR:
-				case SQL_VARCHAR:
-					*pfDesc = col->col_size;	
-					break;
-				case SQL_INTEGER:
-					*pfDesc = 8;
-					break;
-				case SQL_SMALLINT:
-					*pfDesc = 6;
-					break;
-				case SQL_TINYINT:
-					*pfDesc = 4;
-					break;
-				default:
-					//fprintf(stderr,"\nUnknown type %d\n", _odbc_get_client_type(col->col_type));
-					break;
-			}
+			*pfDesc = mdb_col_disp_size(col);
 			break;
 	}
 	return SQL_SUCCESS;
@@ -1183,10 +1166,14 @@ SQLRETURN SQL_API SQLGetData(
 		}
 	}
 	
-	if (col->cur_value_len) {
-		strcpy(rgbValue, mdb_col_to_string(mdb,mdb->pg_buf,
-			col->cur_value_start,col->col_type,col->cur_value_len));
-		//*((char *)&rgbValue[col->cur_value_len])='\0';
+	if (col->col_type == MDB_BOOL) {
+		strcpy(rgbValue, (col->cur_value_len)?"0":"1");
+		if (pcbValue)
+			*pcbValue = 1;
+	} else if (col->cur_value_len) {
+		char *str = mdb_col_to_string(mdb,mdb->pg_buf,
+			col->cur_value_start,col->col_type,col->cur_value_len);
+		strcpy(rgbValue, str);
 		if (pcbValue)
 			*pcbValue = col->cur_value_len;
 	} else {
@@ -1674,6 +1661,9 @@ static SQLSMALLINT _odbc_get_client_type(int srv_type)
 			break;
 		case MDB_LONGINT:
 			return SQL_INTEGER;
+			break;
+		case MDB_MONEY:
+			return SQL_DECIMAL;
 			break;
 		case MDB_FLOAT:
 			return SQL_FLOAT;

@@ -204,8 +204,10 @@ int ret;
 			g_free(str);
 		} else {
 			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
-			strcpy(col->bind_ptr,
-			mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len));
+			char *str = mdb_col_to_string(mdb, mdb->pg_buf, start,
+				col->col_type, len);
+			strcpy(col->bind_ptr, str);
+			
 		}
 		ret = strlen(col->bind_ptr);
 		if (col->len_ptr) {
@@ -786,13 +788,13 @@ int mdb_col_disp_size(MdbColumn *col)
 			return 1;
 		break;
 		case MDB_BYTE:
-			return 3;
+			return 4;
 		break;
 		case MDB_INT:
-			return 5;
+			return 6;
 		break;
 		case MDB_LONGINT:
-			return 10;
+			return 11;
 		break;
 		case MDB_FLOAT:
 			return 10;
@@ -810,7 +812,7 @@ int mdb_col_disp_size(MdbColumn *col)
 			return 255; 
 		break;
 		case MDB_MONEY:
-			return 12;
+			return 21;
 		break;
 	}
 	return 0;

@@ -690,21 +690,11 @@ int found = 0;
 void 
 mdb_sql_bind_column(MdbSQL *sql, int colnum, char *varaddr)
 {
-MdbTableDef *table = sql->cur_table;
-MdbSQLColumn *sqlcol;
-MdbColumn *col;
-unsigned int j;
+	MdbSQLColumn *sqlcol;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
-	for (j=0;j<table->num_cols;j++) {
-		col=g_ptr_array_index(table->columns,j);
-		if (!strcasecmp(sqlcol->name, col->name)) {
-			/* bind the column to its listed (SQL) position */
-			mdb_bind_column(table, j+1, varaddr);
-			break;
-		}
-	}
+	mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr);
 }
 void 
 mdb_sql_bind_len(MdbSQL *sql, int colnum, int *len_ptr)

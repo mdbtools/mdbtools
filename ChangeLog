@@ -1,3 +1,9 @@
+Thu Sep 23 00:04:05 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/money.c:
+	* src/libmdb/data.c:
+	* src/sql/mdbsql.c:
+	* src/odbc/odbc.c: Correct some field display size problems
+
 Tue Sep 21 22:03:56 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* HACKING: Numerous corrections and readability improvements
 	* src/odbc/odbc.c: Return SQL_NO_DATA for SQLMoreResults

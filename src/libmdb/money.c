@@ -32,7 +32,7 @@
 
 static int multiply_byte(unsigned char *product, int num, unsigned char *multiplier);
 static int do_carry(unsigned char *product);
-static char *array_to_string(unsigned char *array, int scale, char *s);
+static char *array_to_string(unsigned char *array, int unsigned scale, char *s);
 
 /**
  * mdb_money_to_string
@@ -44,36 +44,35 @@ static char *array_to_string(unsigned char *array, int scale, char *s);
  */
 char *mdb_money_to_string(MdbHandle *mdb, int start, char *s)
 {
-unsigned char multiplier[MAXPRECISION], temp[MAXPRECISION];
-unsigned char product[MAXPRECISION];
-unsigned char *money;
-int num_bytes = 8;
-int i;
-int pos;
-int neg=0;
+	int num_bytes = 8;
+	int i;
+	int neg=0;
+	unsigned char multiplier[MAXPRECISION], temp[MAXPRECISION];
+	unsigned char product[MAXPRECISION];
+	unsigned char money[num_bytes];
 
 	memset(multiplier,0,MAXPRECISION);
 	memset(product,0,MAXPRECISION);
 	multiplier[0]=1;
+	memcpy(money, mdb->pg_buf + start, num_bytes);
 
-	money = &mdb->pg_buf[start];
-
-	if (money[7] && 0x01) {
-		/* negative number -- preform two's complement */
+	/* Perform two's complement for negative numbers */
+	if (money[7] & 0x80) {
 		neg = 1;
 		for (i=0;i<num_bytes;i++) {
 			money[i] = ~money[i];
 		}
 		for (i=0; i<num_bytes; i++) {
-			money[i] += 1;
+			money[i] ++;
 			if (money[i]!=0) break;
 		}
 	}
 
-	money[7]=0;
-	for (pos=0;pos<num_bytes;pos++) {
-		multiply_byte(product, money[pos], multiplier);
+	for (i=0;i<num_bytes;i++) {
+		/* product += multiplier * current byte */
+		multiply_byte(product, money[i], multiplier);
 
+		/* multiplier = multiplier * 256 */
 		memcpy(temp, multiplier, MAXPRECISION);
 		memset(multiplier,0,MAXPRECISION);
 		multiply_byte(multiplier, 256, temp);
@@ -88,53 +87,51 @@ int neg=0;
 }
 static int multiply_byte(unsigned char *product, int num, unsigned char *multiplier)
 {
-unsigned char number[3];
-int i, top, j, start;
+	unsigned char number[3];
+	unsigned int i, j;
 
 	number[0]=num%10;
 	number[1]=(num/10)%10;
 	number[2]=(num/100)%10;
 
-	for (top=MAXPRECISION-1;top>=0 && !multiplier[top];top--);
-	start=0;
-	for (i=0;i<=top;i++) {
+	for (i=0;i<MAXPRECISION;i++) {
+		if (multiplier[i] == 0) continue;
 		for (j=0;j<3;j++) {
-			product[j+start]+=multiplier[i]*number[j];
+			if (number[j] == 0) continue;
+			product[i+j] += multiplier[i]*number[j];
 		}
 		do_carry(product);
-		start++;
 	}
 	return 0;
 }
 static int do_carry(unsigned char *product)
 {
-int j;
+	unsigned int j;
 
-	for (j=0;j<MAXPRECISION;j++) {
+	for (j=0;j<MAXPRECISION-1;j++) {
 		if (product[j]>9) {
 			product[j+1]+=product[j]/10;
 			product[j]=product[j]%10;
 		}
 	}
+	if (product[j]>9) {
+		product[j]=product[j]%10;
+	}
 	return 0;
 }
-static char *array_to_string(unsigned char *array, int scale, char *s)
+static char *array_to_string(unsigned char *array, unsigned int scale, char *s)
 {
-int top, i, j;
+	unsigned int top, i, j=0;
 	
-	for (top=MAXPRECISION-1;top>=0 && top>scale && !array[top];top--);
+	for (top=MAXPRECISION;(top>0) && (top-1>scale) && !array[top-1];top--);
 
-	if (top == -1)
-	{
-		s[0] = '0';
-		s[1] = '\0';
-		return s;
-	}
-
-	j=0;
-	for (i=top;i>=0;i--) {
-		if (top+1-j == scale) s[j++]='.';
-		s[j++]=array[i]+'0';
+	if (top == 0) {
+		s[j++] = '0';
+	} else {
+		for (i=top; i>0; i--) {
+			if (j == top-scale) s[j++]='.';
+			s[j++]=array[i-1]+'0';
+		}
 	}
 	s[j]='\0';
 
