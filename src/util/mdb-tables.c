@@ -56,7 +56,11 @@ int opt;
  	mdb_init();
 
  	/* open the database */
- 	mdb = mdb_open (argv[optind]);
+ 	if (!(mdb = mdb_open (argv[optind]))) {
+		fprintf(stderr,"Couldn't open database.\n");
+		exit(1);
+	}
+	
 
  	/* read the catalog */
  	mdb_read_catalog (mdb, MDB_TABLE);

@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/extras/mdb-dump.c)
-AM_INIT_AUTOMAKE(mdbtools,0.4)
+AM_INIT_AUTOMAKE(mdbtools,0.5)
 
 AC_PROG_CC(gcc)
 dnl Checks for programs.

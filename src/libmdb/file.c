@@ -27,36 +27,89 @@ MdbFormatConstants MdbJet3Constants = {
 };
 
 static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
+static int mdb_find_file(char *file_name, char *file_path, int bufsize)
+{
+struct stat status;
+gchar *s, *mdbpath;
+gchar *dir, *tmpfname;
+int ret;
 
+	/* try the provided file name first */
+	if (!stat(file_name, &status)) {
+		if (strlen(file_name)> bufsize) 
+			return strlen(file_name);
+		strcpy(file_path, file_name);
+		return 0;
+	}
+	
+	/* Now pull apart $MDBPATH and try those */
+	s = (gchar *) getenv("MDBPATH");
+	if (!s || !strlen(s)) return -1; /* no path, can't find file */
+
+	mdbpath = g_strdup(s);
+	dir = strtok(mdbpath,":"); 
+	do {
+		tmpfname = (gchar *) g_malloc(strlen(dir)+strlen(file_name)+2);
+		strcpy(tmpfname, dir);
+		if (dir[strlen(dir)-1]!='/') strcat(tmpfname, "/");
+		strcat(tmpfname, file_name);
+		if (!stat(tmpfname, &status)) {
+			if (strlen(tmpfname)> bufsize) {
+				ret = strlen(tmpfname);
+				g_free(tmpfname);
+				return ret;
+			}
+			strcpy(file_path, tmpfname);
+			g_free(tmpfname);
+			return 0;
+		}
+		g_free(tmpfname);
+	} while (dir = strtok(NULL, ":"));
+	return -1;
+}
 MdbHandle *_mdb_open(char *filename, gboolean writable)
 {
 MdbHandle *mdb;
 int key[] = {0x86, 0xfb, 0xec, 0x37, 0x5d, 0x44, 0x9c, 0xfa, 0xc6, 0x5e, 0x28, 0xe6, 0x13, 0xb6};
 int j,pos;
+int bufsize;
+MdbFile *f;
 
 	mdb = mdb_alloc_handle();
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
 	mdb->f = mdb_alloc_file();
-	mdb->f->filename = (char *) malloc(strlen(filename)+1);
-	strcpy(mdb->f->filename, filename);
+	f = mdb->f;
+	f->filename = (char *) malloc(strlen(filename)+1);
+	bufsize = strlen(filename)+1;
+	bufsize = mdb_find_file(filename, f->filename, bufsize);
+	if (bufsize) {
+		f->filename = (char *) realloc(f->filename, bufsize+1);
+		bufsize = mdb_find_file(filename, f->filename, bufsize);
+		if (bufsize) { 
+			fprintf(stderr, "Can't alloc filename\n");
+			mdb_free_handle(mdb);
+			return NULL; 
+		}
+	}
+	//strcpy(f->filename, filename);
 	if (writable) {
-		mdb->f->writable = TRUE;
-		mdb->f->fd = open(filename,O_RDWR);
+		f->writable = TRUE;
+		f->fd = open(f->filename,O_RDWR);
 	} else {
-		mdb->f->fd = open(filename,O_RDONLY);
+		f->fd = open(f->filename,O_RDONLY);
 	}
 
-	if (mdb->f->fd==-1) {
-		/* fprintf(stderr,"Couldn't open file %s\n",filename); */
+	if (f->fd==-1) {
+		fprintf(stderr,"Couldn't open file %s\n",f->filename); 
 		return NULL;
 	}
-	mdb->f->refs++;
+	f->refs++;
 	if (!mdb_read_pg(mdb, 0)) {
 		fprintf(stderr,"Couldn't read first page.\n");
 		return NULL;
 	}
-	mdb->f->jet_version = mdb_get_int32(mdb, 0x14);
+	f->jet_version = mdb_get_int32(mdb, 0x14);
 	if (IS_JET4(mdb)) {
 		mdb->fmt = &MdbJet4Constants;
 	} else {
@@ -64,8 +117,8 @@ int j,pos;
 	}
 
 	/* get the db encryption key and xor it back to clear text */
-	mdb->f->db_key = mdb_get_int32(mdb, 0x3e);
-	mdb->f->db_key ^= 0xe15e01b9;
+	f->db_key = mdb_get_int32(mdb, 0x3e);
+	f->db_key ^= 0xe15e01b9;
 
 
 	/* get the db password located at 0x42 bytes into the file */
@@ -73,9 +126,9 @@ int j,pos;
 		j = mdb_get_int32(mdb,0x42+pos);
 		j ^= key[pos];
 		if ( j != 0)
-			mdb->f->db_passwd[pos] = j;
+			f->db_passwd[pos] = j;
 		else
-			mdb->f->db_passwd[pos] = '\0';
+			f->db_passwd[pos] = '\0';
         }
 
 	return mdb;

@@ -3,7 +3,7 @@ Things to Do
 
 file format:
 
-. how does global allocation map work?
+. how does global allocation map work? (done)
 . export VBA script
 . re-examine KKD records for form design (OLE streams?)
 . write support
@@ -17,8 +17,7 @@ libmdb:
 . Sargs need to support all datatypes
 . Need a way to express logical relationships between sargs (tree)
 . Add support for index scanning when using sargs
-. Use allocation maps to read tables, should be more efficient (done 
-  if -DFAST_READ specified)
+. Use allocation maps to read tables, should be more efficient (done)
 . write support
 
 utils:
@@ -45,6 +44,7 @@ ODBC:
 GMDB:
 
 . Finish debug dissectors
-. Export schema not implemented
+. Export schema not implemented (done)
 . Printing not implemented
-. Export needs finishing
+. Export needs finishing (done)
+. Fix bitmask size bug in debugger
