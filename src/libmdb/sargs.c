@@ -142,7 +142,7 @@ int lastchar;
 	}
 	switch (col->col_type) {
 		case MDB_BOOL:
-			return mdb_test_int(node, field->is_null);
+			return mdb_test_int(node, !field->is_null);
 			break;
 		case MDB_BYTE:
 			return mdb_test_int(node, (gint32)((char *)field->value)[0]);

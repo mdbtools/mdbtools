@@ -43,7 +43,7 @@ static MdbSQL *g_sql;
 %token <name> IDENT NAME PATH STRING NUMBER 
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND OR NOT
 %token DESCRIBE TABLE
-%token LTEQ GTEQ LIKE IS NULL
+%token LTEQ GTEQ LIKE IS NUL
 
 %type <name> database
 %type <name> constant
@@ -115,8 +115,8 @@ operator:
 	;
 
 nulloperator:
-	IS NULL	{ $$ = MDB_ISNULL; }
-	| IS NOT NULL	{ $$ = MDB_NOTNULL; }
+	IS NUL	{ $$ = MDB_ISNULL; }
+	| IS NOT NUL	{ $$ = MDB_NOTNULL; }
 	;
 
 constant:
