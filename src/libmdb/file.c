@@ -106,18 +106,25 @@ MdbFile *f;
 		fprintf(stderr,"Couldn't open file %s\n",f->filename); 
 		return NULL;
 	}
-	f->refs++;
 	if (!mdb_read_pg(mdb, 0)) {
 		fprintf(stderr,"Couldn't read first page.\n");
 		return NULL;
 	}
+	if (mdb->pg_buf[0] != 0) {
+		close(f->fd);
+		return NULL; 
+	}
 	f->jet_version = mdb_pg_get_int32(mdb, 0x14);
 	if (IS_JET4(mdb)) {
 		mdb->fmt = &MdbJet4Constants;
-	} else {
+	} else if (IS_JET3(mdb)) {
 		mdb->fmt = &MdbJet3Constants;
+	} else {
+		fprintf(stderr,"Unknown Jet version.\n");
+		return NULL; 
 	}
 
+	f->refs++;
 	return mdb;
 }
 MdbHandle *mdb_open(char *filename)

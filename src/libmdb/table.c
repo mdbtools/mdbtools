@@ -55,6 +55,8 @@ int rownum, row_start, row_end;
 	table = mdb_alloc_tabledef(entry);
 
 	mdb_read_pg(mdb, entry->table_pg);
+	if (mdb->pg_buf[0] != 0x02) return NULL; /* not a valid table def page */
+
 	len = mdb_pg_get_int16(mdb,8);
 
 	table->num_rows = mdb_pg_get_int32(mdb, fmt->tab_num_rows_offset);

@@ -74,9 +74,11 @@ main (int argc, char **argv)
 	}
  }
 
- /* read the catalog */
- 
- mdb_read_catalog (mdb, MDB_TABLE);
+	/* read the catalog */
+ 	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
+		fprintf(stderr,"File does not appear to be an Access database\n");
+		exit(1);
+	}
 
  /* loop over each entry in the catalog */
 

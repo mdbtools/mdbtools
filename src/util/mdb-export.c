@@ -97,7 +97,10 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	
-	mdb_read_catalog(mdb, MDB_TABLE);
+ 	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
+		fprintf(stderr,"File does not appear to be an Access database\n");
+		exit(1);
+	}
 
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);

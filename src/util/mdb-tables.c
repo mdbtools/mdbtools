@@ -65,7 +65,10 @@ int opt;
 	
 
  	/* read the catalog */
- 	mdb_read_catalog (mdb, MDB_TABLE);
+ 	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
+		fprintf(stderr,"File does not appear to be an Access database\n");
+		exit(1);
+	}
 
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {

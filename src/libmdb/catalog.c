@@ -71,6 +71,8 @@ int type;
  /* mdb_table_dump(&msysobj); */
 
  table = mdb_read_table(&msysobj);
+ if (!table) return NULL;
+
  mdb_read_columns(table);
 
  mdb_bind_column(table, 1, parentid);
