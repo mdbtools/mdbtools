@@ -16,6 +16,8 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+#include <config.h>
+
 #include <stdio.h>
 #ifdef HAVE_READLINE
 #include <readline/readline.h>
@@ -39,6 +41,8 @@ int pretty_print = 1;
 char *delimiter;
 int showplan = 0;
 int noexec = 0;
+
+#define HISTFILE ".mdbhistory"
 
 #ifndef HAVE_READLINE
 char *readline(char *prompt)
@@ -88,6 +92,10 @@ do_set_cmd(MdbSQL *sql, char *s)
 	level1 = strtok(s, " \t\n");
 	if (!strcmp(level1,"stats")) {
 		level2 = strtok(NULL, " \t");
+		if (!level2) {
+			printf("Usage: set stats [on|off]\n");
+			return;
+		}
 		if (!strcmp(level2,"on")) {
 			mdb_stats_on(sql->mdb);
 		} else if (!strcmp(level2,"off")) {
@@ -98,6 +106,10 @@ do_set_cmd(MdbSQL *sql, char *s)
 		}
 	} else if (!strcmp(level1,"showplan")) {
 		level2 = strtok(NULL, " \t");
+		if (!level2) {
+			printf("Usage: set showplan [on|off]\n");
+			return;
+		}
 		if (!strcmp(level2,"on")) {
 			showplan=1;
 		} else if (!strcmp(level2,"off")) {
@@ -107,6 +119,10 @@ do_set_cmd(MdbSQL *sql, char *s)
 		}
 	} else if (!strcmp(level1,"noexec")) {
 		level2 = strtok(NULL, " \t");
+		if (!level2) {
+			printf("Usage: set noexec [on|off]\n");
+			return;
+		}
 		if (!strcmp(level2,"on")) {
 			noexec=1;
 		} else if (!strcmp(level2,"off")) {
@@ -143,7 +159,8 @@ read_file(char *s, int line, int *bufsz, char *mybuf)
 			mybuf = (char *) realloc(mybuf, *bufsz);
 		}	
 		strcat(mybuf, buf);
-		add_history(buf);
+		/* don't record blank lines */
+		if (strlen(buf)) add_history(buf);
 		strcat(mybuf, "\n");
 		lines++;
 		printf("%d => %s",line+lines, buf);
@@ -204,9 +221,12 @@ int i;
 void
 dump_results(MdbSQL *sql)
 {
-int j;
-MdbSQLColumn *sqlcol;
-unsigned long row_count = 0;
+	int j;
+	MdbSQLColumn *sqlcol;
+	unsigned long row_count = 0;
+	int rows, rc, i;
+	MdbHandle *mdb = sql->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
 
 	if (headers) {
 		for (j=0;j<sql->num_columns-1;j++) {
@@ -217,6 +237,21 @@ unsigned long row_count = 0;
 		fprintf(stdout, "%s", sqlcol->name);
 		fprintf(stdout,"\n");
 	}
+	if (sql->kludge_ttable_pg) {
+		memcpy(mdb->pg_buf, sql->kludge_ttable_pg, fmt->pg_size);
+		rows = mdb_pg_get_int16(mdb,fmt->row_count_offset);
+	for (i = 0; i < rows; i++) {
+		rc = mdb_read_row(sql->cur_table, i);
+		row_count++;
+  		for (j=0;j<sql->num_columns-1;j++) {
+			sqlcol = g_ptr_array_index(sql->columns,j);
+			fprintf(stdout, "%s%s", sql->bound_values[j], delimiter);
+		}
+		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
+		fprintf(stdout, "%s", sql->bound_values[sql->num_columns-1]);
+		fprintf(stdout,"\n");
+	}
+	}else {
 	while(mdb_fetch_row(sql->cur_table)) {
 		row_count++;
   		for (j=0;j<sql->num_columns-1;j++) {
@@ -226,6 +261,7 @@ unsigned long row_count = 0;
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
 		fprintf(stdout, "%s", sql->bound_values[sql->num_columns-1]);
 		fprintf(stdout,"\n");
+	}
 	}
 	if (footers) {
 		if (!row_count) 
@@ -241,14 +277,19 @@ unsigned long row_count = 0;
 void 
 dump_results_pp(MdbSQL *sql)
 {
-int j;
-MdbSQLColumn *sqlcol;
-unsigned long row_count = 0;
+	int j;
+	MdbSQLColumn *sqlcol;
+	unsigned long row_count = 0;
+	int rows, rc, i;
+	MdbHandle *mdb = sql->mdb;
+	MdbFormatConstants *fmt = mdb->fmt;
 
 	/* print header */
 	if (headers) {
 		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
+			if (strlen(sqlcol->name)>sqlcol->disp_size)
+				sqlcol->disp_size = strlen(sqlcol->name);
 			print_break(sqlcol->disp_size, !j);
 		}
 		fprintf(stdout,"\n");
@@ -266,6 +307,19 @@ unsigned long row_count = 0;
 	fprintf(stdout,"\n");
 
 	/* print each row */
+	if (sql->kludge_ttable_pg) {
+		memcpy(mdb->pg_buf, sql->kludge_ttable_pg, fmt->pg_size);
+		rows = mdb_pg_get_int16(mdb,fmt->row_count_offset);
+	for (i = 0; i < rows; i++) {
+		rc = mdb_read_row(sql->cur_table, i);
+		row_count++;
+  		for (j=0;j<sql->num_columns;j++) {
+			sqlcol = g_ptr_array_index(sql->columns,j);
+			print_value(sql->bound_values[j],sqlcol->disp_size,!j);
+		}
+		fprintf(stdout,"\n");
+	}
+	} else {
 	while(mdb_fetch_row(sql->cur_table)) {
 		row_count++;
   		for (j=0;j<sql->num_columns;j++) {
@@ -273,6 +327,7 @@ unsigned long row_count = 0;
 			print_value(sql->bound_values[j],sqlcol->disp_size,!j);
 		}
 		fprintf(stdout,"\n");
+	}
 	}
 
 	/* footer */
@@ -316,12 +371,20 @@ int done = 0;
 MdbSQL *sql;
 int opt;
 FILE *in = NULL, *out = NULL;
+char *home = getenv("HOME");
+char *histpath;
 
 
+	if (home) {
+		histpath = (char *)malloc(strlen(home) + strlen(HISTFILE) + 2);
+		sprintf(histpath,"%s/%s",home,HISTFILE);
+		read_history(histpath);
+		free(histpath);
+	}
 	if (!isatty(fileno(stdin))) {
 		in = stdin;
 	}
-	while ((opt=getopt(argc, argv, "hfpd:i:o:"))!=-1) {
+	while ((opt=getopt(argc, argv, "HFpd:i:o:"))!=-1) {
 		switch (opt) {
 		        case 'd':
 				delimiter = malloc(strlen(optarg)+1);
@@ -397,7 +460,8 @@ FILE *in = NULL, *out = NULL;
 				bufsz *= 2;
 				mybuf = (char *) realloc(mybuf, bufsz);
 			}
-			add_history(s);
+			/* don't record blank lines */
+			if (strlen(s)) add_history(s);
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */
 			strcat(mybuf,"\n");
@@ -425,6 +489,14 @@ FILE *in = NULL, *out = NULL;
 
 	free(mybuf);
 	if (s) free(s);
+
+	if (home) {
+		histpath = (char *)malloc(strlen(home) + strlen(HISTFILE) + 2);
+		sprintf(histpath,"%s/%s",home,HISTFILE);
+		write_history(histpath);
+		free(histpath);
+	}
+
 	myexit(0);
 
 	return 0; /* make gcc -Wall happy */

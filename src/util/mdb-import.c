@@ -41,6 +41,7 @@ convert_field(MdbColumn *col, char *s, MdbField *field)
 	char *c;
 	MdbAny any;
 
+	field->colnum = col->col_num;
 	switch (col->col_type) {
 		case MDB_TEXT:
 			field->value = g_strdup(s);
@@ -206,6 +207,10 @@ main(int argc, char **argv)
 			mdb_rewind_table(table);
 			break;
 		}
+	}
+	if (!table) {
+		fprintf(stderr,"Table %s not found in database\n", argv[argc-2]);
+		exit(1);
 	}
 	/*
 	 * open the CSV file and read any header rows

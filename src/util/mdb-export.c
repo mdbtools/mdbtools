@@ -88,6 +88,7 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -H             supress header row\n");
 		fprintf(stderr,"  -Q             don't wrap text-like fields in quotes\n");
 		fprintf(stderr,"  -d <delimiter> specify a column delimiter\n");
+		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
 		exit(1);
 	}
 
