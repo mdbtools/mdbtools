@@ -41,27 +41,27 @@ char *mdb_access_types[] =
          "Unknown 0x0d",
          "Unknown 0x0e",
   	"Replication ID"};
-   /*    Oracle data types */
 
+/*    Oracle data types */
 char *mdb_oracle_types[] = 
         {"Oracle_Unknown 0x00",
-         "CHAR",
          "NUMBER",
          "NUMBER",
          "NUMBER",
          "NUMBER",
          "NUMBER",
-         "NUMBER",
+         "FLOAT",
+         "FLOAT",
          "DATE",
          "Oracle_Unknown 0x09",
          "VARCHAR2",
          "BLOB",
-         "BLOB",
+         "CLOB",
          "Oracle_Unknown 0x0d",
          "Oracle_Unknown 0x0e",
   "NUMBER"};
 
-   /*    Sybase/MSSQL data types */
+/*    Sybase/MSSQL data types */
 char *mdb_sybase_types[] = 
         {"Sybase_Unknown 0x00",
          "bit",
@@ -80,6 +80,24 @@ char *mdb_sybase_types[] =
          "Sybase_Unknown 0x0e",
   	"Sybase_Replication ID"};
 
+/*    Postgres data types */
+char *mdb_postgres_types[] =
+ {"Postgres_Unknown 0x00",
+         "Bool",
+         "Int2",
+         "Int4",
+         "Int8",
+         "Money",
+         "Float4",
+         "Float8",
+         "Timestamp",
+         "Postgres_Unknown 0x09",
+         "Char",
+         "Postgres_Unknown 0x0b",
+         "Postgres_Unknown 0x0c",
+         "Postgres_Unknown 0x0d",
+         "Postgres_Unknown 0x0e",
+    "Serial"};
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
         if (col_type > 0x0f) {
@@ -109,6 +127,10 @@ MdbBackend *backend;
 	backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
 	backend->types_table = mdb_oracle_types;
 	mdb_register_backend(backend, "oracle");
+
+	backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
+	backend->types_table = mdb_postgres_types;
+	mdb_register_backend(backend, "postgres");
 }
 void mdb_register_backend(MdbBackend *backend, char *backend_name)
 {
