@@ -19,17 +19,18 @@ mdb-sql -- demo SQL engine program
 %setup
 
 %build
-cd src/
 ./configure 
 make
 
 %install
-cd src/
 make install
 
 %files
 %doc AUTHORS COPYING COPYING.LIB HACKERS INSTALL README TODO NEWS
 /usr/local/lib/libmdb.a
+/usr/local/lib/libmdb.so
+/usr/local/lib/libmdb.so.0
+/usr/local/lib/libmdb.so.0.0.0
 /usr/local/bin/mdb-schema
 /usr/local/bin/mdb-export
 /usr/local/bin/mdb-tables
