@@ -32,6 +32,20 @@ MdbHandle *mdb;
 		fprintf(stderr,"Couldn't open file %s\n",filename);
 		return NULL;
 	}
+	if (!mdb_read_pg(mdb, 0)) {
+		fprintf(stderr,"Couldn't read first page.\n");
+		return NULL;
+	}
+	mdb->jet_version = mdb_get_int32(mdb, 0x14);
+	if (mdb->jet_version == MDB_VER_JET4) {
+		mdb->pg_size = 4096;
+	} else {
+		mdb->pg_size = 2048;
+	}
+
+	/* get the db encryption key and xor it back to clear text */
+	mdb->db_key = mdb_get_int32(mdb, 0x3e);
+	mdb->db_key ^= 0xe15e01b9;
 
 	return mdb;
 }
