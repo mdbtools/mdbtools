@@ -53,45 +53,35 @@ MdbFormatConstants MdbJet3Constants = {
 };
 
 static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
-static int mdb_find_file(char *file_name, char *file_path, int bufsize)
+
+static gchar *mdb_find_file(char *file_name)
 {
-struct stat status;
-gchar *s, *mdbpath;
-gchar *dir, *tmpfname;
-int ret;
+	struct stat status;
+	gchar *mdbpath, **dir, *tmpfname;
+	unsigned int i = 0;
 
 	/* try the provided file name first */
 	if (!stat(file_name, &status)) {
-		if (strlen(file_name)> bufsize) 
-			return strlen(file_name);
-		strcpy(file_path, file_name);
-		return 0;
+		return g_strdup(file_name);
 	}
 	
 	/* Now pull apart $MDBPATH and try those */
-	s = (gchar *) getenv("MDBPATH");
-	if (!s || !strlen(s)) return -1; /* no path, can't find file */
+	mdbpath = (gchar *) getenv("MDBPATH");
+	/* no path, can't find file */
+	if (!mdbpath || !strlen(mdbpath)) return NULL;
 
-	mdbpath = g_strdup(s);
-	dir = strtok(mdbpath,":"); 
-	do {
-		tmpfname = (gchar *) g_malloc(strlen(dir)+strlen(file_name)+2);
-		strcpy(tmpfname, dir);
-		if (dir[strlen(dir)-1]!='/') strcat(tmpfname, "/");
-		strcat(tmpfname, file_name);
+	dir = g_strsplit(mdbpath, ":", 0); 
+	while (dir[i]) {
+		if (!strlen(dir[i])) continue;
+		tmpfname = g_strconcat(dir[i++], "/", file_name, NULL);
 		if (!stat(tmpfname, &status)) {
-			if (strlen(tmpfname)> bufsize) {
-				ret = strlen(tmpfname);
-				g_free(tmpfname);
-				return ret;
-			}
-			strcpy(file_path, tmpfname);
-			g_free(tmpfname);
-			return 0;
+			g_strfreev(dir);
+			return tmpfname;
 		}
 		g_free(tmpfname);
-	} while ((dir = strtok(NULL, ":")));
-	return -1;
+	}
+	g_strfreev(dir);
+	return NULL;
 }
 /**
  * mdb_open:
@@ -106,40 +96,31 @@ int ret;
  **/
 MdbHandle *mdb_open(char *filename, MdbFileFlags flags)
 {
-MdbHandle *mdb;
-int bufsize;
-MdbFile *f;
+	MdbHandle *mdb;
 
 	mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
-	mdb->f = f = (MdbFile *) g_malloc0(sizeof(MdbFile));
-	f->filename = (char *) g_malloc(strlen(filename)+1);
-	bufsize = strlen(filename)+1;
-	bufsize = mdb_find_file(filename, f->filename, bufsize);
-	if (bufsize) {
-		f->filename = (char *) g_realloc(f->filename, bufsize+1);
-		bufsize = mdb_find_file(filename, f->filename, bufsize);
-		if (bufsize) { 
-			fprintf(stderr, "Can't alloc filename\n");
-			g_free(f->filename);
-			g_free(f);
-			g_free(mdb->backend_name);
-			g_free(mdb);
-			return NULL; 
-		}
+	mdb->f = (MdbFile *) g_malloc0(sizeof(MdbFile));
+	mdb->f->filename = (char *) mdb_find_file(filename);
+	if (!mdb->f->filename) { 
+		fprintf(stderr, "Can't alloc filename\n");
+		g_free(mdb->f->filename);
+		g_free(mdb->f);
+		g_free(mdb->backend_name);
+		g_free(mdb);
+		return NULL; 
 	}
-	//strcpy(f->filename, filename);
 	if (flags & MDB_WRITABLE) {
-		f->writable = TRUE;
-		f->fd = open(f->filename,O_RDWR);
+		mdb->f->writable = TRUE;
+		mdb->f->fd = open(mdb->f->filename,O_RDWR);
 	} else {
-		f->fd = open(f->filename,O_RDONLY);
+		mdb->f->fd = open(mdb->f->filename,O_RDONLY);
 	}
 
-	if (f->fd==-1) {
-		fprintf(stderr,"Couldn't open file %s\n",f->filename); 
+	if (mdb->f->fd==-1) {
+		fprintf(stderr,"Couldn't open file %s\n",mdb->f->filename); 
 		return NULL;
 	}
 	if (!mdb_read_pg(mdb, 0)) {
@@ -147,10 +128,10 @@ MdbFile *f;
 		return NULL;
 	}
 	if (mdb->pg_buf[0] != 0) {
-		close(f->fd);
+		close(mdb->f->fd);
 		return NULL; 
 	}
-	f->jet_version = mdb_pg_get_int32(mdb, 0x14);
+	mdb->f->jet_version = mdb_pg_get_int32(mdb, 0x14);
 	if (IS_JET4(mdb)) {
 		mdb->fmt = &MdbJet4Constants;
 	} else if (IS_JET3(mdb)) {
@@ -160,7 +141,7 @@ MdbFile *f;
 		return NULL; 
 	}
 
-	f->refs++;
+	mdb->f->refs++;
 	return mdb;
 }
 
