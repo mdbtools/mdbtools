@@ -1,5 +1,7 @@
-Basic Installation
-==================
+Basic Installation - from a packaged tarball (.tgz)
+===================================================
+
+See below if you are installing from CVS.
 
    $ ./configure 
    $ make 
@@ -44,3 +46,37 @@ capabilities.
                  bison installed for this option.
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
                  causes the ODBC driver to be built.
+
+
+Installation from CVS Sources
+=============================
+
+First, you must have reasonably current installations of:
+	libtool
+	automake
+	autoconf
+If you don't you should install them first.  Sources are available at
+ftp.gnu.org.
+
+Second, download the sources from CVS at sourceforge:
+
+   $ cvs -d:pserver:anonymous@cvs.mdbtools.sourceforge.net:/cvsroot/mdbtools login
+   $ cvs -z3 -d:pserver:anonymous@cvs.mdbtools.sourceforge.net:/cvsroot/mdbtools co mdbtools
+
+Third, run autogen.sh to configure everything:
+
+   $ ./autogen.sh
+	-- This will run libtoolize, automake, and autoconf.
+
+Note: FreeBSD systems, as of the time of this writing, have an old version of
+libtool (1.3.4) in the ports collection.  It works, but requires the presence
+of acinclude.m4 in the distribution, which is why it is included.  If your
+system has a more up-to-date version (1.4.2, at this date), this file is not
+needed and, in fact, causes an error when autoconf is run:
+	./ltconfig: ./ltconfig: No such file or directory
+	configure: error: libtool configure failed	
+If you get this error message, delete the file "acinclude.m4" and run
+autogen.sh again.
+
+At this point, you should resume the instructions at the beginning of this
+file.
