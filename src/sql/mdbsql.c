@@ -66,6 +66,8 @@ MdbSQL *sql;
 	sql->tables = g_ptr_array_new();
 	sql->sarg_tree = NULL;
 	sql->sarg_stack = NULL;
+	sql->max_rows = -1;
+	
 
 	return sql;
 }
@@ -498,6 +500,7 @@ MdbSQLTable *t;
 	sql->columns = g_ptr_array_new();
 	sql->num_tables = 0;
 	sql->tables = g_ptr_array_new();
+	sql->max_rows = -1;
 }
 static void print_break(int sz, int first)
 {
