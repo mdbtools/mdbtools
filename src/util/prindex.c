@@ -101,10 +101,10 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 	
 	fmt = mdb->fmt;
 	mdb_read_pg(mdb, pg);
-	row_start = mdb_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2));
+	row_start = mdb_pg_get_int16(mdb, (fmt->row_count_offset + 2) + (row*2));
 	row_end = mdb_find_end_of_row(mdb, row);
 
-	num_fields = mdb_crack_row(table, row_start, row_end, &fields);
+	num_fields = mdb_crack_row(table, row_start, row_end, fields);
 	for (i=0;i<idx->num_keys;i++) {
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
 		if (col->col_type==MDB_TEXT) {
@@ -146,14 +146,14 @@ walk_index(MdbHandle *mdb, MdbIndex *idx)
 
 	memset(&chain, 0, sizeof(MdbIndexChain));
 	printf("name %s\n", idx->name);
-	printf("root page %ld\n", idx->first_pg);
+	printf("root page %lu\n", (long unsigned) idx->first_pg);
 	/* clone the handle to search the index, and use the original to read 
 	 * the data */
 	mdbidx = mdb_clone_handle(mdb);
 	mdb_read_pg(mdbidx, idx->first_pg);
 	//printf("page type %02x %s\n", mdbidx->pg_buf[0], page_name(mdbidx->pg_buf[0]));
 	while (mdb_index_find_next(mdbidx, idx, &chain, &pg, &row)) {
-		printf("row = %d pg = %lu\n", row, pg);
+		printf("row = %d pg = %lu\n", row, (long unsigned) pg);
 		check_row(mdb, idx, pg, row, &mdbidx->pg_buf[start], len - 4);
 	}
 	mdb_close(mdbidx);

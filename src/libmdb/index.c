@@ -222,6 +222,7 @@ mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 		break;	
 	}
 }
+#if 0
 int 
 mdb_index_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSarg *sarg, int offset, int len)
 {
@@ -249,6 +250,7 @@ int lastchar;
 	}
 	return 1;
 }
+#endif
 int
 mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, int offset, int len)
 {

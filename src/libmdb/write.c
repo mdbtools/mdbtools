@@ -306,8 +306,10 @@ mdb_update_indexes(MdbTableDef *table, int num_fields, MdbField *fields)
 			mdb_update_index(table, idx, num_fields, fields);
 		}
 	}
+	return 1;
 }
 
+int
 mdb_init_index_chain(MdbTableDef *table, MdbIndex *idx)
 {
 	MdbCatalogEntry *entry = table->entry;
@@ -317,6 +319,8 @@ mdb_init_index_chain(MdbTableDef *table, MdbIndex *idx)
 	table->chain = g_malloc0(sizeof(MdbIndexChain));
 	table->mdbidx = mdb_clone_handle(mdb);
 	mdb_read_pg(table->mdbidx, table->scan_idx->first_pg);
+
+	return 1;
 }
 int
 mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fields)
@@ -342,18 +346,19 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fi
 			fields[i].siz);
 	}
 	//mdb_find_leaf_pg();
+	
+	return 1;
 }
 
 int
 mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 {
-	int new_row_size, num_rows, i, pos, row_start, row_end, row_size;
+	int new_row_size;
 	unsigned char row_buffer[4096];
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	guint32 pgnum;
-	unsigned char *new_pg;
 
 	if (!mdb->f->writable) {
 		fprintf(stderr, "File is not open for writing\n");
@@ -382,6 +387,8 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	}
 
 	mdb_update_indexes(table, num_fields, fields);
+
+	return 1;
 }
 /*
  * Assumes caller has verfied space is available on page and adds the new 
@@ -463,7 +470,7 @@ int old_row_size, new_row_size, delta, num_fields;
 			return 0;
 		}
 	}
-	num_fields = mdb_crack_row(table, row_start, row_end, &fields);
+	num_fields = mdb_crack_row(table, row_start, row_end, fields);
 
 #if MDB_DEBUG_WRITE
 	for (i=0;i<num_fields;i++) {
@@ -479,7 +486,7 @@ int old_row_size, new_row_size, delta, num_fields;
 		}
 	}
 
-	new_row_size = mdb_pack_row(table, row_buffer, num_fields, &fields);
+	new_row_size = mdb_pack_row(table, row_buffer, num_fields, fields);
 #if MDB_DEBUG_WRITE
 	buffer_dump(row_buffer, 0, new_row_size-1);
 #endif

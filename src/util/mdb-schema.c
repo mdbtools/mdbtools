@@ -24,7 +24,7 @@
 #include "dmalloc.h"
 #endif
 
-static char *santize_name(char *str, int santize);
+static char *sanitize_name(char *str, int sanitize);
 
 int
 main (int argc, char **argv)
@@ -101,7 +101,7 @@ main (int argc, char **argv)
 	       fprintf (stdout, "DROP TABLE %s%s;\n", namespace, sanitize_name(entry->object_name,s));
 
 	       /* create the table */
-	       fprintf (stdout, "CREATE TABLE %s%s\n", sanitize_name(entry->object_name,s));
+	       fprintf (stdout, "CREATE TABLE %s%s\n", namespace, sanitize_name(entry->object_name,s));
 	       fprintf (stdout, " (\n");
 	       	       
 	       table = mdb_read_table (entry);

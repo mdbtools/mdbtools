@@ -436,7 +436,7 @@ MdbSQLSarg *sql_sarg;
 		if (sql_sarg->sarg) g_free(sql_sarg->sarg);
 	}
 	if (sql->sarg_tree) {
-		mdb_sql_free_tree(sql);
+		mdb_sql_free_tree(sql->sarg_tree);
 		sql->sarg_tree = NULL;
 	}
 	g_list_free(sql->sarg_stack);
@@ -484,8 +484,6 @@ void mdb_sql_listtables(MdbSQL *sql)
 	MdbCatalogEntry *entry;
 	MdbHandle *mdb = sql->mdb;
 	MdbField fields[4];
-	int num_fields = 0;
-	char tmpstr[256];
 	unsigned char row_buffer[4096];
 	unsigned char *new_pg;
 	int row_size;
@@ -530,7 +528,7 @@ void mdb_sql_listtables(MdbSQL *sql)
    				fields[0].start = 0;
    				fields[0].colnum = 0;
 
-				row_size = mdb_pack_row(ttable, row_buffer, 1, &fields);
+				row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
 				mdb_add_row_to_pg(ttable,row_buffer, row_size);
 				ttable->num_rows++;
 			}
@@ -551,7 +549,6 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	int i;
 	char colsize[11];
 	MdbField fields[4];
-	int num_fields = 0;
 	char tmpstr[256];
 	unsigned char row_buffer[4096];
 	unsigned char *new_pg;
@@ -646,7 +643,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
    		fields[2].start = 0;
    		fields[2].colnum = 2;
 
-		row_size = mdb_pack_row(ttable, row_buffer, 3, &fields);
+		row_size = mdb_pack_row(ttable, row_buffer, 3, fields);
 		mdb_add_row_to_pg(ttable,row_buffer, row_size);
 		ttable->num_rows++;
      }

@@ -371,12 +371,13 @@ extern gint32   mdb_pg_get_int24(MdbHandle *mdb, int offset);
 extern long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
 extern float  mdb_pg_get_single(MdbHandle *mdb, int offset);
 extern double mdb_pg_get_double(MdbHandle *mdb, int offset);
+extern gint32 mdb_pg_get_int24_msb(MdbHandle *mdb, int offset);
 extern MdbHandle *mdb_open(char *filename);
+extern MdbHandle *_mdb_open(char *filename, gboolean writable);
 extern void mdb_close(MdbHandle *mdb);
 extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
 extern long _mdb_get_int32(unsigned char *buf, int offset);
-extern gint32 mdb_get_int24_msb(MdbHandle *mdb, int offset);
 extern void mdb_free_tabledef(MdbTableDef *table);
 
 /* catalog.c */
@@ -391,6 +392,11 @@ extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
 extern GPtrArray *mdb_read_columns(MdbTableDef *table);
 extern void mdb_table_dump(MdbCatalogEntry *entry);
+extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
+extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
+extern int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset);
+extern guint16 read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len);
+
 
 /* data.c */
 extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr);
@@ -426,6 +432,11 @@ extern int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, void
 extern void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
 extern int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
 extern int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg);
+extern int mdb_test_string(MdbSargNode *node, char *s);
+extern int mdb_test_int(MdbSargNode *node, gint32 i);
+extern int mdb_add_sarg(MdbColumn *col, MdbSarg *in_sarg);
+
+
 
 /* index.c */
 extern GPtrArray *mdb_read_indices(MdbTableDef *table);
@@ -433,6 +444,8 @@ extern void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
 extern void mdb_index_scan_free(MdbTableDef *table);
 extern int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
 extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
+extern void mdb_index_hash_text(guchar *text, guchar *hash);
+extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 
 /* stats.c */
 extern void mdb_stats_on(MdbHandle *mdb);
@@ -444,6 +457,24 @@ extern int mdb_like_cmp(char *s, char *r);
 
 /* write.c */
 extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
+extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int num_fields, MdbField *fields);
 extern void mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
+extern int mdb_replace_row(MdbTableDef *table, int row, unsigned char *new_row, int new_row_size);
+extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, int num_fields, MdbField *fields);
+extern int mdb_pg_get_freespace(MdbHandle *mdb);
+extern int mdb_update_row(MdbTableDef *table);
+extern unsigned char *mdb_new_data_pg(MdbCatalogEntry *entry);
+
+/* map.c */
+extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
+
+/* props.c */
+extern GPtrArray *mdb_read_props_list(gchar *kkd, int len);
+extern void mdb_free_props(MdbProperties *props);
+extern MdbProperties *mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len);
+
+/* worktable.c */
+extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
+extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
 
 #endif /* _mdbtools_h_ */

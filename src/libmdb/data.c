@@ -190,18 +190,18 @@ int mdb_read_row(MdbTableDef *table, int row)
 	MdbHandle *mdb = table->entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *col;
-	int i, j, rc;
-	int num_cols, var_cols, fixed_cols;
+	int i, rc;
+	//int num_cols, var_cols, fixed_cols;
 	int row_start, row_end;
-	int fixed_cols_found, var_cols_found;
-	int col_start, len, next_col;
-	int num_of_jumps=0, jumps_used=0;
-	int eod; /* end of data */
+	//int fixed_cols_found, var_cols_found;
+	//int col_start, len, next_col;
+	//int num_of_jumps=0, jumps_used=0;
+	//int eod; /* end of data */
 	int delflag, lookupflag;
-	int bitmask_sz;
-	int col_ptr, deleted_columns=0;
-	unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
-	unsigned char isnull;
+	//int bitmask_sz;
+	//int col_ptr, deleted_columns=0;
+	//unsigned char null_mask[33]; /* 256 columns max / 8 bits per byte */
+	//unsigned char isnull;
 	MdbField fields[256];
 	int num_fields;
 
@@ -227,8 +227,8 @@ int mdb_read_row(MdbTableDef *table, int row)
 		return 0;
 	}
 
-	num_fields = mdb_crack_row(table, row_start, row_end, &fields);
-	if (!mdb_test_sargs(table, &fields, num_fields)) return 0;
+	num_fields = mdb_crack_row(table, row_start, row_end, fields);
+	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
 	
 #if MDB_DEBUG
 	fprintf(stdout,"sarg test passed row %d \n", row);
@@ -572,7 +572,7 @@ guint32 pg;
 	do {
 		if (table->strategy==MDB_INDEX_SCAN) {
 		
-			if (!mdb_index_find_next(table->mdbidx, table->scan_idx, table->chain, &pg, &(table->cur_row))) {
+			if (!mdb_index_find_next(table->mdbidx, table->scan_idx, table->chain, &pg, (guint16 *) &(table->cur_row))) {
 				mdb_index_scan_free(table);
 				return 0;
 			}
@@ -1008,6 +1008,8 @@ static int trim_trailing_zeros(char * buff, int n)
 
 	if (*p == '.')
 		*p = '\0';
+
+	return 0;
 }
 				
 char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
@@ -1037,13 +1039,13 @@ double td;
 			return text;
 		break;
 		case MDB_FLOAT:
-			tf = mdb_get_single(mdb, start);
+			tf = mdb_get_single(mdb->pg_buf, start);
 			n = sprintf(text,"%.*f",FLT_DIG - (int)ceil(log10(tf)), tf);
 			trim_trailing_zeros(text, n);
 			return text;
 		break;
 		case MDB_DOUBLE:
-			td = mdb_get_double(mdb, start);
+			td = mdb_get_double(mdb->pg_buf, start);
 			n = sprintf(text,"%.*f",DBL_DIG - (int)ceil(log10(td)), td);
 			trim_trailing_zeros(text, n);
 			return text;

@@ -64,5 +64,11 @@ extern void mdb_sql_listtables(MdbSQL *sql);
 extern void mdb_sql_select(MdbSQL *sql);
 extern void mdbsql_bind_all(MdbSQL *sql);
 extern void mdb_sql_dump_node(MdbSargNode *node, int level);
+extern void mdb_sql_close(MdbSQL *sql);
+extern void mdb_sql_add_or(MdbSQL *sql);
+extern void mdb_sql_add_and(MdbSQL *sql);
+extern void mdb_sql_listtables(MdbSQL *sql);
+extern void mdb_sql_add_not(MdbSQL *sql);
+extern void mdb_sql_describe_table(MdbSQL *sql);
 
 #endif

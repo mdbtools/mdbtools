@@ -103,7 +103,6 @@ void dump_kkd(gchar *kkd, int len)
 	guint32 record_len, record_type;
 	int pos = 0;
 	GPtrArray *names = NULL;
-	gchar *name;
 	MdbProperties *props;
 
 #ifdef MDB_DEBUG
@@ -139,7 +138,7 @@ void dump_kkd(gchar *kkd, int len)
 					printf("sequence error!\n");
 					break;
 				}
-				props = mdb_read_props(names, &kkd[pos+6], record_len - 6);
+				props = mdb_read_props(mdb, names, &kkd[pos+6], record_len - 6);
 				printf("type 0x01 name %s\n", props->name ? props->name : "(none)");
 				g_hash_table_foreach(props->hash, print_keyvalue, NULL);
 				mdb_free_props(props);
