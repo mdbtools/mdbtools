@@ -444,6 +444,42 @@ guint16 len;
 		/* make sure to swap page back */
 		mdb_swap_pgbuf(mdb);
 		return text;
+	} else if (memo_flags == 0x0000) {
+		memo_row = mdb->pg_buf[start+4];
+		lval_pg = mdb_get_int24(mdb, start+5);
+#if MDB_DEBUG
+		printf("Reading LVAL page %06x\n", lval_pg);
+#endif
+		/* swap the alt and regular page buffers, so we can call get_int16 */
+		mdb_swap_pgbuf(mdb);
+		text[0]='\0';
+		do {
+			if(mdb_read_pg(mdb, lval_pg) != mdb->pg_size) {
+				/* Failed to read */
+				return "";
+			}
+			if (memo_row) {
+				row_stop = mdb_get_int16(mdb, 10 + (memo_row - 1) * 2) & 0x0FFF;
+			} else {
+				row_stop = mdb->pg_size - 1;
+			}
+			row_start = mdb_get_int16(mdb, 10 + memo_row * 2);
+#if MDB_DEBUG
+		printf("row num %d row start %d row stop %d\n", memo_row, row_start, row_stop);
+#endif
+			len = row_stop - row_start;
+			strncat(text, &mdb->pg_buf[row_start+4], 
+				strlen(text) + len - 4 > MDB_BIND_SIZE ?
+				MDB_BIND_SIZE - strlen(text) :
+				len - 4);
+
+			/* find next lval page */
+			memo_row = mdb->pg_buf[row_start];
+			lval_pg = mdb_get_int24(mdb, row_start+1);
+		} while (lval_pg);
+		/* make sure to swap page back */
+		mdb_swap_pgbuf(mdb);
+		return text;
 	} else {
 		fprintf(stderr,"Unhandled memo field flags = %04x\n", memo_flags);
 		return "";
