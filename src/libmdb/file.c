@@ -52,7 +52,7 @@ MdbFormatConstants MdbJet3Constants = {
 	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39, 3, 14, 5 /* not sure on 5, need to check */
 };
 
-static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
+static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
 
 /**
  * mdb_find_file:
@@ -217,9 +217,9 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 /* 
 ** mdb_read a wrapper for read that bails if anything is wrong 
 */
-size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
+ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 {
-size_t len;
+	ssize_t len;
 
 	if (pg && mdb->cur_pg == pg) return mdb->fmt->pg_size;
 
@@ -230,18 +230,18 @@ size_t len;
 	mdb->cur_pos = 0; /* kan */
 	return len;
 }
-size_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg)
+ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg)
 {
-size_t len;
+	ssize_t len;
 
 	len = _mdb_read_pg(mdb, mdb->alt_pg_buf, pg);
 	return len;
 }
-static size_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg)
+static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg)
 {
-size_t len;
-struct stat status;
-off_t offset = pg * mdb->fmt->pg_size;
+	ssize_t len;
+	struct stat status;
+	off_t offset = pg * mdb->fmt->pg_size;
 
         fstat(mdb->f->fd, &status);
         if (status.st_size < offset) { 

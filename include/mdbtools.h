@@ -384,8 +384,8 @@ extern void mdb_init();
 extern void mdb_exit();
 
 /* file.c */
-extern size_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
-extern size_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
+extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
+extern ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
 extern unsigned char mdb_get_byte(unsigned char *buf, int offset);
 extern int    mdb_get_int16(unsigned char *buf, int offset);
 extern gint32   mdb_get_int24(unsigned char *buf, int offset);

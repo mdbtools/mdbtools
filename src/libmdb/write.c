@@ -47,12 +47,12 @@ _mdb_put_int32(unsigned char *buf, guint32 offset, guint32 value)
 	value /= 256;
 	buf[offset+3] = value % 256;
 }
-size_t
+ssize_t
 mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 {
-size_t len;
-struct stat status;
-off_t offset = pg * mdb->fmt->pg_size;
+	ssize_t len;
+	struct stat status;
+	off_t offset = pg * mdb->fmt->pg_size;
 
 	fstat(mdb->f->fd, &status);
 	/* is page beyond current size + 1 ? */

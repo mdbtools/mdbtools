@@ -3,6 +3,9 @@ Fri Jul  2 23:52:34 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/iconv.c:
 	* src/libmdb/index.c:
 	* include/mdbtools.h: Fixes based on 'gcc -W -Wall' warnings
+	* src/libmdb/file.c:
+	* src/libmdb/write.c:
+	* include/mdbtools.h: Replace size_t with ssize_t as appropriate
 
 Fri Jul  2 07:27:32 CDT 2004	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/backend.c:
