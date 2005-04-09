@@ -1,6 +1,7 @@
 Fri Apr  8 20:36:51 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/gmdb2/gladefiles/Makefile.am:
 	* src/gmdb2/Makefile.am: Clean up minor gmdb makefile issues
+	* include/mdbsql.h: Improve C++ compatibility (Horst Knorr)
 
 Wed Mar 30 23:21:25 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* autogen.sh: Improve order of autotools calls
