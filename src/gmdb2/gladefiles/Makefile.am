@@ -1,4 +1,4 @@
-gladedir = $(datadir)/gmdb/glade/
+gladedir = $(datadir)/gmdb/glade
 
 glade_DATA =			\
 	gmdb.glade		\

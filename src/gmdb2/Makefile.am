@@ -5,9 +5,9 @@ gmdb2_SOURCES = main2.c file.c util.c table.c query.c module.c macro.c report.c 
 LIBS = -rdynamic $(GNOME_LIBS) @LIBS@ @LEXLIB@ 
 AM_CPPFLAGS	=	-I$(top_srcdir)/include \
 	$(GNOME_CFLAGS) \
-        -DDATADIR=\""$(datadir)"\"                      \
-        -DGMDB_ICONDIR=\""$(datadir)/gmdb/glade/"\"        \
-        -DGMDB_GLADEDIR=\""$(datadir)/gmdb/glade/"\" 
+        -DDATADIR="\"$(datadir)\""                      \
+        -DGMDB_ICONDIR="\"$(datadir)/gmdb/glade/\""        \
+        -DGMDB_GLADEDIR="\"$(datadir)/gmdb/glade/\"" 
 
 #LDADD	=	../libmdb/libmdb.la 
 LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la
