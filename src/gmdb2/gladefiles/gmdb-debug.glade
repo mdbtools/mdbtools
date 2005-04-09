@@ -177,20 +177,19 @@
 	      <property name="tooltips">True</property>
 
 	      <child>
-		<widget class="button" id="button4">
+		<widget class="GtkToolButton" id="button4">
 		  <property name="visible">True</property>
-		  <property name="label">gtk-new</property>
-		  <property name="use_stock">True</property>
+		  <property name="tooltip" translatable="yes">Open a new window</property>
+		  <property name="stock-id">gtk-new</property>
 		  <signal name="clicked" handler="gmdb_debug_new_cb" last_modification_time="Fri, 03 Jan 2003 13:12:52 GMT"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="back_button">
+		<widget class="GtkToolButton" id="back_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Back</property>
-		  <property name="label">gtk-go-back</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-go-back</property>
 		  <signal name="clicked" handler="gmdb_debug_back_cb" object="debug_window"/>
 		  <property name="new_group">True</property>
 		</widget>
@@ -200,30 +199,28 @@
 	      </child>
 
 	      <child>
-		<widget class="button" id="forward_button">
+		<widget class="GtkToolButton" id="forward_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Forward</property>
-		  <property name="label">gtk-go-forward</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-go-forward</property>
 		  <signal name="clicked" handler="gmdb_debug_forward_cb" object="debug_window"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="jump_button">
+		<widget class="GtkToolButton" id="jump_button">
 		  <property name="visible">True</property>
-		  <property name="label">gtk-jump-to</property>
-		  <property name="use_stock">True</property>
+		  <property name="tooltip" translatable="yes">Jump to</property>
+		  <property name="stock-id">gtk-jump-to</property>
 		  <signal name="clicked" handler="gmdb_debug_jump_cb" object="debug_window"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="close_button">
+		<widget class="GtkToolButton" id="close_button">
 		  <property name="visible">True</property>
-		  <property name="tooltip" translatable="yes">Save File</property>
-		  <property name="label">gtk-close</property>
-		  <property name="use_stock">True</property>
+		  <property name="tooltip" translatable="yes">Close window</property>
+		  <property name="stock-id">gtk-close</property>
 		  <signal name="clicked" handler="gmdb_debug_close_cb" object="debug_window"/>
 		  <property name="new_group">True</property>
 		</widget>

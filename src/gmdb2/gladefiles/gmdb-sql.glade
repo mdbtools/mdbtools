@@ -99,7 +99,6 @@
 			  <property name="visible">True</property>
 			  <property name="label" translatable="yes">_Execute</property>
 			  <property name="use_underline">True</property>
-			  <signal name="activate" handler="on_execute1_activate" last_modification_time="Sat, 21 Dec 2002 15:31:44 GMT"/>
 			  <accelerator key="E" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 			  <child internal-child="image">
@@ -126,7 +125,6 @@
 			<widget class="GtkImageMenuItem" id="close_menu">
 			  <property name="visible">True</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_CLOSE_ITEM</property>
-			  <signal name="activate" handler="on_close1_activate" last_modification_time="Sat, 21 Dec 2002 15:25:07 GMT"/>
 			</widget>
 		      </child>
 		    </widget>
@@ -212,40 +210,37 @@
 	      <property name="tooltips">True</property>
 
 	      <child>
-		<widget class="button" id="new_button">
+		<widget class="GtkToolButton" id="new_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Start new query</property>
-		  <property name="label">gtk-new</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-new</property>
 		  <signal name="clicked" handler="gmdb_sql_new_cb" last_modification_time="Mon, 13 Jan 2003 13:35:04 GMT"/>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="open_button">
+		<widget class="GtkToolButton" id="open_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Load query from file</property>
-		  <property name="label">gtk-open</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-open</property>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="save_button">
+		<widget class="GtkToolButton" id="save_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Save query to file</property>
 		  <property name="label" translatable="yes">Save Results</property>
 		  <property name="use_underline">True</property>
-		  <property name="stock_pixmap">gtk-save</property>
+		  <property name="stock-id">gtk-save</property>
 		</widget>
 	      </child>
 
 	      <child>
-		<widget class="button" id="execute_button">
+		<widget class="GtkToolButton" id="execute_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Execute query</property>
-		  <property name="label">gtk-execute</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-execute</property>
 		</widget>
 		<packing>
 		  <property name="new_group">True</property>
@@ -253,7 +248,7 @@
 	      </child>
 
 	      <child>
-		<widget class="button" id="results_button">
+		<widget class="GtkToolButton" id="results_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Save results to a file</property>
 		  <property name="label" translatable="yes">Save Results</property>
@@ -263,11 +258,10 @@
 	      </child>
 
 	      <child>
-		<widget class="button" id="close_button">
+		<widget class="GtkToolButton" id="close_button">
 		  <property name="visible">True</property>
 		  <property name="tooltip" translatable="yes">Close this window</property>
-		  <property name="label">gtk-close</property>
-		  <property name="use_stock">True</property>
+		  <property name="stock-id">gtk-close</property>
 		</widget>
 		<packing>
 		  <property name="new_group">True</property>
@@ -393,7 +387,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label1">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Recent Querys:</property>
+			  <property name="label" translatable="yes">Recent Queries:</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -424,7 +418,7 @@
 			    <widget class="GtkEntry" id="combo_entry">
 			      <property name="height_request">24</property>
 			      <property name="visible">True</property>
-			      <property name="tooltip" translatable="yes">Recently Executed Querys</property>
+			      <property name="tooltip" translatable="yes">Recently Executed Queries</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
 			      <property name="visibility">True</property>

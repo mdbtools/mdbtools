@@ -297,6 +297,7 @@
 		      <property name="can_focus">True</property>
 		      <property name="label" translatable="yes">MySQL</property>
 		    </widget>
+                  </child>
 		</widget>
 	      </child>
 	    </widget>
