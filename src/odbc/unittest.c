@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.7 2005/01/15 05:02:09 calvinrsmith Exp $";
+static char  software_version[]   = "$Id: unittest.c,v 1.8 2005/04/29 03:08:22 whydoubt Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -79,7 +79,7 @@ int i;
 
 		fprintf(stderr,"problem with SQLAllocConnect\n%s\n%s\n", 
 			szSqlState, szErrorMsg);
-		exit(1);
+		return 1;
 	}
 
 
@@ -97,7 +97,7 @@ int i;
 
 		fprintf(stderr,"problem with SQLSetConnectOption\n%s\n%s\n",
 			szSqlState, szErrorMsg);
-		exit(1);
+		return 1;
 	}
 
 	retcode = SQLSetConnectOption(hdbc, SQL_AUTOCOMMIT, SQL_AUTOCOMMIT_ON);
@@ -114,7 +114,7 @@ int i;
 
 		fprintf(stderr,"problem with SQLSetConnectOption\n%s\n%s\n",
 			szSqlState, szErrorMsg);
-		exit(1);
+		return 1;
 	}
 
 
@@ -135,7 +135,7 @@ int i;
 
 		fprintf(stderr,"problem with SQLConnect\n%s\n%s\n",
 			szSqlState, szErrorMsg);
-		exit(1);
+		return 1;
 	}
 
 
@@ -152,7 +152,7 @@ int i;
 
 		fprintf(stderr,"problem with SQLAllocStmt\n%s\n%s\n",
 			szSqlState, szErrorMsg);
-		exit(1);
+		return 1;
 	}
 
 	/* Prepare the SQL statement with parameter markers. */
@@ -184,7 +184,7 @@ int i;
 
 			fprintf(stderr,"problem with SQLExecute\n%s\n%s\n",
 				szSqlState, szErrorMsg);
-			exit(1);
+			return 1;
 		}		
 		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, 60, &length);
 		//SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
@@ -200,7 +200,7 @@ int i;
 		if (retcode != SQL_NO_DATA_FOUND)
 		{
 			printStatementError(hstmt, "problem with SQLFetch");
-			exit(1);
+			return 1;
 		}
 	}		
 	printf("Done\n");

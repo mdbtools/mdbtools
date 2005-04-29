@@ -77,7 +77,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	int len, row_start, pg_row;
-	char *buf, *pg_buf = mdb->pg_buf;
+	unsigned char *buf, *pg_buf = mdb->pg_buf;
 
 	mdb_read_pg(mdb, entry->table_pg);
 	if (pg_buf[0] != 0x02)  /* not a valid table def page */
@@ -270,7 +270,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	** column names - ordered the same as the column attributes table
 	*/
 	for (i=0;i<table->num_cols;i++) {
-		char *tmp_buf;
+		unsigned char *tmp_buf;
 		pcol = g_ptr_array_index(table->columns, i);
 
 		if (IS_JET4(mdb)) {
@@ -284,7 +284,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			fprintf(stderr,"Unknown MDB version\n");
 			continue;
 		}
-		tmp_buf = (char *) g_malloc(name_sz);
+		tmp_buf = (unsigned char *) g_malloc(name_sz);
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
 		g_free(tmp_buf);

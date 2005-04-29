@@ -35,7 +35,7 @@
 #endif   /* JAVA */
 
 static int is_init;
-static GHashTable *mdb_backends;
+GHashTable *mdb_backends;
 
    /*    Access data types */
 static MdbBackendType mdb_access_types[] = {

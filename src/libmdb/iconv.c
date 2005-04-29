@@ -43,7 +43,7 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 		unsigned int compress=1;
 		src += 2;
 		slen -= 2;
-		tmp = (char *)g_malloc(slen*2);
+		tmp = (unsigned char *)g_malloc(slen*2);
 		while (slen) {
 			if (*src == 0) {
 				compress = (compress) ? 0 : 1;
@@ -61,8 +61,8 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 		}
 	}
 
-	in_ptr = (tmp) ? tmp : src;
-	out_ptr = dest;
+	in_ptr = (char *)((tmp) ? tmp : src);
+	out_ptr = (char *)dest;
 	len_in = (tmp) ? tlen : slen;
 	len_out = dlen;
 
@@ -111,9 +111,9 @@ mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 	if ((!src) || (!dest))
 		return 0;
 
-        in_ptr = src;
-        out_ptr = dest;
-        len_in = (slen) ? slen : strlen(src);
+        in_ptr = (char *)src;
+        out_ptr = (char *)dest;
+        len_in = (slen) ? slen : strlen(in_ptr);
         len_out = dlen;
 
 #ifdef HAVE_ICONV
@@ -137,7 +137,7 @@ mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 
 	/* Unicode Compression */
 	if(IS_JET4(mdb) && (dlen>4)) {
-		char *tmp = g_malloc(dlen);
+		unsigned char *tmp = g_malloc(dlen);
 		unsigned int tptr = 0, dptr = 0;
 		int comp = 1;
 
