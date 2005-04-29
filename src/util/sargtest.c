@@ -86,7 +86,6 @@ MdbSarg sarg;
 	while(mdb_fetch_row(table)) {
 		fprintf(stdout,"%s",bound_values[0]);
   		for (j=1;j<table->num_cols;j++) {
-			col=g_ptr_array_index(table->columns,j);
 			fprintf(stdout,"%s%s",DELIMETER,bound_values[j]);
 		}
 		fprintf(stdout,"\n");

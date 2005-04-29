@@ -43,7 +43,6 @@ int   i, j, k;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;
-MdbColumn *col;
 char *tabname = NULL;
 int opt;
 

@@ -1,3 +1,7 @@
+Thu Apr 28 21:34:57 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-check.c:
+	* src/util/sargtest.c: Remove an unused variable and a noop
+
 Sat Apr  9 15:40:17 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/gmdb2/gladefiles/gmdb-debug.glade:
 	* src/gmdb2/gladefiles/gmdb-schema.glade:
