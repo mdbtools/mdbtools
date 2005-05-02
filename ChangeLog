@@ -1,3 +1,15 @@
+Mon May  2 07:28:58 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/data.c:
+	* src/libmdb/dump.c:
+	* src/libmdb/file.c:
+	* src/libmdb/iconv.c:
+	* src/libmdb/index.c:
+	* src/libmdb/table.c:
+	* src/util/mdb-import.c:
+	* src/util/prindex.c:
+	* src/util/updrow.c: Clean up some gcc4 warnings
+
 Thu Apr 28 21:34:57 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-check.c:
 	* src/util/sargtest.c: Remove an unused variable and a noop

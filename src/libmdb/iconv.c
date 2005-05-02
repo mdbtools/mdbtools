@@ -28,22 +28,23 @@
  * This function is used in reading text data from an MDB table.
  */
 int
-mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen)
+mdb_unicode2ascii(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen)
 {
-	unsigned char *tmp = NULL;
+	char *tmp = NULL;
 	unsigned int tlen = 0;
 	unsigned int len_in, len_out;
 	char *in_ptr, *out_ptr;
 
-	if ((!src) || (!dest))
+	if ((!src) || (!dest) || (!dlen))
 		return 0;
 
 	/* Uncompress 'Unicode Compressed' string into tmp */
-	if (IS_JET4(mdb) && (slen>=2) && (src[0]==0xff) && (src[1]==0xfe)) {
+	if (IS_JET4(mdb) && (slen>=2)
+	 && ((src[0]&0xff)==0xff) && ((src[1]&0xff)==0xfe)) {
 		unsigned int compress=1;
 		src += 2;
 		slen -= 2;
-		tmp = (unsigned char *)g_malloc(slen*2);
+		tmp = (char *)g_malloc(slen*2);
 		while (slen) {
 			if (*src == 0) {
 				compress = (compress) ? 0 : 1;
@@ -61,8 +62,8 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
 		}
 	}
 
-	in_ptr = (char *)((tmp) ? tmp : src);
-	out_ptr = (char *)dest;
+	in_ptr = (tmp) ? tmp : src;
+	out_ptr = dest;
 	len_in = (tmp) ? tlen : slen;
 	len_out = dlen;
 
@@ -103,16 +104,16 @@ mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigne
  * If slen is 0, strlen will be used to calculate src's length.
  */
 int
-mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen)
+mdb_ascii2unicode(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen)
 {
         size_t len_in, len_out;
         char *in_ptr, *out_ptr;
 
-	if ((!src) || (!dest))
+	if ((!src) || (!dest) || (!dlen))
 		return 0;
 
-        in_ptr = (char *)src;
-        out_ptr = (char *)dest;
+        in_ptr = src;
+        out_ptr = dest;
         len_in = (slen) ? slen : strlen(in_ptr);
         len_out = dlen;
 

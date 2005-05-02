@@ -6,7 +6,7 @@
 #include "dmalloc.h"
 #endif
 
-void buffer_dump(const unsigned char* buf, int start, int end)
+void buffer_dump(const void* buf, int start, int end)
 {
 	char asc[20];
 	int j, k;
@@ -14,11 +14,12 @@ void buffer_dump(const unsigned char* buf, int start, int end)
 	memset(asc, 0, sizeof(asc));
 	k = 0;
 	for (j=start; j<=end; j++) {
+		int c = ((const unsigned char *)(buf))[j];
 		if (k == 0) {
 			fprintf(stdout, "%04x  ", j);
 		}
-		fprintf(stdout, "%02x ", buf[j]);
-		asc[k] = isprint(buf[j]) ? buf[j] : '.';
+		fprintf(stdout, "%02x ", c);
+		asc[k] = isprint(c) ? c : '.';
 		k++;
 		if (k == 8) {
 			fprintf(stdout, " ");

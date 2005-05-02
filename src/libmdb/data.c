@@ -88,7 +88,7 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
  * 
  * Returns: 0 on success.  1 on failure.
  */
-int mdb_find_pg_row(MdbHandle *mdb, int pg_row, char **buf, int *off, int *len)
+int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, int *len)
 {
 	unsigned int pg = pg_row >> 8;
 	unsigned int row = pg_row & 0xff;
@@ -441,7 +441,7 @@ int
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
-	char *buf;
+	void *buf;
 	int row_start;
 	int len;
 
@@ -468,7 +468,7 @@ int
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint32 ole_len;
-	char *buf;
+	void *buf;
 	int row_start;
 	int len;
 
@@ -529,9 +529,9 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 {
 	guint32 ole_len;
-	guint32 row_start, pg_row;
-	guint32 len;
-	char *buf, *pg_buf = mdb->pg_buf;
+	gint32 row_start, pg_row;
+	gint32 len;
+	void *buf, *pg_buf = mdb->pg_buf;
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return 0;
@@ -592,9 +592,9 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
 	guint32 memo_len;
-	guint32 row_start, pg_row;
-	guint32 len;
-	char *buf, *pg_buf = mdb->pg_buf;
+	gint32 row_start, pg_row;
+	gint32 len;
+	void *buf, *pg_buf = mdb->pg_buf;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
 	if (size<MDB_MEMO_OVERHEAD) {
@@ -797,7 +797,7 @@ int floor_log10(double f, int is_single)
 	}
 }
 
-char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size)
+char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
 {
 	char *text;
 	float tf;

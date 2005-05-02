@@ -32,7 +32,7 @@ char *colval;
 int colnum;
 char *sargname = NULL;
 char *updstr = NULL;
-unsigned char data[255];
+char data[255];
 int len;
 
 

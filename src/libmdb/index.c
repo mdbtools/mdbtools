@@ -165,17 +165,17 @@ mdb_read_indices(MdbTableDef *table)
 	return NULL;
 }
 void
-mdb_index_hash_text(guchar *text, guchar *hash)
+mdb_index_hash_text(char *text, char *hash)
 {
 	unsigned int k;
 
 	for (k=0;k<strlen(text);k++) {
-		hash[k] = idx_to_text[text[k]];
+		int c = ((unsigned char *)(text))[k];
+		hash[k] = idx_to_text[c];
 		if (!(hash[k])) fprintf(stderr, 
-				"No translation available for %02x %d\n", 
-				text[k],text[k]);
+				"No translation available for %02x %d\n", c, c);
 	}
-	hash[strlen(text)]=0;
+	hash[strlen(text)]='\0';
 }
 /*
  * reverse the order of the column for hashing
@@ -245,7 +245,7 @@ int lastchar;
 }
 #endif
 int
-mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, unsigned char *buf, int len)
+mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, char *buf, int len)
 {
 	unsigned int i, j;
 	MdbColumn *col;
@@ -617,7 +617,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		}
 
 		//idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
-		passed = mdb_index_test_sargs(mdb, idx, ipg->cache_value, idx_sz);
+		passed = mdb_index_test_sargs(mdb, idx, (char *)(ipg->cache_value), idx_sz);
 
 		ipg->offset += ipg->len;
 	} while (!passed);

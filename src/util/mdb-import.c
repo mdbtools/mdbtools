@@ -105,7 +105,7 @@ convert_field(MdbColumn *col, char *s, MdbField *field)
 	return 0;
 }
 int
-prep_row(MdbTableDef *table, unsigned char *line, MdbField *fields, char *delim)
+prep_row(MdbTableDef *table, char *line, MdbField *fields, char *delim)
 {
 	MdbColumn *col;
 	char **sarray, *s;
@@ -154,7 +154,7 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	MdbField fields[256];
-	unsigned char line[MAX_ROW_SIZE];
+	char line[MAX_ROW_SIZE];
 	int num_fields;
 	/* doesn't handle tables > 256 columns.  Can that happen? */
 	int  opt;

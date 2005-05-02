@@ -82,7 +82,7 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 	unsigned int num_fields, i, j;
 	int row_start, row_size;
 	MdbColumn *col;
-	guchar buf[256], key[256];
+	gchar buf[256], key[256];
 	int elem;
 	MdbTableDef *table = idx->table; 
 	

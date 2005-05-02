@@ -290,9 +290,9 @@ char tmpbuf[MDB_PGSIZE];
 
 
 /* really stupid, just here for consistancy */
-unsigned char mdb_get_byte(unsigned char *buf, int offset)
+unsigned char mdb_get_byte(void *buf, int offset)
 {
-	return buf[offset];
+	return ((unsigned char *)(buf))[offset];
 }
 unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 {
@@ -301,9 +301,11 @@ unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 	return mdb->pg_buf[offset];
 }
 
-int mdb_get_int16(unsigned char *buf, int offset)
+int mdb_get_int16(void *buf, int offset)
 {
-	return buf[offset+1]*256+buf[offset];
+	guint16 l;
+	memcpy(&l, buf + offset, 2);
+	return (int)GUINT16_FROM_LE(l);
 }
 int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 {
@@ -317,13 +319,13 @@ gint32 mdb_pg_get_int24_msb(MdbHandle *mdb, int offset)
 	gint32 l = 0;
 	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
 	mdb->cur_pos+=3;
-	memcpy(&l, &(mdb->pg_buf[offset]), 3);
+	memcpy(&l, mdb->pg_buf + offset, 3);
 	return GINT32_FROM_BE(l);
 }
-gint32 mdb_get_int24(unsigned char *buf, int offset)
+gint32 mdb_get_int24(void *buf, int offset)
 {
 	gint32 l = 0;
-	memcpy(&l, &buf[offset], 3);
+	memcpy(&l, buf + offset, 3);
 	return GINT32_FROM_LE(l);
 }
 gint32 mdb_pg_get_int24(MdbHandle *mdb, int offset)
@@ -333,10 +335,10 @@ gint32 mdb_pg_get_int24(MdbHandle *mdb, int offset)
 	return mdb_get_int24(mdb->pg_buf, offset);
 }
 
-long mdb_get_int32(unsigned char *buf, int offset)
+long mdb_get_int32(void *buf, int offset)
 {
-	guint32 l;
-	memcpy(&l, &buf[offset], 4);
+	gint32 l;
+	memcpy(&l, buf + offset, 4);
 	return (long)GINT32_FROM_LE(l);
 }
 long mdb_pg_get_int32(MdbHandle *mdb, int offset)
@@ -346,10 +348,10 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 	return mdb_get_int32(mdb->pg_buf, offset);
 }
 
-float mdb_get_single(unsigned char *buf, int offset)
+float mdb_get_single(void *buf, int offset)
 {
 	union {guint32 g; float f;} f;
-	memcpy(&f, &buf[offset], 4);
+	memcpy(&f, buf + offset, 4);
 	f.g = GUINT32_FROM_LE(f.g);
 	return f.f;
 }
@@ -360,10 +362,10 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
        return mdb_get_single(mdb->pg_buf, offset);
 }
 
-double mdb_get_double(unsigned char *buf, int offset)
+double mdb_get_double(void *buf, int offset)
 {
 	union {guint64 g; double d;} d;
-	memcpy(&d, &buf[offset], 8);
+	memcpy(&d, buf + offset, 8);
 	d.g = GUINT64_FROM_LE(d.g);
 	return d.d;
 }

@@ -395,12 +395,12 @@ extern void mdb_exit();
 /* file.c */
 extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
 extern ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
-extern unsigned char mdb_get_byte(unsigned char *buf, int offset);
-extern int    mdb_get_int16(unsigned char *buf, int offset);
-extern gint32   mdb_get_int24(unsigned char *buf, int offset);
-extern long   mdb_get_int32(unsigned char *buf, int offset);
-extern float  mdb_get_single(unsigned char *buf, int offset);
-extern double mdb_get_double(unsigned char *buf, int offset);
+extern unsigned char mdb_get_byte(void *buf, int offset);
+extern int    mdb_get_int16(void *buf, int offset);
+extern gint32   mdb_get_int24(void *buf, int offset);
+extern long   mdb_get_int32(void *buf, int offset);
+extern float  mdb_get_single(void *buf, int offset);
+extern double mdb_get_double(void *buf, int offset);
 extern unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset);
 extern int    mdb_pg_get_int16(MdbHandle *mdb, int offset);
 extern gint32   mdb_pg_get_int24(MdbHandle *mdb, int offset);
@@ -412,7 +412,6 @@ extern MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
 extern void mdb_close(MdbHandle *mdb);
 extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 extern void mdb_swap_pgbuf(MdbHandle *mdb);
-extern long _mdb_get_int32(unsigned char *buf, int offset);
 
 /* catalog.c */
 extern void mdb_free_catalog(MdbHandle *mdb);
@@ -432,7 +431,7 @@ extern void mdb_table_dump(MdbCatalogEntry *entry);
 extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
 extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
 extern int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset);
-extern guint16 read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, int len);
+extern guint16 read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, int len);
 extern int mdb_is_user_table(MdbCatalogEntry *entry);
 extern int mdb_is_system_table(MdbCatalogEntry *entry);
 
@@ -443,8 +442,8 @@ extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int
 extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
 extern int mdb_is_fixed_col(MdbColumn *col);
-extern char *mdb_col_to_string(MdbHandle *mdb, unsigned char *buf, int start, int datatype, int size);
-extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, char **buf, int *off, int *len);
+extern char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
+extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, int *len);
 extern int mdb_find_row(MdbHandle *mdb, int row, int *start, int *len);
 extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 extern int mdb_col_fixed_size(MdbColumn *col);
@@ -455,7 +454,7 @@ extern void mdb_set_date_fmt(const char *);
 extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
-extern void buffer_dump(const unsigned char* buf, int start, int end);
+extern void buffer_dump(const void *buf, int start, int end);
 
 /* backend.c */
 extern char *mdb_get_coltype_string(MdbBackend *backend, int col_type);
@@ -484,7 +483,7 @@ extern void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
 extern void mdb_index_scan_free(MdbTableDef *table);
 extern int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
 extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
-extern void mdb_index_hash_text(guchar *text, guchar *hash);
+extern void mdb_index_hash_text(char *text, char *hash);
 extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
 extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
@@ -531,8 +530,8 @@ extern int mdb_get_option(unsigned long optnum);
 extern void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen);
-extern int mdb_ascii2unicode(MdbHandle *mdb, unsigned char *src, unsigned int slen, unsigned char *dest, unsigned int dlen);
+extern int mdb_unicode2ascii(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen);
+extern int mdb_ascii2unicode(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen);
 extern void mdb_iconv_init(MdbHandle *mdb);
 extern void mdb_iconv_close(MdbHandle *mdb);
 
