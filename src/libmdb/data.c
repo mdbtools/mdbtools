@@ -668,7 +668,8 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		return text;
 	} else {
 		fprintf(stderr, "Unhandled memo field flags = %02x\n", memo_len >> 24);
-		return "";
+		strcpy(text, "");
+		return text;
 	}
 }
 static char *
