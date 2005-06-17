@@ -62,18 +62,23 @@ main (int argc, char **argv)
 		}
 	}
  
- mdb_init();
+	mdb_init();
 
- /* open the database */
-
- mdb = mdb_open (argv[optind], MDB_NOFLAGS);
- if (argc - optind >= 2) {
-	if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
-		fprintf(stderr,"Invalid backend type\n");
+	/* open the database */
+	mdb = mdb_open (argv[optind], MDB_NOFLAGS);
+	if (!mdb) {
+		fprintf(stderr, "Could not open file\n");
 		mdb_exit();
 		exit(1);
 	}
- }
+
+	if (argc - optind >= 2) {
+		if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
+			fprintf(stderr, "Invalid backend type\n");
+			mdb_exit();
+			exit(1);
+		}
+	}
 
 	/* read the catalog */
  	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
