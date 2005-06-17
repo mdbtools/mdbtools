@@ -1,5 +1,6 @@
 Thu Jun 16 21:19:37 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix segmentation fault
+	* src/libmdb/write.c: Fix bug in handling certain 'jump tables'
 
 Mon May  2 07:28:58 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:

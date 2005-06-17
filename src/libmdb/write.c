@@ -132,7 +132,7 @@ mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
 
 	jumps_used = 0;
 	for (i=0; i<row_var_cols+1; i++) {
-		if ((jumps_used < num_jumps)
+		while ((jumps_used < num_jumps)
 		 && (i == mdb->pg_buf[row_end-bitmask_sz-jumps_used-1])) {
 			jumps_used++;
 		}
