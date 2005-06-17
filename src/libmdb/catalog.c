@@ -51,7 +51,7 @@ void mdb_free_catalog(MdbHandle *mdb)
 {
 	unsigned int i;
 
-	if (!mdb->catalog) return;
+	if ((!mdb) || (!mdb->catalog)) return;
 	for (i=0; i<mdb->catalog->len; i++)
 		g_free (g_ptr_array_index(mdb->catalog, i));
 	g_ptr_array_free(mdb->catalog, TRUE);
@@ -68,6 +68,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	char obj_flags[256];
 	int type;
 
+	if (!mdb) return NULL;
 	if (mdb->catalog) mdb_free_catalog(mdb);
 	mdb->catalog = g_ptr_array_new();
 	mdb->num_catalog = 0;
