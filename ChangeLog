@@ -1,3 +1,7 @@
+Sat Jun 18 01:49:03 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/gmdb2/gladefiles/gmdb-debug.glade:
+	* src/gmdb2/debug.c: Fix several lockups, leaks, and warnings
+
 Thu Jun 16 21:19:37 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix segmentation fault
 	* src/libmdb/write.c: Fix bug in handling certain 'jump tables'

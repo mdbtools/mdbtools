@@ -191,7 +191,6 @@
 		  <property name="tooltip" translatable="yes">Back</property>
 		  <property name="stock-id">gtk-go-back</property>
 		  <signal name="clicked" handler="gmdb_debug_back_cb" object="debug_window"/>
-		  <property name="new_group">True</property>
 		</widget>
 		<packing>
 		  <property name="new_group">True</property>
@@ -222,7 +221,6 @@
 		  <property name="tooltip" translatable="yes">Close window</property>
 		  <property name="stock-id">gtk-close</property>
 		  <signal name="clicked" handler="gmdb_debug_close_cb" object="debug_window"/>
-		  <property name="new_group">True</property>
 		</widget>
 		<packing>
 		  <property name="new_group">True</property>
