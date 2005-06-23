@@ -1,5 +1,10 @@
 Thu Jun 23 00:40:32 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Use col->is_fixed member directly
+	* doc/reference/libmdb/libmdb-sections.txt:
+	* include/mdbtools.h:
+	* src/libmdb/file.c:
+	* src/libmdb/index.c:
+	* src/libmdb/write.c: Remove remaining int24 uses
 
 Sat Jun 18 01:49:03 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/gmdb2/gladefiles/gmdb-debug.glade:

@@ -455,7 +455,7 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 			//printf("find_next_on_page returned 0\n");
 			return 0;
 		}
-		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 3);
+		pg = mdb_get_int32_msb(mdb->pg_buf, ipg->offset + ipg->len - 3) >> 8;
 		//printf("Looking at pg %lu at %lu %d\n", pg, ipg->offset, ipg->len);
 		ipg->offset += ipg->len;
 
@@ -566,6 +566,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	int idx_sz;
 	int idx_start = 0;
 	MdbColumn *col;
+	guint32 pg_row;
 
 	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
 
@@ -587,7 +588,8 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 
 				if (!chain->last_leaf_found) return 0;
 				mdb_read_pg(mdb, chain->last_leaf_found);
-				chain->last_leaf_found = mdb_pg_get_int24(mdb, 0x0c);
+				chain->last_leaf_found = mdb_get_int32(
+					mdb->pg_buf, 0x0c);
 				//printf("next leaf %lu\n", chain->last_leaf_found);
 				mdb_read_pg(mdb, chain->last_leaf_found);
 				/* reuse the chain for cleanup mode */
@@ -600,8 +602,9 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 					return 0;
 			}
 		}
-		*row = mdb->pg_buf[ipg->offset + ipg->len - 1];
-		*pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
+		pg_row = mdb_get_int32_msb(mdb->pg_buf, ipg->offset + ipg->len - 4);
+		*row = pg_row & 0xff;
+		*pg = pg_row >> 8;
 		//printf("row = %d pg = %lu ipg->pg = %lu offset = %lu len = %d\n", *row, *pg, ipg->pg, ipg->offset, ipg->len);
 		col=g_ptr_array_index(idx->table->columns,idx->key_col_num[0]-1);
 		idx_sz = mdb_col_fixed_size(col);
@@ -639,8 +642,8 @@ mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 
 {
 	MdbIndexPage *ipg;
 	int passed = 0;
-	guint32 datapg;
-	guint16 datarow;
+	guint32 pg_row = (pg << 8) | (row & 0xff);
+	guint32 datapg_row;
 
 	ipg = mdb_index_read_bottom_pg(mdb, idx, chain);
 
@@ -668,10 +671,8 @@ mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 
 				return 0;
 		}
 		/* test row and pg */
-		datarow = mdb->pg_buf[ipg->offset + ipg->len - 1];
-		datapg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
-
-		if (datapg == pg && datarow == row) {
+		datapg_row = mdb_get_int32_msb(mdb->pg_buf, ipg->offset + ipg->len - 4);
+		if (pg_row == datapg_row) {
 			passed = 1;
 		}
 		ipg->offset += ipg->len;

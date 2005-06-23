@@ -314,27 +314,12 @@ int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 	return mdb_get_int16(mdb->pg_buf, offset);
 }
 
-gint32 mdb_pg_get_int24_msb(MdbHandle *mdb, int offset)
+long mdb_get_int32_msb(void *buf, int offset)
 {
-	gint32 l = 0;
-	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
-	mdb->cur_pos+=3;
-	memcpy(&l, mdb->pg_buf + offset, 3);
-	return GINT32_FROM_BE(l);
+	gint32 l;
+	memcpy(&l, buf + offset, 4);
+	return (long)GINT32_FROM_BE(l);
 }
-gint32 mdb_get_int24(void *buf, int offset)
-{
-	gint32 l = 0;
-	memcpy(&l, buf + offset, 3);
-	return GINT32_FROM_LE(l);
-}
-gint32 mdb_pg_get_int24(MdbHandle *mdb, int offset)
-{
-	if (offset <0 || offset+3 > mdb->fmt->pg_size) return -1;
-	mdb->cur_pos+=3;
-	return mdb_get_int24(mdb->pg_buf, offset);
-}
-
 long mdb_get_int32(void *buf, int offset)
 {
 	gint32 l;

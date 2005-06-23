@@ -32,38 +32,20 @@ static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPag
 void
 _mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
 {
-	buf[offset] = value % 256;
-	value /= 256;
-	buf[offset+1] = value % 256;
+	value = GINT32_TO_LE(value);
+	memcpy(buf + offset, &value, 2);
 }
 void
 _mdb_put_int32(unsigned char *buf, guint32 offset, guint32 value)
 {
-	buf[offset] = value % 256;
-	value /= 256;
-	buf[offset+1] = value % 256;
-	value /= 256;
-	buf[offset+2] = value % 256;
-	value /= 256;
-	buf[offset+3] = value % 256;
+	value = GINT32_TO_LE(value);
+	memcpy(buf + offset, &value, 4);
 }
 void
-_mdb_put_int24(unsigned char *buf, guint32 offset, guint32 value)
+_mdb_put_int32_msb(unsigned char *buf, guint32 offset, guint32 value)
 {
-	buf[offset] = value % 256;
-	value /= 256;
-	buf[offset+1] = value % 256;
-	value /= 256;
-	buf[offset+2] = value % 256;
-}
-void
-_mdb_put_int24_msb(unsigned char *buf, guint32 offset, guint32 value)
-{
-	buf[offset+2] = value % 256;
-	value /= 256;
-	buf[offset+1] = value % 256;
-	value /= 256;
-	buf[offset] = value % 256;
+	value = GINT32_TO_BE(value);
+	memcpy(buf + offset, &value, 4);
 }
 ssize_t
 mdb_write_pg(MdbHandle *mdb, unsigned long pg)
@@ -782,7 +764,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbColumn *col;
-	guint32 pg;
+	guint32 pg, pg_row;
 	guint16 row;
 	unsigned char *new_pg;
 	unsigned char key_hash[256];
@@ -815,8 +797,9 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 			return 0;
 		}
 
-		pg = mdb_pg_get_int24_msb(mdb, ipg->offset + ipg->len - 4);
-		row = mdb->pg_buf[ipg->offset + ipg->len - 1];
+		pg_row = mdb_get_int32_msb(mdb->pg_buf, ipg->offset + ipg->len - 4);
+		pg = pg_row >> 8;
+		row = pg_row & 0xff;
 		iflag = mdb->pg_buf[ipg->offset];
 
 		/* turn the key hash back into a value */
@@ -850,8 +833,8 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	}
 	new_pg[ipg->offset] = 0x7f;
 	memcpy(&new_pg[ipg->offset + 1], key_hash, col->col_size);
-	_mdb_put_int24_msb(new_pg, ipg->offset + 5, pgnum);
-	new_pg[ipg->offset + 8] = rownum-1;
+	pg_row = (pgnum << 8) | ((rownum-1) & 0xff);
+	_mdb_put_int32_msb(new_pg, ipg->offset + 5, pg_row);
 	ipg->idx_starts[row++] = ipg->offset + ipg->len;
 	//ipg->idx_starts[row] = ipg->offset + ipg->len;
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
