@@ -219,7 +219,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 		unsigned int col_start;
 		col = g_ptr_array_index(table->columns,i);
 		fields[i].colnum = i;
-		fields[i].is_fixed = (mdb_is_fixed_col(col)) ? 1 : 0;
+		fields[i].is_fixed = col->is_fixed;
 		byte_num = col->col_num / 8;
 		bit_num = col->col_num % 8;
 		/* logic on nulls is reverse, 1 is not null, 0 is null */
@@ -802,7 +802,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	}
 	keycol = idx->key_col_num[0];
 	col = g_ptr_array_index (table->columns, keycol - 1);
-	if (!mdb_is_fixed_col(col)) {
+	if (!col->is_fixed) {
 		fprintf(stderr,"variable length key columns not yet supported, aborting\n");
 		return 0;
 	}
