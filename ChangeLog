@@ -1,3 +1,12 @@
+Mon Jun 27 23:52:15 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/gmdb2/debug.c:
+	* src/libmdb/data.c:
+	* src/libmdb/file.c:
+	* src/libmdb/write.c:
+	* src/util/prfreemap.c:
+	* src/util/prindex.c: Use more appropriate types (void *, size_t)
+
 Thu Jun 23 00:40:32 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/write.c: Use col->is_fixed member directly
 	* doc/reference/libmdb/libmdb-sections.txt:

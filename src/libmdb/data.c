@@ -32,7 +32,9 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	MdbColumn *col, unsigned char isnull, int offset, int len);
 static char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
 static char *mdb_date_to_string(MdbHandle *mdb, int start);
-int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
+#ifdef MDB_COPY_OLE
+static size_t mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
+#endif
 
 static char date_fmt[64] = "%x %X";
 
@@ -88,7 +90,7 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
  * 
  * Returns: 0 on success.  1 on failure.
  */
-int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, int *len)
+int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len)
 {
 	unsigned int pg = pg_row >> 8;
 	unsigned int row = pg_row & 0xff;
@@ -102,7 +104,7 @@ int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, int *len)
 	return 0;
 }
 
-int mdb_find_row(MdbHandle *mdb, int row, int *start, int *len)
+int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
 {
 	int rco = mdb->fmt->row_count_offset;
 	int next_start;
@@ -183,7 +185,9 @@ static int mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len
 		col->cur_value_len = 0;
 	}
 	if (col->bind_ptr || col->len_ptr) {
-		//ret = mdb_copy_ole(mdb, col->bind_ptr, start, len);
+#ifdef MDB_COPY_OLE
+		ret = mdb_copy_ole(mdb, col->bind_ptr, start, len);
+#endif
 		memcpy(col->bind_ptr, &mdb->pg_buf[start], MDB_MEMO_OVERHEAD);
 	}
 	if (col->len_ptr) {
@@ -235,7 +239,8 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbColumn *col;
 	unsigned int i;
 	int rc;
-	int row_start, row_size;
+	int row_start;
+	size_t row_size;
 	int delflag, lookupflag;
 	MdbField fields[256];
 	int num_fields;
@@ -437,13 +442,13 @@ int i;
 	return text;
 }
 #endif
-int 
+size_t 
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
 	void *buf;
 	int row_start;
-	int len;
+	size_t len;
 
 	ole_len = mdb_get_int32(ole_ptr, 0);
 
@@ -464,13 +469,13 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	}
 	return 0;
 }
-int 
+size_t 
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint32 ole_len;
 	void *buf;
 	int row_start;
-	int len;
+	size_t len;
 
 	ole_len = mdb_get_int32(ole_ptr, 0);
 	mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %02x",
@@ -526,11 +531,12 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		return 0;
 	}
 }
-int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
+#ifdef MDB_COPY_OLE
+static size_t mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 {
 	guint32 ole_len;
 	gint32 row_start, pg_row;
-	gint32 len;
+	size_t len;
 	void *buf, *pg_buf = mdb->pg_buf;
 
 	if (size<MDB_MEMO_OVERHEAD) {
@@ -589,11 +595,12 @@ int mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
 		return 0;
 	}
 }
+#endif
 static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 {
 	guint32 memo_len;
 	gint32 row_start, pg_row;
-	gint32 len;
+	size_t len;
 	void *buf, *pg_buf = mdb->pg_buf;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
@@ -803,6 +810,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 	char *text;
 	float tf;
 	double td;
+	void *pg_buf = mdb->pg_buf;
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -821,13 +829,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				mdb_get_int32(buf, start));
 		break;
 		case MDB_FLOAT:
-			tf = mdb_get_single(mdb->pg_buf, start);
+			tf = mdb_get_single(pg_buf, start);
 			text = g_strdup_printf("%.*f",
 				FLT_DIG - floor_log10(tf,1) - 1, tf);
 			trim_trailing_zeros(text);
 		break;
 		case MDB_DOUBLE:
-			td = mdb_get_double(mdb->pg_buf, start);
+			td = mdb_get_double(pg_buf, start);
 			text = g_strdup_printf("%.*f",
 				DBL_DIG - floor_log10(td,0) - 1, td);
 			trim_trailing_zeros(text);
@@ -837,7 +845,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				text = g_strdup("");
 			} else {
 				text = (char *) g_malloc(MDB_BIND_SIZE);
-				mdb_unicode2ascii(mdb, mdb->pg_buf + start,
+				mdb_unicode2ascii(mdb, pg_buf + start,
 					size, text, MDB_BIND_SIZE);
 			}
 		break;

@@ -25,7 +25,8 @@ main(int argc, char **argv)
 {
 MdbHandle *mdb;
 int j;
-long int pgnum = 0, row_start, map_sz;
+	long int pgnum = 0, row_start;
+	size_t map_sz;
 int coln = 1;
 unsigned char *map_buf;
 

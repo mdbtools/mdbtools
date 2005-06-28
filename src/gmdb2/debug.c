@@ -42,8 +42,8 @@ static void gmdb_debug_text_off(GtkWidget *textbox);
 static GtkTreeIter *gmdb_debug_add_item(GtkTreeStore *store, GtkTreeIter *iter, gchar *text, int start, int len);
 static void gmdb_debug_clear(GladeXML *xml);
 static void gmdb_debug_dissect(GtkTreeStore *store, char *fbuf, int offset, int len);
-static guint16 get_uint16(unsigned char *c);
-static guint32 get_uint32(unsigned char *c);
+static guint16 get_uint16(void *c);
+static guint32 get_uint32(void *c);
 static long gmdb_get_max_page(MdbHandle *mdb);
 static void gmdb_debug_display(GladeXML *xml, guint32 page);
 static void gmdb_debug_jump(GladeXML *xml, int msb);
@@ -412,14 +412,14 @@ int i = 0;
 	return "unknown";
 }
 static guint16 
-get_uint16(unsigned char *c)
+get_uint16(void *c)
 {
 	guint16 i;
 	memcpy(&i, c, 2);
 	return GINT16_FROM_LE(i);
 }
 static guint32 
-get_uint32(unsigned char *c)
+get_uint32(void *c)
 {
 	guint32 l;
 	memcpy(&l, c, 4);

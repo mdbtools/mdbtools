@@ -52,7 +52,7 @@ MdbFormatConstants MdbJet3Constants = {
 	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39, 3, 14, 5
 };
 
-static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg);
+static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg);
 
 /**
  * mdb_find_file:
@@ -65,7 +65,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long
  * freeing.
  **/
 
-static gchar *mdb_find_file(const char *file_name)
+static char *mdb_find_file(const char *file_name)
 {
 	struct stat status;
 	gchar *mdbpath, **dir, *tmpfname;
@@ -121,7 +121,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 	mdb->f = (MdbFile *) g_malloc0(sizeof(MdbFile));
 	mdb->f->refs = 1;
 	mdb->f->fd = -1;
-	mdb->f->filename = (char *) mdb_find_file(filename);
+	mdb->f->filename = mdb_find_file(filename);
 	if (!mdb->f->filename) { 
 		fprintf(stderr, "Can't alloc filename\n");
 		mdb_close(mdb);
@@ -253,7 +253,7 @@ ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg)
 	len = _mdb_read_pg(mdb, mdb->alt_pg_buf, pg);
 	return len;
 }
-static ssize_t _mdb_read_pg(MdbHandle *mdb, unsigned char *pg_buf, unsigned long pg)
+static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 {
 	ssize_t len;
 	struct stat status;
@@ -289,7 +289,6 @@ char tmpbuf[MDB_PGSIZE];
 }
 
 
-/* really stupid, just here for consistancy */
 unsigned char mdb_get_byte(void *buf, int offset)
 {
 	return ((unsigned char *)(buf))[offset];

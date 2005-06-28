@@ -337,11 +337,11 @@ typedef struct {
 	int  noskip_del;  /* don't skip deleted rows */
 	/* object allocation map */
 	guint32  map_base_pg;
-	unsigned int  map_sz;
+	size_t map_sz;
 	unsigned char *usage_map;
 	/* pages with free space left */
 	guint32  freemap_base_pg;
-	unsigned int  freemap_sz;
+	size_t freemap_sz;
 	unsigned char *free_usage_map;
 	/* query planner */
 	MdbSargNode *sarg_tree;
@@ -441,13 +441,13 @@ extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
 extern int mdb_is_fixed_col(MdbColumn *col);
 extern char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
-extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, int *len);
-extern int mdb_find_row(MdbHandle *mdb, int row, int *start, int *len);
+extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
+extern int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
 extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
 extern int mdb_col_fixed_size(MdbColumn *col);
 extern int mdb_col_disp_size(MdbColumn *col);
-extern int mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
-extern int mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
+extern size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
+extern size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void mdb_set_date_fmt(const char *);
 extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 
@@ -502,10 +502,10 @@ extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbFiel
 extern guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
 extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
 extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
-extern int mdb_replace_row(MdbTableDef *table, int row, unsigned char *new_row, int new_row_size);
+extern int mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size);
 extern int mdb_pg_get_freespace(MdbHandle *mdb);
 extern int mdb_update_row(MdbTableDef *table);
-extern unsigned char *mdb_new_data_pg(MdbCatalogEntry *entry);
+extern void *mdb_new_data_pg(MdbCatalogEntry *entry);
 
 /* map.c */
 extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
