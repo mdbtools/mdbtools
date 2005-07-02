@@ -31,7 +31,7 @@ mdb_read_props_list(gchar *kkd, int len)
 
 	names = g_ptr_array_new();
 #ifdef MDB_DEBUG
-	buffer_dump(kkd, 0, len - 1);
+	buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
 	while (pos < len) {
@@ -39,7 +39,7 @@ mdb_read_props_list(gchar *kkd, int len)
 		pos += 2;
 #ifdef MDB_DEBUG
 		printf("%02d ",i++);
-		buffer_dump(kkd, pos - 2, pos + record_len - 1);
+		buffer_dump(kkd, pos - 2, record_len + 2);
 #endif
 		name = g_malloc(record_len + 1);
 		strncpy(name, &kkd[pos], record_len);
@@ -80,7 +80,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 	int i = 0;
 
 #ifdef MDB_DEBUG
-	buffer_dump(kkd, 0, len - 1);
+	buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
 
@@ -110,7 +110,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		name = g_ptr_array_index(names,elem);
 #ifdef MDB_DEBUG
 		printf("%02d ",i++);
-		buffer_dump(kkd, pos, pos + record_len - 1);
+		buffer_dump(kkd, pos, record_len);
 		printf("elem %d dsize %d dtype %d\n", elem, dsize, dtype);
 #endif
 		if (dtype == MDB_MEMO) dtype = MDB_TEXT;

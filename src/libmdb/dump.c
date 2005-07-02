@@ -6,14 +6,14 @@
 #include "dmalloc.h"
 #endif
 
-void buffer_dump(const void* buf, int start, int end)
+void buffer_dump(const void* buf, int start, size_t len)
 {
 	char asc[20];
 	int j, k;
 
 	memset(asc, 0, sizeof(asc));
 	k = 0;
-	for (j=start; j<=end; j++) {
+	for (j=start; j<start+len; j++) {
 		int c = ((const unsigned char *)(buf))[j];
 		if (k == 0) {
 			fprintf(stdout, "%04x  ", j);

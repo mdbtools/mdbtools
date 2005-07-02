@@ -626,7 +626,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	} while (!passed);
 
 	//fprintf(stdout,"len = %d pos %d\n", ipg->len, ipg->mask_pos);
-	//buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset+ipg->len-1);
+	//buffer_dump(mdb->pg_buf, ipg->offset, ipg->len);
 
 	return ipg->len;
 }

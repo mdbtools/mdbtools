@@ -1,3 +1,12 @@
+Sat Jul  2 02:12:39 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/data.c:
+	* src/libmdb/dump.c:
+	* src/libmdb/index.c:
+	* src/libmdb/props.c:
+	* src/libmdb/table.c:
+	* src/libmdb/write.c: Alter buffer_dump's third parameter from 'end' to 'length'
+
 Mon Jun 27 23:52:15 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/gmdb2/debug.c:

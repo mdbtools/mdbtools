@@ -274,7 +274,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 #endif 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, row_start, row_start + row_size - 1);
+	buffer_dump(mdb->pg_buf, row_start, row_size);
 #endif
 
 	/* take advantage of mdb_crack_row() to clean up binding */
@@ -610,7 +610,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	} 
 
 #if MDB_DEBUG
-	buffer_dump(pg_buf, start, start + MDB_MEMO_OVERHEAD - 1);
+	buffer_dump(pg_buf, start, MDB_MEMO_OVERHEAD);
 #endif
 
 	/* The 32 bit integer at offset 0 is the length of the memo field
@@ -637,7 +637,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 #if MDB_DEBUG
 		printf("row num %d start %d len %d\n",
 			pg_row & 0xff, row_start, len);
-		buffer_dump(buf, row_start, row_start + len - 1);
+		buffer_dump(buf, row_start, len);
 #endif
 		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;

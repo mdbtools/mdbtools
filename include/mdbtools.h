@@ -452,7 +452,7 @@ extern void mdb_set_date_fmt(const char *);
 extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
-extern void buffer_dump(const void *buf, int start, int end);
+extern void buffer_dump(const void *buf, int start, size_t len);
 
 /* backend.c */
 extern char *mdb_get_coltype_string(MdbBackend *backend, int col_type);

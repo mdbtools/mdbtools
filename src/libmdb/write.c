@@ -158,7 +158,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	unsigned int i;
 
 	if (mdb_get_option(MDB_DEBUG_ROW)) {
-		buffer_dump(pg_buf, row_start, row_end);
+		buffer_dump(pg_buf, row_start, row_end - row_start + 1);
 	}
 
 	if (IS_JET4(mdb)) {
@@ -537,7 +537,7 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	}
 	new_row_size = mdb_pack_row(table, row_buffer, num_fields, fields);
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
-		buffer_dump(row_buffer, 0, new_row_size-1);
+		buffer_dump(row_buffer, 0, new_row_size);
 	}
 	pgnum = mdb_map_find_next_freepage(table, new_row_size);
 	if (!pgnum) {
@@ -548,8 +548,8 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	rownum = mdb_add_row_to_pg(table, row_buffer, new_row_size);
 
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
-		buffer_dump(mdb->pg_buf, 0, 39);
-		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, fmt->pg_size-1);
+		buffer_dump(mdb->pg_buf, 0, 40);
+		buffer_dump(mdb->pg_buf, fmt->pg_size - 160, 160);
 	}
 	mdb_debug(MDB_DEBUG_WRITE, "writing page %d", pgnum);
 	if (!mdb_write_pg(mdb, pgnum)) {
@@ -651,7 +651,7 @@ unsigned int num_fields;
 
 	mdb_debug(MDB_DEBUG_WRITE,"page %lu row %d start %d end %d", (unsigned long) table->cur_phys_pg, table->cur_row-1, row_start, row_end);
 	if (mdb_get_option(MDB_DEBUG_LIKE))
-		buffer_dump(mdb->pg_buf, row_start, row_end);
+		buffer_dump(mdb->pg_buf, row_start, old_row_size);
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
@@ -677,7 +677,7 @@ unsigned int num_fields;
 
 	new_row_size = mdb_pack_row(table, row_buffer, num_fields, fields);
 	if (mdb_get_option(MDB_DEBUG_WRITE)) 
-		buffer_dump(row_buffer, 0, new_row_size-1);
+		buffer_dump(row_buffer, 0, new_row_size);
 	if (new_row_size > (old_row_size + mdb_pg_get_freespace(mdb))) {
 		fprintf(stderr, "No space left on this page, update will not occur\n");
 		return 0;
@@ -700,8 +700,8 @@ guint16 num_rows;
 int i, pos;
 
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
-		buffer_dump(mdb->pg_buf, 0, 39);
-		buffer_dump(mdb->pg_buf, pg_size - 160, pg_size-1);
+		buffer_dump(mdb->pg_buf, 0, 40);
+		buffer_dump(mdb->pg_buf, pg_size - 160, 160);
 	}
 	mdb_debug(MDB_DEBUG_WRITE,"updating row %d on page %lu", row, (unsigned long) table->cur_phys_pg);
 	new_pg = mdb_new_data_pg(entry);
@@ -739,8 +739,8 @@ int i, pos;
 
 	_mdb_put_int16(mdb->pg_buf, 2, mdb_pg_get_freespace(mdb));
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
-		buffer_dump(mdb->pg_buf, 0, 39);
-		buffer_dump(mdb->pg_buf, pg_size - 160, pg_size-1);
+		buffer_dump(mdb->pg_buf, 0, 40);
+		buffer_dump(mdb->pg_buf, pg_size - 160, 160);
 	}
 	/* drum roll, please */
 	if (!mdb_write_pg(mdb, table->cur_phys_pg)) {
@@ -802,9 +802,9 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 		key_hash[col->col_size - 1] &= 0x7f;
 
 		if (mdb_get_option(MDB_DEBUG_WRITE)) {
-			buffer_dump(mdb->pg_buf, ipg->offset, ipg->offset + ipg->len - 1);
-			buffer_dump(mdb->pg_buf, ipg->offset + 1, ipg->offset + col->col_size);
-			buffer_dump(key_hash, 0, col->col_size - 1);
+			buffer_dump(mdb->pg_buf, ipg->offset, ipg->len);
+			buffer_dump(mdb->pg_buf, ipg->offset + 1, col->col_size);
+			buffer_dump(key_hash, 0, col->col_size);
 		}
 
 		memcpy(new_pg + ipg->offset, mdb->pg_buf + ipg->offset, ipg->len);
@@ -822,8 +822,8 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	key_hash[0] |= 0x080;
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
 		printf("key_hash\n");
-		buffer_dump(idx_fields[0].value, 0, col->col_size-1);
-		buffer_dump(key_hash, 0, col->col_size-1);
+		buffer_dump(idx_fields[0].value, 0, col->col_size);
+		buffer_dump(key_hash, 0, col->col_size);
 		printf("--------\n");
 	}
 	((char *)new_pg)[ipg->offset] = 0x7f;
@@ -833,12 +833,12 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	ipg->idx_starts[row++] = ipg->offset + ipg->len;
 	//ipg->idx_starts[row] = ipg->offset + ipg->len;
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
-		buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+		buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size);
 	}
 	memcpy(mdb->pg_buf, new_pg, mdb->fmt->pg_size);
 	mdb_index_pack_bitmap(mdb, ipg);
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
-		buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size-1);
+		buffer_dump(mdb->pg_buf, 0, mdb->fmt->pg_size);
 	}
 	g_free(new_pg);
 
