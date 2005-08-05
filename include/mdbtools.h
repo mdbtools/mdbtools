@@ -528,8 +528,8 @@ extern int mdb_get_option(unsigned long optnum);
 extern void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen);
-extern int mdb_ascii2unicode(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen);
+extern int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
+extern int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
 extern void mdb_iconv_init(MdbHandle *mdb);
 extern void mdb_iconv_close(MdbHandle *mdb);
 

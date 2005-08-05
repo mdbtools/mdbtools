@@ -28,11 +28,11 @@
  * This function is used in reading text data from an MDB table.
  */
 int
-mdb_unicode2ascii(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen)
+mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen)
 {
 	char *tmp = NULL;
-	unsigned int tlen = 0;
-	unsigned int len_in, len_out;
+	size_t tlen = 0;
+	size_t len_in, len_out;
 	char *in_ptr, *out_ptr;
 
 	if ((!src) || (!dest) || (!dlen))
@@ -104,7 +104,7 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsi
  * If slen is 0, strlen will be used to calculate src's length.
  */
 int
-mdb_ascii2unicode(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsigned int dlen)
+mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen)
 {
         size_t len_in, len_out;
         char *in_ptr, *out_ptr;
@@ -180,10 +180,10 @@ mdb_ascii2unicode(MdbHandle *mdb, char *src, unsigned int slen, char *dest, unsi
 
 void mdb_iconv_init(MdbHandle *mdb)
 {
-	char *iconv_code;
+	const char *iconv_code;
 
 	/* check environment variable */
-	if (!(iconv_code=(char *)getenv("MDB_ICONV"))) {
+	if (!(iconv_code=getenv("MDB_ICONV"))) {
 		iconv_code="UTF-8";
 	}
 
@@ -194,10 +194,10 @@ void mdb_iconv_init(MdbHandle *mdb)
         } else {
                 /* According to Microsoft Knowledge Base pages 289525 and */
 		/* 202427, code page info is not contained in the database */
-		char *jet3_iconv_code;
+		const char *jet3_iconv_code;
 
 		/* check environment variable */
-		if (!(jet3_iconv_code=(char *)getenv("MDB_JET3_CHARSET"))) {
+		if (!(jet3_iconv_code=getenv("MDB_JET3_CHARSET"))) {
 			jet3_iconv_code="CP1252";
 		}
 

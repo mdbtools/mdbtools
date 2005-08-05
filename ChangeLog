@@ -1,3 +1,7 @@
+Fri Aug  5 10:49:57 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* include/mdbtools.h:
+	* src/libmdb/iconv.h: Use size_t instead of unsigned int for calling iconv
+
 Sat Jul  2 02:12:39 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/data.c:
