@@ -35,10 +35,6 @@ main(int argc, char **argv)
 	int col_num;
 	int found = 0;
 
-	/* 
-	** optind is now the position of the first non-option arg, 
-	** see getopt(3) 
-	*/
 	if (argc < 2) {
 		fprintf(stderr,"Usage: %s <file> <name> [<prop col>]\n",argv[0]);
 		return 1;
@@ -46,7 +42,7 @@ main(int argc, char **argv)
 
 	mdb_init();
 
-	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
+	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
 		mdb_exit();
 		return 1;
 	}
@@ -54,11 +50,11 @@ main(int argc, char **argv)
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
-	col_num = mdb_bind_column_by_name(table, argv[optind+2], buf, NULL);
+	col_num = mdb_bind_column_by_name(table, argv[3], buf, NULL);
 	mdb_bind_column_by_name(table, "Name", name, NULL);
 
 	while(mdb_fetch_row(table)) {
-		if (!strcmp(name, argv[optind+1])) {
+		if (!strcmp(name, argv[2])) {
 			found = 1;
 			break;
 		}

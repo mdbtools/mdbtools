@@ -1,3 +1,6 @@
+Tue Aug  9 23:36:01 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-prop.c: Use correct index for command line options
+
 Fri Aug  5 10:49:57 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbtools.h:
 	* src/libmdb/iconv.h: Use size_t instead of unsigned int for calling iconv
