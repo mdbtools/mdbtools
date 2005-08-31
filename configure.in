@@ -114,10 +114,18 @@ fi
 
 PKG_CHECK_MODULES(GNOME,libglade-2.0 libgnomeui-2.0, HAVE_GNOME=true, HAVE_GNOME=false)
 
-if test "x$HAVE_GNOME" = "xtrue"; then
-	AC_SUBST(GNOME_CFLAGS)
-	AC_SUBST(GNOME_LIBS)
-	OPTDIRS="$OPTDIRS gmdb2"
+AC_ARG_ENABLE(gmdb2,
+        AC_HELP_STRING([--disable-gmdb2], [do not build gmdb2]),
+        [build_gmdb2=$enableval], [build_gmdb2=yes])
+
+if test "$build_gmdb2" = "yes" ; then
+	if test "x$HAVE_GNOME" = "xtrue"; then
+		AC_SUBST(GNOME_CFLAGS)
+		AC_SUBST(GNOME_LIBS)
+		OPTDIRS="$OPTDIRS gmdb2"
+	fi
+else
+        AC_MSG_NOTICE(gmdb2 disabled)
 fi
 
 AC_SUBST([OPTDIRS])
