@@ -29,19 +29,27 @@
 #define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
 
 static char *sanitize_name(char *str, int sanitize);
+static char *escapes(char *s);
 
 void
-print_col(gchar *col_val, int quote_text, int col_type)
+print_col(gchar *col_val, int quote_text, int col_type, char *quote_char, char *escape_char)
 {
 	gchar *s;
 
 	if (quote_text && is_text_type(col_type)) {
-		fprintf(stdout,"\"");
+		fprintf(stdout,quote_char);
 		for (s=col_val;*s;s++) {
-			if (*s=='"') fprintf(stdout,"\"\"");
+			if (strlen(quote_char)==1 && *s==quote_char[0]) {
+		/* double the char if no escape char passed */
+				if (!escape_char) {
+					fprintf(stdout,"%s%s",quote_char,quote_char);
+				} else {
+					fprintf(stdout,"%s%s",escape_char,quote_char);
+				}
+			}
 			else fprintf(stdout,"%c",*s);
 		}
-		fprintf(stdout,"\"");
+		fprintf(stdout,quote_char);
 	} else {
 		fprintf(stdout,"%s",col_val);
 	}
@@ -57,13 +65,15 @@ main(int argc, char **argv)
 	int  *bound_lens; 
 	char *delimiter = NULL;
 	char *row_delimiter = NULL;
+	char *quote_char = NULL;
+	char *escape_char = NULL;
 	char header_row = 1;
 	char quote_text = 1;
 	char insert_statements = 0;
 	char sanitize = 0;
 	int  opt;
 
-	while ((opt=getopt(argc, argv, "HQd:D:R:IS"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:IS"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -71,11 +81,14 @@ main(int argc, char **argv)
 		case 'Q':
 			quote_text = 0;
 		break;
+		case 'q':
+			quote_char = (char *) g_strdup(optarg);
+		break;
 		case 'd':
-			delimiter = (char *) g_strdup(optarg);
+			delimiter = escapes(optarg);
 		break;
 		case 'R':
-			row_delimiter = (char *) g_strdup(optarg);
+			row_delimiter = escapes(optarg);
 		break;
 		case 'I':
 			insert_statements = 1;
@@ -87,9 +100,15 @@ main(int argc, char **argv)
 		case 'D':
 			mdb_set_date_fmt(optarg);
 		break;
+		case 'X':
+			escape_char = (char *) g_strdup(optarg);
+		break;
 		default:
 		break;
 		}
+	}
+	if (!quote_char) {
+		quote_char = (char *) g_strdup("\"");
 	}
 	if (!delimiter) {
 		delimiter = (char *) g_strdup(",");
@@ -112,8 +131,12 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -I             INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
 		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
+		fprintf(stderr,"  -Q <char>      Use <char> to wrap text-like fields. Default is \".\n");
+		fprintf(stderr,"  -X <char>      Use <char> to escape quoted characters within a field. Default is doubling.\n");
 		g_free (delimiter);
 		g_free (row_delimiter);
+		g_free (quote_char);
+		if (escape_char) g_free (escape_char);
 		exit(1);
 	}
 
@@ -122,17 +145,22 @@ main(int argc, char **argv)
 	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		g_free (delimiter);
 		g_free (row_delimiter);
+		g_free (quote_char);
+		if (escape_char) g_free (escape_char);
 		mdb_exit();
 		exit(1);
 	}
 
 	table = mdb_read_table_by_name(mdb, argv[argc-1], MDB_TABLE);
 	if (!table) {
+		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[argc-1]);
 		g_free (delimiter);
 		g_free (row_delimiter);
+		g_free (quote_char);
+		if (escape_char) g_free (escape_char);
 		mdb_close(mdb);
 		mdb_exit();
-		exit(0);
+		exit(1);
 	}
 
 	mdb_read_columns(table);
@@ -149,7 +177,8 @@ main(int argc, char **argv)
 		fprintf(stdout,"%s",col->name);
 		for (j=1;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
-			fprintf(stdout,"%s%s",delimiter,col->name);
+			fprintf(stdout,delimiter);
+			fprintf(stdout,"%s",col->name);
 		}
 		fprintf(stdout,"\n");
 	}
@@ -174,16 +203,16 @@ main(int argc, char **argv)
 				mdb_ole_read(mdb, col, bound_values[j], MDB_BIND_SIZE);
 			}
 			if (j>0) {
-				fprintf(stdout,"%s",delimiter);
+				fprintf(stdout,delimiter);
 			}
 			if (insert_statements && !bound_lens[j]) {
-				print_col("NULL",0,col->col_type);
+				print_col("NULL",0,col->col_type, quote_char, escape_char);
 			} else {
-				print_col(bound_values[j], quote_text, col->col_type);
+				print_col(bound_values[j], quote_text, col->col_type, quote_char, escape_char);
 			}
 		}
 		if (insert_statements) fprintf(stdout,")");
-		fprintf(stdout,"%s", row_delimiter);
+		fprintf(stdout, row_delimiter);
 	}
 	for (j=0;j<table->num_cols;j++) {
 		g_free(bound_values[j]);
@@ -194,6 +223,8 @@ main(int argc, char **argv)
 
 	g_free (delimiter);
 	g_free (row_delimiter);
+	g_free (quote_char);
+	if (escape_char) g_free (escape_char);
 	mdb_close(mdb);
 	mdb_exit();
 
@@ -219,3 +250,27 @@ static char *sanitize_name(char *str, int sanitize)
 	return namebuf;
 }
 
+static char *escapes(char *s)
+{
+	char *d = (char *) g_strdup(s);
+	char *t = d;
+	unsigned char encode = 0;
+
+	for (;*s; s++) {
+		if (encode) {
+			switch (*s) {
+			case 'n': *t++='\n'; break;
+			case 't': *t++='\t'; break;
+			case 'r': *t++='\r'; break;
+			default: *t++='\\'; *t++=*s; break;
+			}	
+			encode=0;
+		} else if (*s=='\\') {
+			encode=1;
+		} else {
+			*t++=*s;
+		}
+	}
+	*t='\0';
+	return d;
+}

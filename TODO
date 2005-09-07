@@ -23,7 +23,7 @@ libmdb:
 . Add support for index scanning when using sargs (partial)
 . Use allocation maps to read tables, should be more efficient (done)
 . write support
-. iconv conversion to utf-8, et al.
+. iconv conversion to utf-8, et al. (done)
 . multipage work tables (done)
 
 utils:
@@ -31,7 +31,7 @@ utils:
 . need program to unpack VBA script to file (see prole)
 . Access forms to glade converter ?
 . need --version flag (done using -M flag on mdb-ver)
-. -o on mdb-sql not working
+. -o on mdb-sql not working (done)
 
 SQL Engine:
 

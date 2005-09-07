@@ -183,7 +183,7 @@ void mdb_iconv_init(MdbHandle *mdb)
 	const char *iconv_code;
 
 	/* check environment variable */
-	if (!(iconv_code=getenv("MDB_ICONV"))) {
+	if (!(iconv_code=getenv("MDBICONV"))) {
 		iconv_code="UTF-8";
 	}
 

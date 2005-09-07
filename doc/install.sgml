@@ -2,8 +2,8 @@
 ]>
 <book>
 	<bookinfo>
-		<date>$Date: 2005/01/15 05:02:10 $</date>
-		<releaseinfo>$Revision: 1.6 $</releaseinfo>
+		<date>$Date: 2005/09/07 23:27:43 $</date>
+		<releaseinfo>$Revision: 1.7 $</releaseinfo>
 		<title><productname>MDB Tools</productname> Installation Guide</title>
 		<subtitle>A Guide to Installing and  Configuring <productname>MDB Tools</productname></subtitle>
 		<author>
@@ -34,9 +34,9 @@ This guide is intended to provide help with installing and configuring the <prod
 			<para>
 A few technical notes.  This guide is written in SGML DocBook format, specifications for which are found in the <ulink url="http://www.docbook.org/tdg/en/html/docbook.html">DocBook book</ulink>.  It was converted to HTML with <ulink url="http://openjade.sourceforge.net">OpenJade</ulink>.  
 The document you are reading is version 
-$Revision: 1.6 $
+$Revision: 1.7 $
 , dated 
-$Date: 2005/01/15 05:02:10 $ (CVS control number $Id: install.sgml,v 1.6 2005/01/15 05:02:10 calvinrsmith Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
+$Date: 2005/09/07 23:27:43 $ (CVS control number $Id: install.sgml,v 1.7 2005/09/07 23:27:43 brianb Exp $).  The most recent version can be found on the <productname>MDB Tools</productname> 
 <ulink url="http://mdbtools.sourceforge.net/userguide/">web site</ulink>.
 			</para>
 	</preface>
@@ -348,6 +348,28 @@ This will cause <productname>MDB Tools</productname> to first attempt to open th
 		</para>
 		<para>
 The MDBPATH variable affects all utilities and any program calling mdb_open().
+		</para>
+		</sect1>
+		<sect1 id="iconv">
+		<title>Character set encoding</title>
+		<para>
+Jet 4 databases are encoded using UCS2-LE (Unicode 2 byte little endian) encoding.  MDB Tools will convert these values using the "iconv" standard to UTF-8 by default.  If your terminal or other output uses an encoding other than UTF-8 you can override the default behaviour by setting the MDBICONV to the desired character set.
+		</para>
+		<para>
+For sh, ksh, or bash
+<screen>
+<prompt>$ </prompt><userinput>MDBICONV=ISO_8859-1 ; export MDBICONV</userinput> 
+</screen>
+Or for csh or tcsh
+<screen>
+<prompt>$ </prompt><userinput>setenv MDBICONV ISO_8859-1</userinput>
+</screen>
+		</para>
+		<para>
+To view a list of possible character sets, you can run the <command>iconv --list</command> command on most Linux systems.  Otherwise, consult your vendors documentation.
+		</para>
+		<para>
+Jet 3 databases use the character set of the machine on which they were created.  For US-English systems this will be cp1252 which is assumed by MDB Tools as the default.  To use a file generated with another version of Access, set the MDB_JET3_CHARSET environment variable.  
 		</para>
 		</sect1>
 		<sect1 id="odbcini">

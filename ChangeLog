@@ -1,3 +1,12 @@
+Wed Sep  7 08:28:28 EDT 2005	Brian Bruns <brian@bruns.com>
+	* src/util/mdb-export.c: Add -q and -X flags.  Make -R and -d handle escaped characters properly
+	* doc/mdb-export.txt: Update for new flags
+	* src/util/mdb-export.c: Bug 1219521.  Print error when table not found.
+	* src/util/Makefile.am: move debugging programs to noinst
+	* doc/faq.html: Update version number on expected write support.
+	* doc/install.sgml: Add info about MDBICONV and MDB_JET3_CHARSET
+	* src/util/mdb-sql.c: Fix -o option
+
 Tue Aug 30 21:24:46 EDT 2005	Brian Bruns <brian@bruns.com>
 	* configure.in:	add --disable-gmdb2 switch
 

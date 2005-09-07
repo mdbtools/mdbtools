@@ -563,7 +563,7 @@ Each entry is composed of a flag, the indexed column values and a page/row
 pointer to the data.
 
 0x03 index pages make up the rest of the index tree and contain a flag, the 
-indexed columns, the page/row contains this entry, and the leaf page or 
+indexed columns, the page/row that contains this entry, and the leaf page or 
 intermediate (another 0x03 page) page pointer for which this is the first 
 entry on.
 

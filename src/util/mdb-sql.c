@@ -53,8 +53,8 @@ extern void clear_history ();
 #include "dmalloc.h"
 #endif
 
-void dump_results(MdbSQL *sql, char *delimiter);
-void dump_results_pp(MdbSQL *sql);
+void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
+void dump_results_pp(FILE *out, MdbSQL *sql);
 int yyparse(void);
 
 #if SQL
@@ -200,7 +200,7 @@ read_file(char *s, int line, unsigned int *bufsz, char *mybuf)
 	return lines;
 }
 void 
-run_query(MdbSQL *sql, char *mybuf, char *delimiter)
+run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
 	MdbTableDef *table;
 
@@ -219,48 +219,48 @@ run_query(MdbSQL *sql, char *mybuf, char *delimiter)
 		}
 		mdb_sql_bind_all(sql);
 		if (pretty_print)
-			dump_results_pp(sql);
+			dump_results_pp(out, sql);
 		else
-			dump_results(sql, delimiter);
+			dump_results(out, sql, delimiter);
 	}
 }
 
-void print_value(char *v, int sz, int first)
+void print_value(FILE *out, char *v, int sz, int first)
 {
 int i;
 int vlen;
 
 	if (first) {
-		fprintf(stdout,"|");
+		fprintf(out,"|");
 	}
 	vlen = strlen(v);
 	for (i=0;i<sz;i++) {
-		fprintf(stdout,"%c",i >= vlen ? ' ' : v[i]);
+		fprintf(out,"%c",i >= vlen ? ' ' : v[i]);
 	}
-	fprintf(stdout,"|");
+	fprintf(out,"|");
 }
-static void print_break(int sz, int first)
+static void print_break(FILE *out, int sz, int first)
 {
 int i;
 	if (first) {
-		fprintf(stdout,"+");
+		fprintf(out,"+");
 	}
 	for (i=0;i<sz;i++) {
-		fprintf(stdout,"-");
+		fprintf(out,"-");
 	}
-	fprintf(stdout,"+");
+	fprintf(out,"+");
 }
-void print_rows_retrieved(unsigned long row_count)
+void print_rows_retrieved(FILE *out, unsigned long row_count)
 {
 	if (!row_count) 
-		fprintf(stdout, "No Rows retrieved\n");
+		fprintf(out, "No Rows retrieved\n");
 	else if (row_count==1)
-		fprintf(stdout, "1 Row retrieved\n");
+		fprintf(out, "1 Row retrieved\n");
 	else 
-		fprintf(stdout, "%lu Rows retrieved\n", row_count);
+		fprintf(out, "%lu Rows retrieved\n", row_count);
 }
 void
-dump_results(MdbSQL *sql, char *delimiter)
+dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 {
 	unsigned int j;
 	MdbSQLColumn *sqlcol;
@@ -269,33 +269,33 @@ dump_results(MdbSQL *sql, char *delimiter)
 	if (headers) {
 		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			fprintf(stdout, "%s%s", sqlcol->name,
+			fprintf(out, "%s%s", sqlcol->name,
 				delimiter ? delimiter : "\t");
 		}
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
-		fprintf(stdout, "%s", sqlcol->name);
-		fprintf(stdout,"\n");
+		fprintf(out, "%s", sqlcol->name);
+		fprintf(out,"\n");
 	}
 	while(mdb_fetch_row(sql->cur_table)) {
 		row_count++;
   		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			fprintf(stdout, "%s%s", sql->bound_values[j],
+			fprintf(out, "%s%s", sql->bound_values[j],
 				delimiter ? delimiter : "\t");
 		}
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
-		fprintf(stdout, "%s", sql->bound_values[sql->num_columns-1]);
-		fprintf(stdout,"\n");
+		fprintf(out, "%s", sql->bound_values[sql->num_columns-1]);
+		fprintf(out,"\n");
 	}
 	if (footers) {
-		print_rows_retrieved(row_count);
+		print_rows_retrieved(out, row_count);
 	}
 
 	mdb_sql_reset(sql);
 }
 
 void 
-dump_results_pp(MdbSQL *sql)
+dump_results_pp(FILE *out, MdbSQL *sql)
 {
 	unsigned int j;
 	MdbSQLColumn *sqlcol;
@@ -307,40 +307,40 @@ dump_results_pp(MdbSQL *sql)
 			sqlcol = g_ptr_array_index(sql->columns,j);
 			if (strlen(sqlcol->name)>sqlcol->disp_size)
 				sqlcol->disp_size = strlen(sqlcol->name);
-			print_break(sqlcol->disp_size, !j);
+			print_break(out, sqlcol->disp_size, !j);
 		}
-		fprintf(stdout,"\n");
+		fprintf(out,"\n");
 		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			print_value(sqlcol->name,sqlcol->disp_size,!j);
+			print_value(out, sqlcol->name,sqlcol->disp_size,!j);
 		}
-		fprintf(stdout,"\n");
+		fprintf(out,"\n");
 	}
 
 	for (j=0;j<sql->num_columns;j++) {
 		sqlcol = g_ptr_array_index(sql->columns,j);
-		print_break(sqlcol->disp_size, !j);
+		print_break(out, sqlcol->disp_size, !j);
 	}
-	fprintf(stdout,"\n");
+	fprintf(out,"\n");
 
 	/* print each row */
 	while(mdb_fetch_row(sql->cur_table)) {
 		row_count++;
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			print_value(sql->bound_values[j],sqlcol->disp_size,!j);
+			print_value(out, sql->bound_values[j],sqlcol->disp_size,!j);
 		}
-		fprintf(stdout,"\n");
+		fprintf(out,"\n");
 	}
 
 	/* footer */
 	for (j=0;j<sql->num_columns;j++) {
 		sqlcol = g_ptr_array_index(sql->columns,j);
-		print_break(sqlcol->disp_size, !j);
+		print_break(out, sqlcol->disp_size, !j);
 	}
-	fprintf(stdout,"\n");
+	fprintf(out,"\n");
 	if (footers) {
-		print_rows_retrieved(row_count);
+		print_rows_retrieved(out, row_count);
 	}
 
 	/* clean up */
@@ -430,7 +430,7 @@ char *delimiter = NULL;
 			if ((!s) || (!fgets(s, 256, in))) {
 				/* if we have something in the buffer, run it */
 				if (strlen(mybuf))
-					run_query(sql, mybuf, delimiter);
+					run_query(out, sql, mybuf, delimiter);
 				break;
 			}
 			if (s[strlen(s)-1]=='\n')
@@ -450,7 +450,7 @@ char *delimiter = NULL;
 			line = 0;
 		} else if (!strcmp(s,"go")) {
 			line = 0;
-			run_query(sql, mybuf, delimiter);
+			run_query(out, sql, mybuf, delimiter);
 			mybuf[0]='\0';
 		} else if (!strcmp(s,"reset")) {
 			line = 0;

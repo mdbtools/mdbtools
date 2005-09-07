@@ -97,6 +97,8 @@ gmdb_debug_select_cb(GtkTreeSelection *select, GladeXML *xml)
 	GtkWidget *textview;
 	gchar *fieldname;
 
+	fprintf(stderr, "select_cb fired\n");
+
 	textview = glade_xml_get_widget (xml, "debug_textview");
 	gmdb_debug_text_off(textview);
 
@@ -290,6 +292,8 @@ gmdb_debug_display_cb(GtkWidget *w, gpointer data)
 	GtkWidget *win;
 	gchar *s;
 	GladeXML *xml;
+
+	fprintf(stderr, "display fired\n");
 
 	if (!mdb) return;
 
@@ -974,6 +978,7 @@ gmdb_debug_close_cb(GtkWidget *w, gpointer data)
 {
 	GladeXML *xml;
 
+	fprintf(stderr, "close fired\n");
 	xml = g_object_get_data(G_OBJECT(w), "debugwin_xml");
 	debug_list = g_list_remove(debug_list, xml);
 	gtk_widget_destroy(w);
@@ -984,6 +989,7 @@ gmdb_debug_close_all()
 	GladeXML *xml;
 	GtkWidget *win;
 
+	fprintf(stderr, "close_all fired\n");
 	while ((xml = g_list_nth_data(debug_list, 0))) {
 		win = glade_xml_get_widget (xml, "debug_window");
 		debug_list = g_list_remove(debug_list, xml);
@@ -1006,6 +1012,7 @@ gmdb_debug_new_cb(GtkWidget *w, gpointer data)
 	/* load the interface */
 	debugwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-debug.glade", NULL, NULL);
 	/* connect the signals in the interface */
+	fprintf(stderr, "autoconnect signals\n");
 	glade_xml_signal_autoconnect(debugwin_xml);
 	
 	debug_list = g_list_append(debug_list, debugwin_xml);
