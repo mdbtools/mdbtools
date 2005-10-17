@@ -65,22 +65,12 @@ main(int argc, char **argv)
 
 void dump_ole(MdbTableDef *table, char *colname, char *sargname)
 {
-unsigned int i, found = 0;
 char ole_data[200000];
 int len;
-MdbColumn *col;
 MdbSarg sarg;
 char *sargcol, *sargop, *sargval;
 
-	for (i=0;i<=table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		printf("%d colname %s\n", i, col->name);
-		if (col && !strcmp(col->name,colname)) {
-			found = i+1;
-		}
-	}
-	printf("column %d\n",found);
-	mdb_bind_column(table, found, ole_data, &len);
+	mdb_bind_column_by_name(table, colname, ole_data, &len);
 
 	if (sargname) {
 		sargcol = strtok(sargname," ");

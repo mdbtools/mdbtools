@@ -6,6 +6,7 @@ Mon Oct 17 06:25:44 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* include/mdbsql.h:
 	* src/sql/mdbsql.c: Make varaddr parameter a void *
 	* src/libmdb/data.c: Use correct parameter in mdb_col_to_string
+	* src/util/prole.c: Utilize mdb_bind_column_by_name
 
 Wed Sep  7 08:28:28 EDT 2005	Brian Bruns <brian@bruns.com>
 	* src/util/mdb-export.c: Add -q and -X flags.  Make -R and -d handle escaped characters properly
