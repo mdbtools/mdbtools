@@ -210,7 +210,7 @@ static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
  *
  * Returns: 1 if successful, 0 if unsuccessful.
  */
-int mdb_set_default_backend(MdbHandle *mdb, char *backend_name)
+int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 {
 	MdbBackend *backend;
 
