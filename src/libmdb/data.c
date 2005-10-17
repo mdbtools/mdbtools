@@ -807,10 +807,9 @@ int floor_log10(double f, int is_single)
 
 char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
 {
-	char *text;
+	char *text = NULL;
 	float tf;
 	double td;
-	void *pg_buf = mdb->pg_buf;
 
 	switch (datatype) {
 		case MDB_BOOL:
@@ -829,13 +828,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				mdb_get_int32(buf, start));
 		break;
 		case MDB_FLOAT:
-			tf = mdb_get_single(pg_buf, start);
+			tf = mdb_get_single(buf, start);
 			text = g_strdup_printf("%.*f",
 				FLT_DIG - floor_log10(tf,1) - 1, tf);
 			trim_trailing_zeros(text);
 		break;
 		case MDB_DOUBLE:
-			td = mdb_get_double(pg_buf, start);
+			td = mdb_get_double(buf, start);
 			text = g_strdup_printf("%.*f",
 				DBL_DIG - floor_log10(td,0) - 1, td);
 			trim_trailing_zeros(text);
@@ -845,7 +844,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				text = g_strdup("");
 			} else {
 				text = (char *) g_malloc(MDB_BIND_SIZE);
-				mdb_unicode2ascii(mdb, pg_buf + start,
+				mdb_unicode2ascii(mdb, buf + start,
 					size, text, MDB_BIND_SIZE);
 			}
 		break;
