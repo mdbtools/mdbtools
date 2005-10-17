@@ -437,19 +437,20 @@ Index flags (not complete):
 
 Column Type may be one of the following (not complete):
 
-    BOOL            = 0x01 /* boolean         ( 1 bit ) */
-    BYTE            = 0x02 /* byte            ( 8 bits) */
+    BOOL            = 0x01 /* Boolean         ( 1 bit ) */
+    BYTE            = 0x02 /* Byte            ( 8 bits) */
     INT             = 0x03 /* Integer         (16 bits) */
     LONGINT         = 0x04 /* Long Integer    (32 bits) */
     MONEY           = 0x05 /* Currency        (64 bits) */
     FLOAT           = 0x06 /* Single          (32 bits) */
     DOUBLE          = 0x07 /* Double          (64 bits) */
     SDATETIME       = 0x08 /* Short Date/Time (64 bits) */
-    BINARY          = 0x09 /* binay          (255 bytes) */
-    TEXT            = 0x0A /* Text           (255 bytes) */
+    BINARY          = 0x09 /* Binary        (255 bytes) */
+    TEXT            = 0x0A /* Text          (255 bytes) */
     OLE             = 0x0B /* OLE */
     MEMO            = 0x0C /* Memo, Hyperlink */
     UNKNOWN_0D      = 0x0D
+    UNKNOWN_0E      = 0x0E
     REPID           = 0x0F /* GUID */
     NUMERIC         = 0x10 /* Scaled decimal  (17 bytes) */
 
@@ -458,7 +459,8 @@ Notes on deleted and added columns: (sort of Jet4 specific)
 If a fixed length column is deleted the offset_F field will contain the offsets 
 of the original row definition.  Thus if the number of columns on the row does 
 not match the number in the tdef, the offset_F field could be used to return 
-the proper data. Columns are never really deleted in the row data.  The deleted column will forever exist and be set to null for new rows. 
+the proper data. Columns are never really deleted in the row data.  The deleted
+column will forever exist and be set to null for new rows. 
 
 A row may have less than max_cols columns but will never have more, as max_cols
 is never decremented.  If you have a table with 6 columns, delete one, and add 
@@ -591,7 +593,8 @@ point of the data.
 
 For Jet3, (0xf8 - 0x16) * 8 = 0x710 and 0x800 - 0xf8 = 0x708.
 For Jet4, (0x1e0 - 0x1b) * 8 = 0xe28 and 0x1000 - 0x1e0 = 0xe20.
-So the mask just covers the page, including space to indicate if the last entry goes to the end of the page.  One wonders why MS didn't use a row offset table
+So the mask just covers the page, including space to indicate if the last entry
+goes to the end of the page.  One wonders why MS didn't use a row offset table
 like they did on data pages.  It seems like it would have been easier and more
 flexible.
 
@@ -720,4 +723,4 @@ the string shorter as compared to uncompressed UCS-2.
 
 Programs that use mdbtools libraries will receive strings encoded in UTF-8 by
 default.  This default can by over-ridden by setting the environment variable
-MDB_ICONV to the desired encoding.
+MDBICONV to the desired encoding.

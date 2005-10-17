@@ -1,3 +1,7 @@
+Mon Oct 17 06:25:44 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-prop.c: General cleanup
+	* HACKING: Correct info about MDBICONV
+
 Wed Sep  7 08:28:28 EDT 2005	Brian Bruns <brian@bruns.com>
 	* src/util/mdb-export.c: Add -q and -X flags.  Make -R and -d handle escaped characters properly
 	* doc/mdb-export.txt: Update for new flags
