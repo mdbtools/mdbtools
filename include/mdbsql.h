@@ -21,7 +21,7 @@ typedef struct {
 	MdbSargNode *sarg_tree;
 	GList *sarg_stack;
 	/* FIX ME */
-	char *bound_values[256];
+	void *bound_values[256];
 	unsigned char *kludge_ttable_pg;
 	long max_rows;
 } MdbSQL;
@@ -68,7 +68,6 @@ extern void mdb_sql_dump_node(MdbSargNode *node, int level);
 extern void mdb_sql_close(MdbSQL *sql);
 extern void mdb_sql_add_or(MdbSQL *sql);
 extern void mdb_sql_add_and(MdbSQL *sql);
-extern void mdb_sql_listtables(MdbSQL *sql);
 extern void mdb_sql_add_not(MdbSQL *sql);
 extern void mdb_sql_describe_table(MdbSQL *sql);
 extern MdbSQL* mdb_sql_run_query (MdbSQL*, const gchar*);
@@ -77,7 +76,7 @@ extern int mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2);
 extern void mdb_sql_bind_all(MdbSQL *sql);
 extern int mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table);
 extern int mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, int col_type, int col_size, int is_fixed);
-extern void mdb_sql_bind_column(MdbSQL *sql, int colnum, char *varaddr, int *len_ptr);
+extern void mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
 
 #ifdef __cplusplus
   }

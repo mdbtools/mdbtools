@@ -714,7 +714,7 @@ int found = 0;
 }
 
 void 
-mdb_sql_bind_column(MdbSQL *sql, int colnum, char *varaddr, int *len_ptr)
+mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr)
 {
 	MdbSQLColumn *sqlcol;
 
@@ -728,7 +728,7 @@ mdb_sql_bind_all(MdbSQL *sql)
 	unsigned int i;
 
 	for (i=0;i<sql->num_columns;i++) {
-		sql->bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+		sql->bound_values[i] = g_malloc0(MDB_BIND_SIZE);
 		mdb_sql_bind_column(sql, i+1, sql->bound_values[i], NULL);
 	}
 }
