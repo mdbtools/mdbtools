@@ -33,7 +33,7 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 static char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
 static char *mdb_date_to_string(MdbHandle *mdb, int start);
 #ifdef MDB_COPY_OLE
-static size_t mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size);
+static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
 static char date_fmt[64] = "%x %X";
@@ -163,20 +163,23 @@ int bit_num = (col_num - 1) % 8;
 }
 /* bool has to be handled specially because it uses the null bit to store its 
 ** value*/
-static int 
+static size_t 
 mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 {
-	
 	col->cur_value_len = value;
 	if (col->bind_ptr) {
-		strcpy(col->bind_ptr,  value ? "0" : "1");
+		strcpy(col->bind_ptr, value ? "0" : "1");
+	}
+	if (col->len_ptr) {
+		*col->len_ptr = 1;
 	}
 
-	return 0;
+	return 1;
 }
-static int mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
+static size_t
+mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
-	int ret = 0;
+	size_t ret = 0;
 	if (len) {
 		col->cur_value_start = start;
 		col->cur_value_len = len;
@@ -184,18 +187,23 @@ static int mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len
 		col->cur_value_start = 0;
 		col->cur_value_len = 0;
 	}
-	if (col->bind_ptr || col->len_ptr) {
 #ifdef MDB_COPY_OLE
+	if (col->bind_ptr || col->len_ptr) {
 		ret = mdb_copy_ole(mdb, col->bind_ptr, start, len);
-#endif
-		memcpy(col->bind_ptr, &mdb->pg_buf[start], MDB_MEMO_OVERHEAD);
 	}
+#else
+	if (col->bind_ptr) {
+		memcpy(col->bind_ptr, mdb->pg_buf + start, MDB_MEMO_OVERHEAD);
+	}
+	ret = MDB_MEMO_OVERHEAD;
+#endif
 	if (col->len_ptr) {
-		*col->len_ptr = MDB_MEMO_OVERHEAD;
+		*col->len_ptr = ret;
 	}
 	return ret;
 }
-static int mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
+static size_t
+mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
 int ret;
 	//if (!strcmp("Name",col->name)) {
@@ -532,7 +540,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 	}
 }
 #ifdef MDB_COPY_OLE
-static size_t mdb_copy_ole(MdbHandle *mdb, char *dest, int start, int size)
+static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size)
 {
 	guint32 ole_len;
 	gint32 row_start, pg_row;

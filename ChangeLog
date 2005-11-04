@@ -1,3 +1,7 @@
+Fri Nov  4 06:10:41 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/libmdb/data.c: Fix in reading bound boolean fields (Yasir Assam)
+	* src/libmdb/data.c: Several more fixes in reading data into bound fields
+
 Mon Oct 17 06:25:44 CDT 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-prop.c: General cleanup
 	* HACKING: Correct info about MDBICONV
