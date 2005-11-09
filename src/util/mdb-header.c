@@ -139,6 +139,7 @@ FILE *cfile;
 	       mdb_free_tabledef(table);
    }
 
+ fclose (headerfile);
  fclose (typesfile);
  fclose (cfile);
  

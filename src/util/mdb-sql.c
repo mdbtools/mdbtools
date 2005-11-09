@@ -430,7 +430,8 @@ char *delimiter = NULL;
 			if ((!s) || (!fgets(s, 256, in))) {
 				/* if we have something in the buffer, run it */
 				if (strlen(mybuf))
-					run_query(out, sql, mybuf, delimiter);
+					run_query((out) ? out : stdout,
+					          sql, mybuf, delimiter);
 				break;
 			}
 			if (s[strlen(s)-1]=='\n')
@@ -450,7 +451,7 @@ char *delimiter = NULL;
 			line = 0;
 		} else if (!strcmp(s,"go")) {
 			line = 0;
-			run_query(out, sql, mybuf, delimiter);
+			run_query((out) ? out : stdout, sql, mybuf, delimiter);
 			mybuf[0]='\0';
 		} else if (!strcmp(s,"reset")) {
 			line = 0;

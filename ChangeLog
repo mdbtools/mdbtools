@@ -1,3 +1,9 @@
+Wed Nov  9 07:23:01 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-array.c:
+	* src/util/mdb-header.c:
+	* src/util/mdb-sql.c:
+	* src/sql/parser.y: Fix several leaks and errors
+
 Fri Nov  4 06:10:41 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/libmdb/data.c: Fix in reading bound boolean fields (Yasir Assam)
 	* src/libmdb/data.c: Several more fixes in reading data into bound fields

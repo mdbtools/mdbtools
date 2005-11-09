@@ -102,6 +102,8 @@ sarg:
 				}
 	| constant operator constant {
 				mdb_sql_eval_expr(_mdb_sql(NULL), $1, $2, $3);
+				free($1);
+				free($3);
 	}
 	| identifier nulloperator	{ 
 				mdb_sql_add_sarg(_mdb_sql(NULL), $1, $2, NULL);

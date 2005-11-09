@@ -38,10 +38,10 @@ MdbColumn *col;
 char *bound_values [256]; 
 char delimiter [] = ", ";
 char quote_text = 1;
-int count;
+int count = 0;
 int started;
 
- if  (argc < 2) 
+ if  (argc < 3) 
    {
      fprintf (stderr, "Usage: %s <file> <table>\n", argv [0]);
      exit (1);
@@ -109,19 +109,19 @@ int started;
 	     fprintf (stdout, "}");
 	     count++;
 	   }
+	 fprintf (stdout, "\n};\n\n");
+
 	 for  (j = 0; j < table->num_cols; j++) 
 	   {
 	     g_free (bound_values [j]);
 	   }
-
 	 mdb_free_tabledef(table);
        }
  
  mdb_close (mdb);
  mdb_exit();
 
- fprintf (stdout, "\n};\n");
- fprintf (stdout, "\nconst int %s_array_length = %d;\n", 
+ fprintf (stdout, "const int %s_array_length = %d;\n", 
 	  argv [2],
 	  count);
 
