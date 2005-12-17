@@ -1,3 +1,6 @@
+Sat Dec 17 03:49:30 CST 2005	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-sql.c: Add fflush after each newline (Pedro Gutierrez)
+
 Wed Nov  9 07:23:01 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-array.c:
 	* src/util/mdb-header.c:

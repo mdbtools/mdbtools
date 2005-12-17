@@ -258,6 +258,7 @@ void print_rows_retrieved(FILE *out, unsigned long row_count)
 		fprintf(out, "1 Row retrieved\n");
 	else 
 		fprintf(out, "%lu Rows retrieved\n", row_count);
+	fflush(out);
 }
 void
 dump_results(FILE *out, MdbSQL *sql, char *delimiter)
@@ -275,6 +276,7 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
 		fprintf(out, "%s", sqlcol->name);
 		fprintf(out,"\n");
+		fflush(out);
 	}
 	while(mdb_fetch_row(sql->cur_table)) {
 		row_count++;
@@ -286,6 +288,7 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
 		fprintf(out, "%s", sql->bound_values[sql->num_columns-1]);
 		fprintf(out,"\n");
+		fflush(out);
 	}
 	if (footers) {
 		print_rows_retrieved(out, row_count);
@@ -310,11 +313,13 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 			print_break(out, sqlcol->disp_size, !j);
 		}
 		fprintf(out,"\n");
+		fflush(out);
 		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
 			print_value(out, sqlcol->name,sqlcol->disp_size,!j);
 		}
 		fprintf(out,"\n");
+		fflush(out);
 	}
 
 	for (j=0;j<sql->num_columns;j++) {
@@ -322,6 +327,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 		print_break(out, sqlcol->disp_size, !j);
 	}
 	fprintf(out,"\n");
+	fflush(out);
 
 	/* print each row */
 	while(mdb_fetch_row(sql->cur_table)) {
@@ -331,6 +337,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 			print_value(out, sql->bound_values[j],sqlcol->disp_size,!j);
 		}
 		fprintf(out,"\n");
+		fflush(out);
 	}
 
 	/* footer */
@@ -339,6 +346,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 		print_break(out, sqlcol->disp_size, !j);
 	}
 	fprintf(out,"\n");
+	fflush(out);
 	if (footers) {
 		print_rows_retrieved(out, row_count);
 	}
@@ -374,9 +382,11 @@ char *delimiter = NULL;
 		g_free(histpath);
 	}
 #endif
+	/* If input is coming from a pipe */
 	if (!isatty(fileno(stdin))) {
 		in = stdin;
 	}
+
 	while ((opt=getopt(argc, argv, "HFpd:i:o:"))!=-1) {
 		switch (opt) {
 		        case 'd':
