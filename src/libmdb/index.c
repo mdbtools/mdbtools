@@ -90,7 +90,6 @@ mdb_read_indices(MdbTableDef *table)
 	tmpbuf = (gchar *) g_malloc(idx2_sz);
 	for (i=0;i<table->num_idxs;i++) {
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, idx2_sz);
-		cur_pos += idx2_sz;
 		pidx = (MdbIndex *) g_malloc0(sizeof(MdbIndex));
 		pidx->table = table;
 		pidx->index_num = mdb_get_int16(tmpbuf, 4);
@@ -103,14 +102,11 @@ mdb_read_indices(MdbTableDef *table)
 		pidx = g_ptr_array_index (table->indices, i);
 		if (IS_JET4(mdb)) {
 			name_sz=read_pg_if_16(mdb, &cur_pos);
-			cur_pos += 2;
 		} else {
-			read_pg_if(mdb, &cur_pos, 0);
-			name_sz=mdb->pg_buf[cur_pos++];
+			name_sz=read_pg_if_8(mdb, &cur_pos);
 		}
 		tmpbuf = g_malloc(name_sz);
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
-		cur_pos += name_sz;
 		mdb_unicode2ascii(mdb, tmpbuf, name_sz, pidx->name, MDB_MAX_OBJ_NAME); 
 		g_free(tmpbuf);
 		//fprintf(stderr, "index name %s\n", pidx->name);
@@ -142,24 +138,21 @@ mdb_read_indices(MdbTableDef *table)
 		key_num=0;
 		for (j=0;j<MDB_MAX_IDX_COLS;j++) {
 			col_num=read_pg_if_16(mdb,&cur_pos);
-			cur_pos += 2;
-			read_pg_if(mdb, &cur_pos, 0);
-			cur_pos++;
-			if (col_num == 0xFFFF)
+			if (col_num == 0xFFFF) {
+				cur_pos++;
 				continue;
+			}
 			/* set column number to a 1 based column number and store */
 			pidx->key_col_num[key_num] = col_num + 1;
 			pidx->key_col_order[key_num] =
-				(mdb->pg_buf[cur_pos-1]) ? MDB_ASC : MDB_DESC;
+				(read_pg_if_8(mdb, &cur_pos)) ? MDB_ASC : MDB_DESC;
 			key_num++;
 		}
 		pidx->num_keys = key_num;
 
 		cur_pos += 4;
 		pidx->first_pg = read_pg_if_32(mdb, &cur_pos);
-		cur_pos += 4;
-		read_pg_if(mdb, &cur_pos, 0);
-		pidx->flags = mdb->pg_buf[cur_pos++];
+		pidx->flags = read_pg_if_8(mdb, &cur_pos);
 		if (IS_JET4(mdb)) cur_pos += 9;
 	}
 	return NULL;

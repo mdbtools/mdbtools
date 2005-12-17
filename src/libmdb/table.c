@@ -128,60 +128,63 @@ MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_t
 	return NULL;
 }
 
-/*
-** read the next page if offset is > pg_size
-** return true if page was read
-*/ 
-int 
-read_pg_if(MdbHandle *mdb, int *cur_pos, int offset)
-{
-	if (*cur_pos + offset >= mdb->fmt->pg_size) {
-		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
-		*cur_pos = 8 - (mdb->fmt->pg_size - (*cur_pos));
-		return 1;
-	}
-	return 0;
-}
+
 guint32 
 read_pg_if_32(MdbHandle *mdb, int *cur_pos)
 {
-	unsigned char c[4];
-	int i, rc = 0;
+	char c[4];
 
-	for (i=0;i<4;i++) {
-		rc += read_pg_if(mdb, cur_pos, i);
-		c[i] = mdb->pg_buf[(*cur_pos) + i];
-	}
+	read_pg_if_n(mdb, c, cur_pos, 4);
 	return mdb_get_int32(c, 0);
 }
 guint16 
 read_pg_if_16(MdbHandle *mdb, int *cur_pos)
 {
-	unsigned char low_byte, high_byte;
-	int rc = 0;
+	char c[2];
 
-	rc += read_pg_if(mdb, cur_pos, 0);
-	low_byte = mdb->pg_buf[*cur_pos];
-	rc += read_pg_if(mdb, cur_pos, 1);
-	high_byte = mdb->pg_buf[(*cur_pos) + 1];
-
-	return (high_byte * 256 + low_byte);
+	read_pg_if_n(mdb, c, cur_pos, 2);
+	return mdb_get_int16(c, 0);
 }
-guint16 
-read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, int len)
+guint8
+read_pg_if_8(MdbHandle *mdb, int *cur_pos)
 {
-	if (*cur_pos + len < mdb->fmt->pg_size) {
-		memcpy(buf, &mdb->pg_buf[*cur_pos], len);
-		return 0;
-	} else {
-		int half = mdb->fmt->pg_size - *cur_pos;
-		memcpy(buf, &mdb->pg_buf[*cur_pos], half);
-		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
-		memcpy(buf + half, &mdb->pg_buf[8], len - half);
-		*cur_pos = 8 - half;
-		return 1;
-	}
+	guint8 c;
+
+	read_pg_if_n(mdb, &c, cur_pos, 1);
+	return c;
 }
+/*
+ * Read data into a buffer, advancing pages and setting the
+ * page cursor as needed.  In the case that buf in NULL, pages
+ * are still advanced and the page cursor is still updated.
+ */
+void * 
+read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
+{
+	/* Advance to page which contains the first byte */
+	while (*cur_pos >= mdb->fmt->pg_size) {
+		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
+		*cur_pos -= (mdb->fmt->pg_size - 8);
+	}
+	/* Copy pages into buffer */
+	while (*cur_pos + len >= mdb->fmt->pg_size) {
+		int piece_len = mdb->fmt->pg_size - *cur_pos;
+		if (buf) {
+			memcpy(buf, mdb->pg_buf + *cur_pos, piece_len);
+			buf += piece_len;
+		}
+		len -= piece_len;
+		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
+		*cur_pos = 8;
+	}
+	/* Copy into buffer from final page */
+	if (len && buf) {
+		memcpy(buf, mdb->pg_buf + *cur_pos, len);
+	}
+	*cur_pos += len;
+	return buf;
+}
+
 
 void mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 {
@@ -203,7 +206,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	MdbColumn *pcol;
 	unsigned char *col;
 	unsigned int i;
-	int cur_pos, name_sz;
+	int cur_pos;
+	size_t name_sz;
 	
 	table->columns = g_ptr_array_new();
 
@@ -223,7 +227,6 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
 #endif
 		read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size);
-		cur_pos += fmt->tab_col_entry_size;
 		pcol = (MdbColumn *) g_malloc0(sizeof(MdbColumn));
 
 		pcol->col_type = col[0];
@@ -275,11 +278,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 
 		if (IS_JET4(mdb)) {
 			name_sz = read_pg_if_16(mdb, &cur_pos);
-			cur_pos += 2;
 		} else if (IS_JET3(mdb)) {
-			read_pg_if(mdb, &cur_pos, 0);
-			name_sz = mdb->pg_buf[cur_pos];
-			cur_pos++;
+			name_sz = read_pg_if_8(mdb, &cur_pos);
 		} else {
 			fprintf(stderr,"Unknown MDB version\n");
 			continue;
@@ -288,7 +288,6 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
 		g_free(tmp_buf);
-		cur_pos += name_sz;
 
 	}
 

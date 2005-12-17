@@ -426,10 +426,10 @@ extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
 extern void mdb_free_columns(GPtrArray *columns);
 extern GPtrArray *mdb_read_columns(MdbTableDef *table);
 extern void mdb_table_dump(MdbCatalogEntry *entry);
+extern guint8 read_pg_if_8(MdbHandle *mdb, int *cur_pos);
 extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
 extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
-extern int read_pg_if(MdbHandle *mdb, int *cur_pos, int offset);
-extern guint16 read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, int len);
+extern void *read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len);
 extern int mdb_is_user_table(MdbCatalogEntry *entry);
 extern int mdb_is_system_table(MdbCatalogEntry *entry);
 
