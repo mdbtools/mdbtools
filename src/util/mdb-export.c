@@ -131,7 +131,7 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -I             INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
 		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
-		fprintf(stderr,"  -Q <char>      Use <char> to wrap text-like fields. Default is \".\n");
+		fprintf(stderr,"  -q <char>      Use <char> to wrap text-like fields. Default is \".\n");
 		fprintf(stderr,"  -X <char>      Use <char> to escape quoted characters within a field. Default is doubling.\n");
 		g_free (delimiter);
 		g_free (row_delimiter);

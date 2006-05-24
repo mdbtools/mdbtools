@@ -1,3 +1,6 @@
+Tue May 23 19:40:55 CDT 2006	Jeff Smith <whydoubt@yahoo.com>
+	* src/util/mdb-export.c: Fix typo in help text
+
 Sat Dec 17 03:49:30 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-sql.c: Add fflush after each newline (Pedro Gutierrez)
 	* src/libmdb/table.c: Bugfix to read_pg_if_n (Mike Prudence)
