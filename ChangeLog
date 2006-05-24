@@ -1,6 +1,7 @@
 Tue May 23 19:40:55 CDT 2006	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-export.c: Fix typo in help text
 	* configure.in: Clean up use of autoconf macros
+	* src/gmdb2/util.c: Update call from Gtk+ 1.2 to 2.0
 
 Sat Dec 17 03:49:30 CST 2005	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-sql.c: Add fflush after each newline (Pedro Gutierrez)

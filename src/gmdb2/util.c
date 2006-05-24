@@ -29,8 +29,8 @@ GtkWidget *dialog, *label, *okay_button;
    
 	/* Ensure that the dialog box is destroyed when the user clicks ok. */
    
-	gtk_signal_connect_object (GTK_OBJECT (okay_button), "clicked",
-		GTK_SIGNAL_FUNC (gtk_widget_destroy), dialog);
+	g_signal_connect_swapped (G_OBJECT (okay_button), "clicked",
+		G_CALLBACK (gtk_widget_destroy), dialog);
 	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->action_area),
 		okay_button);
 
