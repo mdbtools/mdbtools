@@ -32,7 +32,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-#include <config.h>
 
 #ifdef HAVE_ICONV
 #include <iconv.h>
