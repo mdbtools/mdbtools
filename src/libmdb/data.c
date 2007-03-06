@@ -67,7 +67,7 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
 	
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcmp(col->name,col_name)) {
+		if (!strcasecmp(col->name,col_name)) {
 			col_num = i + 1;
 			if (bind_ptr)
 				col->bind_ptr = bind_ptr;
