@@ -174,11 +174,11 @@ main(int argc, char **argv)
 	}
 	if (header_row) {
 		col=g_ptr_array_index(table->columns,0);
-		fprintf(stdout,"%s",col->name);
+		fprintf(stdout,"%s",sanitize_name(col->name,sanitize));
 		for (j=1;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
 			fprintf(stdout,delimiter);
-			fprintf(stdout,"%s",col->name);
+			fprintf(stdout,"%s",sanitize_name(col->name,sanitize));
 		}
 		fprintf(stdout,"\n");
 	}
