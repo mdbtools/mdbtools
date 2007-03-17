@@ -828,8 +828,8 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = g_strdup_printf("%d", mdb_get_byte(buf, start));
 		break;
 		case MDB_INT:
-			text = g_strdup_printf("%ld",
-				(long)mdb_get_int16(buf, start));
+			text = g_strdup_printf("%hd",
+				(short)mdb_get_int16(buf, start));
 		break;
 		case MDB_LONGINT:
 			text = g_strdup_printf("%ld",
