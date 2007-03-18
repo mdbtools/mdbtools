@@ -27,7 +27,7 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.30 2005/02/25 03:27:45 whydoubt Exp $";
+static char  software_version[]   = "$Id: odbc.c,v 1.31 2007/03/18 14:11:43 brianb Exp $";
 static void *no_unused_var_warn[] = {software_version,
                                      no_unused_var_warn};
 
@@ -1321,6 +1321,33 @@ SQLRETURN SQL_API SQLGetInfo(
     SQLSMALLINT FAR   *pcbInfoValue)
 {
 	TRACE("SQLGetInfo");
+	switch (fInfoType) {
+	case SQL_MAX_STATEMENT_LEN:
+		*((SQLUINTEGER *)rgbInfoValue) = (SQLUINTEGER) 65000;
+		*pcbInfoValue = sizeof(SQLUINTEGER);
+	break;
+	case SQL_SCHEMA_USAGE:
+		*((SQLSMALLINT *)rgbInfoValue) = (SQLSMALLINT) 0;
+		*pcbInfoValue = sizeof(SQLSMALLINT);
+	break;
+	case SQL_CATALOG_NAME_SEPARATOR:
+		rgbInfoValue = ".";
+		*pcbInfoValue = 1;
+	break;
+	case SQL_CATALOG_LOCATION:
+		*((SQLSMALLINT *)rgbInfoValue) = (SQLSMALLINT) 1;
+		*pcbInfoValue = sizeof(SQLSMALLINT);
+	break;
+	case SQL_IDENTIFIER_QUOTE_CHAR:
+		rgbInfoValue = "\"";
+		*pcbInfoValue = 1;
+	break;
+	case SQL_DBMS_NAME:
+		rgbInfoValue = "MDBTOOLS";
+		*pcbInfoValue = 8;
+	break;
+	}
+
 	return SQL_SUCCESS;
 }
 
