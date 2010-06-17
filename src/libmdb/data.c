@@ -792,7 +792,7 @@ int floor_log10(double f, int is_single)
 	if (f < 0.0)
 		f = -f;
 	
-	if ((f == 0.0) || (f == 1.0)) {
+	if ((f == 0.0) || (f == 1.0) || isinf(f)) {
 		return 0;
 	} else if (f < 1.0) {
 		if (is_single) {
