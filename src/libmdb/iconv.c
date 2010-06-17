@@ -82,8 +82,11 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 	dlen -= len_out;
 #else
 	if (IS_JET3(mdb)) {
-		strncpy(out_ptr, in_ptr, len_in);
-		dlen = len_in;
+               size_t copy_len = len_in;
+               if (copy_len > dlen)
+                       copy_len = dlen;
+               strncpy(out_ptr, in_ptr, copy_len);
+               dlen = copy_len;
 	} else {
 		/* rough UCS-2LE to ISO-8859-1 conversion */
 		unsigned int i;
