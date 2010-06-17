@@ -711,7 +711,15 @@ SQLRETURN SQL_API SQLColAttributes(
 SQLRETURN SQL_API SQLDisconnect(
     SQLHDBC            hdbc)
 {
+	struct _hdbc *dbc;
+	struct _henv *env;
+
 	TRACE("SQLDisconnect");
+
+	dbc = (struct _hdbc *) hdbc;
+	env = (struct _henv *) dbc->henv;
+	mdb_sql_close(env->sql);
+
 	return SQL_SUCCESS;
 }
 
