@@ -1,3 +1,4 @@
+BUILT_SOURCES = parser.h parser.c
 lib_LTLIBRARIES	=	libmdbsql.la
 libmdbsql_la_SOURCES=	mdbsql.c parser.y lexer.l 
 libmdbsql_la_LDFLAGS = -version-info 1:0:0
