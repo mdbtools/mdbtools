@@ -99,6 +99,7 @@ main (int argc, char **argv)
         switch (opt) {
         case 'S':
             skip_sys = 0;
+		break;
         case '1':
             line_break = 1;
         break;
@@ -136,7 +137,7 @@ main (int argc, char **argv)
  	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
 
-     		if (entry->object_type != objtype)
+		if (entry->object_type != objtype && objtype!=MDB_ANY)
 			continue;
 		if (skip_sys && mdb_is_system_table(entry))
 			continue;
