@@ -173,11 +173,11 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	nullmask = pg_buf + row_end - bitmask_sz + 1;
 
 	/* read table of variable column locations */
-	row_var_cols = IS_JET4(mdb) ?
-		mdb_get_int16(pg_buf, row_end - bitmask_sz - 1) :
-		mdb_get_byte(pg_buf, row_end - bitmask_sz);
-	var_col_offsets = (unsigned int *)g_malloc((row_var_cols+1)*sizeof(int));
 	if (table->num_var_cols > 0) {
+		row_var_cols = IS_JET4(mdb) ?
+			mdb_get_int16(pg_buf, row_end - bitmask_sz - 1) :
+			mdb_get_byte(pg_buf, row_end - bitmask_sz);
+		var_col_offsets = (unsigned int *)g_malloc((row_var_cols+1)*sizeof(int));
 		if (IS_JET4(mdb)) {
 			mdb_crack_row4(mdb, row_start, row_end, bitmask_sz,
 				 row_var_cols, var_col_offsets);
