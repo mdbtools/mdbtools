@@ -14,7 +14,8 @@ libmdbodbc_la_SOURCES=	odbc.c connectparams.c
 libmdbodbc_la_LIBADD=	$(patsubst %, $(SQLDIR)/%, \
 				$(patsubst %.c, %.lo, $(SQLSOURCES))) \
 				$(patsubst %, $(MDBDIR)/%, \
-				$(patsubst %.c, %.lo, $(MDBSOURCES)))
+				$(patsubst %.c, %.lo, $(MDBSOURCES))) \
+				../libmdb/libmdb.la
 LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBC_LIBS)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 
