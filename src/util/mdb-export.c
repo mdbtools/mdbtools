@@ -205,8 +205,8 @@ main(int argc, char **argv)
 			if (j>0) {
 				fprintf(stdout,delimiter);
 			}
-			if (insert_statements && !bound_lens[j]) {
-				print_col("NULL",0,col->col_type, quote_char, escape_char);
+			if (!bound_lens[j]) {
+				print_col(insert_statements?"NULL":"",0,col->col_type, quote_char, escape_char);
 			} else {
 				print_col(bound_values[j], quote_text, col->col_type, quote_char, escape_char);
 			}
