@@ -28,7 +28,7 @@ int main(int argc, char **argv)
    int                  jet4 = 0;
    int			pg_size = 2048;
 
-   if (argc < 1) {
+   if (argc < 2) {
 	fprintf(stderr, "Usage: mdb-dump <filename> [<page number>]\n\n");
 	exit(1);
    }
