@@ -4,7 +4,7 @@ libmdbsql_la_LDFLAGS = -version-info 1:0:0
 DISTCLEANFILES = parser.c parser.h lexer.c
 AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LIBS	=	$(GLIB_LIBS)
-LDADD	=	../libmdb/libmdb.la 
+libmdbsql_la_LIBADD =	../libmdb/libmdb.la 
 YACC = @YACC@ -d
 
 dist-hook:
