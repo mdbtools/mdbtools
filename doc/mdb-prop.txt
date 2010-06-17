@@ -1,0 +1,13 @@
+NAME
+  mdb-prop - Get properties list from MDB database
+
+SYNOPSIS
+  mdb-prop <database> <name> [<prop col>]
+
+DESCRIPTION
+  mdb-prop is a utility program distributed with MDB Tools.
+
+  Print a properties list from an MDB database.
+
+AUTHORS
+  The mdb-prop utility was written by Brian Bruns

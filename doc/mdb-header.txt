@@ -1,0 +1,16 @@
+NAME
+  mdb-header - Write header file from an MDB database
+
+SYNOPSIS
+  mdb-header [<database>]
+
+DESCRIPTION
+  mdb-header is a utility program distributed with MDB Tools.
+
+  It will dump the names and types of the tables and columns in
+  an MDB database in a C header format.
+
+  It will create three files - types.h and dumptypes.[ch]
+
+AUTHORS
+  The mdb-header utility was written by Brian Bruns

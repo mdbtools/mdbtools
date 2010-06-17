@@ -1,0 +1,14 @@
+NAME
+  mdb-array - Export data in an MDB database table to a C array.
+
+SYNOPSIS
+  mdb-array <database> <table>
+
+DESCRIPTION
+  mdb-array is a utility program distributed with MDB Tools.
+
+  mdb-array prints a C source code file to stdout, containing an array
+  representing the data of the specified table.
+
+AUTHORS
+  The mdb-array utility was written by Brian Bruns

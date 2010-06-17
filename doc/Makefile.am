@@ -3,10 +3,11 @@
 # version: $Id: Makefile.am,v 1.5 2005/01/15 05:02:11 calvinrsmith Exp $
 SHELL = /bin/sh
 TXT2MAN = $(srcdir)/txt2man
-RELEASE = 0.5
+RELEASE = 0.6
 PRODUCT = MDBTools
 
-dist_man_MANS	= mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1
+dist_man_MANS	= mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
+	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 gmdb2.1
 
 EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.txt faq.html txt2man install.sgml
 
@@ -33,19 +34,5 @@ install.tgz: $(srcdir)/install.sgml
 
 man:	mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-sql.1
 
-mdb-tables.1: mdb-tables.txt
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) $(srcdir)/$< > $@
-	
-mdb-ver.1: mdb-ver.txt
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) $(srcdir)/$< > $@
-
-mdb-export.1: mdb-export.txt
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) $(srcdir)/$< > $@
-
-mdb-schema.1: mdb-schema.txt
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) $(srcdir)/$< > $@
-
-mdb-sql.1: mdb-sql.txt
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) $(srcdir)/$< > $@
-
-
+.txt.1:
+	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) -s 1 $(srcdir)/$< > $@
