@@ -103,21 +103,21 @@ static MdbBackendType mdb_sybase_types[] = {
 /*    Postgres data types */
 static MdbBackendType mdb_postgres_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x00",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Bool",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Int2",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Int4",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Int8",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Money",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Float4",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Float8",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Timestamp",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x09",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Char",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BOOL",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("SMALLINT",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER",0,0,0), /* bigint */
+		MdbBackendType_STRUCT_ELEMENT("NUMERIC(15,2)",0,0,0), /* money deprecated ? */
+		MdbBackendType_STRUCT_ELEMENT("REAL",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("DOUBLE PRECISION",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("TIMESTAMP WITHOUT TIME ZONE",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("BYTEA",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("VARCHAR",1,0,1),
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0b",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0c",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("TEXT",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0d",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0e",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Serial",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("UUID",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x10",0,0,0),
 };
 /*    MySQL data types */
