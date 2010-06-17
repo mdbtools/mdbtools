@@ -837,13 +837,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_FLOAT:
 			tf = mdb_get_single(buf, start);
-			text = g_strdup_printf("%.*f",
+			text = g_strdup_printf("%.*e",
 				FLT_DIG - floor_log10(tf,1) - 1, tf);
 			trim_trailing_zeros(text);
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(buf, start);
-			text = g_strdup_printf("%.*f",
+			text = g_strdup_printf("%.*e",
 				DBL_DIG - floor_log10(td,0) - 1, td);
 			trim_trailing_zeros(text);
 		break;
