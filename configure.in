@@ -22,6 +22,12 @@ AC_TYPE_SIZE_T
 
 AM_ICONV
 
+# add -DHAVE_INCONV to CFLAGS. We should not use #include <config.h> in
+# public headers
+if test "$am_cv_func_iconv" = "yes"; then
+       CFLAGS="$CFLAGS -DHAVE_ICONV"
+fi
+
 dnl no optional stuff by default
 OPTDIRS=""
 
