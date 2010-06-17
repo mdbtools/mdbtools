@@ -2,7 +2,7 @@
 # http://www.freebsd.org/tutorials/docproj-primer/x3132.html#AEN3140
 # version: $Id: Makefile.am,v 1.5 2005/01/15 05:02:11 calvinrsmith Exp $
 SHELL = /bin/sh
-TXT2MAN = $(srcdir)/txt2man
+TXT2MAN = txt2man
 RELEASE = 0.6
 PRODUCT = MDBTools
 
