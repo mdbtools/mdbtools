@@ -446,6 +446,7 @@ mdb_new_data_pg(MdbCatalogEntry *entry)
 	return new_pg;
 }
 
+/* could be static */
 int
 mdb_update_indexes(MdbTableDef *table, int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum)
 {
@@ -476,6 +477,7 @@ mdb_init_index_chain(MdbTableDef *table, MdbIndex *idx)
 	return 1;
 }
 
+/* could be static */
 int
 mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum)
 {
