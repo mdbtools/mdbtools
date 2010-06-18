@@ -48,7 +48,7 @@ static MdbBackendType mdb_access_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Single", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Double", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("DateTime (Short)", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("Unknown 0x09", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("Binary", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Text", 1,0,1),
 		MdbBackendType_STRUCT_ELEMENT("OLE", 1,0,1),
 		MdbBackendType_STRUCT_ELEMENT("Memo/Hyperlink",1,0,1),

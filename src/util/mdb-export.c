@@ -26,7 +26,7 @@
 #undef MDB_BIND_SIZE
 #define MDB_BIND_SIZE 200000
 
-#define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME)
+#define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME || x==MDB_BINARY)
 
 static char *sanitize_name(char *str, int sanitize);
 static char *escapes(char *s);
@@ -39,8 +39,10 @@ print_col(gchar *col_val, int quote_text, int col_type, char *quote_char, char *
 	if (quote_text && is_text_type(col_type)) {
 		fprintf(stdout,quote_char);
 		for (s=col_val;*s;s++) {
-			if (strlen(quote_char)==1 && *s==quote_char[0]) {
-		/* double the char if no escape char passed */
+			if (col_type == MDB_BINARY)
+				fprintf(stdout, "\\%03o", (unsigned char)*s);
+			else if (strlen(quote_char)==1 && *s==quote_char[0]) {
+				/* double the char if no escape char passed */
 				if (!escape_char) {
 					fprintf(stdout,"%s%s",quote_char,quote_char);
 				} else {

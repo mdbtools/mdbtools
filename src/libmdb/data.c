@@ -847,6 +847,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				DBL_DIG - floor_log10(td,0) - 1, td);
 			trim_trailing_zeros(text);
 		break;
+		case MDB_BINARY:
 		case MDB_TEXT:
 			if (size<0) {
 				text = g_strdup("");
@@ -934,6 +935,9 @@ int mdb_col_fixed_size(MdbColumn *col)
 		break;
 		case MDB_SDATETIME:
 			return 4;
+		break;
+		case MDB_BINARY:
+			return -1;
 		break;
 		case MDB_MEMO:
 			return -1; 
