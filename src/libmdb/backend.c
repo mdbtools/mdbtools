@@ -143,6 +143,54 @@ static MdbBackendType mdb_mysql_types[] = {
 #ifndef JAVA
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
+char* sanitize_name(const char* str)
+{
+	char *result = malloc(256);
+	char *p = result;
+
+	if (*str) {
+		*p = isalpha(*str) ? *str : '_';
+		p++;
+		str++;
+	}
+	while (*str) {
+		*p = isalnum(*str) ? *str : '_';
+		p++;
+		str++;
+	}
+
+	*p = 0;
+	return result;
+}
+
+static char* quote_name_with_brackets(const char* name)
+{
+	char *result = malloc(strlen(name)+3);
+	sprintf(result, "[%s]", name);
+	return result;
+}
+
+static char* quote_name_with_dquotes(const char* name)
+{
+	char *result = malloc(2*strlen(name)+3);
+	char *p = result;
+	*p++ = '"';
+	while (*name) {
+		*p++ = *name;
+		if (*name == '"')
+			*p++ = *name; /* double it */
+		name ++;
+	}
+	*p++ = '"';
+	*p++ = 0;
+	return result;
+}
+
+static char* quote_name_with_rquotes(const char* name)
+{
+	return (char*)g_strconcat("`", name, "`", NULL);
+}
+
 char *mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
 	static char buf[16];
@@ -171,16 +219,17 @@ void mdb_init_backends()
 {
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
-	mdb_register_backend(mdb_access_types, "access");
-	mdb_register_backend(mdb_sybase_types, "sybase");
-	mdb_register_backend(mdb_oracle_types, "oracle");
-	mdb_register_backend(mdb_postgres_types, "postgres");
-	mdb_register_backend(mdb_mysql_types, "mysql");
+	mdb_register_backend(mdb_access_types, quote_name_with_brackets, "access");
+	mdb_register_backend(mdb_sybase_types, quote_name_with_dquotes, "sybase");
+	mdb_register_backend(mdb_oracle_types, quote_name_with_dquotes, "oracle");
+	mdb_register_backend(mdb_postgres_types, quote_name_with_dquotes, "postgres");
+	mdb_register_backend(mdb_mysql_types, quote_name_with_rquotes, "mysql");
 }
-void mdb_register_backend(MdbBackendType *backend_type, char *backend_name)
+void mdb_register_backend(MdbBackendType *backend_type, char* (*quote_name)(const char*), char *backend_name)
 {
 	MdbBackend *backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
 	backend->types_table = backend_type;
+	backend->quote_name  = quote_name;
 	g_hash_table_insert(mdb_backends, backend_name, backend);
 }
 
@@ -247,6 +296,9 @@ char *mdb_get_relationships(MdbHandle *mdb)
 	static char *bound[4];  /* Bound values */
 	static MdbTableDef *table;  /* Relationships table */
 	int backend = 0;  /* Backends: 1=oracle */
+	char *quoted_table_1, *quoted_column_1,
+	     *quoted_table_2, *quoted_column_2,
+		 *constraint_name, *quoted_constraint_name;
 
 	if (strncmp(mdb->backend_name,"oracle",6) == 0) {
 		backend = 1;
@@ -296,10 +348,22 @@ char *mdb_get_relationships(MdbHandle *mdb)
 
 	switch (backend) {
 	  case 1:  /* oracle */
-		text = g_strconcat("alter table ", bound[1],
-			" add constraint ", bound[3], "_", bound[1],
-			" foreign key (", bound[0], ")"
-			" references ", bound[3], "(", bound[2], ")", NULL);
+	  	quoted_table_1 = mdb->default_backend->quote_name(bound[1]);
+	  	quoted_column_1 = mdb->default_backend->quote_name(bound[0]);
+	  	quoted_table_2 = mdb->default_backend->quote_name(bound[3]);
+	  	quoted_column_2 = mdb->default_backend->quote_name(bound[2]);
+		constraint_name = g_strconcat(bound[3], "_", bound[1], NULL);
+		quoted_constraint_name = mdb->default_backend->quote_name(constraint_name);
+		free(constraint_name);
+		text = g_strconcat("ALTER TABLE ", quoted_table_1,
+			" ADD CONSTRAINT ", quoted_constraint_name,
+			" FOREIGN KEY (", quoted_column_1, ")"
+			" REFERENCES ", quoted_table_2, "(", quoted_column_2, ");", NULL);
+		free(quoted_table_1);
+		free(quoted_column_1);
+		free(quoted_table_2);
+		free(quoted_column_2);
+		free(quoted_constraint_name);
 		break;
 	}
 

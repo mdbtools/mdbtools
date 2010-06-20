@@ -28,7 +28,6 @@
 
 #define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME || x==MDB_BINARY)
 
-static char *sanitize_name(char *str, int sanitize);
 static char *escapes(char *s);
 
 void
@@ -71,11 +70,11 @@ main(int argc, char **argv)
 	char *escape_char = NULL;
 	char header_row = 1;
 	char quote_text = 1;
-	char insert_statements = 0;
+	char *insert_dialect = NULL;
 	char sanitize = 0;
 	int  opt;
 
-	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:IS"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:S"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -93,7 +92,7 @@ main(int argc, char **argv)
 			row_delimiter = escapes(optarg);
 		break;
 		case 'I':
-			insert_statements = 1;
+			insert_dialect = (char*) g_strdup(optarg);
 			header_row = 0;
 		break;
 		case 'S':
@@ -130,7 +129,7 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -Q             don't wrap text-like fields in quotes\n");
 		fprintf(stderr,"  -d <delimiter> specify a column delimiter\n");
 		fprintf(stderr,"  -R <delimiter> specify a row delimiter\n");
-		fprintf(stderr,"  -I             INSERT statements (instead of CSV)\n");
+		fprintf(stderr,"  -I <backend>   INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
 		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		fprintf(stderr,"  -q <char>      Use <char> to wrap text-like fields. Default is \".\n");
@@ -152,6 +151,13 @@ main(int argc, char **argv)
 		mdb_exit();
 		exit(1);
 	}
+
+	if (insert_dialect)
+		if (!mdb_set_default_backend(mdb, insert_dialect)) {
+			fprintf(stderr, "Invalid backend type\n");
+			mdb_exit();
+			exit(1);
+		}
 
 	table = mdb_read_table_by_name(mdb, argv[argc-1], MDB_TABLE);
 	if (!table) {
@@ -175,25 +181,34 @@ main(int argc, char **argv)
 		mdb_bind_column(table, j+1, bound_values[j], &bound_lens[j]);
 	}
 	if (header_row) {
-		col=g_ptr_array_index(table->columns,0);
-		fprintf(stdout,"%s",sanitize_name(col->name,sanitize));
-		for (j=1;j<table->num_cols;j++) {
+		for (j=0; j<table->num_cols; j++) {
 			col=g_ptr_array_index(table->columns,j);
-			fprintf(stdout,delimiter);
-			fprintf(stdout,"%s",sanitize_name(col->name,sanitize));
+			if (j)
+				fprintf(stdout,delimiter);
+			fprintf(stdout,"%s", sanitize ? sanitize_name(col->name) : col->name);
 		}
 		fprintf(stdout,"\n");
 	}
 
 	while(mdb_fetch_row(table)) {
 
-		if (insert_statements) {
-			fprintf(stdout, "INSERT INTO %s (",
-				sanitize_name(argv[optind + 1],sanitize));
+		if (insert_dialect) {
+			char *quoted_name;
+			if (sanitize)
+				quoted_name = sanitize_name(argv[optind + 1]);
+			else
+				quoted_name = mdb->default_backend->quote_name(argv[optind + 1]);
+			fprintf(stdout, "INSERT INTO %s (", quoted_name);
+			free(quoted_name);
 			for (j=0;j<table->num_cols;j++) {
 				if (j>0) fprintf(stdout, ", ");
 				col=g_ptr_array_index(table->columns,j);
-				fprintf(stdout,"%s", sanitize_name(col->name,sanitize));
+				if (sanitize)
+					quoted_name = sanitize_name(col->name);
+				else
+					quoted_name = mdb->default_backend->quote_name(col->name);
+				fprintf(stdout,"%s", quoted_name);
+				free(quoted_name);
 			} 
 			fprintf(stdout, ") VALUES (");
 		}
@@ -208,12 +223,12 @@ main(int argc, char **argv)
 				fprintf(stdout,delimiter);
 			}
 			if (!bound_lens[j]) {
-				print_col(insert_statements?"NULL":"",0,col->col_type, quote_char, escape_char);
+				print_col(insert_dialect?"NULL":"",0,col->col_type, quote_char, escape_char);
 			} else {
 				print_col(bound_values[j], quote_text, col->col_type, quote_char, escape_char);
 			}
 		}
-		if (insert_statements) fprintf(stdout,")");
+		if (insert_dialect) fprintf(stdout,");");
 		fprintf(stdout, row_delimiter);
 	}
 	for (j=0;j<table->num_cols;j++) {
@@ -231,25 +246,6 @@ main(int argc, char **argv)
 	mdb_exit();
 
 	exit(0);
-}
-
-static char *sanitize_name(char *str, int sanitize)
-{
-	static char namebuf[256];
-	char *p = namebuf;
-
-	if (!sanitize)
-		return str;
-		
-	while (*str) {
-		*p = isalnum(*str) ? *str : '_';
-		p++;
-		str++;
-	}
-	
-	*p = 0;
-										
-	return namebuf;
 }
 
 static char *escapes(char *s)

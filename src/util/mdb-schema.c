@@ -24,7 +24,6 @@
 #include "dmalloc.h"
 #endif
 
-static char *sanitize_name(char *str, int sanitize);
 static void generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize);
 
 int
@@ -128,16 +127,32 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 	MdbHandle *mdb = entry->mdb;
 	unsigned int i;
 	MdbColumn *col;
+	char* table_name;
+	char* quoted_name;
+
+	if (namespace) {
+		table_name = malloc(strlen(namespace)+strlen(entry->object_name)+1);
+		strcpy(table_name, namespace);
+		strcat(table_name, entry->object_name);
+	} else
+	{
+		table_name = strdup(entry->object_name);
+	}
+	if (sanitize)
+		quoted_name = sanitize_name(table_name);
+	else
+		quoted_name = mdb->default_backend->quote_name(table_name);
+	free(table_name);
 
 	/* drop the table if it exists */
-	fprintf (stdout, "DROP TABLE %s%s;\n", (namespace) ? namespace : "",
-		sanitize_name(entry->object_name, sanitize));
+	fprintf (stdout, "DROP TABLE %s;\n", quoted_name);
 
 	/* create the table */
-	fprintf (stdout, "CREATE TABLE %s%s\n", (namespace) ? namespace : "",
-		sanitize_name(entry->object_name, sanitize));
+	fprintf (stdout, "CREATE TABLE %s\n", quoted_name);
 	fprintf (stdout, " (\n");
-	       	       
+
+	free(quoted_name);
+
 	table = mdb_read_table (entry);
 
 	/* get the columns */
@@ -147,9 +162,14 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index (table->columns, i);
-		   
-		fprintf (stdout, "\t%s\t\t\t%s", sanitize_name(col->name,sanitize), 
-		mdb_get_coltype_string (mdb->default_backend, col->col_type));
+
+		if (sanitize)
+			quoted_name = sanitize_name(col->name);
+		else
+			quoted_name = mdb->default_backend->quote_name(col->name);
+		fprintf (stdout, "\t%s\t\t\t%s", quoted_name,
+			mdb_get_coltype_string (mdb->default_backend, col->col_type));
+		free(quoted_name);
 		   
 		if (mdb_coltype_takes_length(mdb->default_backend, 
 			col->col_type)) {
@@ -173,23 +193,3 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 
 	mdb_free_tabledef (table);
 }
-
-static char *sanitize_name(char *str, int sanitize)
-{
-	static char namebuf[256];
-	char *p = namebuf;
-
-	if (!sanitize)
-		return str;
-		
-	while (*str) {
-		*p = isalnum(*str) ? *str : '_';
-		p++;
-		str++;
-	}
-	
-	*p = 0;
-										
-	return namebuf;
-}
-
