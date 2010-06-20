@@ -283,25 +283,31 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
  *   'szObject' contains the table name of the child table.
  *   'szReferencedColumn' contains the column name of the parent table.
  *   'szReferencedObject' contains the table name of the parent table.
+ *   'grbit' contains integrity constraints.
  *
  * Returns: a string stating that relationships are not supported for the
  *   selected backend, or a string containing SQL commands for setting up
- *   the relationship, tailored for the selected backend.  The caller is
- *   responsible for freeing this string.
+ *   the relationship, tailored for the selected backend.
+ *   Returns NULL on last iteration.
+ *   The caller is responsible for freeing this string.
  */
 char *mdb_get_relationships(MdbHandle *mdb)
 {
 	unsigned int i;
 	gchar *text = NULL;  /* String to be returned */
-	static char *bound[4];  /* Bound values */
+	static char *bound[5];  /* Bound values */
 	static MdbTableDef *table;  /* Relationships table */
-	int backend = 0;  /* Backends: 1=oracle */
+	int backend = 0;  /* Backends: 1=oracle, 2=postgres */
 	char *quoted_table_1, *quoted_column_1,
 	     *quoted_table_2, *quoted_column_2,
-		 *constraint_name, *quoted_constraint_name;
+	     *index_name, *quoted_index_name,
+	     *constraint_name, *quoted_constraint_name;
+	long grbit;
 
-	if (strncmp(mdb->backend_name,"oracle",6) == 0) {
+	if (!strcmp(mdb->backend_name, "oracle")) {
 		backend = 1;
+	} else if (!strcmp(mdb->backend_name, "postgres")) {
+		backend = 2;
 	} else {
 		if (is_init == 0) { /* the first time through */
 			is_init = 1;
@@ -317,55 +323,82 @@ char *mdb_get_relationships(MdbHandle *mdb)
 	if (is_init == 0) {
 		table = mdb_read_table_by_name(mdb, "MSysRelationships", MDB_TABLE);
 		if ((!table) || (table->num_rows == 0)) {
+			fprintf(stderr, "No MSysRelationships\n");
 			return NULL;
 		}
 
 		mdb_read_columns(table);
-		for (i=0;i<4;i++) {
+		for (i=0;i<5;i++) {
 			bound[i] = (char *) g_malloc0(MDB_BIND_SIZE);
 		}
 		mdb_bind_column_by_name(table, "szColumn", bound[0], NULL);
 		mdb_bind_column_by_name(table, "szObject", bound[1], NULL);
 		mdb_bind_column_by_name(table, "szReferencedColumn", bound[2], NULL);
 		mdb_bind_column_by_name(table, "szReferencedObject", bound[3], NULL);
+		mdb_bind_column_by_name(table, "grbit", bound[4], NULL);
 		mdb_rewind_table(table);
 
 		is_init = 1;
 	}
-	else if (table->cur_row >= table->num_rows) {  /* past the last row */
-		for (i=0;i<4;i++)
-			g_free(bound[i]);
-		is_init = 0;
-		return NULL;
+	else {
+		if (!table) {
+			fprintf(stderr, "table is NULL\n");
+		}
+	    if (table->cur_row >= table->num_rows) {  /* past the last row */
+			for (i=0;i<5;i++)
+				g_free(bound[i]);
+			is_init = 0;
+			return NULL;
+		}
 	}
 
 	if (!mdb_fetch_row(table)) {
-		for (i=0;i<4;i++)
+		for (i=0;i<5;i++)
 			g_free(bound[i]);
 		is_init = 0;
 		return NULL;
 	}
 
-	switch (backend) {
-	  case 1:  /* oracle */
-	  	quoted_table_1 = mdb->default_backend->quote_name(bound[1]);
-	  	quoted_column_1 = mdb->default_backend->quote_name(bound[0]);
-	  	quoted_table_2 = mdb->default_backend->quote_name(bound[3]);
-	  	quoted_column_2 = mdb->default_backend->quote_name(bound[2]);
-		constraint_name = g_strconcat(bound[3], "_", bound[1], NULL);
-		quoted_constraint_name = mdb->default_backend->quote_name(constraint_name);
-		free(constraint_name);
-		text = g_strconcat("ALTER TABLE ", quoted_table_1,
-			" ADD CONSTRAINT ", quoted_constraint_name,
-			" FOREIGN KEY (", quoted_column_1, ")"
-			" REFERENCES ", quoted_table_2, "(", quoted_column_2, ");", NULL);
-		free(quoted_table_1);
-		free(quoted_column_1);
-		free(quoted_table_2);
-		free(quoted_column_2);
-		free(quoted_constraint_name);
-		break;
+	quoted_table_1 = mdb->default_backend->quote_name(bound[1]);
+	quoted_column_1 = mdb->default_backend->quote_name(bound[0]);
+	quoted_table_2 = mdb->default_backend->quote_name(bound[3]);
+	quoted_column_2 = mdb->default_backend->quote_name(bound[2]);
+	grbit = atoi(bound[4]);
+	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
+	quoted_constraint_name = mdb->default_backend->quote_name(constraint_name);
+	free(constraint_name);
+	index_name = g_strconcat(bound[3], "_", bound[2], "_idx", NULL);
+	quoted_index_name = mdb->default_backend->quote_name(index_name);
+	free(index_name);
+
+	if (grbit & 0x00000002) {
+		text = g_strconcat(
+			"-- Relationship from ", quoted_table_1,
+			" (", quoted_column_1, ")"
+			" to ", quoted_table_2, "(", quoted_column_2, ")",
+			" does not enforce integrity.\n", NULL);
+	} else {
+		switch (backend) {
+		  case 1:  /* oracle */
+		  case 2:  /* postgres */
+			text = g_strconcat(
+				"ALTER TABLE ", quoted_table_1,
+				" ADD CONSTRAINT ", quoted_constraint_name,
+				" FOREIGN KEY (", quoted_column_1, ")"
+				" REFERENCES ", quoted_table_2, "(", quoted_column_2, ")",
+				(grbit & 0x00000100) ? " ON UPDATE CASCADE" : "",
+				(grbit & 0x00001000) ? " ON DELETE CASCADE" : "",
+				";\n", NULL);
+
+			break;
+		}
 	}
+	free(quoted_table_1);
+	free(quoted_column_1);
+	free(quoted_table_2);
+	free(quoted_column_2);
+	free(quoted_constraint_name);
+	free(quoted_index_name);
 
 	return (char *)text;
 }
