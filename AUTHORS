@@ -24,3 +24,19 @@ David Mansfield <mdbtools@dm.cobite.com>
 
 Jeff Smith <whydoubt@yahoo.com>
 	Patches too numerous to enumerate.
+
+Steve Langasek <vorlon@debian.org>
+	build fixes, ODBC fixes
+
+Rene Engelhard <rene@debian.org>
+	build fixes
+
+Vincent Fourmond <fourmond@debian.org>
+	float handling fix
+
+Tim Retout <tim@retout.co.uk>
+	mdb-dump arg check fix, ODBC fix, add man pages
+
+Nirgal Vourgère <jmb_deb@nirgal.com>
+	postgres fixes and adds, bug fixes
+
