@@ -123,64 +123,6 @@ gchar *text, *text2;
 		g_free(text);
 	}
 }
-void
-gmdb_reset_widgets()
-{
-	GnomeIconList *gil;
-	GtkWidget *win;
-
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "table_iconlist");
-	gnome_icon_list_clear(gil);
-	gmdb_table_set_sensitive(FALSE);
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "query_iconlist");
-	gnome_icon_list_clear(gil);
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "form_iconlist");
-	gnome_icon_list_clear(gil);
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "report_iconlist");
-	gnome_icon_list_clear(gil);
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "macro_iconlist");
-	gnome_icon_list_clear(gil);
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "module_iconlist");
-	gnome_icon_list_clear(gil);
-
-	win = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "gmdb");
-	gtk_window_set_title(GTK_WINDOW(win), "MDB File Viewer");
-	gmdb_set_sensitive(FALSE);
-
-}
-
-void
-gmdb_set_sensitive(gboolean b)
-{
-	GtkWidget *mi, *button;
-
-	mi = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "sql_menu");
-	gtk_widget_set_sensitive(mi,b);
-
-	mi = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "debug_menu");
-	gtk_widget_set_sensitive(mi,b);
-
-	mi = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "schema_menu");
-	gtk_widget_set_sensitive(mi,b);
-
-	mi = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "info_menu");
-	gtk_widget_set_sensitive(mi,b);
-
-	button = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "sql_button");
-	gtk_widget_set_sensitive(button,b);
-
-	button = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "schema_button");
-	gtk_widget_set_sensitive(button,b);
-
-	button = (GtkWidget *) glade_xml_get_widget (mainwin_xml, "info_button");
-	gtk_widget_set_sensitive(button,b);
-}
-	
-static void
-gmdb_init_popups()
-{
-		gmdb_table_init_popup();
-}
 
 static void
 gmdb_load_icons(GladeXML *xml)
@@ -260,12 +202,9 @@ GnomeProgram *program;
 
 	if (argc>1) {
 		gmdb_file_open(argv[1]);
-	} else {
-		gmdb_reset_widgets();
 	}
 
 	gmdb_load_recent_files();
-	gmdb_init_popups();
 
 	/* start the event loop */
 	gtk_main();

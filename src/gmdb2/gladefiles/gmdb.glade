@@ -54,6 +54,7 @@
 		      <child>
 			<widget class="GtkImageMenuItem" id="info_menu">
 			  <property name="visible">True</property>
+			  <property name="sensitive">False</property>
 			  <property name="stock_item">GNOMEUIINFO_MENU_PROPERTIES_ITEM</property>
 			  <signal name="activate" handler="gmdb_info_cb" last_modification_time="Sat, 21 Dec 2002 16:17:18 GMT"/>
 			</widget>
@@ -169,6 +170,7 @@
 		      <child>
 			<widget class="GtkImageMenuItem" id="sql_menu">
 			  <property name="visible">True</property>
+			  <property name="sensitive">False</property>
 			  <property name="label" translatable="yes">S_QL Window</property>
 			  <property name="use_underline">True</property>
 			  <signal name="activate" handler="gmdb_sql_new_cb" last_modification_time="Sat, 28 Dec 2002 16:54:54 GMT"/>
@@ -190,6 +192,7 @@
 		      <child>
 			<widget class="GtkImageMenuItem" id="debug_menu">
 			  <property name="visible">True</property>
+			  <property name="sensitive">False</property>
 			  <property name="label" translatable="yes">_Debug Window</property>
 			  <property name="use_underline">True</property>
 			  <signal name="activate" handler="gmdb_debug_new_cb" last_modification_time="Sat, 21 Dec 2002 17:41:42 GMT"/>
@@ -210,6 +213,7 @@
 		      <child>
 			<widget class="GtkImageMenuItem" id="schema_menu">
 			  <property name="visible">True</property>
+			  <property name="sensitive">False</property>
 			  <property name="label" translatable="yes">E_xport Schema</property>
 			  <property name="use_underline">True</property>
 			  <signal name="activate" handler="gmdb_schema_new_cb" last_modification_time="Sun, 29 Dec 2002 20:35:14 GMT"/>
@@ -315,6 +319,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="info_button">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="tooltip" translatable="yes">View database file properties</property>
 		  <property name="stock-id">gtk-properties</property>
 		  <signal name="clicked" handler="gmdb_info_cb" last_modification_time="Sun, 29 Dec 2002 03:21:29 GMT"/>
@@ -333,6 +338,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="sql_button">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="tooltip" translatable="yes">Perform SQL query</property>
 		  <property name="stock-id">gtk-execute</property>
 		  <signal name="clicked" handler="gmdb_sql_new_cb" last_modification_time="Sun, 29 Dec 2002 03:23:01 GMT"/>
@@ -345,6 +351,7 @@
 	      <child>
 		<widget class="GtkToolButton" id="schema_button">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="tooltip" translatable="yes">Export schema definition</property>
 		  <property name="stock-id">gtk-convert</property>
 		  <signal name="clicked" handler="gmdb_schema_new_cb" last_modification_time="Sun, 29 Dec 2002 20:34:50 GMT"/>
@@ -404,7 +411,7 @@
 			  <property name="shadow_type">GTK_SHADOW_IN</property>
 
 			  <child>
-			    <widget class="GtkScrolledWindow" id="scrolledwindow1">
+			    <widget class="GtkScrolledWindow" id="sw_table">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -412,21 +419,6 @@
 			      <property name="shadow_type">GTK_SHADOW_NONE</property>
 			      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
-			      <child>
-				<widget class="GnomeIconList" id="table_iconlist">
-				  <property name="visible">True</property>
-				  <property name="can_focus">True</property>
-				  <property name="selection_mode">GTK_SELECTION_SINGLE</property>
-				  <property name="icon_width">78</property>
-				  <property name="row_spacing">8</property>
-				  <property name="column_spacing">8</property>
-				  <property name="text_spacing">2</property>
-				  <property name="text_editable">False</property>
-				  <property name="text_static">True</property>
-				  <signal name="select_icon" handler="gmdb_table_select_cb" after="yes" last_modification_time="Fri, 20 Dec 2002 16:45:49 GMT"/>
-				  <signal name="unselect_icon" handler="gmdb_table_unselect_cb" after="yes" last_modification_time="Sat, 11 Jan 2003 18:27:12 GMT"/>
-				</widget>
-			      </child>
 			    </widget>
 			  </child>
 			</widget>
@@ -571,7 +563,7 @@
 		      <property name="shadow_type">GTK_SHADOW_IN</property>
 
 		      <child>
-			<widget class="GtkScrolledWindow" id="scrolledwindow9">
+			<widget class="GtkScrolledWindow" id="sw_query">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -579,19 +571,6 @@
 			  <property name="shadow_type">GTK_SHADOW_NONE</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
-			  <child>
-			    <widget class="GnomeIconList" id="query_iconlist">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="selection_mode">GTK_SELECTION_SINGLE</property>
-			      <property name="icon_width">78</property>
-			      <property name="row_spacing">8</property>
-			      <property name="column_spacing">8</property>
-			      <property name="text_spacing">2</property>
-			      <property name="text_editable">False</property>
-			      <property name="text_static">False</property>
-			    </widget>
-			  </child>
 			</widget>
 		      </child>
 		    </widget>
@@ -692,7 +671,7 @@
 		      <property name="shadow_type">GTK_SHADOW_IN</property>
 
 		      <child>
-			<widget class="GtkScrolledWindow" id="scrolledwindow3">
+			<widget class="GtkScrolledWindow" id="sw_form">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -700,19 +679,6 @@
 			  <property name="shadow_type">GTK_SHADOW_NONE</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
-			  <child>
-			    <widget class="GnomeIconList" id="form_iconlist">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="selection_mode">GTK_SELECTION_SINGLE</property>
-			      <property name="icon_width">78</property>
-			      <property name="row_spacing">8</property>
-			      <property name="column_spacing">8</property>
-			      <property name="text_spacing">2</property>
-			      <property name="text_editable">False</property>
-			      <property name="text_static">False</property>
-			    </widget>
-			  </child>
 			</widget>
 		      </child>
 		    </widget>
@@ -813,7 +779,7 @@
 		      <property name="shadow_type">GTK_SHADOW_IN</property>
 
 		      <child>
-			<widget class="GtkScrolledWindow" id="scrolledwindow7">
+			<widget class="GtkScrolledWindow" id="sw_report">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -821,19 +787,6 @@
 			  <property name="shadow_type">GTK_SHADOW_NONE</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
-			  <child>
-			    <widget class="GnomeIconList" id="report_iconlist">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="selection_mode">GTK_SELECTION_SINGLE</property>
-			      <property name="icon_width">78</property>
-			      <property name="row_spacing">8</property>
-			      <property name="column_spacing">8</property>
-			      <property name="text_spacing">2</property>
-			      <property name="text_editable">False</property>
-			      <property name="text_static">False</property>
-			    </widget>
-			  </child>
 			</widget>
 		      </child>
 		    </widget>
@@ -934,7 +887,7 @@
 		      <property name="shadow_type">GTK_SHADOW_IN</property>
 
 		      <child>
-			<widget class="GtkScrolledWindow" id="scrolledwindow6">
+			<widget class="GtkScrolledWindow" id="sw_macro">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -942,19 +895,6 @@
 			  <property name="shadow_type">GTK_SHADOW_NONE</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
-			  <child>
-			    <widget class="GnomeIconList" id="macro_iconlist">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="selection_mode">GTK_SELECTION_SINGLE</property>
-			      <property name="icon_width">78</property>
-			      <property name="row_spacing">8</property>
-			      <property name="column_spacing">8</property>
-			      <property name="text_spacing">2</property>
-			      <property name="text_editable">False</property>
-			      <property name="text_static">False</property>
-			    </widget>
-			  </child>
 			</widget>
 		      </child>
 		    </widget>
@@ -1055,7 +995,7 @@
 		      <property name="shadow_type">GTK_SHADOW_IN</property>
 
 		      <child>
-			<widget class="GtkScrolledWindow" id="scrolledwindow8">
+			<widget class="GtkScrolledWindow" id="sw_module">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
@@ -1063,19 +1003,6 @@
 			  <property name="shadow_type">GTK_SHADOW_NONE</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
-			  <child>
-			    <widget class="GnomeIconList" id="module_iconlist">
-			      <property name="visible">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="selection_mode">GTK_SELECTION_SINGLE</property>
-			      <property name="icon_width">78</property>
-			      <property name="row_spacing">8</property>
-			      <property name="column_spacing">8</property>
-			      <property name="text_spacing">2</property>
-			      <property name="text_editable">False</property>
-			      <property name="text_static">False</property>
-			    </widget>
-			  </child>
 			</widget>
 		      </child>
 		    </widget>

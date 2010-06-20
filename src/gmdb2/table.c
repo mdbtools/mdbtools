@@ -16,6 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "gmdb.h"
+
+#include <gtk/gtkiconview.h>
 #include <glade/glade.h>
 
 GtkWidget *table_list;
@@ -83,23 +85,36 @@ MdbCatalogEntry *entry;
 
 	gmdb_table_data_new(entry);
 }
+
 void
-gmdb_table_unselect_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data)
-{
-	selected_table = -1;
-	gmdb_table_set_sensitive(FALSE);
-}
-void
-gmdb_table_select_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data)
-{
+gmdb_table_select_cb (GtkIconView* giv, gpointer data) {
 	int i;
 	MdbCatalogEntry *entry;
 	gchar *text;
-
-	text = (gchar *) gnome_icon_list_get_icon_data(gil, num);
+	GList *selection;
+	GtkTreeModel *store;
+	GtkTreePath *path;
+	GtkTreeIter iter;
 
 	selected_table = -1;
-	
+
+	selection = gtk_icon_view_get_selected_items (giv);
+	if (g_list_length (selection) < 1) {
+		gmdb_table_set_sensitive (FALSE);
+		g_list_free (selection);
+		return;
+	}
+
+	store = gtk_icon_view_get_model (giv);
+	path = (GtkTreePath*) selection->data;
+	if (!gtk_tree_model_get_iter (store, &iter, path)) {
+		/* FIXME */
+		g_error ("Failed to get selection iter!!!");
+		g_list_foreach (selection, (GFunc) gtk_tree_path_free, NULL);
+		g_list_free (selection);
+	}
+
+	gtk_tree_model_get (store, &iter, 1, &text, -1);
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
 		if (entry->object_type==MDB_TABLE && 
@@ -107,36 +122,32 @@ gmdb_table_select_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data)
 			selected_table = i;
 		}
 	}
+	g_free (text);
 	if (selected_table>0) {
 		gmdb_table_set_sensitive(TRUE);
 	} else {
 		gmdb_table_set_sensitive(FALSE);
 	}
-	
-}
-static gboolean
-gmdb_table_popup_cb(GtkWidget *menu, GdkEvent *event)
-{
-	GdkEventButton *event_button;
-	GnomeIconList *gil;
-	gdouble x,y;
-	int num;
-	
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "table_iconlist");
 
-	if (selected_table == -1) return FALSE;
+	g_list_foreach (selection, (GFunc) gtk_tree_path_free, NULL);
+	g_list_free (selection);
+}
+
+static gboolean
+gmdb_table_popup_cb (GtkIconView* giv, GdkEvent* event, gpointer data) {
+	GtkWidget* menu = GTK_WIDGET (data);
+	GdkEventButton *event_button;
+	int num;
+
 	if (event->type == GDK_BUTTON_PRESS) {
 		event_button = (GdkEventButton *) event;
-		x = event_button->x;
-		y = event_button->y;
-		num = gnome_icon_list_get_icon_at(gil, x, y);
-		if (num != -1) {
-			gnome_icon_list_select_icon(gil, num);
-		}
 		if (event_button->button == 3) {
-			gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 
-				event_button->button, event_button->time);
-			return TRUE;
+			GtkTreePath *path = gtk_icon_view_get_path_at_pos (giv, (gint) event_button->x, (gint) event_button->y);
+			if (path) {
+				gtk_icon_view_select_path (giv, path);
+				gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, event_button->button, event_button->time);
+				return TRUE;
+			}
 		}
 	}
 	return FALSE;
@@ -157,29 +168,26 @@ gmdb_table_set_sensitive(gboolean b)
 	gtk_widget_set_sensitive(button,b);
 }
 void
-gmdb_table_init_popup()
-{
-GnomeIconList *gil;
+gmdb_table_init_popup (GtkWidget* w) {
 GtkWidget *menu, *mi;
-
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "table_iconlist");
+	GtkIconView *giv = GTK_ICON_VIEW (w);
 
 	menu = gtk_menu_new();
 	gtk_widget_show(menu);
 	mi = gtk_menu_item_new_with_label("Definition");
 	gtk_widget_show(mi);
 	g_signal_connect_swapped (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_table_def_cb), gil);
+		G_CALLBACK (gmdb_table_def_cb), giv);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_menu_item_new_with_label("Data");
 	gtk_widget_show(mi);
 	g_signal_connect_swapped (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_table_data_cb), gil);
+		G_CALLBACK (gmdb_table_data_cb), giv);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_menu_item_new_with_label("Export");
 	gtk_widget_show(mi);
 	g_signal_connect_swapped (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_table_export_cb), gil);
+		G_CALLBACK (gmdb_table_export_cb), giv);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	mi = gtk_separator_menu_item_new();
 	gtk_widget_show(mi);
@@ -187,37 +195,11 @@ GtkWidget *menu, *mi;
 	mi = gtk_menu_item_new_with_label("Debug");
 	gtk_widget_show(mi);
 	g_signal_connect_swapped (G_OBJECT (mi), "activate",
-		G_CALLBACK (gmdb_table_debug_cb), gil);
+		G_CALLBACK (gmdb_table_debug_cb), giv);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 	//mi = gtk_menu_item_new_with_label("Usage Map");
 	//gtk_widget_show(mi);
 	//gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
 
-	g_signal_connect_swapped (GTK_OBJECT (gil), "button_press_event",
-		G_CALLBACK (gmdb_table_popup_cb), GTK_OBJECT(menu));
+	g_signal_connect (giv, "button_press_event", G_CALLBACK (gmdb_table_popup_cb), menu);
 }	
-static void
-gmdb_table_add_icon(gchar *text)
-{
-GnomeIconList *gil;
-int pos;
-
-	gil = (GnomeIconList *) glade_xml_get_widget (mainwin_xml, "table_iconlist");
-
-	pos = gnome_icon_list_append(gil, GMDB_ICONDIR "table_big.xpm", text);
-	gnome_icon_list_set_icon_data(gil, pos, text);
-}
-
-void gmdb_table_populate(MdbHandle *mdb)
-{
-int   i;
-MdbCatalogEntry *entry;
-
-	/* add all user tables in catalog to tab */
-	for (i=0; i < mdb->num_catalog; i++) {
-		entry = g_ptr_array_index (mdb->catalog, i);
-		if (mdb_is_user_table(entry)) {
-			gmdb_table_add_icon(entry->object_name);
-		}
-	} /* for */
-}

@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
-#include <gnome.h>
 #include <glade/glade.h>
 
 #ifndef _gmdb_h_
@@ -24,8 +23,6 @@ void gmdb_prefs_cb(GtkWidget *w, gpointer data);
 void gmdb_help_cb(GtkWidget *w, gpointer data);
 void gmdb_about_cb(GtkWidget *w, gpointer data);
 void gmdb_load_recent_files(void);
-void gmdb_reset_widgets(void);
-void gmdb_set_sensitive(gboolean b);
 
 GtkWidget *gmdb_table_data_new(MdbCatalogEntry *entry);
 GtkWidget *gmdb_table_def_new(MdbCatalogEntry *entry);
@@ -45,13 +42,6 @@ void gmdb_file_open_recent_4(void);
 void gmdb_file_open(gchar *file_path);
 
 void gmdb_sql_new_window_cb(GtkWidget *w, gpointer data);
-
-void gmdb_table_populate(MdbHandle *mdb);
-void gmdb_form_populate(MdbHandle *mdb);
-void gmdb_query_populate(MdbHandle *mdb);
-void gmdb_report_populate(MdbHandle *mdb);
-void gmdb_macro_populate(MdbHandle *mdb);
-void gmdb_module_populate(MdbHandle *mdb);
 
 void gmdb_table_add_tab(GtkWidget *notebook);
 void gmdb_debug_tab_new(GtkWidget *notebook);
@@ -85,11 +75,11 @@ void gmdb_schema_help_cb(GtkWidget *w, gpointer data);
 /* table.c */
 void gmdb_table_debug_cb(GtkList *list, GtkWidget *w, gpointer data);
 void gmdb_table_export_cb(GtkList *list, GtkWidget *w, gpointer data);
-void gmdb_table_unselect_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data);
-void gmdb_table_select_cb(GnomeIconList *gil, int num, GdkEvent *ev, gpointer data);
 void gmdb_table_def_cb(GtkList *list, GtkWidget *w, gpointer data);
+void gmdb_table_unselect_cb (GtkIconView*, gpointer);
+void gmdb_table_select_cb (GtkIconView*, gpointer);
 void gmdb_table_data_cb(GtkList *list, GtkWidget *w, gpointer data);
-void gmdb_table_init_popup(void);
+void gmdb_table_init_popup (GtkWidget*);
 void gmdb_table_set_sensitive(gboolean b);
 
 /* table_export.c */
@@ -102,13 +92,6 @@ int gmdb_export_get_quote(GladeXML *xml);
 char gmdb_export_get_quotechar(GladeXML *xml);
 int gmdb_export_get_headers(GladeXML *xml);
 gchar *gmdb_export_get_filepath(GladeXML *xml);
-
-extern GtkWidget *table_list;
-extern GtkWidget *form_list;
-extern GtkWidget *query_list;
-extern GtkWidget *report_list;
-extern GtkWidget *macro_list;
-extern GtkWidget *module_list;
 
 extern MdbSQL *sql;
 

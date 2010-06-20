@@ -18,6 +18,8 @@
 #include "gmdb.h"
 
 #include <mdbtools.h>
+#include <gtk/gtkiconview.h>
+#include <gtk/gtkliststore.h>
 #include <gtk/gtkmessagedialog.h>
 #include <libgnome/gnome-i18n.h>
 #include <libgnome/gnome-config.h>
@@ -26,6 +28,14 @@ GtkWidget *file_selector;
 MdbHandle *mdb;
 extern int main_show_debug;
 extern GladeXML *mainwin_xml;
+
+#define MAX_ACTIONITEMS 7
+#define MAX_ICONVIEWS 6
+typedef struct {
+	GtkWidget* actionitems[MAX_ACTIONITEMS];
+	GtkWidget* iconviews[MAX_ICONVIEWS];
+} GmdbWidgets;
+GmdbWidgets* gmdbwidgets = NULL;
 
 static void gmdb_file_open_recent(gchar *menuname) 
 { 
@@ -103,15 +113,98 @@ gmdb_file_add_recent(gchar *file_path)
 	gnome_config_set_string("/gmdb/RecentFiles/menu_recent1.filepath", file_path);
 	gnome_config_sync();
 }
+
+static void
+gmdb_reset_widgets (GmdbWidgets* gw) {
+	int i;
+	GtkWidget *w;
+
+	gmdb_table_set_sensitive (FALSE);
+
+	for (i = 0; i < MAX_ACTIONITEMS; ++i) {
+		w = gw->actionitems[i];
+		gtk_widget_set_sensitive (w, FALSE);
+	}
+	for (i = 0; i < MAX_ICONVIEWS; ++i) {
+		w = gw->iconviews[i];
+		gtk_list_store_clear (GTK_LIST_STORE (gtk_icon_view_get_model (GTK_ICON_VIEW (w))));
+	}
+
+	w = glade_xml_get_widget (mainwin_xml, "gmdb");
+	gtk_window_set_title (GTK_WINDOW (w), "MDB File Viewer");
+}
+
+static void
+gmdb_icon_list_fill (MdbHandle* mdb, GtkTreeModel* store, GdkPixbuf* pixbuf, int objtype) {
+	int i;
+	MdbCatalogEntry* entry;
+	GtkTreeIter iter;
+
+	for (i=0; i < mdb->num_catalog; i++) {
+		entry = g_ptr_array_index (mdb->catalog, i);
+		if (entry->object_type == objtype) {
+			/* skip the MSys tables - FIXME: can other objects be hidden too? */
+			if (objtype != MDB_TABLE || mdb_is_user_table (entry)) {
+				gtk_list_store_prepend (GTK_LIST_STORE (store), &iter);
+				gtk_list_store_set (GTK_LIST_STORE (store), &iter, 0, pixbuf, 1, entry->object_name, -1);
+			}
+		}
+	}
+}
+
+static void
+gmdb_file_init (void) {
+	GtkWidget* w;
+	GtkListStore* store;
+	int i;
+	gchar* ainames[] = { "sql_menu", "debug_menu", "schema_menu", "info_menu", "sql_button", "schema_button", "info_button" };
+	gchar* swnames[] = { "sw_form", "sw_macro", "sw_module", "sw_query", "sw_report", "sw_table" };
+
+	if (gmdbwidgets) {
+		return;
+	}
+
+	gmdbwidgets = g_new0 (GmdbWidgets, 1);
+
+	for (i = 0; i < MAX_ACTIONITEMS; ++i) {
+		gmdbwidgets->actionitems[i] = glade_xml_get_widget (mainwin_xml, ainames[i]);
+	}
+	for (i = 0; i < MAX_ICONVIEWS; ++i) {
+		store = gtk_list_store_new (2, GDK_TYPE_PIXBUF, G_TYPE_STRING);
+
+		gmdbwidgets->iconviews[i] = gtk_icon_view_new();
+		gtk_icon_view_set_model (GTK_ICON_VIEW (gmdbwidgets->iconviews[i]), GTK_TREE_MODEL (store));
+		gtk_icon_view_set_pixbuf_column (GTK_ICON_VIEW (gmdbwidgets->iconviews[i]), 0);
+		gtk_icon_view_set_text_column (GTK_ICON_VIEW (gmdbwidgets->iconviews[i]), 1);
+
+		w = glade_xml_get_widget (mainwin_xml, swnames[i]);
+		gtk_container_add (GTK_CONTAINER (w), gmdbwidgets->iconviews[i]);
+		gtk_widget_show_all (w);
+	}
+
+	g_signal_connect_after (gmdbwidgets->iconviews[5], "selection-changed", G_CALLBACK (gmdb_table_select_cb), NULL);
+	gmdb_table_init_popup (gmdbwidgets->iconviews[5]);
+}
+
 void
 gmdb_file_open(gchar *file_path)
 {
 	GtkWidget *win;
+	GdkPixbuf *pixbuf;
+	GtkTreeModel *store;
 	gchar *file_name;
 	gchar title[100];
 	int i;
+	gchar* pbnames[] = { GMDB_ICONDIR "form_big.xpm", GMDB_ICONDIR "macro_big.xpm",
+	  GMDB_ICONDIR "module_big.xpm", GMDB_ICONDIR "query_big.xpm", GMDB_ICONDIR "report_big.xpm",
+	  GMDB_ICONDIR "table_big.xpm" };
+	int objtype[] = { MDB_FORM, MDB_MACRO, MDB_MODULE, MDB_QUERY, MDB_REPORT, MDB_TABLE };
 
-	gmdb_reset_widgets();
+	if (!gmdbwidgets) {
+		gmdb_file_init();
+	}
+
+	gmdb_reset_widgets (gmdbwidgets);
 	mdb = mdb_open(file_path, MDB_NOFLAGS);
 	if (!mdb) {
 		GtkWidget* dlg = gtk_message_dialog_new (NULL,
@@ -127,12 +220,14 @@ gmdb_file_open(gchar *file_path)
 
 	sql->mdb = mdb;
 	mdb_read_catalog(mdb, MDB_ANY);
-	gmdb_table_populate(mdb);
-	gmdb_query_populate(mdb);
-	gmdb_form_populate(mdb);
-	gmdb_report_populate(mdb);
-	gmdb_macro_populate(mdb);
-	gmdb_module_populate(mdb);
+
+	for (i = 0; i < MAX_ICONVIEWS; ++i) {
+		store = gtk_icon_view_get_model (GTK_ICON_VIEW (gmdbwidgets->iconviews[i]));
+		pixbuf = gdk_pixbuf_new_from_file (pbnames[i], NULL);
+		gmdb_icon_list_fill (mdb, store, pixbuf, objtype[i]);
+		g_object_unref (pixbuf);
+	}
+
 	//if (main_show_debug) gmdb_debug_init(mdb);
 	
 	for (i=strlen(file_path);i>0 && file_path[i-1]!='/';i--);
@@ -142,7 +237,10 @@ gmdb_file_open(gchar *file_path)
 	g_snprintf(title, 100, "%s - MDB File Viewer",file_name);
 	gtk_window_set_title(GTK_WINDOW(win), title);
 
-	gmdb_set_sensitive(TRUE);
+	for (i = 0; i < MAX_ACTIONITEMS; ++i) {
+		win = gmdbwidgets->actionitems[i];
+		gtk_widget_set_sensitive (win, TRUE);
+	}
 }
 
 void
@@ -180,7 +278,7 @@ gmdb_file_select_cb(GtkWidget *button, gpointer data)
 void
 gmdb_file_close_cb(GtkWidget *button, gpointer data)
 {
-	gmdb_reset_widgets();
+	gmdb_reset_widgets (gmdbwidgets);
 	gmdb_debug_close_all();
 	gmdb_sql_close_all();
 }
