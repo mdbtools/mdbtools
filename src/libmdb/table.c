@@ -249,10 +249,12 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			pcol->col_scale = col[12];
 		}
 
-		// col_fixed_offset == 13 or 15
-		pcol->is_fixed = col[fmt->col_fixed_offset] & 0x01 ? 1 : 0;
+		// col_flags_offset == 13 or 15
+		pcol->is_fixed = col[fmt->col_flags_offset] & 0x01 ? 1 : 0;
+		pcol->is_long_auto = col[fmt->col_flags_offset] & 0x04 ? 1 : 0;
+		pcol->is_uuid_auto = col[fmt->col_flags_offset] & 0x40 ? 1 : 0;
 
-		// col_fixed_offset == 13 or 15
+		// tab_col_offset_fixed == 14 or 21
 		pcol->fixed_offset = mdb_get_int16(col, fmt->tab_col_offset_fixed);
 		//fprintf(stdout,"fixed column offset %d\n",pcol->fixed_offset);
 		//fprintf(stdout,"col type %s\n",pcol->is_fixed ? "fixed" : "variable");

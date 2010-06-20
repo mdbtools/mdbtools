@@ -204,7 +204,7 @@ typedef struct {
 	guint16		tab_first_dpg_offset;
 	guint16		tab_cols_start_offset;
 	guint16		tab_ridx_entry_size;
-	guint16		col_fixed_offset;
+	guint16		col_flags_offset;
 	guint16		col_size_offset;
 	guint16		col_num_offset;
 	guint16		tab_col_entry_size;
@@ -280,6 +280,8 @@ typedef struct {
 	/* numerics only */
 	int		col_prec;
 	int		col_scale;
+	unsigned char     is_long_auto;
+	unsigned char     is_uuid_auto;
 	MdbProperties	*props;
 	/* info needed for handling deleted/added columns */
 	int 		fixed_offset;
@@ -460,6 +462,7 @@ extern void mdb_init_backends();
 extern void mdb_register_backend(MdbBackendType *backend, char* (*quote_name)(const char*), char *backend_name);
 extern void mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
+extern char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize);
 extern char *mdb_get_relationships(MdbHandle *mdb);
 
 /* sargs.c */

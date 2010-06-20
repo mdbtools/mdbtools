@@ -35,7 +35,7 @@ typedef struct {
 	guint16		tab_first_dpg_offset;
 	guint16		tab_cols_start_offset;
 	guint16		tab_ridx_entry_size;
-	guint16		col_fixed_offset;
+	guint16		col_flags_offset;
 	guint16		col_size_offset;
 	guint16		col_num_offset;
 	guint16		tab_col_entry_size;

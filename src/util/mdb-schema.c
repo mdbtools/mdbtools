@@ -128,7 +128,9 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 	unsigned int i;
 	MdbColumn *col;
 	char* table_name;
+	char* quoted_table_name;
 	char* quoted_name;
+	char* sql_sequences;
 
 	if (namespace) {
 		table_name = malloc(strlen(namespace)+strlen(entry->object_name)+1);
@@ -139,19 +141,17 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 		table_name = strdup(entry->object_name);
 	}
 	if (sanitize)
-		quoted_name = sanitize_name(table_name);
+		quoted_table_name = sanitize_name(table_name);
 	else
-		quoted_name = mdb->default_backend->quote_name(table_name);
+		quoted_table_name = mdb->default_backend->quote_name(table_name);
 	free(table_name);
 
 	/* drop the table if it exists */
-	fprintf (stdout, "DROP TABLE %s;\n", quoted_name);
+	fprintf (stdout, "DROP TABLE %s;\n", quoted_table_name);
 
 	/* create the table */
-	fprintf (stdout, "CREATE TABLE %s\n", quoted_name);
+	fprintf (stdout, "CREATE TABLE %s\n", quoted_table_name);
 	fprintf (stdout, " (\n");
-
-	free(quoted_name);
 
 	table = mdb_read_table (entry);
 
@@ -188,8 +188,36 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 	} /* for */
 
 	fprintf (stdout, ");\n");
+
+	fprintf (stdout, "-- CREATE SEQUENCES ...\n");
+	fprintf (stdout, "\n");
+
+	while ((sql_sequences = mdb_get_sequences(entry, namespace, sanitize)))
+		fprintf(stdout, sql_sequences);
+
+	/*
+	for (i = 0; i < table->num_cols; i++) {
+		col = g_ptr_array_index (table->columns, i);
+		if (col->is_long_auto) {
+			char sequence_name[256+1+256+4]; // FIXME
+			char *quoted_column_name;
+			quoted_column_name = mdb->default_backend->quote_name(col->name);
+			sprintf(sequence_name, "%s_%s_seq", entry->object_name, col->name);
+			quoted_name = mdb->default_backend->quote_name(sequence_name);
+			fprintf (stdout, "CREATE SEQUENCE %s;\n", quoted_name);
+			fprintf (stdout, "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT pg_catalog.nextval('%s');\n",
+				quoted_table_name, quoted_column_name, quoted_name);
+			free(quoted_column_name);
+			free(quoted_name);
+		}
+
+	}
+	*/
+
 	fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
 	fprintf (stdout, "\n");
+
+	free(quoted_table_name);
 
 	mdb_free_tabledef (table);
 }

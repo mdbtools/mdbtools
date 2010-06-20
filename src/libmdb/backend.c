@@ -275,6 +275,89 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 }
 
 /**
+ * mdb_get_sequences
+ * @mdb: Handle to open MDB database file
+ *
+ * Generates sequences and set default values
+ *
+ * Returns: a string stating that relationships are not supported for the
+ *   selected backend, or a string containing SQL commands for setting up
+ *   the sequences, tailored for the selected backend.
+ *   Returns NULL on last iteration.
+ *   The caller is responsible for freeing this string.
+ */
+char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize)
+{
+	MdbTableDef *table;
+	MdbHandle *mdb = entry->mdb;
+	int i;
+	int backend = 0;  /* Backends: 1=oracle, 2=postgres */
+	const char *quoted_table_name;
+	char *result = NULL;
+	char tmp[4*512+512]; /* maximum size is 4 quoted names + some constants */
+
+
+	if (is_init == 1) { /* the second time through */
+		is_init = 0;
+		return NULL;
+	}
+	is_init = 1;
+	/* the first time through */
+
+	if (!strcmp(mdb->backend_name, "postgres")) {
+		backend = 2;
+	} else {
+		return (char *) g_strconcat(
+			"-- sequences are not supported for ",
+			mdb->backend_name, NULL);
+	}
+
+	/* get the columns */
+	table = mdb_read_table (entry);
+
+	/* get the columns */
+	mdb_read_columns (table);
+
+	if (sanitize)
+		quoted_table_name = sanitize_name(table->name);
+	else
+		quoted_table_name = mdb->default_backend->quote_name(table->name);
+
+	for (i = 0; i < table->num_cols; i++) {
+		MdbColumn *col;
+		col = g_ptr_array_index (table->columns, i);
+		if (col->is_long_auto) {
+			const char *quoted_column_name;
+			char sequence_name[256+1+256+4+1];
+			const char *quoted_sequence_name;
+			quoted_column_name = mdb->default_backend->quote_name(col->name);
+			sprintf(sequence_name, "%s_%s_seq", entry->object_name, col->name);
+			quoted_sequence_name = mdb->default_backend->quote_name(sequence_name);
+			sprintf (tmp, "CREATE SEQUENCE %s OWNED BY %s.%s;\n", quoted_sequence_name, quoted_table_name, quoted_column_name);
+			if (result) {
+				result = realloc(result, strlen(result) + strlen(tmp) + 1); /* sentry */
+				strcat(result, tmp);
+			} else
+				result = strdup(tmp);
+			/* after that point, result can't be NULL any more */
+
+			sprintf (tmp, "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT pg_catalog.nextval('%s');\n\n",
+				quoted_table_name, quoted_column_name, quoted_sequence_name);
+			result = realloc(result, strlen(result) + strlen(tmp) + 1); /* sentry */
+			strcat(result, tmp);
+
+			free((void*)quoted_column_name);
+			free((void*)quoted_sequence_name);
+		}
+	}
+
+	if (!result)
+		is_init = 0;
+	return result;
+}
+
+
+/**
  * mdb_get_relationships
  * @mdb: Handle to open MDB database file
  *
