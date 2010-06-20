@@ -43,26 +43,38 @@ gmdb_about_cb(GtkWidget *button, gpointer data)
 {
 const gchar *authors[] = {
 	"Brian Bruns",
+	"Jeff Smith",
+	"Filip Van Raemdonck",
 	NULL
 };
 const gchar *documenters[] = {
 	"Brian Bruns",
 	NULL
 };
-GdkPixbuf *pixbuf;
+GtkWidget *parent;
+GdkPixbuf *pixbuf=NULL;
 
-pixbuf = gdk_pixbuf_new_from_file (GMDB_ICONDIR "logo.xpm", NULL);
+	parent = gtk_widget_get_toplevel (button);
+	if (!GTK_WIDGET_TOPLEVEL (parent))
+		parent = NULL;
 
-gtk_widget_show (gnome_about_new ("Gnome MDB Viewer", MDB_VERSION_NO,
-                 "Copyright 2002-2004 Brian Bruns",
-                 _("The Gnome-MDB Viewer is the grapical interface to "
-                   "MDB Tools.  It lets you view and export data and schema"
-		   "from MDB files produced by MS Access 97/2000/XP."),
-                  (const gchar **) authors,
-                  (const gchar **) documenters,
-		   NULL,
-                   pixbuf));
+	if (!pixbuf)
+		pixbuf = gdk_pixbuf_new_from_file (GMDB_ICONDIR "logo.xpm", NULL);
+
+  	gtk_show_about_dialog (parent,
+   		"authors", authors,
+		"comments", _("GNOME MDB Viewer is a grapical interface to "
+			"MDB Tools. It lets you view and export data and schema "
+			"from MDB files produced by MS Access 97/2000/XP/2003."),
+		"copyright", _("Copyright 2002-2006 Brian Bruns and others"),
+		"documenters", documenters,
+		"logo", pixbuf,
+		"name", _("GNOME MDB Viewer"),
+		"version", MDB_VERSION_NO,
+		"website", "http://mdbtools.sourceforge.net/",
+		NULL);
 }
+
 void
 gmdb_prefs_cb(GtkWidget *button, gpointer data)
 {
