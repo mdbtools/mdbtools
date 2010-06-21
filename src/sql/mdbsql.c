@@ -34,14 +34,30 @@ void mdb_dump_results(MdbSQL *sql);
 char *g_input_ptr;
 
 void
-mdb_sql_error(char *fmt, ...)
+mdb_sql_error(MdbSQL* sql, char *fmt, ...)
 {
 va_list ap;
 
 	va_start(ap, fmt);
-	vfprintf (stderr,fmt, ap);
+	vfprintf (stderr, fmt, ap);
+	vsprintf(sql->error_msg, fmt, ap);
 	va_end(ap);
 	fprintf(stderr,"\n");
+}
+void
+mdb_sql_clear_error(MdbSQL* sql)
+{
+	sql->error_msg[0]='\0';
+}
+char *
+mdb_sql_last_error(MdbSQL* sql)
+{
+	return sql->error_msg;
+}
+unsigned char
+mdb_sql_has_error(MdbSQL* sql)
+{
+	return (sql->error_msg[0] ? 1 : 0);
 }
 int mdb_sql_yyinput(char *buf, int need)
 {
@@ -97,9 +113,10 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 
 	/* begin unsafe */
 	_mdb_sql (sql);
+	mdb_sql_clear_error(sql);
 	if (yyparse()) {
 		/* end unsafe */
-		mdb_sql_error (_("Could not parse '%s' command"), querystr);
+		mdb_sql_error (sql, _("Could not parse '%s' command"), querystr);
 		mdb_sql_reset (sql);
 		return NULL;
 	}
@@ -107,7 +124,7 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 	if (sql->cur_table == NULL) {
 		/* Invalid column name? (should get caught by mdb_sql_select,
 		 * but it appeared to happen anyway with 0.5) */
-		mdb_sql_error (_("Got no result for '%s' command"), querystr);
+		mdb_sql_error (sql, _("Got no result for '%s' command"), querystr);
 		return NULL;
 	}
 
@@ -151,7 +168,7 @@ mdb_sql_close(MdbSQL *sql)
 		mdb_close(sql->mdb);
 		sql->mdb = NULL;
 	} else {
-		mdb_sql_error("Not connected.");
+		mdb_sql_error(sql, "Not connected.");
 	}
 }
 
@@ -176,7 +193,7 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 		g_free(tmpstr);
 	}
 	if (!sql->mdb) {
-		mdb_sql_error("Unable to locate database %s", db_name);
+		mdb_sql_error(sql, "Unable to locate database %s", db_name);
 	}
 
 #ifdef HAVE_WORDEXP
@@ -235,7 +252,7 @@ mdb_sql_add_not(MdbSQL *sql)
 
 	left = mdb_sql_pop_node(sql);
 	if (!left) {
-		mdb_sql_error("parse error near 'NOT'");
+		mdb_sql_error(sql, "parse error near 'NOT'");
 		mdb_sql_reset(sql);
 		return;
 	}
@@ -252,7 +269,7 @@ mdb_sql_add_or(MdbSQL *sql)
 	left = mdb_sql_pop_node(sql);
 	right = mdb_sql_pop_node(sql);
 	if (!left || !right) {
-		mdb_sql_error("parse error near 'OR'");
+		mdb_sql_error(sql, "parse error near 'OR'");
 		mdb_sql_reset(sql);
 		return;
 	}
@@ -270,7 +287,7 @@ mdb_sql_add_and(MdbSQL *sql)
 	left = mdb_sql_pop_node(sql);
 	right = mdb_sql_pop_node(sql);
 	if (!left || !right) {
-		mdb_sql_error("parse error near 'AND'");
+		mdb_sql_error(sql, "parse error near 'AND'");
 		mdb_sql_reset(sql);
 		return;
 	}
@@ -352,13 +369,13 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 			default: illop = 1;
 		}
 	} else {
-		mdb_sql_error("Comparison of strings and numbers not allowed.");
+		mdb_sql_error(sql, "Comparison of strings and numbers not allowed.");
 		/* the column and table names are no good now */
 		mdb_sql_reset(sql);
 		return 1;
 	}
 	if (illop) {
-		mdb_sql_error("Illegal operator used for comparision of literals.");
+		mdb_sql_error(sql, "Illegal operator used for comparision of literals.");
 		/* the column and table names are no good now */
 		mdb_sql_reset(sql);
 		return 1;
@@ -525,7 +542,7 @@ void mdb_sql_listtables(MdbSQL *sql)
 	int tmpsiz;
 
 	if (!mdb) {
-		mdb_sql_error("You must connect to a database first");
+		mdb_sql_error(sql, "You must connect to a database first");
 		return;
 	}
 	mdb_read_catalog (mdb, MDB_TABLE);
@@ -577,7 +594,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	int tmpsiz;
 
 	if (!mdb) {
-		mdb_sql_error("You must connect to a database first");
+		mdb_sql_error(sql, "You must connect to a database first");
 		return;
 	}
 
@@ -585,7 +602,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 
 	table = mdb_read_table_by_name(mdb, sql_tab->name, MDB_TABLE);
 	if (!table) {
-		mdb_sql_error("%s is not a table in this database", sql_tab->name);
+		mdb_sql_error(sql, "%s is not a table in this database", sql_tab->name);
 		/* the column and table names are no good now */
 		mdb_sql_reset(sql);
 		return;
@@ -653,7 +670,7 @@ MdbSQLColumn *sqlcol;
 int found = 0;
 
 	if (!mdb) {
-		mdb_sql_error("You must connect to a database first");
+		mdb_sql_error(sql, "You must connect to a database first");
 		return;
 	}
 
@@ -661,7 +678,7 @@ int found = 0;
 
 	table = mdb_read_table_by_name(mdb, sql_tab->name, MDB_TABLE);
 	if (!table) {
-		mdb_sql_error("%s is not a table in this database", sql_tab->name);
+		mdb_sql_error(sql, "%s is not a table in this database", sql_tab->name);
 		/* the column and table names are no good now */
 		mdb_sql_reset(sql);
 		return;
@@ -689,7 +706,7 @@ int found = 0;
 			}
 		}
 		if (!found) {
-			mdb_sql_error("Column %s not found",sqlcol->name);
+			mdb_sql_error(sql, "Column %s not found",sqlcol->name);
 			mdb_sql_reset(sql);
 			return;
 		}
