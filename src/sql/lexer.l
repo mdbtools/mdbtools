@@ -88,6 +88,7 @@ int yywrap()
 void yyerror(char *s)
 {
 	fprintf(stderr,"Error at Line : %s near %s\n", s, yytext);
+	mdb_sql_error(_mdb_sql(NULL), "%s near %s", s, yytext);
 }
 #if 0
 int main(int argc, char **argv)
