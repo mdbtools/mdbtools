@@ -428,7 +428,7 @@ mdb_new_leaf_pg(MdbCatalogEntry *entry)
 	MdbHandle *mdb = entry->mdb;
 	void *new_pg = g_malloc0(mdb->fmt->pg_size);
 		
-	_mdb_put_int16(new_pg, 2, 0x0104);
+	_mdb_put_int16(new_pg, 0, 0x0104);
 	_mdb_put_int32(new_pg, 4, entry->table_pg);
 	
 	return new_pg;
@@ -439,7 +439,7 @@ mdb_new_data_pg(MdbCatalogEntry *entry)
 	MdbFormatConstants *fmt = entry->mdb->fmt;
 	void *new_pg = g_malloc0(fmt->pg_size);
 		
-	_mdb_put_int16(new_pg, 2, 0x0101);
+	_mdb_put_int16(new_pg, 0, 0x0101);
 	_mdb_put_int16(new_pg, 2, fmt->pg_size - fmt->row_count_offset - 2);
 	_mdb_put_int32(new_pg, 4, entry->table_pg);
 	
