@@ -704,6 +704,7 @@ mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
 	return text;
 }
 
+#if 0
 static int trim_trailing_zeros(char * buff)
 {
 	char *p;
@@ -724,6 +725,7 @@ static int trim_trailing_zeros(char * buff)
 
 	return 0;
 }
+#endif
 
 /* Date/Time is stored as a double, where the whole
    part is the days from 12/30/1899 and the fractional
@@ -839,13 +841,11 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			tf = mdb_get_single(buf, start);
 			text = g_strdup_printf("%.*e",
 				FLT_DIG - floor_log10(tf,1) - 1, tf);
-			trim_trailing_zeros(text);
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(buf, start);
 			text = g_strdup_printf("%.*e",
 				DBL_DIG - floor_log10(td,0) - 1, td);
-			trim_trailing_zeros(text);
 		break;
 		case MDB_BINARY:
 		case MDB_TEXT:
