@@ -419,6 +419,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	g_input_ptr = buf;
 	/* begin unsafe */
 	_mdb_sql(sql);
+	mdb_sql_clear_error(sql);
 	if (yyparse()) {
 		/* end unsafe */
 		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
@@ -429,6 +430,15 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 		mdb_sql_reset(sql);
 		return;
 	}
+	if (mdb_sql_has_error(sql)) {
+		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    mdb_sql_last_error(sql));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
+		mdb_sql_reset(sql);
+		return;
+        }
 
 	treeview = glade_xml_get_widget(xml, "sql_results");
 

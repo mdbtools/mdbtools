@@ -24,6 +24,7 @@ typedef struct {
 	void *bound_values[256];
 	unsigned char *kludge_ttable_pg;
 	long max_rows;
+	char error_msg[1024];
 } MdbSQL;
 
 typedef struct {

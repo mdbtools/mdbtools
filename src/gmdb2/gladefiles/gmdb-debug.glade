@@ -191,6 +191,7 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+                  <property name="stock-id">gtk-new</property>
 		  <signal name="clicked" handler="gmdb_debug_new_cb" last_modification_time="Fri, 03 Jan 2003 13:12:52 GMT"/>
 		</widget>
 		<packing>
@@ -221,6 +222,7 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+                  <property name="stock-id">gtk-go-back</property>
 		  <signal name="clicked" handler="gmdb_debug_back_cb" object="debug_window"/>
 		</widget>
 		<packing>
@@ -238,6 +240,7 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+                  <property name="stock-id">gtk-go-forward</property>
 		  <signal name="clicked" handler="gmdb_debug_forward_cb" object="debug_window"/>
 		</widget>
 		<packing>
@@ -255,6 +258,7 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+                  <property name="stock-id">gtk-jump-to</property>
 		  <signal name="clicked" handler="gmdb_debug_jump_cb" object="debug_window"/>
 		</widget>
 		<packing>
@@ -285,6 +289,7 @@
 		  <property name="visible_horizontal">True</property>
 		  <property name="visible_vertical">True</property>
 		  <property name="is_important">False</property>
+                  <property name="stock-id">gtk-close</property>
 		  <signal name="clicked" handler="gmdb_debug_close_cb" object="debug_window"/>
 		</widget>
 		<packing>
