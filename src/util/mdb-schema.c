@@ -132,19 +132,18 @@ generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
 	char* quoted_name;
 	char* sql_sequences;
 
-	if (namespace) {
-		table_name = malloc(strlen(namespace)+strlen(entry->object_name)+1);
-		strcpy(table_name, namespace);
-		strcat(table_name, entry->object_name);
-	} else
-	{
-		table_name = strdup(entry->object_name);
-	}
 	if (sanitize)
-		quoted_table_name = sanitize_name(table_name);
+		quoted_table_name = sanitize_name(entry->object_name);
 	else
-		quoted_table_name = mdb->default_backend->quote_name(table_name);
-	free(table_name);
+		quoted_table_name = mdb->default_backend->quote_name(entry->object_name);
+
+	if (namespace) {
+		table_name = malloc(strlen(namespace)+strlen(quoted_table_name)+1);
+		strcpy(table_name, namespace);
+		strcat(table_name, quoted_table_name);
+		free(quoted_table_name);
+		quoted_table_name = table_name;
+	}
 
 	/* drop the table if it exists */
 	fprintf (stdout, "DROP TABLE %s;\n", quoted_table_name);

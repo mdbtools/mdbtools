@@ -151,8 +151,10 @@ char* sanitize_name(const char* str)
 	if (*str) {
 		*p = isalpha(*str) ? *str : '_';
 		p++;
+        if (!isdigit(*str))  /* if it was a digit, keep it */
 		str++;
 	}
+
 	while (*str) {
 		*p = isalnum(*str) ? *str : '_';
 		p++;
@@ -160,6 +162,7 @@ char* sanitize_name(const char* str)
 	}
 
 	*p = 0;
+
 	return result;
 }
 
