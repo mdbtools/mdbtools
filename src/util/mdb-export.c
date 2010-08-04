@@ -72,9 +72,10 @@ main(int argc, char **argv)
 	char quote_text = 1;
 	char *insert_dialect = NULL;
 	char sanitize = 0;
+	char *namespace = "";
 	int  opt;
 
-	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:S"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:N:S"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -103,6 +104,9 @@ main(int argc, char **argv)
 		break;
 		case 'X':
 			escape_char = (char *) g_strdup(optarg);
+		break;
+		case 'N':
+			namespace = (char *) g_strdup(optarg);
 		break;
 		default:
 		break;
@@ -134,6 +138,7 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		fprintf(stderr,"  -q <char>      Use <char> to wrap text-like fields. Default is \".\n");
 		fprintf(stderr,"  -X <char>      Use <char> to escape quoted characters within a field. Default is doubling.\n");
+		fprintf(stderr,"  -N <namespace> Prefix identifiers with namespace\n");
 		g_free (delimiter);
 		g_free (row_delimiter);
 		g_free (quote_char);
@@ -198,7 +203,7 @@ main(int argc, char **argv)
 				quoted_name = sanitize_name(argv[optind + 1]);
 			else
 				quoted_name = mdb->default_backend->quote_name(argv[optind + 1]);
-			fprintf(stdout, "INSERT INTO %s (", quoted_name);
+			fprintf(stdout, "INSERT INTO %s%s (", namespace, quoted_name);
 			free(quoted_name);
 			for (j=0;j<table->num_cols;j++) {
 				if (j>0) fprintf(stdout, ", ");
