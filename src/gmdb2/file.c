@@ -245,10 +245,9 @@ gmdb_file_open(gchar *file_path)
 void
 gmdb_file_select_cb(GtkWidget *button, gpointer data)
 {
-	GtkWidget *dialog;
 	GtkWindow *parent_window = (GtkWindow *) glade_xml_get_widget (mainwin_xml, "gmdb");
 
-	dialog = gtk_file_chooser_dialog_new ("Please select a database.",
+	GtkWidget *dialog = gtk_file_chooser_dialog_new ("Please select a database.",
 					      parent_window,
 					      GTK_FILE_CHOOSER_ACTION_OPEN,
 					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
