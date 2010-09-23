@@ -24,7 +24,6 @@
 #include <libgnome/gnome-i18n.h>
 #include <libgnome/gnome-config.h>
 
-GtkWidget *file_selector;
 MdbHandle *mdb;
 extern int main_show_debug;
 extern GladeXML *mainwin_xml;
