@@ -244,37 +244,30 @@ gmdb_file_open(gchar *file_path)
 }
 
 void
-gmdb_file_open_cb(GtkWidget *selector, gpointer data)
-{
-gchar *file_path;
-	file_path = (gchar *) gtk_file_selection_get_filename (GTK_FILE_SELECTION(file_selector));
-	gmdb_file_open(file_path);
-	gmdb_load_recent_files();
-}
-
-
-void
 gmdb_file_select_cb(GtkWidget *button, gpointer data)
 {
-	/*just print a string so that we know we got there*/
-	file_selector = gtk_file_selection_new("Please select a database.");
+	GtkWidget *dialog;
+	GtkWindow *parent_window = (GtkWindow *) glade_xml_get_widget (mainwin_xml, "gmdb");
 
-   	gtk_signal_connect (
-		GTK_OBJECT (GTK_FILE_SELECTION(file_selector)->ok_button),
-   		"clicked", GTK_SIGNAL_FUNC (gmdb_file_open_cb), NULL);
-   
-	gtk_signal_connect_object ( GTK_OBJECT (
-		GTK_FILE_SELECTION(file_selector)->ok_button),
-   		"clicked", GTK_SIGNAL_FUNC (gtk_widget_destroy),
-   		(gpointer) file_selector);
+	dialog = gtk_file_chooser_dialog_new ("Please select a database.",
+					      parent_window,
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
 
-   	gtk_signal_connect_object (
-		GTK_OBJECT (GTK_FILE_SELECTION(file_selector)->cancel_button),
-   			"clicked", GTK_SIGNAL_FUNC (gtk_widget_destroy),
-   			(gpointer) file_selector);
-   
-	gtk_widget_show (file_selector);
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+	  {
+	    char *filename;
+
+	    filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+	    gmdb_file_open(filename);
+	    gmdb_load_recent_files();
+	  }
+
+	gtk_widget_destroy (dialog);
 }
+
 void
 gmdb_file_close_cb(GtkWidget *button, gpointer data)
 {

@@ -33,7 +33,6 @@ void gmdb_table_export_populate_dialog(GladeXML *xml);
 
 /* file.c */
 void gmdb_file_select_cb(GtkWidget *w, gpointer data);
-void gmdb_file_open_cb(GtkWidget *w, gpointer data);
 void gmdb_file_close_cb(GtkWidget *w, gpointer data);
 void gmdb_file_open_recent_1(void);
 void gmdb_file_open_recent_2(void);
