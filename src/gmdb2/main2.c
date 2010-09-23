@@ -45,6 +45,7 @@ const gchar *authors[] = {
 	"Brian Bruns",
 	"Jeff Smith",
 	"Filip Van Raemdonck",
+	"Bernhard Reiter",
 	NULL
 };
 const gchar *documenters[] = {
