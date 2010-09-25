@@ -147,34 +147,6 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	gtk_widget_destroy (dlg);
 }
 static void
-gmdb_sql_write_cb(GtkWidget *w, GladeXML *xml)
-{
-	gchar *file_path;
-	GladeXML *sql_xml;
-	GtkWidget *filesel;
-
-	filesel = glade_xml_get_widget (xml, "file_dialog");
-	file_path = (gchar *) gtk_file_selection_get_filename (GTK_FILE_SELECTION(filesel));
-	sql_xml = g_object_get_data(G_OBJECT(filesel), "sql_xml");
-	gmdb_sql_save_query(sql_xml, file_path);
-
-	gtk_widget_destroy(filesel);
-}
-static void
-gmdb_sql_load_cb(GtkWidget *w, GladeXML *xml)
-{
-	gchar *file_path;
-	GladeXML *sql_xml;
-	GtkWidget *filesel;
-
-	filesel = glade_xml_get_widget (xml, "file_dialog");
-	file_path = (gchar *) gtk_file_selection_get_filename (GTK_FILE_SELECTION(filesel));
-	sql_xml = g_object_get_data(G_OBJECT(filesel), "sql_xml");
-	gmdb_sql_load_query(sql_xml, file_path);
-
-	gtk_widget_destroy(filesel);
-}
-static void
 gmdb_sql_results_cb(GtkWidget *w, GladeXML *xml)
 {
 	GladeXML *dialog_xml;
@@ -221,44 +193,45 @@ gmdb_sql_save_cb(GtkWidget *w, GladeXML *xml)
 void
 gmdb_sql_save_as_cb(GtkWidget *w, GladeXML *xml)
 {
-	GladeXML *dialog_xml;
-	GtkWidget *but;
-	GtkWidget *filesel;
-	gchar *str;
+	GtkWindow *parent_window = (GtkWindow *) glade_xml_get_widget (xml, "gmdb");
+	GtkWidget *dialog = gtk_file_chooser_dialog_new ("Save Query As",
+					      parent_window,
+					      GTK_FILE_CHOOSER_ACTION_SAVE,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+					      NULL);
 
-	/* load the interface */
-	dialog_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql-file.glade", NULL, NULL);
-	/* connect the signals in the interface */
-	glade_xml_signal_autoconnect(dialog_xml);
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+	  {
+	    char *filename;
 
-	filesel = glade_xml_get_widget (dialog_xml, "file_dialog");
-	gtk_window_set_title(GTK_WINDOW(filesel), "Save Query As");
+	    filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+	    gmdb_sql_save_query(xml, filename);
+	  }
 
-	but = glade_xml_get_widget (dialog_xml, "ok_button");
-	g_signal_connect (G_OBJECT (but), "clicked",
-		G_CALLBACK (gmdb_sql_write_cb), dialog_xml);
-
-	g_object_set_data(G_OBJECT(filesel), "sql_xml", xml);
+	gtk_widget_destroy (dialog);
 }
 static void
 gmdb_sql_open_cb(GtkWidget *w, GladeXML *xml)
 {
-	GladeXML *dialog_xml;
-	GtkWidget *but;
-	GtkWidget *filesel;
-	gchar *str;
+	GtkWindow *parent_window = (GtkWindow *) glade_xml_get_widget (xml, "gmdb");
+	GtkWidget *dialog = gtk_file_chooser_dialog_new ("Open SQL Query",
+					      parent_window,
+					      GTK_FILE_CHOOSER_ACTION_OPEN,
+					      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+					      GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+					      NULL);
 
-	/* load the interface */
-	dialog_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql-file.glade", NULL, NULL);
-	/* connect the signals in the interface */
-	glade_xml_signal_autoconnect(dialog_xml);
+	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+	  {
+	    char *filename;
 
-	but = glade_xml_get_widget (dialog_xml, "ok_button");
-	g_signal_connect (G_OBJECT (but), "clicked",
-		G_CALLBACK (gmdb_sql_load_cb), dialog_xml);
+	    filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
+	    gmdb_sql_load_query(xml, filename);
+	  }
 
-	filesel = glade_xml_get_widget (dialog_xml, "file_dialog");
-	g_object_set_data(G_OBJECT(filesel), "sql_xml", xml);
+	gtk_widget_destroy (dialog);
+
 }
 static void
 gmdb_sql_copy_cb(GtkWidget *w, GladeXML *xml)
