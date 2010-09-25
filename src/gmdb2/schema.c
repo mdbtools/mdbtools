@@ -130,12 +130,12 @@ char            *the_relation;
 void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)
 {
-GtkWidget *schemawin, *combo, *checkbox, *entry;
+GtkWidget *schemawin, *combo, *checkbox, *chooser;
 
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
 
-	entry = glade_xml_get_widget (schemawin_xml, "filename_entry");
-	strncpy(file_path,gtk_entry_get_text(GTK_ENTRY(entry)),255);
+	chooser = glade_xml_get_widget (schemawin_xml, "filechooserbutton1");
+	strncpy(file_path,gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser)),255);
 	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
 	strncpy(tabname,gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),99);
 	if (!strcmp(tabname,ALL_TABLES)) tabname[0]='\0';

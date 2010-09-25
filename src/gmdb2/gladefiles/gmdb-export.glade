@@ -2,7 +2,6 @@
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
-<requires lib="gnome"/>
 
 <widget class="GtkDialog" id="export_dialog">
   <property name="visible">True</property>
@@ -466,36 +465,15 @@
 	      <property name="y_options"></property>
 	    </packing>
 	  </child>
-
-	  <child>
-	    <widget class="GnomeFileEntry" id="fileentry1">
-	      <property name="visible">True</property>
-	      <property name="max_saved">10</property>
-	      <property name="directory_entry">False</property>
-	      <property name="modal">False</property>
-
-	      <child internal-child="entry">
-		<widget class="GtkEntry" id="filename_entry">
-		  <property name="visible">True</property>
-		  <property name="can_focus">True</property>
-		  <property name="editable">True</property>
-		  <property name="visibility">True</property>
-		  <property name="max_length">0</property>
-		  <property name="text" translatable="yes"></property>
-		  <property name="has_frame">True</property>
-		  <property name="invisible_char" translatable="yes">*</property>
-		  <property name="activates_default">False</property>
-		</widget>
-	      </child>
-	    </widget>
-	    <packing>
-	      <property name="left_attach">1</property>
-	      <property name="right_attach">2</property>
-	      <property name="top_attach">0</property>
-	      <property name="bottom_attach">1</property>
-	      <property name="y_options"></property>
-	    </packing>
-	  </child>
+          <child>
+            <widget class="GtkFileChooserButton" id="filechooserbutton1">
+              <property name="visible">True</property>
+            </widget>
+            <packing>
+              <property name="left_attach">1</property>
+              <property name="right_attach">2</property>
+            </packing>
+          </child>
 	</widget>
 	<packing>
 	  <property name="padding">0</property>
