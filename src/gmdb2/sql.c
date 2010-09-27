@@ -500,9 +500,9 @@ gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 	g_signal_connect (G_OBJECT (mi), "activate",
 		G_CALLBACK (gmdb_sql_save_as_cb), sqlwin_xml);
 
-	but = glade_xml_get_widget (sqlwin_xml, "save_as_button");
-	g_signal_connect (G_OBJECT (but), "clicked",
-		G_CALLBACK (gmdb_sql_save_as_cb), sqlwin_xml);
+	//but = glade_xml_get_widget (sqlwin_xml, "save_as_button");
+	//g_signal_connect (G_OBJECT (but), "clicked",
+	//	G_CALLBACK (gmdb_sql_save_as_cb), sqlwin_xml);
 
 	mi = glade_xml_get_widget (sqlwin_xml, "results_menu");
 	g_signal_connect (G_OBJECT (mi), "activate",
