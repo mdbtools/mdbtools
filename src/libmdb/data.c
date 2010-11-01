@@ -256,7 +256,10 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	if (table->num_rows == 0) 
 		return 0;
 
-	mdb_find_row(mdb, row, &row_start, &row_size);
+	if (mdb_find_row(mdb, row, &row_start, &row_size)) {
+		fprintf(stderr, "warning: mdb_find_row failed.");
+		return 0;
+	}
 
 	delflag = lookupflag = 0;
 	if (row_start & 0x8000) lookupflag++;
@@ -315,6 +318,8 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	}
 	return 1;
 }
+
+/* Read next data page into mdb->pg_buf */
 int mdb_read_next_dpg(MdbTableDef *table)
 {
 	MdbCatalogEntry *entry = table->entry;
@@ -322,16 +327,28 @@ int mdb_read_next_dpg(MdbTableDef *table)
 	int next_pg;
 
 #ifndef SLOW_READ
-	next_pg = mdb_map_find_next(mdb, table->usage_map,
-		table->map_sz, table->cur_phys_pg);
+	while (1) {
+		next_pg = mdb_map_find_next(mdb, table->usage_map,
+			table->map_sz, table->cur_phys_pg);
+		if (next_pg < 0)
+			break; /* unknow map type: goto fallback */
+		if (!next_pg)
+			return 0;
 
-	if (next_pg >= 0) {
-		if (mdb_read_pg(mdb, next_pg)) {
-			table->cur_phys_pg = next_pg;
-			return table->cur_phys_pg;
-		} else {
+		if (!mdb_read_pg(mdb, next_pg)) {
+			fprintf(stderr, "error: reading page %d failed.\n", next_pg);
 			return 0;
 		}
+
+		table->cur_phys_pg = next_pg;
+		if (mdb->pg_buf[0]==MDB_PAGE_DATA && mdb_get_int32(mdb->pg_buf, 4)==entry->table_pg)
+			return table->cur_phys_pg;
+
+		/* On rare occasion, mdb_map_find_next will return a wrong page */
+		/* Found in a big file, over 4,000,000 records */
+		fprintf(stderr,
+			"warning: page %d from map doesn't match: Type=%d, buf[4..7]=%d Expected table_pg=%d\n",
+			next_pg, mdb_get_int32(mdb->pg_buf, 4), entry->table_pg);
 	}
 	fprintf(stderr, "Warning: defaulting to brute force read\n");
 #endif 
@@ -339,7 +356,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
-	} while (mdb->pg_buf[0]!=0x01 || mdb_get_int32(mdb->pg_buf, 4)!=entry->table_pg);
+	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
 	return table->cur_phys_pg;
 }
@@ -396,7 +413,7 @@ mdb_fetch_row(MdbTableDef *table)
 		} else {
 			rows = mdb_get_int16(mdb->pg_buf,fmt->row_count_offset);
 
-			/* if at end of page, find a new page */
+			/* if at end of page, find a new data page */
 			if (table->cur_row >= rows) {
 				table->cur_row=0;
 	

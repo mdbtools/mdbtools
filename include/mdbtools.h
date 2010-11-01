@@ -511,7 +511,7 @@ extern void *mdb_new_data_pg(MdbCatalogEntry *entry);
 
 /* map.c */
 extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
-extern guint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
+extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
 
 /* props.c */
 extern GPtrArray *mdb_read_props_list(gchar *kkd, int len);

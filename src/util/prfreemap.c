@@ -48,7 +48,7 @@ unsigned char *map_buf;
 	if (map_buf[0]==0)
 		while (map_buf[map_sz]==0xff) map_sz--;
 
-	while (pgnum = mdb_map_find_next(mdb, map_buf, map_sz, pgnum)) {
+	while ((pgnum = mdb_map_find_next(mdb, map_buf, map_sz, pgnum))>0) {
 		printf("%6lu ",(long unsigned) pgnum);
 		if (coln==10) {
 			printf("\n");
