@@ -1,9 +1,0 @@
-Makefile
-Makefile.in
-.deps
-.libs
-parser.c
-lexer.c
-parser.h
-*.lo
-*.la
