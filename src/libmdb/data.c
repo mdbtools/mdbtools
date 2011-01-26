@@ -715,7 +715,7 @@ mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
 	text = (char *) g_malloc(prec+2);
 	sprintf(text, "%0*" G_GINT32_FORMAT, prec, GINT32_FROM_LE(l));
 	if (scale) {
-		memmove(text+prec-scale, text+prec-scale+1, scale+1);
+		memmove(text+prec-scale+1, text+prec-scale, scale+1);
 		text[prec-scale] = '.';
 	}
 	return text;
