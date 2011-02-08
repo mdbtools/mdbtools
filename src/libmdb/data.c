@@ -19,7 +19,6 @@
 
 #include "mdbtools.h"
 #include "time.h"
-#include "math.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
@@ -803,6 +802,7 @@ mdb_date_to_string(MdbHandle *mdb, int start)
 	return text;
 }
 
+#if 0
 int floor_log10(double f, int is_single)
 {
 	unsigned int i;
@@ -831,6 +831,7 @@ int floor_log10(double f, int is_single)
 		return (int)i;
 	}
 }
+#endif
 
 char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
 {
@@ -856,13 +857,11 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_FLOAT:
 			tf = mdb_get_single(buf, start);
-			text = g_strdup_printf("%.*e",
-				FLT_DIG - floor_log10(tf,1) - 1, tf);
+			text = g_strdup_printf("%.8e", tf);
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(buf, start);
-			text = g_strdup_printf("%.*e",
-				DBL_DIG - floor_log10(td,0) - 1, td);
+			text = g_strdup_printf("%.16e", td);
 		break;
 		case MDB_BINARY:
 		case MDB_TEXT:
