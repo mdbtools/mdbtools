@@ -23,10 +23,10 @@ main(int argc, char **argv)
 {
 
 #if 0
-	int i;
-	MdbCatalogEntry entry;
+	MdbHandle *mdb;
+	MdbTableDef *table;
 
-	if (argc<2) {
+	if (argc<3) {
 		fprintf(stderr,"Usage: %s <file> <table>\n",argv[0]);
 		exit(1);
 	}
@@ -34,21 +34,16 @@ main(int argc, char **argv)
 	mdb_init();
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
-	mdb_read_pg(mdb, MDB_CATALOG_PG);
-	rows = mdb_catalog_rows(mdb);
-
-	for (i=0;i<rows;i++) {
-  		if (mdb_read_catalog_entry(mdb, i, &entry)) {
-			if (!strcmp(entry.object_name,argv[2])) {
-				mdb_kkd_dump(&entry);
-  			}
-		}
+	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
+	if (!table) {
+		fprintf(stderr,"No table named %s found.\n", argv[2]);
+		exit(1);
 	}
+	/* FIXME: table->entry->*kkd* are not initialized */
+	mdb_kkd_dump(table->entry);
 
 	mdb_close(mdb);
 	mdb_exit();
 #endif
-
 	exit(0);
 }
-

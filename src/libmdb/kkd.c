@@ -109,11 +109,13 @@ MdbHandle *mdb = entry->mdb;
 int rowid = entry->kkd_rowid;
 
 
+	fprintf(stdout, "kkd_pg=%d kkd_rowid=%d\n", entry->kkd_pg, rowid);
+
 	mdb_read_pg(mdb, entry->kkd_pg);
 	rows = mdb_get_int16(mdb->pg_buf, 8);
 	fprintf(stdout,"number of rows = %d\n",rows);
 	kkd_start = mdb_get_int16(mdb->pg_buf, 10+rowid*2);
-	fprintf(stdout,"kkd start = %d %04x\n",kkd_start,kkd_start);
+	fprintf(stdout,"kkd start = %d 0x%04x\n",kkd_start,kkd_start);
 	kkd_end = mdb->fmt->pg_size;
 	for (i=0;i<rows;i++) {
 		tmp = mdb_get_int16(mdb->pg_buf, 10+i*2);
@@ -123,7 +125,7 @@ int rowid = entry->kkd_rowid;
 			kkd_end = tmp;
 		}
 	}
-	fprintf(stdout,"kkd end = %d %04x\n",kkd_end,kkd_end);
+	fprintf(stdout,"kkd end = %d 0x%04x\n",kkd_end,kkd_end);
 	pos = kkd_start + 4; /* 4 = K K D \0 */
 	while (pos < kkd_end) {
 		tmp = mdb_pg_get_int16(mdb,pos);

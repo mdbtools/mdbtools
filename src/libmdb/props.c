@@ -30,14 +30,14 @@ mdb_read_props_list(gchar *kkd, int len)
 	int i = 0;
 
 	names = g_ptr_array_new();
-#ifdef MDB_DEBUG
+#if MDB_DEBUG
 	buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
 	while (pos < len) {
 		record_len = mdb_get_int16(kkd, pos);
 		pos += 2;
-#ifdef MDB_DEBUG
+#if MDB_DEBUG
 		printf("%02d ",i++);
 		buffer_dump(kkd, pos - 2, record_len + 2);
 #endif
@@ -46,7 +46,7 @@ mdb_read_props_list(gchar *kkd, int len)
 		name[record_len] = '\0';
 		pos += record_len;
 		g_ptr_array_add(names, name);
-#ifdef MDB_DEBUG
+#if MDB_DEBUG
 		printf("new len = %d\n", names->len);
 #endif
 	}
@@ -79,7 +79,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 	MdbProperties *props;
 	int i = 0;
 
-#ifdef MDB_DEBUG
+#if MDB_DEBUG
 	buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
@@ -108,7 +108,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		strncpy(value, &kkd[pos + 8], dsize);
 		value[dsize] = '\0';
 		name = g_ptr_array_index(names,elem);
-#ifdef MDB_DEBUG
+#if MDB_DEBUG
 		printf("%02d ",i++);
 		buffer_dump(kkd, pos, record_len);
 		printf("elem %d dsize %d dtype %d\n", elem, dsize, dtype);

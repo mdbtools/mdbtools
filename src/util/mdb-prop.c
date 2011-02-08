@@ -20,9 +20,6 @@
 
 #include "mdbtools.h"
 
-#undef MDB_DEBUG
-//#define MDB_DEBUG 1
-
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len);
 
 int
@@ -31,15 +28,20 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	gchar name[256];
+	gchar *propColName;
 	void *buf;
 	int col_num;
 	int found = 0;
 
-	if (argc < 4) {
-		fprintf(stderr,"Usage: %s <file> <object name> <prop col>\n",
+	if (argc < 3) {
+		fprintf(stderr,"Usage: %s <file> <object name> [<prop col>]\n",
 			argv[0]);
 		return 1;
 	}
+	if (argc < 4)
+		propColName = "LvProp";
+	else
+		propColName = argv[3];
 
 	mdb_init();
 
@@ -60,12 +62,13 @@ main(int argc, char **argv)
 
 	mdb_bind_column_by_name(table, "Name", name, NULL);
 	buf = g_malloc(MDB_BIND_SIZE);
-	col_num = mdb_bind_column_by_name(table, argv[3], buf, NULL);
+	col_num = mdb_bind_column_by_name(table, propColName, buf, NULL);
 	if (col_num < 1) {
 		g_free(buf);
 		mdb_free_tabledef(table);
 		mdb_close(mdb);
 		mdb_exit();
+		printf("Column %s not found!\n", argv[3]);
 		return 1;
 	}
 
@@ -81,7 +84,6 @@ main(int argc, char **argv)
 		gchar kkd_ptr[MDB_MEMO_OVERHEAD];
 		void *kkd_pg = g_malloc(200000);
 		size_t len, pos;
-
 		memcpy(kkd_ptr, buf, MDB_MEMO_OVERHEAD);
 		col = g_ptr_array_index(table->columns, col_num - 1);
 		len = mdb_ole_read(mdb, col, kkd_ptr, MDB_BIND_SIZE);
@@ -114,7 +116,7 @@ void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 	GPtrArray *names = NULL;
 	MdbProperties *props;
 
-#ifdef MDB_DEBUG
+#if MDB_DEBUG
 	buffer_dump(kkd, 0, len);
 #endif
 	if (strcmp("KKD", kkd)) {
@@ -140,6 +142,7 @@ void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 				props = mdb_read_props(mdb, names, kkd+pos+6, record_len - 6);
 				printf("type 0x00 name %s\n", props->name ? props->name : "(none)");
 				g_hash_table_foreach(props->hash, print_keyvalue, NULL);
+				putchar('\n');
 				mdb_free_props(props);
 				break;
 			case 0x01:
@@ -150,6 +153,7 @@ void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 				props = mdb_read_props(mdb, names, kkd+pos+6, record_len - 6);
 				printf("type 0x01 name %s\n", props->name ? props->name : "(none)");
 				g_hash_table_foreach(props->hash, print_keyvalue, NULL);
+				putchar('\n');
 				mdb_free_props(props);
 				break;
 			default:
