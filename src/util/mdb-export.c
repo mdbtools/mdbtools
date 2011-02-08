@@ -26,30 +26,38 @@
 #undef MDB_BIND_SIZE
 #define MDB_BIND_SIZE 200000
 
-#define is_text_type(x) (x==MDB_TEXT || x==MDB_MEMO || x==MDB_SDATETIME || x==MDB_BINARY)
+#define is_text_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_SDATETIME || x==MDB_BINARY)
 
 static char *escapes(char *s);
 
 void
-print_col(gchar *col_val, int quote_text, int col_type, char *quote_char, char *escape_char)
+print_col(gchar *col_val, int quote_text, int col_type, int bin_length, char *quote_char, char *escape_char)
 {
 	gchar *s;
 
 	if (quote_text && is_text_type(col_type)) {
 		fprintf(stdout,quote_char);
-		for (s=col_val;*s;s++) {
-			if (col_type == MDB_BINARY)
-				fprintf(stdout, "\\%03o", (unsigned char)*s);
-			else if (strlen(quote_char)==1 && *s==quote_char[0]) {
-				/* double the char if no escape char passed */
-				if (!escape_char) {
-					fprintf(stdout,"%s%s",quote_char,quote_char);
-				} else {
-					fprintf(stdout,"%s%s",escape_char,quote_char);
-				}
+		if (col_type == MDB_OLE || col_type == MDB_BINARY)	{
+			while (bin_length--) {
+				unsigned char c = (unsigned char)*col_val++;
+				if (c>=32 && c<=127)
+					putc(c, stdout);
+				else
+					fprintf(stdout, "\\%03o", c);
 			}
-			else fprintf(stdout,"%c",*s);
 		}
+		else
+			for (s=col_val;*s;s++) {
+				if (strlen(quote_char)==1 && *s==quote_char[0]) {
+					/* double the char if no escape char passed */
+					if (!escape_char) {
+						fprintf(stdout,"%s%s",quote_char,quote_char);
+					} else {
+						fprintf(stdout,"%s%s",escape_char,quote_char);
+					}
+				}
+				else fprintf(stdout,"%c",*s);
+			}
 		fprintf(stdout,quote_char);
 	} else {
 		fprintf(stdout,"%s",col_val);
@@ -228,9 +236,9 @@ main(int argc, char **argv)
 				fprintf(stdout,delimiter);
 			}
 			if (!bound_lens[j]) {
-				print_col(insert_dialect?"NULL":"",0,col->col_type, quote_char, escape_char);
+				print_col(insert_dialect?"NULL":"",0,col->col_type, 0, quote_char, escape_char);
 			} else {
-				print_col(bound_values[j], quote_text, col->col_type, quote_char, escape_char);
+				print_col(bound_values[j], quote_text, col->col_type, bound_lens[j], quote_char, escape_char);
 			}
 		}
 		if (insert_dialect) fprintf(stdout,");");
