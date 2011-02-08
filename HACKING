@@ -316,7 +316,7 @@ next_pg field.
 | ???? | 1 byte  | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column                       |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (30+9 = 39 bytes)                |
+| Iterate for indexes with index_type 0 or 1 (30+9 = 39 bytes)            |
 +-------------------------------------------------------------------------+
 |     Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
 +-------------------------------------------------------------------------+
@@ -327,7 +327,7 @@ next_pg field.
 | ???? | 4 bytes | first_dp    | Data pointer of the index page           |
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (20 bytes)                       |
+| Iterate for the number of num_idx (20 bytes)                            |
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | index_num   | Number of the index                      |
 |      |         |             |(warn: not always in the sequential order)|
@@ -338,7 +338,7 @@ next_pg field.
 | 0x04 | 2 bytes | ???         |                                          |
 | ???? | 1 byte  | primary_key | 0x01 if this index is primary            |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx                                  |
+| Iterate for the number of num_idx                                       |
 +-------------------------------------------------------------------------+
 | ???? | 1 byte  | idx_name_len| len of the name of the index             |
 | ???? | n bytes | idx_name    | Name of the index                        |
@@ -394,7 +394,7 @@ next_pg field.
 | ???? | 2 bytes | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column (UCS-2 format)        |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (30+22 = 52 bytes)               |
+| Iterate for indexes with index_type 0 or 1 (30+22 = 52 bytes)           |
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | ???         |                                          |
 +-------------------------------------------------------------------------+
@@ -408,7 +408,7 @@ next_pg field.
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 | ???? | 9 bytes | unknown     |                                          |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (28 bytes)                       |
+| Iterate for the number of num_idx (28 bytes)                            |
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | unknown     | matches first unknown definition block   |
 | ???? | 4 bytes | index_num   | Number of the index                      |
@@ -421,7 +421,7 @@ next_pg field.
 | ???? | 1 byte  | primary_key | 0x01 if this index is primary            |
 | ???? | 4 bytes | unknown     |                                          |
 +-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx                                  |
+| Iterate for the number of num_idx                                       |
 +-------------------------------------------------------------------------+
 | ???? | 2 bytes | idx_name_len| len of the name of the index             |
 | ???? | n bytes | idx_name    | Name of the index (UCS-2)                |

@@ -69,15 +69,15 @@ mdb_read_indices(MdbTableDef *table)
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbIndex *pidx;
-	unsigned int i, j;
-	int idx_num, key_num, col_num;
+	unsigned int i, j, k;
+	int key_num, col_num, cleaned_col_num;
 	int cur_pos, name_sz, idx2_sz, type_offset;
 	int index_start_pg = mdb->cur_pg;
 	gchar *tmpbuf;
 
-        table->indices = g_ptr_array_new();
+	table->indices = g_ptr_array_new();
 
-        if (IS_JET4(mdb)) {
+	if (IS_JET4(mdb)) {
 		cur_pos = table->index_start + 52 * table->num_real_idxs;
 		idx2_sz = 28;
 		type_offset = 23;
@@ -87,15 +87,33 @@ mdb_read_indices(MdbTableDef *table)
 		type_offset = 19;
 	}
 
+	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
+	/* num_real_idxs should be the number of indexes of type 2.
+	 * It's not always the case. Happens on Northwind Orders table.
+	 */
+	table->num_real_idxs = 0;
 	tmpbuf = (gchar *) g_malloc(idx2_sz);
 	for (i=0;i<table->num_idxs;i++) {
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, idx2_sz);
 		pidx = (MdbIndex *) g_malloc0(sizeof(MdbIndex));
 		pidx->table = table;
 		pidx->index_num = mdb_get_int16(tmpbuf, 4);
-		pidx->index_type = tmpbuf[type_offset]; 
+		pidx->index_type = tmpbuf[type_offset];
 		g_ptr_array_add(table->indices, pidx);
+		/*
+		{
+			gint32 dumy0 = mdb_get_int32(tmpbuf, 0);
+			gint8 dumy1 = tmpbuf[8];
+			gint32 dumy2 = mdb_get_int32(tmpbuf, 9);
+			gint32 dumy3 = mdb_get_int32(tmpbuf, 13);
+			gint16 dumy4 = mdb_get_int16(tmpbuf, 17);
+			fprintf(stderr, "idx #%d: num2:%d type:%d\n", i, pidx->index_num, pidx->index_type);
+			fprintf(stderr, "idx #%d: %d %d %d %d %d\n", i, dumy0, dumy1, dumy2, dumy3, dumy4);
+		}*/
+		if (pidx->index_type!=2)
+			table->num_real_idxs++;
 	}
+	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
 	g_free(tmpbuf);
 
 	for (i=0;i<table->num_idxs;i++) {
@@ -109,31 +127,35 @@ mdb_read_indices(MdbTableDef *table)
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmpbuf, name_sz, pidx->name, MDB_MAX_OBJ_NAME); 
 		g_free(tmpbuf);
-		//fprintf(stderr, "index name %s\n", pidx->name);
+		//fprintf(stderr, "index %d type %d name %s\n", pidx->index_num, pidx->index_type, pidx->name);
 	}
 
 	mdb_read_alt_pg(mdb, entry->table_pg);
 	mdb_read_pg(mdb, index_start_pg);
 	cur_pos = table->index_start;
-	idx_num=0;
 	for (i=0;i<table->num_real_idxs;i++) {
 		if (IS_JET4(mdb)) cur_pos += 4;
-		do {
-			pidx = g_ptr_array_index (table->indices, idx_num++);
-		} while (pidx && pidx->index_type==2);
-
-		/* if there are more real indexes than index entries left after
-		   removing type 2's decrement real indexes and continue.  Happens
-		   on Northwind Orders table.
-		*/
-		if (!pidx) {
-			table->num_real_idxs--;
-			continue;
+		/* look for index number i */
+		for (j=0; j<table->num_idxs; ++j) {
+			pidx = g_ptr_array_index (table->indices, j);
+			if (pidx->index_type!=2 && pidx->index_num==i)
+				break;
 		}
+		if (j==table->num_idxs)
+			fprintf(stderr, "ERROR: can't find index #%d.\n", i);
+		//fprintf(stderr, "index %d #%d (%s) index_type:%d\n", i, pidx->index_num, pidx->name, pidx->index_type);
 
 		pidx->num_rows = mdb_get_int32(mdb->alt_pg_buf, 
 				fmt->tab_cols_start_offset +
-				(i*fmt->tab_ridx_entry_size));
+				(pidx->index_num*fmt->tab_ridx_entry_size));
+		/*
+		fprintf(stderr, "ridx block1 i:%d data1:0x%08x data2:0x%08x\n",
+			i,
+			mdb_get_int32(mdb->pg_buf,
+				fmt->tab_cols_start_offset + pidx->index_num * fmt->tab_ridx_entry_size),
+			mdb_get_int32(mdb->pg_buf,
+				fmt->tab_cols_start_offset + pidx->index_num * fmt->tab_ridx_entry_size +4));
+		fprintf(stderr, "pidx->num_rows:%d\n", pidx->num_rows);*/
 
 		key_num=0;
 		for (j=0;j<MDB_MAX_IDX_COLS;j++) {
@@ -142,17 +164,36 @@ mdb_read_indices(MdbTableDef *table)
 				cur_pos++;
 				continue;
 			}
+			/* here we have the internal column number that does not
+			 * always match the table columns because of deletions */
+			cleaned_col_num = -1;
+			for (k=0; k<=table->num_cols; k++) {
+				MdbColumn *col = g_ptr_array_index(table->columns,k);
+				if (col->col_num == col_num) {
+					cleaned_col_num = k;
+					break;
+				}
+			}
+			if (cleaned_col_num==-1) {
+				fprintf(stderr, "CRITICAL: can't find column with internal id %d in index %s\n",
+					col_num, pidx->name);
+				cur_pos++;
+				continue;
+			}
 			/* set column number to a 1 based column number and store */
-			pidx->key_col_num[key_num] = col_num + 1;
+			pidx->key_col_num[key_num] = cleaned_col_num + 1;
 			pidx->key_col_order[key_num] =
 				(read_pg_if_8(mdb, &cur_pos)) ? MDB_ASC : MDB_DESC;
+			//fprintf(stderr, "component %d using column #%d (internally %d)\n", j, cleaned_col_num,  col_num);
 			key_num++;
 		}
 		pidx->num_keys = key_num;
 
 		cur_pos += 4;
+		//fprintf(stderr, "pidx->unknown_pre_first_pg:0x%08x\n", read_pg_if_32(mdb, &cur_pos));
 		pidx->first_pg = read_pg_if_32(mdb, &cur_pos);
 		pidx->flags = read_pg_if_8(mdb, &cur_pos);
+		//fprintf(stderr, "pidx->first_pg:%d pidx->flags:0x%02x\n",	pidx->first_pg, pidx->flags);
 		if (IS_JET4(mdb)) cur_pos += 9;
 	}
 	return NULL;
