@@ -80,21 +80,11 @@ main(int argc, char **argv)
 	}
 
 	if (found) {
-		MdbColumn *col;
-		gchar kkd_ptr[MDB_MEMO_OVERHEAD];
-		void *kkd_pg = g_malloc(200000);
-		size_t len, pos;
-		memcpy(kkd_ptr, buf, MDB_MEMO_OVERHEAD);
-		col = g_ptr_array_index(table->columns, col_num - 1);
-		len = mdb_ole_read(mdb, col, kkd_ptr, MDB_BIND_SIZE);
-		memcpy(kkd_pg, buf, len);
-		pos = len;
-		while ((len = mdb_ole_read_next(mdb, col, kkd_ptr))) {
-			memcpy(kkd_pg + pos, buf, len);
-			pos += len;
-		}
-		dump_kkd(mdb, kkd_pg, pos);
-		g_free(kkd_pg);
+		MdbColumn *col = g_ptr_array_index(table->columns, col_num - 1);
+		size_t size;
+		void *kkd = mdb_ole_read_full(mdb, col, &size);
+		dump_kkd(mdb, kkd, size);
+		free(kkd);
 	}
 
 	g_free(buf);
@@ -121,6 +111,7 @@ void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 #endif
 	if (strcmp("KKD", kkd)) {
 		fprintf(stderr, "Unrecognized format.\n");
+		buffer_dump(kkd, 0, len);
 		return;
 	}
 	

@@ -19,6 +19,7 @@
 
 #include "mdbtools.h"
 #include "time.h"
+#include "math.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
@@ -346,8 +347,8 @@ int mdb_read_next_dpg(MdbTableDef *table)
 		/* On rare occasion, mdb_map_find_next will return a wrong page */
 		/* Found in a big file, over 4,000,000 records */
 		fprintf(stderr,
-			"warning: page %d from map doesn't match: Type=%d, buf[4..7]=%d Expected table_pg=%d\n",
-			next_pg, mdb_get_int32(mdb->pg_buf, 4), entry->table_pg);
+			"warning: page %d from map doesn't match: Type=%d, buf[4..7]=%ld Expected table_pg=%ld\n",
+			next_pg, mdb->pg_buf[0], mdb_get_int32(mdb->pg_buf, 4), entry->table_pg);
 	}
 	fprintf(stderr, "Warning: defaulting to brute force read\n");
 #endif 
@@ -466,6 +467,12 @@ int i;
 	return text;
 }
 #endif
+/*
+ * ole_ptr should point to the original blob value of the field.
+ * If omited, there will be no multi-page check to that the caller is
+ * responsible for not calling this function. Then, it doesn't have to
+ * preserve the original value.
+ */
 size_t 
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
@@ -474,24 +481,30 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	int row_start;
 	size_t len;
 
-	ole_len = mdb_get_int32(ole_ptr, 0);
+    if (ole_ptr) {
+	    ole_len = mdb_get_int32(ole_ptr, 0);
+	    mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %02x",
+	    	ole_len & 0x00ffffff, ole_len >> 24);
 
-	if ((ole_len & 0x80000000)
-	 || (ole_len & 0x40000000)) {
-		/* inline or single-page fields don't have a next */
-		return 0;
-	} else {
-		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
-			&buf, &row_start, &len)) {
-			return 0;
-		}
-		if (col->bind_ptr)
-			memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
-		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
-
-		return len;
+	    if ((ole_len & 0x80000000)
+	     || (ole_len & 0x40000000))
+	    	/* inline or single-page fields don't have a next */
+	    	return 0;
 	}
-	return 0;
+	mdb_debug(MDB_DEBUG_OLE, "pg_row %d", col->cur_blob_pg_row);
+	if (!col->cur_blob_pg_row)
+		return 0; /* we are done */
+	if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
+		&buf, &row_start, &len)) {
+		return 0;
+	}
+	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
+
+	if (col->bind_ptr)
+		memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
+	col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
+
+	return len - 4;
 }
 size_t 
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
@@ -540,21 +553,59 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		return len;
 	} else if ((ole_len & 0xff000000) == 0) {
 		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
+		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
+			col->cur_blob_pg_row & 0xff,
+			col->cur_blob_pg_row >> 8);
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
 			&buf, &row_start, &len)) {
 			return 0;
 		}
+		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
+
 		if (col->bind_ptr) 
 			memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
 		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
+		mdb_debug(MDB_DEBUG_OLE, "next pg_row %d", col->cur_blob_pg_row);
 
-		return len;
+		return len - 4;
 	} else {
 		fprintf(stderr,"Unhandled ole field flags = %02x\n", ole_len >> 24);
 		return 0;
 	}
 }
+/*
+ * mdb_ole_read_full calls mdb_ole_read then loop over mdb_ole_read_next as much as necessary.
+ * returns the result in a big buffer.
+ * The call must free it.
+ * Note that this function is not indempotent: It may be called only once per column after each bind.
+ */
+void*
+mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
+{
+	char ole_ptr[MDB_MEMO_OVERHEAD];
+	char *result = malloc(MDB_BIND_SIZE);
+	size_t result_buffer_size = MDB_BIND_SIZE;
+	size_t len, pos;
+
+	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
+
+	len = mdb_ole_read(mdb, col, ole_ptr, MDB_BIND_SIZE);
+	memcpy(result, col->bind_ptr, len);
+	pos = len;
+	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
+		if (pos+len >= result_buffer_size) {
+			result_buffer_size += MDB_BIND_SIZE;
+			result = realloc(result, result_buffer_size);
+		}
+		memcpy(result + pos, col->bind_ptr, len);
+		pos += len;
+	}
+	if (size)
+		*size = pos;
+	return result;
+}
+
 #ifdef MDB_COPY_OLE
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size)
 {
@@ -863,7 +914,6 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			td = mdb_get_double(buf, start);
 			text = g_strdup_printf("%.16e", td);
 		break;
-		case MDB_BINARY:
 		case MDB_TEXT:
 			if (size<0) {
 				text = g_strdup("");
@@ -877,6 +927,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = mdb_date_to_string(mdb, start);
 		break;
 		case MDB_MEMO:
+		case MDB_BINARY:
 			text = mdb_memo_to_string(mdb, start, size);
 		break;
 		case MDB_MONEY:
