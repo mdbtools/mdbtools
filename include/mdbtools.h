@@ -151,6 +151,15 @@ enum {
 	MDB_IDX_REQUIRED = 0x08 
 };
 
+/* export schema options */
+enum {
+	MDB_SHEXP_DROPTABLE = 0x01,
+	MDB_SHEXP_INDEXES = 0x02,
+	MDB_SHEXP_RELATIONS = 0x04,
+	MDB_SHEXP_SANITIZE = 0x08
+};
+#define MDB_SHEXP_DEFAULT (MDB_SHEXP_DROPTABLE | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
+
 #define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4)
 #define IS_JET3(mdb) (mdb->f->jet_version==MDB_VER_JET3)
 
@@ -462,8 +471,7 @@ extern void mdb_init_backends();
 extern void mdb_register_backend(MdbBackendType *backend, char* (*quote_name)(const char*), char *backend_name);
 extern void mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
-extern char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize);
-extern char *mdb_get_relationships(MdbHandle *mdb);
+extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, guint32 export_options);
 
 /* sargs.c */
 extern int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);

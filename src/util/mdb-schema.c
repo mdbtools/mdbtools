@@ -24,18 +24,13 @@
 #include "dmalloc.h"
 #endif
 
-static void generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize);
-
 int
 main (int argc, char **argv)
 {
-	unsigned int   i;
 	MdbHandle *mdb;
-	MdbCatalogEntry *entry;
-	char		*the_relation;
 	char *tabname = NULL;
 	char *namespace = NULL;
-	int s = 0;
+	guint32 export_options = MDB_SHEXP_DEFAULT;
 	int opt;
 
 	if (argc < 2) {
@@ -56,7 +51,7 @@ main (int argc, char **argv)
 				namespace = (char *) g_strdup(optarg);
 			break;
 			case 'S':
-				s = 1;
+				export_options |= MDB_SHEXP_SANITIZE;
 			break;
 		}
 	}
@@ -81,142 +76,17 @@ main (int argc, char **argv)
 
 	/* read the catalog */
  	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
-		fprintf(stderr,"File does not appear to be an Access database\n");
+		fprintf(stderr, "File does not appear to be an Access database\n");
 		exit(1);
 	}
 
-	/* Print out a little message to show that this came from mdb-tools.
-	   I like to know how something is generated. DW */
-	fprintf(stdout,"-------------------------------------------------------------\n");
-	fprintf(stdout,"-- MDB Tools - A library for reading MS Access database files\n");
-	fprintf(stdout,"-- Copyright (C) 2000-2004 Brian Bruns\n");
-	fprintf(stdout,"-- Files in libmdb are licensed under LGPL and the utilities under\n");
-	fprintf(stdout,"-- the GPL, see COPYING.LIB and COPYING files respectively.\n");
-	fprintf(stdout,"-- Check out http://mdbtools.sourceforge.net\n");
-	fprintf(stdout,"-------------------------------------------------------------\n\n");
+	mdb_print_schema(mdb, stdout, tabname, namespace, export_options);
 
-	for (i=0; i < mdb->num_catalog; i++) {
-		entry = g_ptr_array_index (mdb->catalog, i);
-		if (entry->object_type == MDB_TABLE) {
-			if ((tabname && !strcmp(entry->object_name, tabname)) 
-			 || (!tabname && mdb_is_user_table(entry))) {
-				generate_table_schema(entry, namespace, s);
-			}
-		}
-	}
-
-	fprintf (stdout, "\n\n");
-	fprintf (stdout, "-- CREATE ANY Relationships ...\n");
-	fprintf (stdout, "\n");
-	while ((the_relation=mdb_get_relationships(mdb)) != NULL) {
-		fprintf(stdout,"%s\n",the_relation);
-		g_free(the_relation);
-	}            
- 
 	g_free(namespace);
 	g_free(tabname);
 	mdb_close (mdb);
 	mdb_exit();
 
-	exit(0);
+	return 0;
 }
-static void
-generate_table_schema(MdbCatalogEntry *entry, char *namespace, int sanitize)
-{
-	MdbTableDef *table;
-	MdbHandle *mdb = entry->mdb;
-	unsigned int i;
-	MdbColumn *col;
-	char* table_name;
-	char* quoted_table_name;
-	char* quoted_name;
-	char* sql_sequences;
 
-	if (sanitize)
-		quoted_table_name = sanitize_name(entry->object_name);
-	else
-		quoted_table_name = mdb->default_backend->quote_name(entry->object_name);
-
-	if (namespace) {
-		table_name = malloc(strlen(namespace)+strlen(quoted_table_name)+1);
-		strcpy(table_name, namespace);
-		strcat(table_name, quoted_table_name);
-		free(quoted_table_name);
-		quoted_table_name = table_name;
-	}
-
-	/* drop the table if it exists */
-	fprintf (stdout, "DROP TABLE %s;\n", quoted_table_name);
-
-	/* create the table */
-	fprintf (stdout, "CREATE TABLE %s\n", quoted_table_name);
-	fprintf (stdout, " (\n");
-
-	table = mdb_read_table (entry);
-
-	/* get the columns */
-	mdb_read_columns (table);
-
-	/* loop over the columns, dumping the names and types */
-
-	for (i = 0; i < table->num_cols; i++) {
-		col = g_ptr_array_index (table->columns, i);
-
-		if (sanitize)
-			quoted_name = sanitize_name(col->name);
-		else
-			quoted_name = mdb->default_backend->quote_name(col->name);
-		fprintf (stdout, "\t%s\t\t\t%s", quoted_name,
-			mdb_get_coltype_string (mdb->default_backend, col->col_type));
-		free(quoted_name);
-		   
-		if (mdb_coltype_takes_length(mdb->default_backend, 
-			col->col_type)) {
-
-			/* more portable version from DW patch */	
-			if (col->col_size == 0) 
-	    			fprintf (stdout, " (255)");
-			else 
-	    			fprintf (stdout, " (%d)", col->col_size);
-		}
-		   
-		if (i < table->num_cols - 1)
-			fprintf (stdout, ", \n");
-		else
-			fprintf (stdout, "\n");
-	} /* for */
-
-	fprintf (stdout, ");\n");
-
-	fprintf (stdout, "-- CREATE SEQUENCES ...\n");
-	fprintf (stdout, "\n");
-
-	while ((sql_sequences = mdb_get_sequences(entry, namespace, sanitize)))
-		fprintf(stdout, sql_sequences);
-
-	/*
-	for (i = 0; i < table->num_cols; i++) {
-		col = g_ptr_array_index (table->columns, i);
-		if (col->is_long_auto) {
-			char sequence_name[256+1+256+4]; // FIXME
-			char *quoted_column_name;
-			quoted_column_name = mdb->default_backend->quote_name(col->name);
-			sprintf(sequence_name, "%s_%s_seq", entry->object_name, col->name);
-			quoted_name = mdb->default_backend->quote_name(sequence_name);
-			fprintf (stdout, "CREATE SEQUENCE %s;\n", quoted_name);
-			fprintf (stdout, "ALTER TABLE %s ALTER COLUMN %s SET DEFAULT pg_catalog.nextval('%s');\n",
-				quoted_table_name, quoted_column_name, quoted_name);
-			free(quoted_column_name);
-			free(quoted_name);
-		}
-
-	}
-	*/
-
-	fprintf (stdout, "-- CREATE ANY INDEXES ...\n");
-	fprintf (stdout, "\n");
-
-	free(quoted_table_name);
-
-	mdb_free_tabledef (table);
-}

@@ -279,7 +279,9 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 
 /**
  * mdb_get_sequences
- * @mdb: Handle to open MDB database file
+ * @entry: Handle to open MDB database file
+ * @namespace: Prefix for output names
+ * @sanitize: Remove weird characters if true
  *
  * Generates sequences and set default values
  *
@@ -289,7 +291,8 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
  *   Returns NULL on last iteration.
  *   The caller is responsible for freeing this string.
  */
-char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize)
+static char *
+mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize)
 {
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
@@ -311,8 +314,8 @@ char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize)
 		backend = 2;
 	} else {
 		return (char *) g_strconcat(
-			"-- sequences are not supported for ",
-			mdb->backend_name, NULL);
+			"-- sequences are not implemented for ",
+			mdb->backend_name, "\n", NULL);
 	}
 
 	/* get the columns */
@@ -361,8 +364,89 @@ char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize)
 
 
 /**
+ * mdb_print_indexes
+ * @output: Where to print the sql
+ * @table: Table to process
+ */
+static void
+mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace, int sanitize)
+{
+	unsigned int i, j;
+	char* quoted_table_name;
+	char* index_name;
+	char* quoted_name;
+	MdbHandle* mdb = table->entry->mdb;
+	MdbIndex *idx;
+	MdbColumn *col;
+
+	if (strcmp(mdb->backend_name, "postgres")) {
+		fprintf(outfile, "-- Indexes are not implemented for %s\n\n", mdb->backend_name);
+		return;
+	}
+
+	/* read indexes */
+	mdb_read_indices(table);
+
+	fprintf (outfile, "-- CREATE ANY INDEXES ...\n");
+
+	if (sanitize)
+		quoted_table_name = sanitize_name(table->name);
+	else
+		quoted_table_name = mdb->default_backend->quote_name(table->name);
+
+	for (i=0;i<table->num_idxs;i++) {
+		idx = g_ptr_array_index (table->indices, i);
+		if (idx->index_type==2)
+			continue;
+
+		index_name = malloc(strlen(table->name)+strlen(idx->name)+4+1);
+		strcpy(index_name, table->name);
+		strcat(index_name, idx->name);
+		if (idx->index_type==1)
+			strcat(index_name, "_pk");
+		else
+			strcat(index_name, "_idx");
+		if (sanitize)
+			quoted_name = sanitize_name(index_name);
+		else
+			quoted_name = mdb->default_backend->quote_name(index_name);
+		if (idx->index_type==1) {
+			fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
+		} else {
+			fprintf(outfile, "CREATE");
+			if (idx->flags & MDB_IDX_UNIQUE)
+				fprintf (outfile, " UNIQUE");
+			fprintf(outfile, " INDEX %s ON %s (", quoted_name, quoted_table_name);
+		}
+		free(quoted_name);
+		free(index_name);
+
+		for (j=0;j<idx->num_keys;j++) {
+			if (j)
+				fprintf(outfile, ", ");
+			col=g_ptr_array_index(table->columns,idx->key_col_num[j]-1);
+			if (sanitize)
+				quoted_name = sanitize_name(col->name);
+			else
+				quoted_name = mdb->default_backend->quote_name(col->name);
+			fprintf (outfile, "%s", quoted_name);
+			if (idx->index_type!=1 && idx->key_col_order[j])
+				/* no DESC for primary keys */
+				fprintf(outfile, " DESC");
+
+			free(quoted_name);
+
+		}
+		fprintf (outfile, ");\n");
+	}
+	fprintf (outfile, "\n");
+	fprintf (outfile, "\n");
+}
+
+/**
  * mdb_get_relationships
  * @mdb: Handle to open MDB database file
+ * @tablename: Name of the table to process. Process all tables if NULL.
  *
  * Generates relationships by reading the MSysRelationships table.
  *   'szColumn' contains the column name of the child table.
@@ -377,7 +461,8 @@ char *mdb_get_sequences(MdbCatalogEntry *entry, char *namespace, int sanitize)
  *   Returns NULL on last iteration.
  *   The caller is responsible for freeing this string.
  */
-char *mdb_get_relationships(MdbHandle *mdb)
+static char *
+mdb_get_relationships(MdbHandle *mdb, const char* tablename)
 {
 	unsigned int i;
 	gchar *text = NULL;  /* String to be returned */
@@ -386,7 +471,6 @@ char *mdb_get_relationships(MdbHandle *mdb)
 	int backend = 0;  /* Backends: 1=oracle, 2=postgres */
 	char *quoted_table_1, *quoted_column_1,
 	     *quoted_table_2, *quoted_column_2,
-	     *index_name, *quoted_index_name,
 	     *constraint_name, *quoted_constraint_name;
 	long grbit;
 
@@ -398,8 +482,8 @@ char *mdb_get_relationships(MdbHandle *mdb)
 		if (is_init == 0) { /* the first time through */
 			is_init = 1;
 			return (char *) g_strconcat(
-				"-- relationships are not supported for ",
-				mdb->backend_name, NULL);
+				"-- relationships are not implemented for ",
+				mdb->backend_name, "\n", NULL);
 		} else { /* the second time through */
 			is_init = 0;
 			return NULL;
@@ -438,11 +522,15 @@ char *mdb_get_relationships(MdbHandle *mdb)
 		}
 	}
 
-	if (!mdb_fetch_row(table)) {
-		for (i=0;i<5;i++)
-			g_free(bound[i]);
-		is_init = 0;
-		return NULL;
+	while (1) {
+		if (!mdb_fetch_row(table)) {
+			for (i=0;i<5;i++)
+				g_free(bound[i]);
+			is_init = 0;
+			return NULL;
+		}
+		if (!tablename || !strcmp(bound[1], tablename))
+			break;
 	}
 
 	quoted_table_1 = mdb->default_backend->quote_name(bound[1]);
@@ -453,9 +541,6 @@ char *mdb_get_relationships(MdbHandle *mdb)
 	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
 	quoted_constraint_name = mdb->default_backend->quote_name(constraint_name);
 	free(constraint_name);
-	index_name = g_strconcat(bound[3], "_", bound[2], "_idx", NULL);
-	quoted_index_name = mdb->default_backend->quote_name(index_name);
-	free(index_name);
 
 	if (grbit & 0x00000002) {
 		text = g_strconcat(
@@ -484,8 +569,132 @@ char *mdb_get_relationships(MdbHandle *mdb)
 	free(quoted_table_2);
 	free(quoted_column_2);
 	free(quoted_constraint_name);
-	free(quoted_index_name);
 
 	return (char *)text;
+}
+
+static void
+generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, guint32 export_options)
+{
+	MdbTableDef *table;
+	MdbHandle *mdb = entry->mdb;
+	MdbColumn *col;
+	unsigned int i;
+	char* table_name;
+	char* quoted_table_name;
+	char* quoted_name;
+	char* sql_sequences;
+	int sanitize = export_options & MDB_SHEXP_SANITIZE;
+
+	if (sanitize)
+		quoted_table_name = sanitize_name(entry->object_name);
+	else
+		quoted_table_name = mdb->default_backend->quote_name(entry->object_name);
+
+	if (namespace) {
+		table_name = malloc(strlen(namespace)+strlen(quoted_table_name)+1);
+		strcpy(table_name, namespace);
+		strcat(table_name, quoted_table_name);
+		free(quoted_table_name);
+		quoted_table_name = table_name;
+	}
+
+	/* drop the table if it exists */
+	if (export_options & MDB_SHEXP_DROPTABLE)
+		fprintf (outfile, "DROP TABLE %s;\n", quoted_table_name);
+
+	/* create the table */
+	fprintf (outfile, "CREATE TABLE %s\n", quoted_table_name);
+	fprintf (outfile, " (\n");
+
+	table = mdb_read_table (entry);
+
+	/* get the columns */
+	mdb_read_columns (table);
+
+	/* loop over the columns, dumping the names and types */
+
+	for (i = 0; i < table->num_cols; i++) {
+		col = g_ptr_array_index (table->columns, i);
+
+		if (sanitize)
+			quoted_name = sanitize_name(col->name);
+		else
+			quoted_name = mdb->default_backend->quote_name(col->name);
+		fprintf (outfile, "\t%s\t\t\t%s", quoted_name,
+			mdb_get_coltype_string (mdb->default_backend, col->col_type));
+		free(quoted_name);
+
+		if (mdb_coltype_takes_length(mdb->default_backend,
+			col->col_type)) {
+
+			/* more portable version from DW patch */
+			if (col->col_size == 0)
+	    			fputs(" (255)", outfile);
+			else
+	    			fprintf(outfile, " (%d)", col->col_size);
+		}
+
+		if (i < table->num_cols - 1)
+			fputs(", \n", outfile);
+		else
+			fputs("\n", outfile);
+	} /* for */
+
+	fputs(");\n", outfile);
+
+	fputs("-- CREATE SEQUENCES ...\n", outfile);
+	fputs("\n", outfile);
+	while ((sql_sequences = mdb_get_sequences(entry, namespace, sanitize))) {
+		fputs(sql_sequences, outfile);
+		free(sql_sequences);
+	}
+
+	if (export_options & MDB_SHEXP_INDEXES)
+		// prints all the indexes of that table
+		mdb_print_indexes(outfile, table, namespace, sanitize);
+
+	free(quoted_table_name);
+
+	mdb_free_tabledef (table);
+}
+
+
+void
+mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, guint32 export_options)
+{
+	unsigned int   i;
+	char		*the_relation;
+	MdbCatalogEntry *entry;
+
+	/* Print out a little message to show that this came from mdb-tools.
+	   I like to know how something is generated. DW */
+	fputs("-------------------------------------------------------------\n"
+		"-- MDB Tools - A library for reading MS Access database files\n"
+		"-- Copyright (C) 2000-2011 Brian Bruns and others.\n"
+		"-- Files in libmdb are licensed under LGPL and the utilities under\n"
+		"-- the GPL, see COPYING.LIB and COPYING files respectively.\n"
+		"-- Check out http://mdbtools.sourceforge.net\n"
+		"-------------------------------------------------------------\n\n",
+		outfile);
+
+	for (i=0; i < mdb->num_catalog; i++) {
+		entry = g_ptr_array_index (mdb->catalog, i);
+		if (entry->object_type == MDB_TABLE) {
+			if ((tabname && !strcmp(entry->object_name, tabname))
+			 || (!tabname && mdb_is_user_table(entry))) {
+				generate_table_schema(outfile, entry, namespace, export_options);
+			}
+		}
+	}
+	fprintf (outfile, "\n");
+
+	if (export_options & MDB_SHEXP_RELATIONS) {
+		fputs ("-- CREATE Relationships ...\n", outfile);
+		while ((the_relation=mdb_get_relationships(mdb, tabname)) != NULL) {
+			fputs(the_relation, outfile);
+			g_free(the_relation);
+		}
+	}
 }
 #endif

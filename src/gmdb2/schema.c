@@ -26,10 +26,11 @@ extern MdbHandle *mdb;
 
 GladeXML *schemawin_xml;
 static gchar backend[100];
-static gchar tabname[100];
-static gchar file_path[256];
+static gchar tabname[MDB_MAX_OBJ_NAME+1];
+static gchar file_path[PATH_MAX+1];
 static gchar relation;
 static gchar drops;
+static guint32 export_options;
 
 #define ALL_TABLES   "(All Tables)"
 
@@ -37,18 +38,6 @@ static void
 gmdb_schema_export()
 {
 FILE *outfile;
-MdbTableDef *table;
-MdbCatalogEntry *entry;
-MdbColumn *col;
-int i,k;
-int need_headers = 0;
-int need_quote = 0;
-gchar delimiter[11];
-gchar quotechar;
-gchar lineterm[5];
-gchar *str;
-int rows=0;
-char            *the_relation;
 
 	GtkWidget *dlg;
 
@@ -63,62 +52,7 @@ char            *the_relation;
 	}
 	mdb_set_default_backend(mdb,backend);
 
-	for (i=0; i < mdb->num_catalog; i++) {
-		entry = g_ptr_array_index (mdb->catalog, i);
-
-		if (entry->object_type != MDB_TABLE)
-			continue;
-		/* Do not show system tables if table name is not specified */
-		if (mdb_is_system_table(entry) && !strlen(tabname))
-			continue;
-		/* If object name does not match the table specified */
-		if (strlen(tabname) && strcmp(entry->object_name, tabname))
-			continue;
-
-	       /* drop the table if it exists */
-	       if (drops=='Y') 
-		       fprintf(outfile, "DROP TABLE %s;\n", entry->object_name);
-
-	       /* create the table */
-	       fprintf (outfile, "CREATE TABLE %s\n", entry->object_name);
-	       fprintf (outfile, " (\n");
-	       	       
-	       table = mdb_read_table (entry);
-
-	       /* get the columns */
-	       mdb_read_columns (table);
-
-	       /* loop over the columns, dumping the names and types */
-
-	       for (k = 0; k < table->num_cols; k++) {
-		   col = g_ptr_array_index (table->columns, k);
-		   
-		   fprintf (outfile, "\t%s\t\t\t%s", col->name, 
-			    mdb_get_coltype_string (mdb->default_backend, col->col_type));
-		   
-		   if (col->col_size != 0)
-		     fprintf (outfile, " (%d)", col->col_size);
-		   
-		   if (k < table->num_cols - 1)
-		     fprintf (outfile, ", \n");
-		   else
-		     fprintf (outfile, "\n");
-		 }
-
-	       fprintf (outfile, "\n);\n");
-	       fprintf (outfile, "-- CREATE ANY INDEXES ...\n");
-	       fprintf (outfile, "\n");
-	}
-	fprintf (outfile, "\n\n");
-
-	if (relation=='Y') {
-		fprintf (outfile, "-- CREATE ANY Relationships ...\n");
-		fprintf (outfile, "\n");
-		while ((the_relation=mdb_get_relationships(mdb)) != NULL) {
-			fprintf(outfile,"%s\n",the_relation);
-			g_free(the_relation);
-		}            
- 	}
+	mdb_print_schema(mdb, outfile, *tabname?tabname:NULL, NULL, export_options);
 
 	fclose(outfile);
 	dlg = gtk_message_dialog_new (NULL,
@@ -135,10 +69,14 @@ GtkWidget *schemawin, *combo, *checkbox, *entry;
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
 
 	entry = glade_xml_get_widget (schemawin_xml, "filename_entry");
-	strncpy(file_path,gtk_entry_get_text(GTK_ENTRY(entry)),255);
+	strncpy(file_path,gtk_entry_get_text(GTK_ENTRY(entry)),PATH_MAX);
+	file_path[PATH_MAX]=0;
+
 	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
-	strncpy(tabname,gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),99);
+	strncpy(tabname,gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),MDB_MAX_OBJ_NAME);
+	tabname[MDB_MAX_OBJ_NAME]=0;
 	if (!strcmp(tabname,ALL_TABLES)) tabname[0]='\0';
+
 	combo = glade_xml_get_widget (schemawin_xml, "backend_combo");
 	if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"Oracle")) strcpy(backend,"oracle");
 	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"Sybase")) strcpy(backend,"sybase");
@@ -146,17 +84,16 @@ GtkWidget *schemawin, *combo, *checkbox, *entry;
 	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"PostgreSQL")) strcpy(backend,"postgres");
 	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"MySQL")) strcpy(backend,"mysql");
 	else strcpy(backend,"access");
+
+	export_options = MDB_SHEXP_DEFAULT & ~ (MDB_SHEXP_RELATIONS|MDB_SHEXP_DROPTABLE);
 	checkbox = glade_xml_get_widget (schemawin_xml, "rel_checkbox");
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox)))
-		relation = 'Y';
-	else
-		relation = 'N';
+		export_options |= MDB_SHEXP_RELATIONS;
 	checkbox = glade_xml_get_widget (schemawin_xml, "drop_checkbox");
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox)))
-		drops = 'Y';
-	else
-		drops = 'N';
-	//printf("%s %s %c\n",tabname,backend,relation);
+		export_options |= MDB_SHEXP_DROPTABLE;
+	// TODO add support for other options
+	//printf("%s %s %02X\n",tabname,backend,export_options);
 
 	gtk_widget_destroy(schemawin);
 	gmdb_schema_export();
