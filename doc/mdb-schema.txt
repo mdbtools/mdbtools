@@ -14,6 +14,8 @@ OPTIONS
   --no-drop-table     Don't issue DROP TABLE statement. This is the default.
   --not-null          Issue NOT NULL constraints. This is the default.
   --no-not-null       Don't issue NOT NULL constraints.
+  --default-values    Issue DEFAULT values.
+  --no-default-values   Don't issue DEFAULT values. This is the default.
   --not-empty         Issue CHECK <> '' constraints.
   --no-not-empty      Don't issue CHECK <> '' constraints. This is the default.
   --indexes           Export INDEXes. This is the default.

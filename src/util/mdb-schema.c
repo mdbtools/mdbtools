@@ -52,6 +52,8 @@ main (int argc, char **argv)
 			{"namespace", 1, NULL, 'N'},
 			{"drop-table", 0, NULL, 0},
 			{"no-drop-table", 0, NULL, 0},
+			{"default-values", 0, NULL, 0},
+			{"no-default-values", 0, NULL, 0},
 			{"not-null", 0, NULL, 0},
 			{"no-not-null", 0, NULL, 0},
 			{"not-empty", 0, NULL, 0},
@@ -86,6 +88,14 @@ main (int argc, char **argv)
 			}
 			if (!strcmp(long_options[option_index].name, "no-not-null")) {
 				export_options &= ~MDB_SHEXP_CST_NOTNULL;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "default-values")) {
+				export_options |= MDB_SHEXP_DEFVALUES;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-default-values")) {
+				export_options &= ~MDB_SHEXP_DEFVALUES;
 				break;
 			}
 			if (!strcmp(long_options[option_index].name, "not-empty")) {

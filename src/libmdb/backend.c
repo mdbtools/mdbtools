@@ -1,5 +1,5 @@
 /* MDB Tools - A library for reading MS Access database files
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2011 Brian Bruns and others
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -255,7 +255,7 @@ quote_schema_name_rquotes_merge(const gchar* schema, const gchar *name)
 }
 
 static gchar*
-quote_with_squotes(gchar* value)
+quote_with_squotes(const gchar* value)
 {
 	return quote_generic(value, '\'', '\'');
 }
@@ -337,8 +337,9 @@ void mdb_init_backends()
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
 	mdb_register_backend("access",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
 		mdb_access_types, NULL, NULL,
+		"Date()", "Date()",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
@@ -346,8 +347,9 @@ void mdb_init_backends()
 		NULL,
 		quote_schema_name_bracket_merge);
 	mdb_register_backend("sybase",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
+		"getdate()", "getdate()",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
@@ -355,8 +357,9 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("oracle",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
 		mdb_oracle_types, &mdb_oracle_shortdate_type, NULL,
+		"current_date", "sysdate",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
@@ -364,8 +367,9 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("postgres",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
+		"current_date", "now()",
 		"SET client_encoding = '%s';\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
@@ -373,8 +377,9 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
+		"current_date", "now()",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
@@ -382,13 +387,15 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_rquotes_merge);
 }
-void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
+void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
 	MdbBackend *backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
 	backend->capabilities = capabilities;
 	backend->types_table = backend_type;
 	backend->type_shortdate = type_shortdate;
 	backend->type_autonum = type_autonum;
+	backend->short_now = short_now;
+	backend->long_now = long_now;
 	backend->charset_statement = charset_statement;
 	backend->drop_statement = drop_statement;
 	backend->constaint_not_empty_statement = constaint_not_empty_statement;
@@ -661,7 +668,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 	char* quoted_name;
 	int sanitize = export_options & MDB_SHEXP_SANITIZE;
 	MdbProperties *props;
-	char *prop_value;
+	const char *prop_value;
 
 	if (sanitize)
 		quoted_table_name = sanitize_name(entry->object_name);
@@ -712,6 +719,44 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 					fputs(" NOT NULL", outfile);
 			}
 		}
+
+		if (export_options & MDB_SHEXP_DEFVALUES) {
+			int done = 0;
+			if (col->props) {
+				gchar *defval = g_hash_table_lookup(col->props->hash, "DefaultValue");
+				if (defval) {
+					size_t def_len = strlen(defval);
+					fputs(" DEFAULT ", outfile);
+					/* ugly hack to detect the type */
+					if (defval[0]=='"' && defval[def_len-1]=='"') {
+						/* this is a string */
+						gchar *output_default = malloc(def_len-1);
+						gchar *output_default_escaped = malloc(def_len-1);
+						memcpy(output_default, defval+1, def_len-2);
+						output_default[def_len-2] = 0;
+						output_default_escaped = quote_with_squotes(output_default);
+						fputs(output_default_escaped, outfile);
+						g_free(output_default_escaped);
+						free(output_default);
+					} else if (!strcmp(defval, "Yes"))
+						fputs("TRUE", outfile);
+					else if (!strcmp(defval, "No"))
+						fputs("FALSE", outfile);
+					else if (!strcasecmp(defval, "date()")) {
+						if (!strcmp(mdb_col_get_prop(col, "Format"), "Short Date"))
+							fputs(mdb->default_backend->short_now, outfile);
+						else
+							fputs(mdb->default_backend->long_now, outfile);
+					}
+					else
+						fputs(defval, outfile);
+				}
+				done = 1;
+			}
+			if (!done && col->col_type == MDB_BOOL)
+				/* access booleans are false by default */
+				fputs(" DEFAULT FALSE", outfile);
+		}
 		if (i < table->num_cols - 1)
 			fputs(", \n", outfile);
 		else
@@ -722,8 +767,6 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 
 	/* Add the constraints on columns */
 	for (i = 0; i < table->num_cols; i++) {
-		const gchar *prop_value;
-
 		col = g_ptr_array_index (table->columns, i);
 		props = col->props;
 		if (!props)

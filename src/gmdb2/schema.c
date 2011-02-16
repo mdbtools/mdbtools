@@ -40,6 +40,7 @@ static struct {
 	{ "cstnotnull_checkbox", MDB_SHEXP_CST_NOTNULL },
 	{ "cstnotempty_checkbox", MDB_SHEXP_CST_NOTEMPTY},
 	{ "comments_checkbox", MDB_SHEXP_COMMENTS},
+	{ "defaults_checkbox", MDB_SHEXP_DEFVALUES },
 	{ "index_checkbox", MDB_SHEXP_INDEXES},
 	{ "rel_checkbox", MDB_SHEXP_RELATIONS}
 };

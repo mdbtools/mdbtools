@@ -159,9 +159,10 @@ enum {
 	MDB_SHEXP_CST_NOTNULL = 1<<1, /* generate NOT NULL constraints */
 	MDB_SHEXP_CST_NOTEMPTY = 1<<2, /* <>'' constraints */
 	MDB_SHEXP_COMMENTS = 1<<3, /* export comments on columns & tables */
-	MDB_SHEXP_INDEXES = 1<<4, /* export indices */
-	MDB_SHEXP_RELATIONS = 1<<5, /* export relation (foreign keys) */
-	MDB_SHEXP_SANITIZE = 1<<6 /* clean up names */
+	MDB_SHEXP_DEFVALUES = 1<<4, /* export default values */
+	MDB_SHEXP_INDEXES = 1<<5, /* export indices */
+	MDB_SHEXP_RELATIONS = 1<<6, /* export relation (foreign keys) */
+	MDB_SHEXP_SANITIZE = 1<<7 /* clean up names */
 };
 #define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
@@ -184,6 +185,8 @@ typedef struct {
 	MdbBackendType *types_table;
 	MdbBackendType *type_shortdate;
 	MdbBackendType *type_autonum;
+	const char *short_now;
+	const char *long_now;
 	const char *charset_statement;
 	const char *drop_statement;
 	const char *constaint_not_empty_statement;
@@ -487,7 +490,7 @@ extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
 extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
 extern int mdb_colbacktype_takes_length(const MdbColumn *col);
 extern void mdb_init_backends();
-extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
+extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
 extern void mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, guint32 export_options);
