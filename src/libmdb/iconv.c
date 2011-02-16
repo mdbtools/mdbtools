@@ -181,6 +181,21 @@ mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 	return dlen;
 }
 
+const char*
+mdb_target_charset(MdbHandle *mdb)
+{
+#ifdef HAVE_ICONV
+	const char *iconv_code = getenv("MDBICONV");
+	if (!iconv_code)
+		iconv_code = "UTF-8";
+	return iconv_code;
+#else
+	if (IS_JET4(mdb))
+		return "ISO-8859-1";
+	return NULL; // same as input: unknown
+#endif
+}
+
 void mdb_iconv_init(MdbHandle *mdb)
 {
 	const char *iconv_code;
@@ -191,11 +206,11 @@ void mdb_iconv_init(MdbHandle *mdb)
 	}
 
 #ifdef HAVE_ICONV
-        if (IS_JET4(mdb)) {
-                mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
-                mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
-        } else {
-                /* According to Microsoft Knowledge Base pages 289525 and */
+	if (IS_JET4(mdb)) {
+		mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
+		mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
+	} else {
+		/* According to Microsoft Knowledge Base pages 289525 and */
 		/* 202427, code page info is not contained in the database */
 		const char *jet3_iconv_code;
 
@@ -204,15 +219,17 @@ void mdb_iconv_init(MdbHandle *mdb)
 			jet3_iconv_code="CP1252";
 		}
 
-                mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
-                mdb->iconv_in = iconv_open(iconv_code, jet3_iconv_code);
-        }
+		mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
+		mdb->iconv_in = iconv_open(iconv_code, jet3_iconv_code);
+	}
 #endif
 }
 void mdb_iconv_close(MdbHandle *mdb)
 {
 #ifdef HAVE_ICONV
-        if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
-        if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
+    if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
+    if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
 #endif
 }
+
+

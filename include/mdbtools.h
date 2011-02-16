@@ -83,7 +83,7 @@ enum {
 	MDB_MONEY = 0x05,
 	MDB_FLOAT = 0x06,
 	MDB_DOUBLE = 0x07,
-	MDB_SDATETIME = 0x08,
+	MDB_DATETIME = 0x08,
 	MDB_BINARY = 0x09,
 	MDB_TEXT = 0x0a,
 	MDB_OLE = 0x0b,
@@ -155,12 +155,15 @@ enum {
 
 /* export schema options */
 enum {
-	MDB_SHEXP_DROPTABLE = 0x01,
-	MDB_SHEXP_INDEXES = 0x02,
-	MDB_SHEXP_RELATIONS = 0x04,
-	MDB_SHEXP_SANITIZE = 0x08
+	MDB_SHEXP_DROPTABLE = 1<<0, /* issue drop table during export */
+	MDB_SHEXP_CST_NOTNULL = 1<<1, /* generate NOT NULL constraints */
+	MDB_SHEXP_CST_NOTEMPTY = 1<<2, /* <>'' constraints */
+	MDB_SHEXP_COMMENTS = 1<<3, /* export comments on columns & tables */
+	MDB_SHEXP_INDEXES = 1<<4, /* export indices */
+	MDB_SHEXP_RELATIONS = 1<<5, /* export relation (foreign keys) */
+	MDB_SHEXP_SANITIZE = 1<<6 /* clean up names */
 };
-#define MDB_SHEXP_DEFAULT (MDB_SHEXP_DROPTABLE | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
+#define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
 #define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4)
 #define IS_JET3(mdb) (mdb->f->jet_version==MDB_VER_JET3)
@@ -177,8 +180,16 @@ typedef struct {
 } MdbBackendType;
 		
 typedef struct {
-	 MdbBackendType *types_table;
-	 char* (*quote_name)(const char*);
+	guint32 capabilities; /* see MDB_SHEXP_* */
+	MdbBackendType *types_table;
+	MdbBackendType *type_shortdate;
+	MdbBackendType *type_autonum;
+	const char *charset_statement;
+	const char *drop_statement;
+	const char *constaint_not_empty_statement;
+	const char *column_comment_statement;
+	const char *table_comment_statement;
+	gchar* (*quote_schema_name)(const gchar*, const gchar*);
 } MdbBackend;
 
 typedef struct {
@@ -266,7 +277,9 @@ typedef union {
 	char	s[256];
 } MdbAny;
 
+struct S_MdbTableDef; /* forward definition */
 typedef struct {
+	struct S_MdbTableDef *table;
 	char		name[MDB_MAX_OBJ_NAME+1];
 	int		col_type;
 	int		col_size;
@@ -329,7 +342,7 @@ typedef struct {
 	MdbIndexPage pages[MDB_MAX_INDEX_DEPTH];
 } MdbIndexChain;
 
-typedef struct {
+typedef struct S_MdbTableDef {
 	MdbCatalogEntry *entry;
 	char	name[MDB_MAX_OBJ_NAME+1];
 	unsigned int    num_cols;
@@ -468,10 +481,13 @@ extern void buffer_dump(const void *buf, int start, size_t len);
 
 /* backend.c */
 extern char* sanitize_name(const char* name);
-extern char *mdb_get_coltype_string(MdbBackend *backend, int col_type);
-extern int  mdb_coltype_takes_length(MdbBackend *backend, int col_type);
+extern char* mdb_get_coltype_string(MdbBackend *backend, int col_type); /* obsolete */
+extern int mdb_coltype_takes_length(MdbBackend *backend, int col_type); /* obsolete */
+extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
+extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
+extern int mdb_colbacktype_takes_length(const MdbColumn *col);
 extern void mdb_init_backends();
-extern void mdb_register_backend(MdbBackendType *backend, char* (*quote_name)(const char*), char *backend_name);
+extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
 extern void mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, guint32 export_options);
@@ -546,6 +562,7 @@ extern int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest,
 extern int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
 extern void mdb_iconv_init(MdbHandle *mdb);
 extern void mdb_iconv_close(MdbHandle *mdb);
+extern const char* mdb_target_charset(MdbHandle *mdb);
 
 #ifdef __cplusplus
   }

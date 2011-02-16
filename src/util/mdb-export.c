@@ -26,7 +26,7 @@
 #undef MDB_BIND_SIZE
 #define MDB_BIND_SIZE 200000
 
-#define is_text_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_SDATETIME || x==MDB_BINARY)
+#define is_text_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY)
 
 static char *escapes(char *s);
 
@@ -214,7 +214,7 @@ main(int argc, char **argv)
 			if (sanitize)
 				quoted_name = sanitize_name(argv[optind + 1]);
 			else
-				quoted_name = mdb->default_backend->quote_name(argv[optind + 1]);
+				quoted_name = mdb->default_backend->quote_schema_name(NULL, argv[optind + 1]);
 			fprintf(stdout, "INSERT INTO %s%s (", namespace, quoted_name);
 			free(quoted_name);
 			for (j=0;j<table->num_cols;j++) {
@@ -223,7 +223,7 @@ main(int argc, char **argv)
 				if (sanitize)
 					quoted_name = sanitize_name(col->name);
 				else
-					quoted_name = mdb->default_backend->quote_name(col->name);
+					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 				fprintf(stdout,"%s", quoted_name);
 				free(quoted_name);
 			} 

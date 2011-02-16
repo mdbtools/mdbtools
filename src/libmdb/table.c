@@ -237,6 +237,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size);
 		pcol = (MdbColumn *) g_malloc0(sizeof(MdbColumn));
 
+		pcol->table = table;
+
 		pcol->col_type = col[0];
 
 		// col_num_offset == 1 or 5
@@ -328,7 +330,6 @@ MdbTableDef *table;
 MdbColumn *col;
 int coln;
 MdbIndex *idx;
-MdbHandle *mdb = entry->mdb;
 unsigned int i, bitn;
 guint32 pgnum;
 
@@ -348,7 +349,7 @@ guint32 pgnum;
 	
 		fprintf(stdout,"column %d Name: %-20s Type: %s(%d)\n",
 			i, col->name,
-			mdb_get_coltype_string(mdb->default_backend, col->col_type),
+			mdb_get_colbacktype_string(col),
 			col->col_size);
 		if (col->props)
 			mdb_dump_props(col->props, stdout, 0);

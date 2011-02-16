@@ -106,7 +106,7 @@ GtkStyle *style;
 		strcpy(row[0],"");
 		sprintf(row[1],"%d", col->col_num+1);
 		strcpy(row[2],col->name);
-		strcpy(row[3], mdb_get_coltype_string(mdb->default_backend, col->col_type));
+		strcpy(row[3], mdb_get_colbacktype_string(col));
 		sprintf(row[4],"%d",col->col_size);
 		if (col->is_fixed) {
 			strcpy(row[5],"No");

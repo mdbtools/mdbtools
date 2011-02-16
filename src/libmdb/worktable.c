@@ -74,6 +74,7 @@ mdb_create_temp_table(MdbHandle *mdb, char *name)
 void
 mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col)
 {
+	col->table = table,
 	col->col_num = table->num_cols;
 	if (!col->is_fixed)
 		col->var_col_num = table->num_var_cols++;

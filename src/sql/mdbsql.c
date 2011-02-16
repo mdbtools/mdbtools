@@ -622,7 +622,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 		tmpsiz = mdb_ascii2unicode(mdb, col->name, 0, col_name, 100);
 		mdb_fill_temp_field(&fields[0],col_name, tmpsiz, 0,0,0,0);
 
-		strcpy(tmpstr, mdb_get_coltype_string(mdb->default_backend, col->col_type));
+		strcpy(tmpstr, mdb_get_colbacktype_string(col));
 		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, col_type, 100);
 		mdb_fill_temp_field(&fields[1],col_type, tmpsiz, 0,0,0,1);
 

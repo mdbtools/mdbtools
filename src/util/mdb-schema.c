@@ -18,6 +18,7 @@
 
 /* this utility dumps the schema for an existing database */
 #include <ctype.h>
+#include <getopt.h>
 #include "mdbtools.h"
 
 #ifdef DMALLOC
@@ -42,16 +43,104 @@ main (int argc, char **argv)
 		exit (1);
 	}
 
-	while ((opt=getopt(argc, argv, "T:N:S"))!=-1) {
+	int digit_optind = 0;
+	while (1) {
+		int this_option_optind = optind ? optind : 1;
+		int option_index = 0;
+		static struct option long_options[] = {
+			{"table", 1, NULL, 'T'},
+			{"namespace", 1, NULL, 'N'},
+			{"drop-table", 0, NULL, 0},
+			{"no-drop-table", 0, NULL, 0},
+			{"not-null", 0, NULL, 0},
+			{"no-not-null", 0, NULL, 0},
+			{"not-empty", 0, NULL, 0},
+			{"no-not-empty", 0, NULL, 0},
+			{"description", 0, NULL, 0},
+			{"no-description", 0, NULL, 0},
+			{"indexes", 0, NULL, 0},
+			{"no-indexes", 0, NULL, 0},
+			{"relations", 0, NULL, 0},
+			{"no-relations", 0, NULL, 0},
+			{"sanitize", 0, NULL, 'S'},
+			{"no-sanitize", 0, NULL, 0},
+			{NULL, 0, NULL, 0},
+		};
+		opt = getopt_long(argc, argv, "T:N:S", long_options, &option_index);
+		if (opt == -1)
+			break;
+
 		switch (opt) {
-			case 'T':
-				tabname = (char *) g_strdup(optarg);
+		case 0:
+			if (!strcmp(long_options[option_index].name, "drop-table")) {
+				export_options |= MDB_SHEXP_DROPTABLE;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-drop-table")) {
+				export_options &= ~MDB_SHEXP_DROPTABLE;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "not-null")) {
+				export_options |= MDB_SHEXP_CST_NOTNULL;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-not-null")) {
+				export_options &= ~MDB_SHEXP_CST_NOTNULL;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "not-empty")) {
+				export_options |= MDB_SHEXP_CST_NOTEMPTY;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-not-empty")) {
+				export_options &= ~MDB_SHEXP_CST_NOTEMPTY;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "description")) {
+				export_options |= MDB_SHEXP_COMMENTS;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-description")) {
+				export_options &= ~MDB_SHEXP_COMMENTS;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "indexes")) {
+				export_options |= MDB_SHEXP_INDEXES;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-indexes")) {
+				export_options &= ~MDB_SHEXP_INDEXES;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "relations")) {
+				export_options |= MDB_SHEXP_RELATIONS;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-relations")) {
+				export_options &= ~MDB_SHEXP_RELATIONS;
+				break;
+			}
+			if (!strcmp(long_options[option_index].name, "no-sanitize")) {
+				export_options &= ~MDB_SHEXP_SANITIZE;
+				break;
+			}
+			fprintf(stderr, "unimplemented option %s", long_options[option_index].name);
+			if (optarg)
+				fprintf(stderr, " with arg %s", optarg);
+			fputc('\n', stderr);
+			exit(1);
 			break;
-			case 'N':
-				namespace = (char *) g_strdup(optarg);
+
+		case 'T':
+			tabname = (char *) g_strdup(optarg);
 			break;
-			case 'S':
-				export_options |= MDB_SHEXP_SANITIZE;
+
+		case 'N':
+			namespace = (char *) g_strdup(optarg);
+			break;
+
+		case 'S':
+			export_options |= MDB_SHEXP_SANITIZE;
 			break;
 		}
 	}

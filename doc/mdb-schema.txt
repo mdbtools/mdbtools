@@ -1,7 +1,7 @@
 NAME
   mdb-schema - Generate schema creation DDL
 SYNOPSIS
-  mdb-schema [-T <table>] <database> [<backend>]
+  mdb-schema [options] <database> [<backend>]
 
 DESCRIPTION
   mdb-schema is a utility program distributed with MDB Tools. 
@@ -9,8 +9,35 @@ DESCRIPTION
   It produces DDL (data definition language) output for the given database. This can be passed to another database to create a replica of the original access table format.
 
 OPTIONS
-  -T            Single table option.  Create schema for this table only.
-  backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, and postgres. If not specified the generated DDL will be in access format.
+  -T <table>, --table <table>       Single table option.  Create schema for this table only. Default is to export all tables.
+  --drop-table        Issue DROP TABLE statement.
+  --no-drop-table     Don't issue DROP TABLE statement. This is the default.
+  --not-null          Issue NOT NULL constraints. This is the default.
+  --no-not-null       Don't issue NOT NULL constraints.
+  --not-empty         Issue CHECK <> '' constraints.
+  --no-not-empty      Don't issue CHECK <> '' constraints. This is the default.
+  --indexes           Export INDEXes. This is the default.
+  --no-indexes        Don't export INDEXes.
+  --relations         Export foreign keys constraints. This is the default.
+  --no-relations      Don't export foreign keys constraints.
+  -S, --sanitize      Replace non alphanumric characters by underscore.
+  --no-sanitize       Don't replace non alphanumric characters by underscore. This is the default.
+
+  backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, postgres, and mysql. If not specified the generated DDL will be in access format.
+
+ENVIRONMENT
+  MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
+  MDBICONV            Defines the output charset to use for the SQL file. Default is UTF-8. mdbtools must have been compiled with iconv.
+  MDBOPTS             semi-column separated list of options:
+                      * use_index
+                      * no_memo
+                      * debug_like
+                      * debug_write
+                      * debug_usage
+                      * debug_ole
+                      * debug_row
+                      * debug_props
+                      * debug_all is a shortcut for all debug_* options
 
 NOTES 
 
@@ -18,7 +45,7 @@ HISTORY
   mdb-schema first appeared in MDB Tools 0\.1
 
 AUTHORS
-  The mdb-schema utility was written by Brian Bruns
+  The mdb-schema utility was written by Brian Bruns and others.
 
 BUGS
   Relationships and other features may not be supported by all databases.
