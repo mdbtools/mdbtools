@@ -40,6 +40,7 @@
 #define MDB_DEBUG 0
 
 #define MDB_PGSIZE 4096
+//#define MDB_MAX_OBJ_NAME (256*3) /* unicode 16 -> utf-8 worst case */
 #define MDB_MAX_OBJ_NAME 256
 #define MDB_MAX_COLS 256
 #define MDB_MAX_IDX_COLS 10
@@ -123,8 +124,9 @@ enum {
 	MDB_DEBUG_USAGE = 0x0004,
 	MDB_DEBUG_OLE = 0x0008,
 	MDB_DEBUG_ROW = 0x0010,
-	MDB_USE_INDEX = 0x0020,
-	MDB_NO_MEMO = 0x0040 /* don't follow memo fields */
+	MDB_DEBUG_PROPS = 0x0020,
+	MDB_USE_INDEX = 0x0040,
+	MDB_NO_MEMO = 0x0080, /* don't follow memo fields */
 };
 
 #define mdb_is_logical_op(x) (x == MDB_OR || \
@@ -247,10 +249,8 @@ typedef struct {
 	char           object_name[MDB_MAX_OBJ_NAME+1];
 	int            object_type;
 	unsigned long  table_pg; /* misnomer since object may not be a table */
-	unsigned long  kkd_pg;
-	unsigned int   kkd_rowid;
-	int			num_props;
-	GArray		*props;
+	//int			num_props; please use props->len
+	GArray		*props; /* GArray of MdbProperties */
 	GArray		*columns;
 	int		flags;
 } MdbCatalogEntry;
@@ -441,6 +441,8 @@ extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
 extern void *read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len);
 extern int mdb_is_user_table(MdbCatalogEntry *entry);
 extern int mdb_is_system_table(MdbCatalogEntry *entry);
+extern const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
+extern const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
 
 /* data.c */
 extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
@@ -523,9 +525,10 @@ extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
 extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
 
 /* props.c */
-extern GPtrArray *mdb_read_props_list(gchar *kkd, int len);
 extern void mdb_free_props(MdbProperties *props);
-extern MdbProperties *mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len);
+extern void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
+extern GArray* kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
+
 
 /* worktable.c */
 extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);

@@ -669,36 +669,33 @@ read is stored, once the index search has been exhausted by the normal search
 routine, it enters a "clean up mode" and reads the next leaf page pointer until 
 it's null.
  
-KKD Records
------------
+Properties
+----------
 
-Design View table definitions appear to be stored in 'KKD' records (my name for 
-them...they always start with 'KKD\0'). Again these reside on pages, packed to 
-the end of the page. 
+Design View table definitions are stored in LvProp column of MSysObjects as OLE
+fields. They contain default values, description, format, required ...
 
-Update: The KKD records are stored in LvProp column of MSysObjects so they are 
-stored as other OLE/Memo fields are.
+They start with a 32 bits header: 'KKD\0' in Jet3 and 'MR2\0' in Jet 4.
 
-They look a little like this: (this needs work...see the kkd.c)
+Next come chunks. Each chunk starts with:
+32 bits length value (this includes the length)
+16 bits chunk type (0x00 0x80 contains the names, 0x00 0x00 and 0x00 0x01 contain
+	the values)
 
-'K' 'K' 'D' 0x00
-16 bit length value    (this includes the length)
-0x00 0x00
-0x80 0x00              (0x80 seems to indicate a header)
-Then one or more of: 16 bit length field and a value of that size.
+Name chunks (0x00 0x80) simply contains occurences of:
+16 bit name length
+name
 For instance: 
 0x0d 0x00 and 'AccessVersion' (AccessVersion is 13 bytes, 0x0d 0x00 intel order)
 
-Next comes one of more rows of data. (column names, descriptions, etc...)
+Next comes one of more chunk of data:
 16 bit length value    (this includes the length)
-0x00 0x00
-0x00 0x00
-   16bit length field (this include the length itself)
-   4 bytes of unknown purpose
-      16 bit length field (non-inclusive)
-      value (07.53 for the AccessVersion example above)
+8 bit type
+16 bit name (index in the name array of above chunk 0x00 0x80)
+16 bit length field (non-inclusive)
+value (07.53 for the AccessVersion example above)
 
-See kkd.c for an example, although it needs cleanup.
+See props.c for an example.
 
 
 Text Data Type

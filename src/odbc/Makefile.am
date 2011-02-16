@@ -2,7 +2,7 @@ include_HEADERS = connectparams.h
 SQLDIR         =    ../sql
 SQLSOURCES     =    mdbsql.c parser.c lexer.c
 MDBDIR         =    ../libmdb
-MDBSOURCES     =    backend.c index.c money.c catalog.c kkd.c sargs.c \
+MDBSOURCES     =    backend.c index.c money.c catalog.c sargs.c \
 				data.c like.c table.c dump.c file.c mem.c \
 				map.c props.c worktable.c options.c \
 				write.c stats.c iconv.c

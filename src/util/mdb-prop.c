@@ -1,5 +1,5 @@
 /* MDB Tools - A library for reading MS Access database file
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2011 Brian Bruns and others
  *
  *
  * This library is free software; you can redistribute it and/or 
@@ -80,7 +80,7 @@ main(int argc, char **argv)
 	}
 
 	if (found) {
-		MdbColumn *col = g_ptr_array_index(table->columns, col_num - 1);
+		MdbColumn *col = g_ptr_array_index(table->columns, col_num-1);
 		size_t size;
 		void *kkd = mdb_ole_read_full(mdb, col, &size);
 		dump_kkd(mdb, kkd, size);
@@ -94,64 +94,12 @@ main(int argc, char **argv)
 
 	return 0;
 }
-void print_keyvalue(gpointer key, gpointer value, gpointer user_data)
-{
-		printf("%s = %s\n", (gchar *)key, (gchar *)value);
-}
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 {
-	guint32 record_len;
-	guint16 record_type;
-	size_t pos;
-	GPtrArray *names = NULL;
-	MdbProperties *props;
-
-#if MDB_DEBUG
-	buffer_dump(kkd, 0, len);
-#endif
-	if (strcmp("KKD", kkd)) {
-		fprintf(stderr, "Unrecognized format.\n");
-		buffer_dump(kkd, 0, len);
-		return;
-	}
-	
-
-	pos = 4;
-	while (pos < len) {
-		record_len = mdb_get_int32(kkd, pos);
-		record_type = mdb_get_int16(kkd, pos + 4);
-		//printf("len = %d type = %d\n", record_len, record_type);
-		switch (record_type) {
-			case 0x80:
-				names = mdb_read_props_list(kkd+pos+6, record_len - 6);
-				break;
-			case 0x00:
-				if (!names) {
-					printf("sequence error!\n");
-					break;
-				}
-				props = mdb_read_props(mdb, names, kkd+pos+6, record_len - 6);
-				printf("type 0x00 name %s\n", props->name ? props->name : "(none)");
-				g_hash_table_foreach(props->hash, print_keyvalue, NULL);
-				putchar('\n');
-				mdb_free_props(props);
-				break;
-			case 0x01:
-				if (!names) {
-					printf("sequence error!\n");
-					break;
-				}
-				props = mdb_read_props(mdb, names, kkd+pos+6, record_len - 6);
-				printf("type 0x01 name %s\n", props->name ? props->name : "(none)");
-				g_hash_table_foreach(props->hash, print_keyvalue, NULL);
-				putchar('\n');
-				mdb_free_props(props);
-				break;
-			default:
-				fprintf(stderr,"Unknown record type %d\n", record_type);
-				return;
-		}
-		pos += record_len;
+	GArray *aprops = kkd_to_props(mdb, kkd, len);
+	int i;
+	for (i=0; i<aprops->len; ++i) {
+		MdbProperties *props = g_array_index(aprops, MdbProperties*, i);
+		mdb_dump_props(props, stdout, 1);
 	}
 }
-

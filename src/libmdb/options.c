@@ -44,9 +44,9 @@ mdb_debug(int klass, char *fmt, ...)
 	if (!optset) load_options();
 	if (klass & opts) {	
     	va_start(ap, fmt);
-    	vfprintf (stdout,fmt, ap);
+    	vfprintf (stderr,fmt, ap);
     	va_end(ap);
-    	fprintf(stdout,"\n");
+    	fprintf(stderr,"\n");
 	}
 #endif
 }
@@ -59,7 +59,7 @@ load_options()
 
     if (!optset && (s=getenv("MDBOPTS"))) {
 		opt = strtok(s, ":");
-		do {
+		while (opt) {
         	if (!strcmp(opt, "use_index")) opts |= MDB_USE_INDEX;
         	if (!strcmp(opt, "no_memo")) opts |= MDB_NO_MEMO;
         	if (!strcmp(opt, "debug_like")) opts |= MDB_DEBUG_LIKE;
@@ -67,15 +67,17 @@ load_options()
         	if (!strcmp(opt, "debug_usage")) opts |= MDB_DEBUG_USAGE;
         	if (!strcmp(opt, "debug_ole")) opts |= MDB_DEBUG_OLE;
         	if (!strcmp(opt, "debug_row")) opts |= MDB_DEBUG_ROW;
+        	if (!strcmp(opt, "debug_props")) opts |= MDB_DEBUG_PROPS;
         	if (!strcmp(opt, "debug_all")) {
 				opts |= MDB_DEBUG_LIKE;
 				opts |= MDB_DEBUG_WRITE;
 				opts |= MDB_DEBUG_USAGE;
 				opts |= MDB_DEBUG_OLE;
 				opts |= MDB_DEBUG_ROW;
+				opts |= MDB_DEBUG_PROPS;
 			}
 			opt = strtok(NULL,":");
-		} while (opt);
+		}
     }
 	optset = 1;
 }

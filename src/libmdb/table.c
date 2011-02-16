@@ -78,6 +78,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbFormatConstants *fmt = mdb->fmt;
 	int len, row_start, pg_row;
 	void *buf, *pg_buf = mdb->pg_buf;
+	guint i;
 
 	mdb_read_pg(mdb, entry->table_pg);
 	if (mdb_get_byte(pg_buf, 0) != 0x02)  /* not a valid table def page */
@@ -109,6 +110,13 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
 	table->first_data_pg = mdb_get_int16(pg_buf, fmt->tab_first_dpg_offset);
+
+	if (entry->props)
+		for (i=0; i<entry->props->len; ++i) {
+			MdbProperties *props = g_array_index(entry->props, MdbProperties*, i);
+			if (!props->name)
+				table->props = props;
+		}
 
 	return table;
 }
@@ -205,7 +213,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *pcol;
 	unsigned char *col;
-	unsigned int i;
+	unsigned int i, j;
 	int cur_pos;
 	size_t name_sz;
 	
@@ -291,11 +299,25 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
 		g_free(tmp_buf);
 
+
 	}
 
 	/* Sort the columns by col_num */
 	g_ptr_array_sort(table->columns, (GCompareFunc)mdb_col_comparer);
 
+	GArray *allprops = table->entry->props;
+	if (allprops)
+		for (i=0;i<table->num_cols;i++) {
+			pcol = g_ptr_array_index(table->columns, i);
+			for (j=0; j<allprops->len; ++j) {
+				MdbProperties *props = g_array_index(allprops, MdbProperties*, j);
+				if (props->name && pcol->name && !strcmp(props->name, pcol->name)) {
+					pcol->props = props;
+					break;
+				}
+
+			}
+		}
 	table->index_start = cur_pos;
 	return table->columns;
 }
@@ -316,6 +338,8 @@ guint32 pgnum;
 	fprintf(stdout,"number of columns   = %d\n",table->num_cols);
 	fprintf(stdout,"number of indices   = %d\n",table->num_real_idxs);
 
+	if (table->props)
+		mdb_dump_props(table->props, stdout, 0);
 	mdb_read_columns(table);
 	mdb_read_indices(table);
 
@@ -326,6 +350,8 @@ guint32 pgnum;
 			i, col->name,
 			mdb_get_coltype_string(mdb->default_backend, col->col_type),
 			col->col_size);
+		if (col->props)
+			mdb_dump_props(col->props, stdout, 0);
 	}
 
 	for (i=0;i<table->num_idxs;i++) {
@@ -369,4 +395,18 @@ int mdb_is_system_table(MdbCatalogEntry *entry)
 {
 	return ((entry->object_type == MDB_TABLE)
 	 && (entry->flags & 0x80000002)) ? 1 : 0;
+}
+
+const char *
+mdb_table_get_prop(const MdbTableDef *table, const gchar *key) {
+	if (!table->props)
+		return NULL;
+	return g_hash_table_lookup(table->props->hash, key);
+}
+
+const char *
+mdb_col_get_prop(const MdbColumn *col, const gchar *key) {
+	if (!col->props)
+		return NULL;
+	return g_hash_table_lookup(col->props->hash, key);
 }

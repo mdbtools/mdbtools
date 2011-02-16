@@ -63,10 +63,14 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	MdbCatalogEntry *entry, msysobj;
 	MdbTableDef *table;
 	char obj_id[256];
-	char obj_name[256];
+	char obj_name[MDB_MAX_OBJ_NAME];
 	char obj_type[256];
 	char obj_flags[256];
+	char obj_props[MDB_BIND_SIZE];
 	int type;
+	unsigned int i;
+	MdbColumn *col_props;
+	int kkd_size_ole;
 
 	if (!mdb) return NULL;
 	if (mdb->catalog) mdb_free_catalog(mdb);
@@ -91,14 +95,16 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	mdb_bind_column_by_name(table, "Name", obj_name, NULL);
 	mdb_bind_column_by_name(table, "Type", obj_type, NULL);
 	mdb_bind_column_by_name(table, "Flags", obj_flags, NULL);
+	i = mdb_bind_column_by_name(table, "LvProp", obj_props, &kkd_size_ole);
+	col_props = g_ptr_array_index(table->columns, i-1);
 
 	mdb_rewind_table(table);
 
 	while (mdb_fetch_row(table)) {
 		type = atoi(obj_type);
 		if (objtype==MDB_ANY || type == objtype) {
-			// fprintf(stdout, "obj_id: %10ld objtype: %-3d obj_name: %s\n", 
-			// (atol(obj_id) & 0x00FFFFFF), type, obj_name); 
+			//fprintf(stderr, "obj_id: %10ld objtype: %-3d (0x%04x) obj_name: %s\n",
+			//	(atol(obj_id) & 0x00FFFFFF), type, type, obj_name);
 			entry = (MdbCatalogEntry *) g_malloc0(sizeof(MdbCatalogEntry));
 			entry->mdb = mdb;
 			strcpy(entry->object_name, obj_name);
@@ -106,7 +112,14 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 			entry->table_pg = atol(obj_id) & 0x00FFFFFF;
 			entry->flags = atol(obj_flags);
 			mdb->num_catalog++;
-			g_ptr_array_add(mdb->catalog, entry); 
+			g_ptr_array_add(mdb->catalog, entry);
+			if (kkd_size_ole) {
+				size_t kkd_len;
+				void *kkd = mdb_ole_read_full(mdb, col_props, &kkd_len);
+				//buffer_dump(kkd, 0, kkd_len);
+				entry->props = kkd_to_props(mdb, kkd, kkd_len);
+				free(kkd);
+			}
 		}
 	}
 	//mdb_dump_catalog(mdb, MDB_TABLE);
@@ -126,14 +139,12 @@ mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 	for (i=0;i<mdb->num_catalog;i++) {
                 entry = g_ptr_array_index(mdb->catalog,i);
 		if (obj_type==MDB_ANY || entry->object_type==obj_type) {
-			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x KKD pg: %04x row: %2d\n",
+			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x",
 			mdb_get_objtype_string(entry->object_type),
 			entry->object_name,
-			(unsigned int) entry->table_pg,
-			(unsigned int) entry->kkd_pg,
-			entry->kkd_rowid);
+			(unsigned int) entry->table_pg);
 		}
-        }
+	}
 	return;
 }
 
