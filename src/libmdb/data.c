@@ -914,6 +914,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			td = mdb_get_double(buf, start);
 			text = g_strdup_printf("%.16e", td);
 		break;
+		case MDB_BINARY:
+			if (size<0) {
+				text = g_strdup("");
+			} else {
+				text = g_malloc(size);
+				memcpy((char*)buf+start, text, size);
+			}
 		case MDB_TEXT:
 			if (size<0) {
 				text = g_strdup("");
@@ -927,7 +934,6 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = mdb_date_to_string(mdb, start);
 		break;
 		case MDB_MEMO:
-		case MDB_BINARY:
 			text = mdb_memo_to_string(mdb, start, size);
 		break;
 		case MDB_MONEY:
