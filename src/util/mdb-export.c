@@ -26,40 +26,44 @@
 #undef MDB_BIND_SIZE
 #define MDB_BIND_SIZE 200000
 
-#define is_text_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY)
+#define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY)
+#define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY)
 
 static char *escapes(char *s);
 
-void
-print_col(gchar *col_val, int quote_text, int col_type, int bin_length, char *quote_char, char *escape_char)
+//#define DONT_ESCAPE_ESCAPE
+static void
+print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char)
 {
-	gchar *s;
-	unsigned char c;
+	size_t quote_len = strlen(quote_char); /* multibyte */
 
-	if (quote_text && is_text_type(col_type)) {
+	size_t orig_escape_len = escape_char ? strlen(escape_char) : 0;
+
+	/* double the quote char if no escape char passed */
+	if (!escape_char)
+		escape_char = quote_char;
+
+	if (quote_text && is_quote_type(col_type)) {
 		fputs(quote_char,stdout);
-		if (col_type == MDB_OLE || col_type == MDB_BINARY)	{
-			while (bin_length--) {
-				c = (unsigned char)*col_val++;
-				if (strlen(quote_char)==1 && c==quote_char[0] || c==escape_char[0]) {
-					if (escape_char)
-						fputs(escape_char,stdout);
-					else /* double the quote char if no escape char passed */
-						fputs(quote_char,stdout);
-				}
-				putc(c, stdout);
-			}
+		while (1) {
+			if (is_binary_type(col_type)) {
+				if (!bin_len--)
+					break;
+			} else /* use \0 sentry */
+				if (!*col_val)
+					break;
+
+			if (quote_len && !strncmp(col_val, quote_char, quote_len)) {
+				fprintf(stdout, "%s%s", escape_char, quote_char);
+				col_val += quote_len;
+#ifndef DONT_ESCAPE_ESCAPE
+			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len)) {
+				fprintf(stdout, "%s%s", escape_char, escape_char);
+				col_val += orig_escape_len;
+#endif
+			} else
+				putc(*col_val++, stdout);
 		}
-		else
-			for (s=col_val;(c=*s);s++) {
-				if (strlen(quote_char)==1 && c==quote_char[0] || c==escape_char[0]) {
-					if (escape_char)
-						fputs(escape_char,stdout);
-					else /* double the quote char if no escape char passed */
-						fputs(quote_char,stdout);
-				}
-				putc(c, stdout);
-			}
 		fputs(quote_char,stdout);
 	} else
 		fputs(col_val,stdout);
