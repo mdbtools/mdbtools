@@ -90,7 +90,8 @@ enum {
 	MDB_OLE = 0x0b,
 	MDB_MEMO = 0x0c,
 	MDB_REPID = 0x0f,
-	MDB_NUMERIC = 0x10
+	MDB_NUMERIC = 0x10,
+	MDB_COMPLEX = 0x12
 };
 
 /* SARG operators */

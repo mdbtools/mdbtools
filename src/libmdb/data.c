@@ -911,6 +911,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				(short)mdb_get_int16(buf, start));
 		break;
 		case MDB_LONGINT:
+		case MDB_COMPLEX:
 			text = g_strdup_printf("%ld",
 				mdb_get_int32(buf, start));
 		break;
@@ -970,6 +971,7 @@ int mdb_col_disp_size(MdbColumn *col)
 			return 6;
 		break;
 		case MDB_LONGINT:
+		case MDB_COMPLEX:
 			return 11;
 		break;
 		case MDB_FLOAT:
@@ -1006,6 +1008,7 @@ int mdb_col_fixed_size(MdbColumn *col)
 			return 2;
 		break;
 		case MDB_LONGINT:
+		case MDB_COMPLEX:
 			return 4;
 		break;
 		case MDB_FLOAT:
