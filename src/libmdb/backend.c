@@ -835,13 +835,13 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, 
 
 	/* Print out a little message to show that this came from mdb-tools.
 	   I like to know how something is generated. DW */
-	fputs("-------------------------------------------------------------\n"
+	fputs("-- ----------------------------------------------------------\n"
 		"-- MDB Tools - A library for reading MS Access database files\n"
 		"-- Copyright (C) 2000-2011 Brian Bruns and others.\n"
 		"-- Files in libmdb are licensed under LGPL and the utilities under\n"
 		"-- the GPL, see COPYING.LIB and COPYING files respectively.\n"
 		"-- Check out http://mdbtools.sourceforge.net\n"
-		"-------------------------------------------------------------\n\n",
+		"-- ----------------------------------------------------------\n\n",
 		outfile);
 
 	const char *charset = mdb_target_charset(mdb);
