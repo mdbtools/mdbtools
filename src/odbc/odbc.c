@@ -220,8 +220,8 @@ SQLRETURN SQL_API SQLDescribeParam(
 SQLRETURN SQL_API SQLExtendedFetch(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       fFetchType,
-    SQLROWOFFSET       irow,
-    SQLROWSETSIZE FAR  *pcrow,
+    SQLLEN             irow,
+    SQLULEN           *pcrow,
     SQLUSMALLINT FAR  *rgfRowStatus)
 {
 struct _hstmt *stmt = (struct _hstmt *) hstmt;
@@ -1482,7 +1482,7 @@ SQLRETURN SQL_API SQLSetConnectOption(
 SQLRETURN SQL_API SQLSetStmtOption(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       fOption,
-    SQLROWCOUNT        vParam)
+    SQLULEN            vParam)
 {
 	TRACE("SQLSetStmtOption");
 	return SQL_SUCCESS;
