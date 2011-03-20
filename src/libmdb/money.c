@@ -24,7 +24,7 @@
 #include "dmalloc.h"
 #endif
 
-#define MAXPRECISION 19
+#define MAX_NUMERIC_PRECISION 28
 /* 
 ** these routines are copied from the freetds project which does something
 ** very similiar
@@ -43,41 +43,70 @@ static char *array_to_string(unsigned char *array, int unsigned scale, int neg);
  */
 char *mdb_money_to_string(MdbHandle *mdb, int start)
 {
-	const int num_bytes = 8;
+       int num_bytes=8, prec=19, scale=4;
 	int i;
 	int neg=0;
-	unsigned char multiplier[MAXPRECISION], temp[MAXPRECISION];
-	unsigned char product[MAXPRECISION];
-	unsigned char money[num_bytes];
+       unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];
+       unsigned char product[MAX_NUMERIC_PRECISION];
+       unsigned char bytes[num_bytes];
 
-	memset(multiplier,0,MAXPRECISION);
-	memset(product,0,MAXPRECISION);
+       memset(multiplier,0,MAX_NUMERIC_PRECISION);
+       memset(product,0,MAX_NUMERIC_PRECISION);
 	multiplier[0]=1;
-	memcpy(money, mdb->pg_buf + start, num_bytes);
+       memcpy(bytes, mdb->pg_buf + start, num_bytes);
 
 	/* Perform two's complement for negative numbers */
-	if (money[7] & 0x80) {
+       if (bytes[num_bytes-1] & 0x80) {
 		neg = 1;
 		for (i=0;i<num_bytes;i++) {
-			money[i] = ~money[i];
+                       bytes[i] = ~bytes[i];
 		}
 		for (i=0; i<num_bytes; i++) {
-			money[i] ++;
-			if (money[i]!=0) break;
+                       bytes[i] ++;
+                       if (bytes[i]!=0) break;
 		}
 	}
 
 	for (i=0;i<num_bytes;i++) {
 		/* product += multiplier * current byte */
-		multiply_byte(product, money[i], multiplier);
+               multiply_byte(product, bytes[i], multiplier);
 
 		/* multiplier = multiplier * 256 */
-		memcpy(temp, multiplier, MAXPRECISION);
-		memset(multiplier,0,MAXPRECISION);
+               memcpy(temp, multiplier, MAX_NUMERIC_PRECISION);
+               memset(multiplier, 0, MAX_NUMERIC_PRECISION);
 		multiply_byte(multiplier, 256, temp);
 	}
-	return array_to_string(product, 4, neg);
+       return array_to_string(product, scale, neg);
+
 }
+
+char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
+       int num_bytes = 16;
+       int i;
+       int neg=0;
+       unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];
+       unsigned char product[MAX_NUMERIC_PRECISION];
+       unsigned char bytes[num_bytes];
+
+       memset(multiplier,0,MAX_NUMERIC_PRECISION);
+       memset(product,0,MAX_NUMERIC_PRECISION);
+       multiplier[0]=1;
+       memcpy(bytes, mdb->pg_buf + start + 1, num_bytes);
+
+       /* Perform two's complement for negative numbers */
+       if (mdb->pg_buf[start] & 0x80) neg = 1;
+       for (i=0;i<num_bytes;i++) {
+               /* product += multiplier * current byte */
+               multiply_byte(product, bytes[12-4*(i/4)+i%4], multiplier);
+
+               /* multiplier = multiplier * 256 */
+               memcpy(temp, multiplier, MAX_NUMERIC_PRECISION);
+               memset(multiplier, 0, MAX_NUMERIC_PRECISION);
+               multiply_byte(multiplier, 256, temp);
+       }
+       return array_to_string(product, scale, neg);
+}
+
 static int multiply_byte(unsigned char *product, int num, unsigned char *multiplier)
 {
 	unsigned char number[3];
@@ -87,7 +116,7 @@ static int multiply_byte(unsigned char *product, int num, unsigned char *multipl
 	number[1]=(num/10)%10;
 	number[2]=(num/100)%10;
 
-	for (i=0;i<MAXPRECISION;i++) {
+       for (i=0;i<MAX_NUMERIC_PRECISION;i++) {
 		if (multiplier[i] == 0) continue;
 		for (j=0;j<3;j++) {
 			if (number[j] == 0) continue;
@@ -101,7 +130,7 @@ static int do_carry(unsigned char *product)
 {
 	unsigned int j;
 
-	for (j=0;j<MAXPRECISION-1;j++) {
+       for (j=0;j<MAX_NUMERIC_PRECISION-1;j++) {
 		if (product[j]>9) {
 			product[j+1]+=product[j]/10;
 			product[j]=product[j]%10;
@@ -117,9 +146,10 @@ static char *array_to_string(unsigned char *array, unsigned int scale, int neg)
 	char *s;
 	unsigned int top, i, j=0;
 	
-	for (top=MAXPRECISION;(top>0) && (top-1>scale) && !array[top-1];top--);
+       for (top=MAX_NUMERIC_PRECISION;(top>0) && (top-1>scale) && !array[top-1];top--);
 
-	s = (char *) g_malloc(22);
+       /* allocate enough space for all digits + minus sign + decimal point + trailing NULL byte */
+       s = (char *) g_malloc(MAX_NUMERIC_PRECISION+3);
 
 	if (neg)
 		s[j++] = '-';

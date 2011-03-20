@@ -28,9 +28,10 @@
 #define OFFSET_MASK 0x1fff
 
 char *mdb_money_to_string(MdbHandle *mdb, int start);
+char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
+
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
-static char *mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale);
 static char *mdb_date_to_string(MdbHandle *mdb, int start);
 #ifdef MDB_COPY_OLE
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
@@ -223,12 +224,9 @@ int ret;
 			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
 			char *str;
 			if (col->col_type == MDB_NUMERIC) {
-				str = mdb_num_to_string(mdb, start,
-					col->col_type, col->col_prec,
-					col->col_scale);
+                               str = mdb_numeric_to_string(mdb, start, col->col_prec, col->col_scale);
 			} else {
-				str = mdb_col_to_string(mdb, mdb->pg_buf, start,
-					col->col_type, len);
+                               str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}
 			strcpy(col->bind_ptr, str);
 			g_free(str);
@@ -753,22 +751,6 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		strcpy(text, "");
 		return text;
 	}
-}
-static char *
-mdb_num_to_string(MdbHandle *mdb, int start, int datatype, int prec, int scale)
-{
-	char *text;
-	gint32 l;
-
-	memcpy(&l, mdb->pg_buf+start+13, 4);
-
-	text = (char *) g_malloc(prec+2);
-	sprintf(text, "%0*" G_GINT32_FORMAT, prec, GINT32_FROM_LE(l));
-	if (scale) {
-		memmove(text+prec-scale+1, text+prec-scale, scale+1);
-		text[prec-scale] = '.';
-	}
-	return text;
 }
 
 #if 0
