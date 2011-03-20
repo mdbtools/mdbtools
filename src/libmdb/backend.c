@@ -750,8 +750,8 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 					}
 					else
 						fputs(defval, outfile);
+					done = 1;
 				}
-				done = 1;
 			}
 			if (!done && col->col_type == MDB_BOOL)
 				/* access booleans are false by default */
