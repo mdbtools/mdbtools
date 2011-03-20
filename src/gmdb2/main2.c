@@ -102,7 +102,7 @@ gmdb_help_cb(GtkWidget *button, gpointer data)
 
 	gnome_help_display("gmdb.xml", NULL, &error);
 	if (error != NULL) {
-		g_warning (error->message);
+		g_warning ("%s", error->message);
 		g_error_free (error);
 	}
 

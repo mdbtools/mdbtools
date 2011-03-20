@@ -142,7 +142,7 @@ gmdb_export_help_cb(GtkWidget *w, gpointer data)
 
 	gnome_help_display("gmdb.xml", "gmdb-table-export", &error);
 	if (error != NULL) {
-		g_warning (error->message);
+		g_warning ("%s", error->message);
 		g_error_free (error);
 	}
 }
@@ -195,23 +195,23 @@ int rows=0;
 		/* display column titles */
 		col=g_ptr_array_index(table->columns,i);
 		if (need_headers)  {
-			if (i>0) fprintf(outfile,delimiter);
+			if (i>0) fputs(delimiter, outfile);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, col->name);
-			fprintf(outfile,"%s", col->name);
+			fputs(col->name, outfile);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, col->name);
 		}
 	}
-	if (need_headers) fprintf(outfile,lineterm);
+	if (need_headers) fputs(lineterm, outfile);
 
 	/* fetch those rows! */
 	while(mdb_fetch_row(table)) {
 		for (i=0;i<table->num_cols;i++) {
-			if (i>0) fprintf(outfile,delimiter);
+			if (i>0) fputs(delimiter, outfile);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
-			fprintf(outfile,"%s", bound_data[i]);
+			fputs(bound_data[i], outfile);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
 		}
-		fprintf(outfile,lineterm);
+		fputs(lineterm, outfile);
 		rows++;
 	}
 

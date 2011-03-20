@@ -104,17 +104,17 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	if (need_headers)  {
 		while (col = g_list_nth_data(glist, i)) {
 			gchar *title;
-			if (i>0) fprintf(outfile,delimiter);
+			if (i>0) fputs(delimiter, outfile);
 			title = g_strdup(gtk_tree_view_column_get_title(col));
 			gmdb_print_quote(outfile, need_quote, quotechar,
 				delimiter, title);
-			fprintf(outfile,"%s", title);
+			fputs(title, outfile);
 			gmdb_print_quote(outfile, need_quote, quotechar,
 				delimiter, title);
 			g_free(title);
 			i++;
 		}
-		fprintf(outfile,lineterm);
+		fputs(lineterm, outfile);
 		g_list_free(glist);
 	}
 
@@ -126,16 +126,16 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 		rows++;
 		n_columns = gtk_tree_model_get_n_columns(GTK_TREE_MODEL(store));
 		for (i=0; i < n_columns; i++) {
-			if (i>0) fprintf(outfile,delimiter);
+			if (i>0) fputs(delimiter, outfile);
 			gtk_tree_model_get_value(GTK_TREE_MODEL(store), 
 					&iter, i, &value);
 			str = (gchar *) g_value_get_string(&value);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, str);
-			fprintf(outfile,"%s", str);
+			fputs(str, outfile);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, str);
 			g_value_unset(&value);
 		}
-		fprintf(outfile,lineterm);
+		fputs(lineterm, outfile);
 	} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter));
 
 	fclose(outfile);
@@ -433,7 +433,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	if (mdb_sql_has_error(sql)) {
 		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
 		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-		    mdb_sql_last_error(sql));
+		    "%s", mdb_sql_last_error(sql));
 		gtk_dialog_run (GTK_DIALOG (dlg));
 		gtk_widget_destroy (dlg);
 		mdb_sql_reset(sql);

@@ -205,10 +205,10 @@ main(int argc, char **argv)
 		for (j=0; j<table->num_cols; j++) {
 			col=g_ptr_array_index(table->columns,j);
 			if (j)
-				fprintf(stdout,delimiter);
-			fprintf(stdout,"%s", sanitize ? sanitize_name(col->name) : col->name);
+				fputs(delimiter, stdout);
+			fputs(sanitize ? sanitize_name(col->name) : col->name, stdout);
 		}
-		fprintf(stdout,"\n");
+		fputs("\n", stdout);
 	}
 
 	while(mdb_fetch_row(table)) {
@@ -222,16 +222,16 @@ main(int argc, char **argv)
 			fprintf(stdout, "INSERT INTO %s%s (", namespace, quoted_name);
 			free(quoted_name);
 			for (j=0;j<table->num_cols;j++) {
-				if (j>0) fprintf(stdout, ", ");
+				if (j>0) fputs(", ", stdout);
 				col=g_ptr_array_index(table->columns,j);
 				if (sanitize)
 					quoted_name = sanitize_name(col->name);
 				else
 					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-				fprintf(stdout,"%s", quoted_name);
+				fputs(quoted_name, stdout);
 				free(quoted_name);
 			} 
-			fprintf(stdout, ") VALUES (");
+			fputs(") VALUES (", stdout);
 		}
 
 		for (j=0;j<table->num_cols;j++) {

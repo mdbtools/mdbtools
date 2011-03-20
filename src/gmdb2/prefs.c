@@ -44,7 +44,7 @@ gmdb_prefs_help_cb(GtkWidget *w, gpointer data)
 
 	gnome_help_display("gmdb.xml", "gmdb-prefs", &error);
 	if (error != NULL) {
-		g_warning (error->message);
+		g_warning ("%s", error->message);
 		g_error_free (error);
 	}
 }

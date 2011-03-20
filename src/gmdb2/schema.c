@@ -165,7 +165,7 @@ gmdb_schema_help_cb(GtkWidget *w, gpointer data)
 
 	gnome_help_display("gmdb.xml", "gmdb-schema", &error);
 	if (error != NULL) {
-		g_warning (error->message);
+		g_warning ("%s", error->message);
 		g_error_free (error);
 	}
 }
