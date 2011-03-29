@@ -296,7 +296,7 @@ next_pg field.
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
-| ???? | 4 bytes | num_idx     | Number of indexes in table               |
+| ???? | 4 bytes | num_idx     | Number of logical indexes in table       |
 | ???? | 4 bytes | num_real_idx| Number of index entries                  |
 | ???? | 4 bytes | used_pages  | Points to a record containing the        |
 |      |         |             | usage bitmask for this table.            |
@@ -327,14 +327,14 @@ next_pg field.
 | ???? | 1 byte  | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column                       |
 +-------------------------------------------------------------------------+
-| Iterate for indexes with index_type 0 or 1 (30+9 = 39 bytes)            |
+| Iterate for the number of num_real_idx (30+9 = 39 bytes)                |
 +-------------------------------------------------------------------------+
 |     Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
 +-------------------------------------------------------------------------+
 | ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
 | ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
 +-------------------------------------------------------------------------+
-| ???? | 4 bytes | unknown     |                                          |
+| ???? | 4 bytes | used_pages  | Points to usage bitmap for index         |
 | ???? | 4 bytes | first_dp    | Data pointer of the index page           |
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 +-------------------------------------------------------------------------+
@@ -343,11 +343,14 @@ next_pg field.
 | ???? | 4 bytes | index_num   | Number of the index                      |
 |      |         |             |(warn: not always in the sequential order)|
 | ???? | 4 bytes | index_num2  | Index into index cols list               |
-| 0x00 | 1 byte  | ???         |                                          |
-| 0xFF | 4 bytes | ???         |                                          |
-| 0x00 | 4 bytes | ???         |                                          |
-| 0x04 | 2 bytes | ???         |                                          |
-| ???? | 1 byte  | primary_key | 0x01 if this index is primary            |
+| 0x00 | 1 byte  | rel_tbl_type| type of the other table in this fk       |
+|      |         |             | (same values as index_type)              |
+| 0xFF | 4 bytes | rel_idx_num | index number of other index in fk        |
+|      |         |             | (or -1 if this index is not a fk)        |
+| 0x00 | 4 bytes | rel_tbl_page| page number of other table in fk         |
+| 0x01 | 1 byte  | cascade_ups | flag indicating if updates are cascaded  |
+| 0x01 | 1 byte  | cascade_dels| flag indicating if deletes are cascaded  |
+| ???? | 1 byte  | index_type  | 0x01 if index is primary, 0x02 if foreign|
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_idx                                       |
 +-------------------------------------------------------------------------+
@@ -376,7 +379,7 @@ next_pg field.
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
-| ???? | 4 bytes | num_idx     | Number of indexes in table               |
+| ???? | 4 bytes | num_idx     | Number of logical indexes in table       |
 | ???? | 4 bytes | num_real_idx| Number of index entries                  |
 | ???? | 4 bytes | used_pages  | Points to a record containing the        |
 |      |         |             | usage bitmask for this table.            |
@@ -408,7 +411,7 @@ next_pg field.
 | ???? | 2 bytes | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column (UCS-2 format)        |
 +-------------------------------------------------------------------------+
-| Iterate for indexes with index_type 0 or 1 (30+22 = 52 bytes)           |
+| Iterate for the number of num_real_idx (30+22 = 52 bytes)               |
 +-------------------------------------------------------------------------+
 | ???? | 4 bytes | ???         |                                          |
 +-------------------------------------------------------------------------+
@@ -417,7 +420,7 @@ next_pg field.
 | ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
 | ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
 +-------------------------------------------------------------------------+
-| ???? | 4 bytes | unknown     |                                          |
+| ???? | 4 bytes | used_pages  | Points to usage bitmap for index         |
 | ???? | 4 bytes | first_dp    | Data pointer of the index page           |
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 | ???? | 9 bytes | unknown     |                                          |
@@ -428,12 +431,14 @@ next_pg field.
 | ???? | 4 bytes | index_num   | Number of the index                      |
 |      |         |             |(warn: not always in the sequential order)|
 | ???? | 4 bytes | index_num2  | Index into index cols list               |
-| 0x00 | 1 byte  | ???         |                                          |
-| 0xFF | 4 bytes | ???         |                                          |
-| 0x00 | 4 bytes | ???         |                                          |
-| 0x04 | 2 bytes | ???         |                                          |
-| ???? | 1 byte  | primary_key | 0x01 if this index is primary            |
-| ???? | 4 bytes | unknown     |                                          |
+| 0x00 | 1 byte  | rel_tbl_type| type of the other table in this fk       |
+|      |         |             | (same values as index_type)              |
+| 0xFF | 4 bytes | rel_idx_num | index number of other index in fk        |
+|      |         |             | (or -1 if this index is not a fk)        |
+| 0x00 | 4 bytes | rel_tbl_page| page number of other table in fk         |
+| 0x01 | 1 byte  | cascade_ups | flag indicating if updates are cascaded  |
+| 0x01 | 1 byte  | cascade_dels| flag indicating if deletes are cascaded  |
+| ???? | 1 byte  | index_type  | 0x01 if index is primary, 0x02 if foreign|
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_idx                                       |
 +-------------------------------------------------------------------------+
@@ -482,6 +487,29 @@ Column Type may be one of the following (not complete):
     UNKNOWN_0E      = 0x0E
     REPID           = 0x0F /* GUID */
     NUMERIC         = 0x10 /* Scaled decimal  (17 bytes) */
+
+Notes on reading index metadata:
+
+There are 2 types of index metadata, "physical" index info (denoted by
+num_real_idx) and "logical" index info (denoted by num_idx).  Normally, there
+is a 1 to 1 relationship between these 2 types of information.  However there
+can be more logical index infos than physical index infos (currently only seen
+for foreign key indexes).  In this situation, one or more of the logical
+indexes actually share the same underlying physical index (the index_num2
+indicates which physical index backs which logical index).
+
+As noted in the previous paragraph, physical index sharing is generally only
+seen when a foreign key index has been created.  When access creates a
+relationship between 2 tables with "enforce referential integrity" enabled,
+each of the tables gets an extra logical index with type 2 (foreign key).
+These logical indexes contain extra information, primarily pointers to the
+related table (rel_tbl_page) and logical index (rel_idx_num).  Also, the
+rel_tbl_type value indicates which table in the relationship is the "primary"
+table (the one one from which cascaded updates/deletes flow).  If the indexed
+columns for the foreign key are already indexed by another logical index in
+the table (e.g. an index which the user has explicitly created), then the
+logical foreign key index will simply share the underlying physical index
+data.
 
 Notes on deleted and added columns: (sort of Jet4 specific)
 
