@@ -612,7 +612,8 @@ Indices are not completely understood but here is what we know.
 | ???? | 4 bytes | parent_page | The page number of the TDEF for this idx |
 | ???? | 4 bytes | prev_page   | Previous page at this index level        |
 | ???? | 4 bytes | next_page   | Next page at this index level            |
-| ???? | 4 bytes | leaf_page   | Pointer to leaf page, purpose unknown    |
+| ???? | 4 bytes | tail_page   | Pointer to tail leaf page                |
+| ???? | 2 bytes | pref_len    | Length of the shared entry prefix        |
 +-------------------------------------------------------------------------+
 
 Index pages come in two flavors.
@@ -668,21 +669,29 @@ So now we come to the index entries for type 0x03 pages which look like this:
 |      |         |             | index entry                              |
 | ???? | 1 byte  | data row    | row number on that page of this entry    |
 | ???? | 4 bytes | child page  | next level index page containing this    |
-|      |         |             | entry as first entry.  Could be a leaf   |
+|      |         |             | entry as last entry.  Could be a leaf    |
 |      |         |             | node.                                    |
 +-------------------------------------------------------------------------+
 
-The flag field is generally either 0x00, 0x7f, 0x80.  0x80 is the one's 
-complement of 0x7f and all text data in the index would then need to be negated.
-The reason for this negation is unknown, although I suspect it has to do with 
-descending order.  The 0x00 flag indicates that the key column is null, and no 
-data will follow, only the page pointer.  In multicolumn indexes the flag field 
-plus data is repeated for the number of columns participating in the key.
+The flag field is generally either 0x00, 0x7f, 0x80, or 0xFF.  0x80 is the
+one's complement of 0x7f and all text data in the index would then need to be
+negated.  The reason for this negation is descending order.  The 0x00 flag
+indicates that the key column is null (or 0xFF for descending order), and no
+data will follow, only the page pointer.  In multicolumn indexes the flag
+field plus data is repeated for the number of columns participating in the
+key.  Index entries are always sorted based on the lexicographical order of
+the entry bytes of the entire index entry (thus descending order is achieved
+by negating the bytes).  The flag field ensures that null values are always
+sorted at the beginning (for ascending) or end (for descending) of the index.
 
-Note, there is a compression scheme utilized on leaf pages.  Normally an index
-entry with an integer primary key would be 9 bytes (1 for the flags field, 4 for
-the integer, 4 for page/row).  The entry can be shorter than 9, containing only
-5 bytes, where the first byte is the last octet of the encoded primary key field
+Note, there is a compression scheme utilizing a shared entry prefix.  If an
+index page has a shared entry prefix (idicated by a pref_len > 0), then the
+first pref_len bytes from the first entry need to be pre-pended to every
+subsequent entry on the page to get the full entry bytes.  For example,
+normally an index entry with an integer primary key would be 9 bytes (1 for
+the flags field, 4 for the integer, 4 for page/row).  If the pref_len on the
+index page were 4, every entry after the first would then contain only 5
+bytes, where the first byte is the last octet of the encoded primary key field
 (integer) and the last four are the page/row pointer.  Thus if the first key
 value on the page is 1 and it points to page 261 (00 01 05) row 3, it becomes:
 
@@ -692,7 +701,11 @@ and the next index entry can be:
 
 02 00 01 05 04
 
-That is, the key value is 2 (the last octet changes to 02) page 261 row 4.
+That is, the shared prefix is [7f 00 00 00], so the actual next entry is:
+
+[7f 00 00 00] 02 00 01 05 04
+
+so the key value is 2 (the last octet changes to 02) page 261 row 4.
 
 Access stores an 'alphabetic sort order' version of the text key columns in the
 index.  Here is the encoding as we know it:
@@ -702,8 +715,8 @@ A-Z: 0x60-0x79
 a-z: 0x60-0x79
 
 Once converted into this (non-ascii) character set, the text value can be
-sorted in 'alphabetic' order.  A text column will end with a NULL (0x00 or 0xff
-if negated).  
+sorted in 'alphabetic' order using the lexicographical order of the entry
+bytes.  A text column will end with a NULL (0x00 or 0xff if negated).
 
 The leaf page entries store the key column and the 3 byte page and 1 byte row
 number.
@@ -718,13 +731,17 @@ character set, compare against each index entry, and on successful comparison
 follow the page and row number to the data.  Because text data is managled 
 during this conversion there is no 'covered querys' possible on text columns.
 
-To conserve on frequent index updates, Jet also does something special when 
-creating new leaf pages at the end of a primary key (maybe others as well) index.  
-The next leaf page pointer of the last leaf node points to the new leaf page but 
-the index tree is not otherwise updated.  In src/libmdb/index.c, the last leaf 
-read is stored, once the index search has been exhausted by the normal search 
-routine, it enters a "clean up mode" and reads the next leaf page pointer until 
-it's null.
+To conserve on frequent index updates, Jet also does something special when
+creating new leaf pages at the end of a primary key index (or other index
+where new values are generally added to the end of the index).  The tail leaf
+page pointer of the last leaf node points to the new leaf page but the index
+tree is not otherwise updated.  Since index entries in type 0x03 index pages
+point to the last entry in the page, adding a new entry to the end of a large
+index would cause updates all the way up the index tree.  Instead, the tail
+page can be updated in isolation until it is full, and then moved into the
+index proper.  In src/libmdb/index.c, the last leaf read is stored, once the
+index search has been exhausted by the normal search routine, it enters a
+"clean up mode" and reads the next leaf page pointer until it's null.
  
 Properties
 ----------
