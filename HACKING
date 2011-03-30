@@ -753,20 +753,28 @@ They start with a 32 bits header: 'KKD\0' in Jet3 and 'MR2\0' in Jet 4.
 
 Next come chunks. Each chunk starts with:
 32 bits length value (this includes the length)
-16 bits chunk type (0x00 0x80 contains the names, 0x00 0x00 and 0x00 0x01 contain
-	the values)
+16 bits chunk type (0x0080 contains the names, 0x0000 and 0x0001 contain
+	the values.  0x0000 seems to contain information about the "main" object,
+	e.g. the table, and 0x0001 seems to contain information about other
+	objects, e.g. the table columns)
 
-Name chunks (0x00 0x80) simply contains occurences of:
+Name chunk blocks (0x0080) simply contain occurences of:
 16 bit name length
 name
 For instance: 
 0x0d 0x00 and 'AccessVersion' (AccessVersion is 13 bytes, 0x0d 0x00 intel order)
 
-Next comes one of more chunk of data:
+Value chunk blocks (0x0000 and 0x0001) contain a header:
+32 bits length value (this includes the length)
+16 bits name length
+name  (0x0000 chunk blocks are not usually named, 0x0001 chunk blocks have the
+      column name to which the properties belong)
+Next comes one of more chunks of data:
 16 bit length value    (this includes the length)
+8 bit unknown flag
 8 bit type
-16 bit name (index in the name array of above chunk 0x00 0x80)
-16 bit length field (non-inclusive)
+16 bit name (index in the name array of above chunk 0x0080)
+16 bit value length field (non-inclusive)
 value (07.53 for the AccessVersion example above)
 
 See props.c for an example.
