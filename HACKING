@@ -721,6 +721,10 @@ Once converted into this (non-ascii) character set, the text value can be
 sorted in 'alphabetic' order using the lexicographical order of the entry
 bytes.  A text column will end with a NULL (0x00 or 0xff if negated).
 
+Note, this encoding is the "General" sort order in Access 2000-2007.  As of
+Access 2010, this is now called the "General legacy" sort order, and the 2010
+"General" sort order is a new encoding.
+
 The leaf page entries store the key column and the 3 byte page and 1 byte row
 number.
 
