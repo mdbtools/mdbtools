@@ -374,7 +374,8 @@ next_pg field.
 | ???? | 4 bytes | num_rows    | Number of records in this table          |
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
-| ???? |16 bytes | unknown     | unknown                                  |
+| 0x01 | 1 byte  | autonum_flag| 0x01 makes autonumbers work in access    |
+| ???? |15 bytes | unknown     | unknown                                  |
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
@@ -399,12 +400,14 @@ next_pg field.
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number                            |
-| ???? | 4 bytes | ???         | prec/scale? or LCID (0x409=English)?     |
-| ???? | 1 byte  | bitmask     | See column flags bellow                  |
-| ???? | 1 byte  | ???         | seems to be 1 when variable len          |
+| ???? | 2 bytes | misc        | prec/scale (1 byte each), or sort order  |
+|      |         |             | for textual columns(0x409=General)       |
+| ???? | 2 bytes | ???         |                                          |
+| ???? | 1 byte  | bitmask     | See column flags below                   |
+| ???? | 1 byte  | misc_flags  | 0x01 for compressed unicode              |
 | 0000 | 4 bytes | ???         |                                          |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
-| ???? | 2 bytes | col_len     | Length of the column (0 if memo)         |
+| ???? | 2 bytes | col_len     | Length of the column (0 if memo/ole)     |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_cols (n*2 bytes per column)               |
 +-------------------------------------------------------------------------+
@@ -453,8 +456,8 @@ next_pg field.
 +-------------------------------------------------------------------------+
 
 Columns flags (not complete):
-0x01: variable length column
-0x02: can be null
+0x01: fixed length column
+0x02: can be null (possibly related to joins?)
 0x04: is auto long
 0x10: replication related field (or hidden?). These columns start with "s_" or
       "Gen_" (the "Gen_" fields are for memo fields)
