@@ -776,6 +776,54 @@ static int trim_trailing_zeros(char * buff)
 }
 #endif
 
+void
+mdb_date_to_tm(double td, struct tm *t)
+{
+	long int day, time;
+	int yr, q;
+	int *cal;
+	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
+
+	day = (long int)(td);
+	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
+	t->tm_hour = time / 3600;
+	t->tm_min = (time / 60) % 60;
+	t->tm_sec = time % 60;
+	t->tm_year = 1 - 1900;
+
+	day += 693593; /* Days from 1/1/1 to 12/31/1899 */
+	t->tm_wday = (day+1) % 7;
+
+	q = day / 146097;  /* 146097 days in 400 years */
+	t->tm_year += 400 * q;
+	day -= q * 146097;
+
+	q = day / 36524;  /* 36524 days in 100 years */
+	if (q > 3) q = 3;
+	t->tm_year += 100 * q;
+	day -= q * 36524;
+
+	q = day / 1461;  /* 1461 days in 4 years */
+	t->tm_year += 4 * q;
+	day -= q * 1461;
+
+	q = day / 365;  /* 365 days in 1 year */
+	if (q > 3) q = 3;
+	t->tm_year += q;
+	day -= q * 365;
+
+	yr = t->tm_year + 1900;
+	cal = ((yr)%4==0 && ((yr)%100!=0 || (yr)%400==0)) ?
+		leap_cal : noleap_cal;
+	for (t->tm_mon=0; t->tm_mon<12; t->tm_mon++) {
+		if (day < cal[t->tm_mon+1]) break;
+	}
+	t->tm_mday = day - cal[t->tm_mon] + 1;
+	t->tm_yday = day;
+	t->tm_isdst = -1;
+}
+
 /* Date/Time is stored as a double, where the whole
    part is the days from 12/30/1899 and the fractional
    part is the fractional part of one day. */
@@ -783,52 +831,10 @@ static char *
 mdb_date_to_string(MdbHandle *mdb, int start)
 {
 	struct tm t;
-	long int day, time;
-	int yr, q;
-	int *cal;
-	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
-	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
-
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 	double td = mdb_get_double(mdb->pg_buf, start);
 
-	day = (long int)(td);
-	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
-	t.tm_hour = time / 3600;
-	t.tm_min = (time / 60) % 60;
-	t.tm_sec = time % 60; 
-	t.tm_year = 1 - 1900;
-
-	day += 693593; /* Days from 1/1/1 to 12/31/1899 */
-	t.tm_wday = (day+1) % 7;
-
-	q = day / 146097;  /* 146097 days in 400 years */
-	t.tm_year += 400 * q;
-	day -= q * 146097;
-
-	q = day / 36524;  /* 36524 days in 100 years */
-	if (q > 3) q = 3;
-	t.tm_year += 100 * q;
-	day -= q * 36524;
-
-	q = day / 1461;  /* 1461 days in 4 years */
-	t.tm_year += 4 * q;
-	day -= q * 1461;
-
-	q = day / 365;  /* 365 days in 1 year */
-	if (q > 3) q = 3;
-	t.tm_year += q;
-	day -= q * 365;
-
-	yr = t.tm_year + 1900;
-	cal = ((yr)%4==0 && ((yr)%100!=0 || (yr)%400==0)) ?
-		leap_cal : noleap_cal;
-	for (t.tm_mon=0; t.tm_mon<12; t.tm_mon++) {
-		if (day < cal[t.tm_mon+1]) break;
-	}
-	t.tm_mday = day - cal[t.tm_mon] + 1;
-	t.tm_yday = day;
-	t.tm_isdst = -1;
+	mdb_date_to_tm(td, &t);
 
 	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
 

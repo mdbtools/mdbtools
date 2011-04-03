@@ -463,6 +463,7 @@ extern const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
 /* data.c */
 extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
 extern void mdb_data_dump(MdbTableDef *table);
+extern void mdb_date_to_tm(double td, struct tm *t);
 extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
 extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
