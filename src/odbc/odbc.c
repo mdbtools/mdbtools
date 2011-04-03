@@ -1166,26 +1166,104 @@ SQLRETURN SQL_API SQLGetData(
 		}
 	}
 	
-	if (col->col_type == MDB_BOOL) {
-		strcpy(rgbValue, (col->cur_value_len)?"0":"1");
-		if (pcbValue)
-			*pcbValue = 1;
-	} else if (col->cur_value_len) {
-		char *str = mdb_col_to_string(mdb,mdb->pg_buf,
-			col->cur_value_start,col->col_type,col->cur_value_len);
-		strcpy(rgbValue, str);
-		g_free(str);
-		if (pcbValue)
-			*pcbValue = col->cur_value_len;
-	} else {
-		/* When NULL data is retrieved, non-null pcbValue is required */
-		if (pcbValue) {
-			*pcbValue = SQL_NULL_DATA;
-		} else {
-			strcpy(sqlState, "22002");
-			return SQL_ERROR;
-		}		
+	switch(col->col_type) {
+		case MDB_BOOL:
+			*(BOOL *)rgbValue = col->cur_value_len ? 0 : 1;
+			if (pcbValue)
+				*pcbValue = 1;
+			break;
+		case MDB_BYTE:
+			*((SQLSMALLINT *)rgbValue) = mdb_get_byte(mdb->pg_buf, col->cur_value_start);
+			if(pcbValue)
+				*pcbValue = sizeof(SQLSMALLINT);
+			break;
+		case MDB_INT:
+			*((SQLSMALLINT *)rgbValue) = (long)mdb_get_int16(mdb->pg_buf, col->cur_value_start);
+			if(pcbValue)
+				*pcbValue = sizeof(SQLSMALLINT);
+			break;
+		case MDB_LONGINT:
+			*((SQLINTEGER *)rgbValue) = mdb_get_int32(mdb->pg_buf, col->cur_value_start);
+			if(pcbValue)
+				*pcbValue = sizeof(SQLINTEGER);
+			break;
+		case MDB_FLOAT:
+			*((float *)rgbValue) = mdb_get_single(mdb->pg_buf, col->cur_value_start);
+			if(pcbValue)
+				*pcbValue = sizeof(float);
+			break;
+		case MDB_DOUBLE:
+			*((double *)rgbValue) = mdb_get_single(mdb->pg_buf, col->cur_value_start);
+			if(pcbValue)
+				*pcbValue = sizeof(double);
+			break;
+		case MDB_DATETIME: ;
+			TIMESTAMP_STRUCT sql_ts;
+			struct tm tmp_t;
+
+			mdb_date_to_tm(mdb_get_double(mdb->pg_buf, col->cur_value_start), &tmp_t);
+
+			sql_ts.year     = tmp_t.tm_year + 1900;
+			sql_ts.month    = tmp_t.tm_mon + 1;
+			sql_ts.day      = tmp_t.tm_mday;
+			sql_ts.hour     = tmp_t.tm_hour;
+			sql_ts.minute   = tmp_t.tm_min;
+			sql_ts.second   = tmp_t.tm_sec;
+			sql_ts.fraction = 0;
+
+			*((TIMESTAMP_STRUCT *)rgbValue) = sql_ts;
+			if(pcbValue)
+				*pcbValue = sizeof(TIMESTAMP_STRUCT);
+			break;
+		default:
+			if (col->cur_value_len) {
+				char *str = mdb_col_to_string(mdb,mdb->pg_buf, col->cur_value_start,col->col_type,col->cur_value_len);
+
+				/* for the sake of keeping track of truncation -- see
+				   below */
+				static int cut_off = 0;
+				int len = strlen(str);
+
+				if (len - cut_off > cbValueMax) {
+					/* the buffer we were given is too small, so
+					   truncate it to the size of the buffer */
+					strncpy(rgbValue, str, cbValueMax);
+					cut_off = cbValueMax;
+
+					if (pcbValue) *pcbValue = len;
+
+					free(str);
+
+					return SQL_SUCCESS_WITH_INFO;
+				}
+				/* According to pyodbc, the idea is that if we've
+				   truncated the data into rgbValue and returned
+				   SQL_SUCCESS_WITH_INFO, we're going to get called
+				   again with a fragment of a now-expand buffer into
+				   which we write the remainder of the data.  This
+				   means we have to keep track of where we got cut off
+				   and much got cut off (thus cut_off is a static int)
+				   and write that into the buffer.  Seems strange to
+				   me. */
+				if (pcbValue)
+					*pcbValue = len - cut_off;
+
+				strncpy(rgbValue, &str[cut_off], len - cut_off);
+				cut_off = 0;
+
+				free(str);
+			} else {
+				/* When NULL data is retrieved, non-null pcbValue is
+				   required */
+				if (pcbValue) {
+					*pcbValue = SQL_NULL_DATA;
+				} else {
+					strcpy(sqlState, "22002");
+					return SQL_ERROR;
+				}
+			}
 	}
+
 	return SQL_SUCCESS;
 }
 
@@ -1678,6 +1756,9 @@ static int _odbc_get_server_type(int clt_type)
 static SQLSMALLINT _odbc_get_client_type(int srv_type)
 {
 	switch (srv_type) {
+		case MDB_DATETIME:
+			return SQL_TYPE_TIMESTAMP;
+			break;
 		case MDB_BOOL:
 			return SQL_BIT;
 			break;
