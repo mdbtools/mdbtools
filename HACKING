@@ -73,18 +73,28 @@ The first byte of each page identifies the page type as follows.
 Database Definition Page
 ------------------------
 
-Each MDB database has a single definition page located at beginning of the file.
-Not a lot is known about this page, and it is one of the least documented page
-types.  However, it contains things like Jet version, encryption keys, and name
-of the creating program.
+Each MDB database has a single definition page located at beginning of the
+file.  Not a lot is known about this page, and it is one of the least
+documented page types.  However, it contains things like Jet version,
+encryption keys, and name of the creating program.  Note, this page is
+"encrypted" with a simple rc4 key starting at offset 0x18 and extending for
+126 (Jet3) or 128 (Jet4) bytes.
 
 Offset 0x14 contains the Jet version of this database: 0x00 for 3, 0x01 for 4,
 0x02 for 5, 0x03 for Access 2010.
 This is used by the mdb-ver utility to determine the Jet version.
 
-The 14 bytes starting at 0x42 are the (encrypted) database password.
+The 20 bytes (Jet3) or 40 bytes (Jet4) starting at 0x42 are the database
+password.  In Jet4, there is an additional mask applied to this password
+derived from the database creation date (also stored on this page as 8 bytes
+starting at offset 0x72).
 
 The 4 bytes at 0x3e on the Database Definition Page are the database key.
+
+The 2 bytes at 0x3C are the default database code page (useless in Jet4?).
+
+The 2 bytes at 0x3A (Jet3) or 4 bytes at 0x6E (Jet4) are the default text
+collating sort order.
 
 Data Pages
 ----------
@@ -314,9 +324,9 @@ next_pg field.
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number                            |
-| ???? | 2 bytes | ???         |                                          |
-| ???? | 1 byte  | precision   | precision if numeric column              |
-| ???? | 1 byte  | scale       | scale if numeric column                  |
+| ???? | 2 bytes | sort_order  | textual column sort order(0x409=General) |
+| ???? | 2 bytes | misc        | prec/scale (1 byte each), or code page   |
+|      |         |             | for textual columns (0x4E4=cp1252)       |
 | ???? | 2 bytes | ???         |                                          |
 | ???? | 1 byte  | bitmask     | See Column flags bellow                  |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
@@ -402,7 +412,7 @@ next_pg field.
 | ???? | 2 bytes | col_num     | Column Number                            |
 | ???? | 2 bytes | misc        | prec/scale (1 byte each), or sort order  |
 |      |         |             | for textual columns(0x409=General)       |
-| ???? | 2 bytes | ???         |                                          |
+| ???? | 2 bytes | misc_ext    | text sort order version num is 2nd byte  |
 | ???? | 1 byte  | bitmask     | See column flags below                   |
 | ???? | 1 byte  | misc_flags  | 0x01 for compressed unicode              |
 | 0000 | 4 bytes | ???         |                                          |
@@ -721,9 +731,9 @@ Once converted into this (non-ascii) character set, the text value can be
 sorted in 'alphabetic' order using the lexicographical order of the entry
 bytes.  A text column will end with a NULL (0x00 or 0xff if negated).
 
-Note, this encoding is the "General" sort order in Access 2000-2007.  As of
-Access 2010, this is now called the "General legacy" sort order, and the 2010
-"General" sort order is a new encoding.
+Note, this encoding is the "General" sort order in Access 2000-2007 (1033,
+version 0).  As of Access 2010, this is now called the "General legacy" sort
+order, and the 2010 "General" sort order is a new encoding (1033, vesion 1).
 
 The leaf page entries store the key column and the 3 byte page and 1 byte row
 number.
