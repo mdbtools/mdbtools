@@ -385,7 +385,10 @@ next_pg field.
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
 | 0x01 | 1 byte  | autonum_flag| 0x01 makes autonumbers work in access    |
-| ???? |15 bytes | unknown     | unknown                                  |
+| ???? | 3 bytes | unknown     | unknown                                  |
+| 0x00 | 4 bytes | ct_autonum  | autonumber value for complex type column(s) |
+|      |         |             | (shared across all columns in the table) |
+| ???? | 8 bytes | unknown     | unknown                                  |
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
@@ -412,6 +415,7 @@ next_pg field.
 | ???? | 2 bytes | col_num     | Column Number                            |
 | ???? | 2 bytes | misc        | prec/scale (1 byte each), or sort order  |
 |      |         |             | for textual columns(0x409=General)       |
+|      |         |             | or "complexid" for complex columns (4bytes)|
 | ???? | 2 bytes | misc_ext    | text sort order version num is 2nd byte  |
 | ???? | 1 byte  | bitmask     | See column flags below                   |
 | ???? | 1 byte  | misc_flags  | 0x01 for compressed unicode              |
