@@ -16,6 +16,7 @@ libmdbodbc_la_LIBADD=	$(patsubst %, $(SQLDIR)/%, \
 				$(patsubst %, $(MDBDIR)/%, \
 				$(patsubst %.c, %.lo, $(MDBSOURCES))) \
 				../libmdb/libmdb.la
+libmdbodbc_la_LDFLAGS = -Wl,--version-script=$(srcdir)/libmdbodbc.map
 LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBC_LIBS)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 
