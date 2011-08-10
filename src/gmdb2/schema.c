@@ -27,7 +27,6 @@ extern MdbHandle *mdb;
 GladeXML *schemawin_xml;
 static gchar backend[100];
 static gchar tabname[MDB_MAX_OBJ_NAME+1];
-static gchar file_path[PATH_MAX+1];
 static guint32 export_options;
 
 #define ALL_TABLES   "(All Tables)"
@@ -47,7 +46,7 @@ static struct {
 #define n_capabilities (sizeof(capabilities_xlt)/sizeof(capabilities_xlt[0]))
 
 static void
-gmdb_schema_export()
+gmdb_schema_export(const gchar *file_path)
 {
 FILE *outfile;
 
@@ -77,13 +76,13 @@ void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)
 {
 GtkWidget *schemawin, *combo, *checkbox, *chooser;
+gchar *file_path;
 int i;
 
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
 
 	chooser = glade_xml_get_widget (schemawin_xml, "filechooserbutton1");
-	strncpy(file_path,gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser)),PATH_MAX);
-	file_path[PATH_MAX]=0;
+	file_path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
 
 	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
 	strncpy(tabname,gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),MDB_MAX_OBJ_NAME);
@@ -112,7 +111,7 @@ int i;
 	//printf("%s %s %02X\n",tabname,backend,export_options);
 
 	gtk_widget_destroy(schemawin);
-	gmdb_schema_export();
+	gmdb_schema_export(file_path);
 }
 static void
 check_default_options() {
