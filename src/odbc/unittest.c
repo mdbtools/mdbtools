@@ -23,11 +23,6 @@
 
 #include <stdio.h>
 
-static char  software_version[]   = "$Id: unittest.c,v 1.8 2005/04/29 03:08:22 whydoubt Exp $";
-static void *no_unused_var_warn[] = {software_version,
-                                     no_unused_var_warn};
-
-
 
 #define SALES_PERSON_LEN 2
 #define STATUS_LEN 6

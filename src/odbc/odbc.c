@@ -27,9 +27,6 @@
 
 #include "connectparams.h"
 
-static char  software_version[]   = "$Id: odbc.c,v 1.31 2007/03/18 14:11:43 brianb Exp $";
-static void *no_unused_var_warn[] = {software_version,
-                                     no_unused_var_warn};
 static iconv_t iconv_in,iconv_out;
 
 static SQLSMALLINT _odbc_get_client_type(int srv_type);
