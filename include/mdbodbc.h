@@ -53,6 +53,8 @@ struct _hstmt {
 	char query[4096];
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
+	int icol;
+	int pos;
 };
 
 struct _sql_bind_info {

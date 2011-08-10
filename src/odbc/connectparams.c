@@ -319,6 +319,43 @@ gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
    return params->dsnName->str;   
 }
 
+gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
+{
+   char *p, *q, *s;
+
+   if (!params)
+      return NULL;
+   /*
+    * Position ourselves to the beginning of "DSN"
+    */
+   p = strstr (connectString, "DBQ");
+   if (!p) return NULL;
+   /*
+    * Position ourselves to the "="
+    */
+   q = strchr (p, '=');
+   if (!q) return NULL;
+   /*
+    * Skip over any leading spaces
+    */
+   q++;
+   while (isspace(*q))
+     q++;
+   /*
+    * Copy the DSN value to a buffer
+    */
+   s = line;
+   while (*q && *q != ';')
+      *s++ = *q++;
+   *s = '\0';
+   /*
+    * Save it as a string in the params object
+    */
+   params->dsnName = g_string_assign (params->dsnName, line);
+
+   return params->dsnName->str;
+}
+
 /*
  * Begin local function definitions
  */

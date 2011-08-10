@@ -38,5 +38,6 @@ void     SetConnectString (ConnectParams* params, const gchar* connectString);
 void     DumpParams       (ConnectParams* params, FILE* output);
 
 gchar*   ExtractDSN (ConnectParams* params, const gchar* connectString);
+gchar*   ExtractDBQ (ConnectParams* params, const gchar* connectString);
 
 #endif
