@@ -61,11 +61,11 @@ static MdbBackendType mdb_access_types[] = {
 /*    Oracle data types */
 static MdbBackendType mdb_oracle_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x00",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER(1)",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER(3)",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER(5)",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER(11)",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMBER(15,2)",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("FLOAT",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("FLOAT",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("TIMESTAMP",0,0,0),
