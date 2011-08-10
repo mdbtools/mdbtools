@@ -386,20 +386,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	gtk_combo_set_popdown_strings(GTK_COMBO(combo), history);
 
 	/* ok now execute it */
-	g_input_ptr = buf;
-	/* begin unsafe */
-	_mdb_sql(sql);
-	mdb_sql_clear_error(sql);
-	if (yyparse()) {
-		/* end unsafe */
-		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
-		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-		    _("Couldn't parse SQL."));
-		gtk_dialog_run (GTK_DIALOG (dlg));
-		gtk_widget_destroy (dlg);
-		mdb_sql_reset(sql);
-		return;
-	}
+	mdb_sql_run_query(sql, buf);
 	if (mdb_sql_has_error(sql)) {
 		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
 		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
@@ -408,7 +395,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 		gtk_widget_destroy (dlg);
 		mdb_sql_reset(sql);
 		return;
-        }
+	}
 
 	treeview = glade_xml_get_widget(xml, "sql_results");
 

@@ -55,7 +55,6 @@ extern void clear_history ();
 
 void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
 void dump_results_pp(FILE *out, MdbSQL *sql);
-int yyparse(void);
 
 #if SQL
 
@@ -91,21 +90,6 @@ int i = 0;
 	return buf;
 }
 #endif
-
-int parse(MdbSQL *sql, char *buf)
-{
-	g_input_ptr = buf;
-	/* begin unsafe */
-	_mdb_sql(sql);
-	if (yyparse()) {
-		/* end unsafe */
-		fprintf(stderr, "Couldn't parse SQL\n");
-		mdb_sql_reset(sql);
-		return 1;
-	} else {
-		return 0;
-	}
-}
 
 void
 do_set_cmd(MdbSQL *sql, char *s)
@@ -204,7 +188,8 @@ run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
 	MdbTableDef *table;
 
-	if (!parse(sql, mybuf) && sql->cur_table) {
+	mdb_sql_run_query(sql, mybuf);
+	if (!mdb_sql_has_error(sql)) {
 		if (showplan) {
 			table = sql->cur_table;
 			if (table->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
