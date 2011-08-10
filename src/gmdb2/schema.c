@@ -76,13 +76,13 @@ FILE *outfile;
 void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)
 {
-GtkWidget *schemawin, *combo, *checkbox, *entry;
+GtkWidget *schemawin, *combo, *checkbox, *chooser;
 int i;
 
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
 
-	entry = glade_xml_get_widget (schemawin_xml, "filename_entry");
-	strncpy(file_path,gtk_entry_get_text(GTK_ENTRY(entry)),PATH_MAX);
+	chooser = glade_xml_get_widget (schemawin_xml, "filechooserbutton1");
+	strncpy(file_path,gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser)),PATH_MAX);
 	file_path[PATH_MAX]=0;
 
 	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
