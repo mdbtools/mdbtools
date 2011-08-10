@@ -71,4 +71,6 @@ struct stat st;
 	gtk_label_set_text(GTK_LABEL(label), tmpstr);	
 
 	g_free(filepath);
+
+	return propswin_xml;
 }

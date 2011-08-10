@@ -282,11 +282,11 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		row_count++;
   		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			fprintf(out, "%s%s", sql->bound_values[j],
+			fprintf(out, "%s%s", (char*)(sql->bound_values[j]),
 				delimiter ? delimiter : "\t");
 		}
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
-		fprintf(out, "%s", sql->bound_values[sql->num_columns-1]);
+		fprintf(out, "%s", (char*)(sql->bound_values[sql->num_columns-1]));
 		fprintf(out,"\n");
 		fflush(out);
 	}

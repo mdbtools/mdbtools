@@ -137,7 +137,6 @@ static gboolean
 gmdb_table_popup_cb (GtkIconView* giv, GdkEvent* event, gpointer data) {
 	GtkWidget* menu = GTK_WIDGET (data);
 	GdkEventButton *event_button;
-	int num;
 
 	if (event->type == GDK_BUTTON_PRESS) {
 		event_button = (GdkEventButton *) event;

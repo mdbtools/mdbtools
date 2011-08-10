@@ -288,7 +288,6 @@ void
 gmdb_debug_display_cb(GtkWidget *w, gpointer data)
 {
 	int page;
-	int i;
 	GtkWidget *win;
 	gchar *s;
 	GladeXML *xml;
@@ -329,7 +328,6 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	unsigned char *tbuf;
 	int length;
 	int i, j;
-	off_t pos;
 	gchar line[80];
 	gchar field[10];
 	GtkTextBuffer *buffer;
@@ -349,7 +347,6 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	gtk_entry_set_text(GTK_ENTRY(entry),pagestr);
 	g_free(pagestr);
 
-	pos = lseek(mdb->f->fd, 0, SEEK_CUR);
 	lseek(mdb->f->fd, page * mdb->fmt->pg_size, SEEK_SET);
 	
 	fbuf = (unsigned char *) g_malloc(mdb->fmt->pg_size);
@@ -468,7 +465,6 @@ static void
 gmdb_debug_dissect_index2(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int offset)
 {
 	gchar *str;
-	int mod=0;
 	unsigned char flags;
 
 	str = g_strdup("Column mask");
@@ -503,7 +499,7 @@ gmdb_debug_add_page_ptr(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, co
 
 	str = g_strdup_printf("Row Number: %u", pg_row & 0xff);
 	gmdb_debug_add_item(store, node, str, offset, 1);
-	str = g_strdup_printf("Page Number: %lu", pg_row >> 8); 
+	str = g_strdup_printf("Page Number: %u", pg_row >> 8);
 	gmdb_debug_add_item(store, node, str, offset+1, 3);
 }
 static void 
@@ -1078,7 +1074,7 @@ static void gmdb_debug_init(MdbHandle *mdb, GladeXML *xml)
 	gboolean *dissect;
 
 	pglabel = glade_xml_get_widget (xml, "debug_num_label");
-	str = g_strdup_printf("(0-%d):", gmdb_get_max_page(mdb));
+	str = g_strdup_printf("(0-%ld):", gmdb_get_max_page(mdb));
 	gtk_label_set_text(GTK_LABEL(pglabel), str);
 	g_free(str);
 

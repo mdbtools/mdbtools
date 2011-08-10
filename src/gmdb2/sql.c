@@ -48,7 +48,7 @@ gmdb_sql_close_all()
 	GladeXML *xml;
 	GtkWidget *win;
 
-	while (xml = g_list_nth_data(sql_list, 0)) {
+	while ((xml = g_list_nth_data(sql_list, 0))) {
 		win = glade_xml_get_widget (xml, "sql_window");
 		sql_list = g_list_remove(sql_list, xml);
 		if (win) gtk_widget_destroy(win);
@@ -69,7 +69,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	gchar delimiter[11];
 	gchar quotechar;
 	gchar lineterm[5];
-	gchar *str, *buf;
+	gchar *str;
 	int rows=0, n_columns;
 	GtkWidget *treeview;
 	GtkTreeViewColumn *col;
@@ -178,9 +178,8 @@ static void
 gmdb_sql_results_cb(GtkWidget *w, GladeXML *xml)
 {
 	GladeXML *dialog_xml;
-	GtkWidget *but, *label;
+	GtkWidget *but;
 	GtkWidget *filesel;
-	gchar *str;
 
 	/* load the interface */
 	dialog_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-export.glade", NULL, NULL);
@@ -224,7 +223,6 @@ gmdb_sql_save_as_cb(GtkWidget *w, GladeXML *xml)
 	GladeXML *dialog_xml;
 	GtkWidget *but;
 	GtkWidget *filesel;
-	gchar *str;
 
 	/* load the interface */
 	dialog_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql-file.glade", NULL, NULL);
@@ -246,7 +244,6 @@ gmdb_sql_open_cb(GtkWidget *w, GladeXML *xml)
 	GladeXML *dialog_xml;
 	GtkWidget *but;
 	GtkWidget *filesel;
-	gchar *str;
 
 	/* load the interface */
 	dialog_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql-file.glade", NULL, NULL);
@@ -342,13 +339,11 @@ static void gmdb_sql_dnd_datareceived_cb(
         guint info, guint t,
         GladeXML *xml)
 {
-gchar *buf;
 GtkTextIter iter;
 GtkTextBuffer *txtbuffer;
 GtkWidget *textview;
 
 	textview = glade_xml_get_widget(xml, "sql_textview");
-	buf = selection_data->data;
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
 	if (gtk_text_buffer_get_char_count(txtbuffer)==0) {
 		gtk_text_buffer_get_iter_at_offset (txtbuffer, &iter, 0);
@@ -506,7 +501,6 @@ gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 	GtkTargetEntry src;
 	GtkWidget *mi, *but, *combo;
 	GladeXML *sqlwin_xml;
-	GValue value = {0, };
 
 	/* load the interface */
 	sqlwin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-sql.glade", NULL, NULL);
@@ -615,6 +609,7 @@ gmdb_sql_new_cb(GtkWidget *w, gpointer data)
 	gtk_signal_connect( GTK_OBJECT(textview), "drag_data_received",
 		GTK_SIGNAL_FUNC(gmdb_sql_dnd_datareceived_cb), sqlwin_xml);
 	
+	//GValue value = {0, };
 	//but =  glade_xml_get_widget(sqlwin_xml, "results_button");
 	//g_value_init(&value, G_TYPE_STRING);
 	//g_value_set_static_string(&value, GMDB_ICONDIR "stock_export.png");
@@ -696,7 +691,6 @@ gmdb_sql_load_query(GladeXML *xml, gchar *file_path)
 	GtkWidget *textview;
         GtkTextBuffer *txtbuffer;
 	GtkTextIter start, end;
-	int len;
 
 	if (!(in=fopen(file_path, "r"))) {
 		GtkWidget* dlg = gtk_message_dialog_new (NULL,

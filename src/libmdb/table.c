@@ -76,7 +76,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
-	int len, row_start, pg_row;
+	int row_start, pg_row;
 	void *buf, *pg_buf = mdb->pg_buf;
 	guint i;
 
@@ -85,7 +85,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		return NULL;
 	table = mdb_alloc_tabledef(entry);
 
-	len = mdb_get_int16(pg_buf, 8);
+	mdb_get_int16(pg_buf, 8); /* len */
 
 	table->num_rows = mdb_get_int32(pg_buf, fmt->tab_num_rows_offset);
 	table->num_var_cols = mdb_get_int16(pg_buf, fmt->tab_num_cols_offset-2);

@@ -160,7 +160,6 @@ int need_quote = 0;
 gchar delimiter[11];
 gchar quotechar;
 gchar lineterm[5];
-gchar *str;
 int rows=0;
 
 	GtkWidget *exportwin, *dlg;
@@ -231,9 +230,6 @@ int rows=0;
 }
 void gmdb_table_export(MdbCatalogEntry *entry) 
 {
-GtkWidget *export_button;
-GtkWidget *close_button;
-   
 	cat_entry = entry;
 
 	/* load the interface */

@@ -87,14 +87,6 @@ gmdb_info_cb(GtkWidget *button, gpointer data)
 }
 
 
-/* a callback for the buttons */
-static void
-a_callback(GtkWidget *button, gpointer data)
-{
-
-	        /*just print a string so that we know we got there*/
-	        g_print("Inside Callback\n");
-}
 void
 gmdb_help_cb(GtkWidget *button, gpointer data)
 {

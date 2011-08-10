@@ -230,6 +230,7 @@ quote_schema_name_dquote(const gchar* schema, const gchar *name)
  * For backends that really do NOT support schema
  * returns "name" or "schema_name"
  */
+/*
 static gchar*
 quote_schema_name_dquote_merge(const gchar* schema, const gchar *name)
 {
@@ -240,7 +241,7 @@ quote_schema_name_dquote_merge(const gchar* schema, const gchar *name)
 		return result;
 	}
 	return quote_generic(name, '"', '"');
-}
+}*/
 
 static gchar*
 quote_schema_name_rquotes_merge(const gchar* schema, const gchar *name)
