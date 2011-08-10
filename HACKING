@@ -73,18 +73,28 @@ The first byte of each page identifies the page type as follows.
 Database Definition Page
 ------------------------
 
-Each MDB database has a single definition page located at beginning of the file.
-Not a lot is known about this page, and it is one of the least documented page
-types.  However, it contains things like Jet version, encryption keys, and name
-of the creating program.
+Each MDB database has a single definition page located at beginning of the
+file.  Not a lot is known about this page, and it is one of the least
+documented page types.  However, it contains things like Jet version,
+encryption keys, and name of the creating program.  Note, this page is
+"encrypted" with a simple rc4 key starting at offset 0x18 and extending for
+126 (Jet3) or 128 (Jet4) bytes.
 
 Offset 0x14 contains the Jet version of this database: 0x00 for 3, 0x01 for 4,
 0x02 for 5, 0x03 for Access 2010.
 This is used by the mdb-ver utility to determine the Jet version.
 
-The 14 bytes starting at 0x42 are the (encrypted) database password.
+The 20 bytes (Jet3) or 40 bytes (Jet4) starting at 0x42 are the database
+password.  In Jet4, there is an additional mask applied to this password
+derived from the database creation date (also stored on this page as 8 bytes
+starting at offset 0x72).
 
 The 4 bytes at 0x3e on the Database Definition Page are the database key.
+
+The 2 bytes at 0x3C are the default database code page (useless in Jet4?).
+
+The 2 bytes at 0x3A (Jet3) or 4 bytes at 0x6E (Jet4) are the default text
+collating sort order.
 
 Data Pages
 ----------
@@ -314,9 +324,9 @@ next_pg field.
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number                            |
-| ???? | 2 bytes | ???         |                                          |
-| ???? | 1 byte  | precision   | precision if numeric column              |
-| ???? | 1 byte  | scale       | scale if numeric column                  |
+| ???? | 2 bytes | sort_order  | textual column sort order(0x409=General) |
+| ???? | 2 bytes | misc        | prec/scale (1 byte each), or code page   |
+|      |         |             | for textual columns (0x4E4=cp1252)       |
 | ???? | 2 bytes | ???         |                                          |
 | ???? | 1 byte  | bitmask     | See Column flags bellow                  |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
@@ -371,7 +381,11 @@ next_pg field.
 | ???? | 4 bytes | num_rows    | Number of records in this table          |
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
-| ???? |16 bytes | unknown     | unknown                                  |
+| 0x01 | 1 byte  | autonum_flag| 0x01 makes autonumbers work in access    |
+| ???? | 3 bytes | unknown     | unknown                                  |
+| 0x00 | 4 bytes | ct_autonum  | autonumber value for complex type column(s) |
+|      |         |             | (shared across all columns in the table) |
+| ???? | 8 bytes | unknown     | unknown                                  |
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
@@ -396,12 +410,15 @@ next_pg field.
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number                            |
-| ???? | 4 bytes | ???         | prec/scale? or LCID (0x409=English)?     |
-| ???? | 1 byte  | bitmask     | See column flags bellow                  |
-| ???? | 1 byte  | ???         | seems to be 1 when variable len          |
+| ???? | 2 bytes | misc        | prec/scale (1 byte each), or sort order  |
+|      |         |             | for textual columns(0x409=General)       |
+|      |         |             | or "complexid" for complex columns (4bytes)|
+| ???? | 2 bytes | misc_ext    | text sort order version num is 2nd byte  |
+| ???? | 1 byte  | bitmask     | See column flags below                   |
+| ???? | 1 byte  | misc_flags  | 0x01 for compressed unicode              |
 | 0000 | 4 bytes | ???         |                                          |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
-| ???? | 2 bytes | col_len     | Length of the column (0 if memo)         |
+| ???? | 2 bytes | col_len     | Length of the column (0 if memo/ole)     |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_cols (n*2 bytes per column)               |
 +-------------------------------------------------------------------------+
@@ -448,8 +465,8 @@ next_pg field.
 +-------------------------------------------------------------------------+
 
 Columns flags (not complete):
-0x01: variable length column
-0x02: can be null
+0x01: fixed length column
+0x02: can be null (possibly related to joins?)
 0x04: is auto long
 0x10: replication related field (or hidden?). These columns start with "s_" or
       "Gen_" (the "Gen_" fields are for memo fields)
@@ -584,7 +601,8 @@ Indices are not completely understood but here is what we know.
 | ???? | 4 bytes | parent_page | The page number of the TDEF for this idx |
 | ???? | 4 bytes | prev_page   | Previous page at this index level        |
 | ???? | 4 bytes | next_page   | Next page at this index level            |
-| ???? | 4 bytes | leaf_page   | Pointer to leaf page, purpose unknown    |
+| ???? | 4 bytes | tail_page   | Pointer to tail leaf page                |
+| ???? | 2 bytes | pref_len    | Length of the shared entry prefix        |
 +-------------------------------------------------------------------------+
 
 Index pages come in two flavors.
@@ -640,21 +658,29 @@ So now we come to the index entries for type 0x03 pages which look like this:
 |      |         |             | index entry                              |
 | ???? | 1 byte  | data row    | row number on that page of this entry    |
 | ???? | 4 bytes | child page  | next level index page containing this    |
-|      |         |             | entry as first entry.  Could be a leaf   |
+|      |         |             | entry as last entry.  Could be a leaf    |
 |      |         |             | node.                                    |
 +-------------------------------------------------------------------------+
 
-The flag field is generally either 0x00, 0x7f, 0x80.  0x80 is the one's 
-complement of 0x7f and all text data in the index would then need to be negated.
-The reason for this negation is unknown, although I suspect it has to do with 
-descending order.  The 0x00 flag indicates that the key column is null, and no 
-data will follow, only the page pointer.  In multicolumn indexes the flag field 
-plus data is repeated for the number of columns participating in the key.
+The flag field is generally either 0x00, 0x7f, 0x80, or 0xFF.  0x80 is the
+one's complement of 0x7f and all text data in the index would then need to be
+negated.  The reason for this negation is descending order.  The 0x00 flag
+indicates that the key column is null (or 0xFF for descending order), and no
+data will follow, only the page pointer.  In multicolumn indexes the flag
+field plus data is repeated for the number of columns participating in the
+key.  Index entries are always sorted based on the lexicographical order of
+the entry bytes of the entire index entry (thus descending order is achieved
+by negating the bytes).  The flag field ensures that null values are always
+sorted at the beginning (for ascending) or end (for descending) of the index.
 
-Note, there is a compression scheme utilized on leaf pages.  Normally an index
-entry with an integer primary key would be 9 bytes (1 for the flags field, 4 for
-the integer, 4 for page/row).  The entry can be shorter than 9, containing only
-5 bytes, where the first byte is the last octet of the encoded primary key field
+Note, there is a compression scheme utilizing a shared entry prefix.  If an
+index page has a shared entry prefix (idicated by a pref_len > 0), then the
+first pref_len bytes from the first entry need to be pre-pended to every
+subsequent entry on the page to get the full entry bytes.  For example,
+normally an index entry with an integer primary key would be 9 bytes (1 for
+the flags field, 4 for the integer, 4 for page/row).  If the pref_len on the
+index page were 4, every entry after the first would then contain only 5
+bytes, where the first byte is the last octet of the encoded primary key field
 (integer) and the last four are the page/row pointer.  Thus if the first key
 value on the page is 1 and it points to page 261 (00 01 05) row 3, it becomes:
 
@@ -664,7 +690,11 @@ and the next index entry can be:
 
 02 00 01 05 04
 
-That is, the key value is 2 (the last octet changes to 02) page 261 row 4.
+That is, the shared prefix is [7f 00 00 00], so the actual next entry is:
+
+[7f 00 00 00] 02 00 01 05 04
+
+so the key value is 2 (the last octet changes to 02) page 261 row 4.
 
 Access stores an 'alphabetic sort order' version of the text key columns in the
 index.  Here is the encoding as we know it:
@@ -674,8 +704,12 @@ A-Z: 0x60-0x79
 a-z: 0x60-0x79
 
 Once converted into this (non-ascii) character set, the text value can be
-sorted in 'alphabetic' order.  A text column will end with a NULL (0x00 or 0xff
-if negated).  
+sorted in 'alphabetic' order using the lexicographical order of the entry
+bytes.  A text column will end with a NULL (0x00 or 0xff if negated).
+
+Note, this encoding is the "General" sort order in Access 2000-2007 (1033,
+version 0).  As of Access 2010, this is now called the "General legacy" sort
+order, and the 2010 "General" sort order is a new encoding (1033, vesion 1).
 
 The leaf page entries store the key column and the 3 byte page and 1 byte row
 number.
@@ -690,13 +724,17 @@ character set, compare against each index entry, and on successful comparison
 follow the page and row number to the data.  Because text data is managled 
 during this conversion there is no 'covered querys' possible on text columns.
 
-To conserve on frequent index updates, Jet also does something special when 
-creating new leaf pages at the end of a primary key (maybe others as well) index.  
-The next leaf page pointer of the last leaf node points to the new leaf page but 
-the index tree is not otherwise updated.  In src/libmdb/index.c, the last leaf 
-read is stored, once the index search has been exhausted by the normal search 
-routine, it enters a "clean up mode" and reads the next leaf page pointer until 
-it's null.
+To conserve on frequent index updates, Jet also does something special when
+creating new leaf pages at the end of a primary key index (or other index
+where new values are generally added to the end of the index).  The tail leaf
+page pointer of the last leaf node points to the new leaf page but the index
+tree is not otherwise updated.  Since index entries in type 0x03 index pages
+point to the last entry in the page, adding a new entry to the end of a large
+index would cause updates all the way up the index tree.  Instead, the tail
+page can be updated in isolation until it is full, and then moved into the
+index proper.  In src/libmdb/index.c, the last leaf read is stored, once the
+index search has been exhausted by the normal search routine, it enters a
+"clean up mode" and reads the next leaf page pointer until it's null.
  
 Properties
 ----------
@@ -708,20 +746,28 @@ They start with a 32 bits header: 'KKD\0' in Jet3 and 'MR2\0' in Jet 4.
 
 Next come chunks. Each chunk starts with:
 32 bits length value (this includes the length)
-16 bits chunk type (0x00 0x80 contains the names, 0x00 0x00 and 0x00 0x01 contain
-	the values)
+16 bits chunk type (0x0080 contains the names, 0x0000 and 0x0001 contain
+	the values.  0x0000 seems to contain information about the "main" object,
+	e.g. the table, and 0x0001 seems to contain information about other
+	objects, e.g. the table columns)
 
-Name chunks (0x00 0x80) simply contains occurences of:
+Name chunk blocks (0x0080) simply contain occurences of:
 16 bit name length
 name
 For instance: 
 0x0d 0x00 and 'AccessVersion' (AccessVersion is 13 bytes, 0x0d 0x00 intel order)
 
-Next comes one of more chunk of data:
+Value chunk blocks (0x0000 and 0x0001) contain a header:
+32 bits length value (this includes the length)
+16 bits name length
+name  (0x0000 chunk blocks are not usually named, 0x0001 chunk blocks have the
+      column name to which the properties belong)
+Next comes one of more chunks of data:
 16 bit length value    (this includes the length)
+8 bit unknown flag
 8 bit type
-16 bit name (index in the name array of above chunk 0x00 0x80)
-16 bit length field (non-inclusive)
+16 bit name (index in the name array of above chunk 0x0080)
+16 bit value length field (non-inclusive)
 value (07.53 for the AccessVersion example above)
 
 See props.c for an example.
