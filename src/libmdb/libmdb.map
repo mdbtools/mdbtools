@@ -1,0 +1,16 @@
+LIBMDB_1.0 {
+# global:
+# 	*;
+# }
+# LIBMDB_2.0 {
+global:
+	mdb_*;
+	sanitize_name;
+	kkd_to_props;
+	_mdb_put_int16;
+	_mdb_put_int32;
+	buffer_dump;
+
+local:
+	*;
+};
