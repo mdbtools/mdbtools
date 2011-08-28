@@ -39,7 +39,6 @@ main (int argc, char **argv)
 		fprintf (stderr, "where options are:\n");
 		fprintf (stderr, "  -T <table>     Only create schema for named table\n");
 		fprintf (stderr, "  -N <namespace> Prefix identifiers with namespace\n");
-		fprintf (stderr, "  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		exit (1);
 	}
 
@@ -64,11 +63,9 @@ main (int argc, char **argv)
 			{"no-indexes", 0, NULL, 0},
 			{"relations", 0, NULL, 0},
 			{"no-relations", 0, NULL, 0},
-			{"sanitize", 0, NULL, 'S'},
-			{"no-sanitize", 0, NULL, 0},
 			{NULL, 0, NULL, 0},
 		};
-		opt = getopt_long(argc, argv, "T:N:S", long_options, &option_index);
+		opt = getopt_long(argc, argv, "T:N:", long_options, &option_index);
 		if (opt == -1)
 			break;
 
@@ -130,10 +127,6 @@ main (int argc, char **argv)
 				export_options &= ~MDB_SHEXP_RELATIONS;
 				break;
 			}
-			if (!strcmp(long_options[option_index].name, "no-sanitize")) {
-				export_options &= ~MDB_SHEXP_SANITIZE;
-				break;
-			}
 			fprintf(stderr, "unimplemented option %s", long_options[option_index].name);
 			if (optarg)
 				fprintf(stderr, " with arg %s", optarg);
@@ -147,10 +140,6 @@ main (int argc, char **argv)
 
 		case 'N':
 			namespace = (char *) g_strdup(optarg);
-			break;
-
-		case 'S':
-			export_options |= MDB_SHEXP_SANITIZE;
 			break;
 		}
 	}

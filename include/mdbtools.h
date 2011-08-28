@@ -161,8 +161,7 @@ enum {
 	MDB_SHEXP_COMMENTS = 1<<3, /* export comments on columns & tables */
 	MDB_SHEXP_DEFVALUES = 1<<4, /* export default values */
 	MDB_SHEXP_INDEXES = 1<<5, /* export indices */
-	MDB_SHEXP_RELATIONS = 1<<6, /* export relation (foreign keys) */
-	MDB_SHEXP_SANITIZE = 1<<7 /* clean up names */
+	MDB_SHEXP_RELATIONS = 1<<6 /* export relation (foreign keys) */
 };
 #define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
@@ -483,7 +482,6 @@ extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 extern void buffer_dump(const void *buf, int start, size_t len);
 
 /* backend.c */
-extern char* sanitize_name(const char* name);
 extern char* mdb_get_coltype_string(MdbBackend *backend, int col_type); /* obsolete */
 extern int mdb_coltype_takes_length(MdbBackend *backend, int col_type); /* obsolete */
 extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);

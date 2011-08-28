@@ -84,13 +84,12 @@ main(int argc, char **argv)
 	char header_row = 1;
 	char quote_text = 1;
 	char *insert_dialect = NULL;
-	char sanitize = 0;
 	char *namespace = "";
 	int  opt;
 	char *value;
 	size_t length;
 
-	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:N:S"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:N:"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -110,9 +109,6 @@ main(int argc, char **argv)
 		case 'I':
 			insert_dialect = (char*) g_strdup(optarg);
 			header_row = 0;
-		break;
-		case 'S':
-			sanitize = 1;
 		break;
 		case 'D':
 			mdb_set_date_fmt(optarg);
@@ -150,7 +146,6 @@ main(int argc, char **argv)
 		fprintf(stderr,"  -R <delimiter> specify a row delimiter\n");
 		fprintf(stderr,"  -I <backend>   INSERT statements (instead of CSV)\n");
 		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
-		fprintf(stderr,"  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		fprintf(stderr,"  -q <char>      Use <char> to wrap text-like fields. Default is \".\n");
 		fprintf(stderr,"  -X <char>      Use <char> to escape quoted characters within a field. Default is doubling.\n");
 		fprintf(stderr,"  -N <namespace> Prefix identifiers with namespace\n");
@@ -206,7 +201,7 @@ main(int argc, char **argv)
 			col=g_ptr_array_index(table->columns,j);
 			if (j)
 				fputs(delimiter, stdout);
-			fputs(sanitize ? sanitize_name(col->name) : col->name, stdout);
+			fputs(col->name, stdout);
 		}
 		fputs("\n", stdout);
 	}
@@ -215,19 +210,13 @@ main(int argc, char **argv)
 
 		if (insert_dialect) {
 			char *quoted_name;
-			if (sanitize)
-				quoted_name = sanitize_name(argv[optind + 1]);
-			else
-				quoted_name = mdb->default_backend->quote_schema_name(NULL, argv[optind + 1]);
+			quoted_name = mdb->default_backend->quote_schema_name(NULL, argv[optind + 1]);
 			fprintf(stdout, "INSERT INTO %s%s (", namespace, quoted_name);
 			free(quoted_name);
 			for (j=0;j<table->num_cols;j++) {
 				if (j>0) fputs(", ", stdout);
 				col=g_ptr_array_index(table->columns,j);
-				if (sanitize)
-					quoted_name = sanitize_name(col->name);
-				else
-					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+				quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 				fputs(quoted_name, stdout);
 				free(quoted_name);
 			} 

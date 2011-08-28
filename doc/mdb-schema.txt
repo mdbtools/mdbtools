@@ -22,8 +22,6 @@ OPTIONS
   --no-indexes        Don't export INDEXes.
   --relations         Export foreign keys constraints. This is the default.
   --no-relations      Don't export foreign keys constraints.
-  -S, --sanitize      Replace non alphanumric characters by underscore.
-  --no-sanitize       Don't replace non alphanumric characters by underscore. This is the default.
 
   backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, postgres, and mysql. If not specified the generated DDL will be in access format.
 

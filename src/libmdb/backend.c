@@ -154,29 +154,6 @@ static MdbBackendType mdb_mysql_shortdate_type =
 #ifndef JAVA
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
-char* sanitize_name(const char* str)
-{
-	char *result = malloc(256);
-	char *p = result;
-
-	if (*str) {
-		*p = isalpha(*str) ? *str : '_';
-		p++;
-        if (!isdigit(*str))  /* if it was a digit, keep it */
-		str++;
-	}
-
-	while (*str) {
-		*p = isalnum(*str) ? *str : '_';
-		p++;
-		str++;
-	}
-
-	*p = 0;
-
-	return result;
-}
-
 static gchar*
 quote_generic(const gchar *value, gchar quote_char, gchar escape_char) {
 	gchar *result, *pr;
@@ -338,7 +315,7 @@ void mdb_init_backends()
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
 	mdb_register_backend("access",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_DEFVALUES,
 		mdb_access_types, NULL, NULL,
 		"Date()", "Date()",
 		"-- That file uses encoding %s\n",
@@ -348,7 +325,7 @@ void mdb_init_backends()
 		NULL,
 		quote_schema_name_bracket_merge);
 	mdb_register_backend("sybase",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
 		"getdate()", "getdate()",
 		"-- That file uses encoding %s\n",
@@ -358,7 +335,7 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("oracle",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
 		mdb_oracle_types, &mdb_oracle_shortdate_type, NULL,
 		"current_date", "sysdate",
 		"-- That file uses encoding %s\n",
@@ -368,7 +345,7 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("postgres",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
 		"current_date", "now()",
 		"SET client_encoding = '%s';\n",
@@ -378,7 +355,7 @@ void mdb_init_backends()
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_SANITIZE,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
 		"current_date", "now()",
 		"-- That file uses encoding %s\n",
@@ -453,7 +430,7 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
  * @table: Table to process
  */
 static void
-mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace, int sanitize)
+mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace)
 {
 	unsigned int i, j;
 	char* quoted_table_name;
@@ -473,10 +450,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace, int saniti
 
 	fprintf (outfile, "-- CREATE INDEXES ...\n");
 
-	if (sanitize)
-		quoted_table_name = sanitize_name(table->name);
-	else
-		quoted_table_name = mdb->default_backend->quote_schema_name(namespace, table->name);
+	quoted_table_name = mdb->default_backend->quote_schema_name(namespace, table->name);
 
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
@@ -492,10 +466,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace, int saniti
 			strcat(index_name, idx->name);
 			strcat(index_name, "_idx");
 		}
-		if (sanitize)
-			quoted_name = sanitize_name(index_name);
-		else
-			quoted_name = mdb->default_backend->quote_schema_name(namespace, index_name);
+		quoted_name = mdb->default_backend->quote_schema_name(namespace, index_name);
 		if (idx->index_type==1) {
 			fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
 		} else {
@@ -511,10 +482,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace, int saniti
 			if (j)
 				fprintf(outfile, ", ");
 			col=g_ptr_array_index(table->columns,idx->key_col_num[j]-1);
-			if (sanitize)
-				quoted_name = sanitize_name(col->name);
-			else
-				quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+			quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 			fprintf (outfile, "%s", quoted_name);
 			if (idx->index_type!=1 && idx->key_col_order[j])
 				/* no DESC for primary keys */
@@ -667,14 +635,10 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 	unsigned int i;
 	char* quoted_table_name;
 	char* quoted_name;
-	int sanitize = export_options & MDB_SHEXP_SANITIZE;
 	MdbProperties *props;
 	const char *prop_value;
 
-	if (sanitize)
-		quoted_table_name = sanitize_name(entry->object_name);
-	else
-		quoted_table_name = mdb->default_backend->quote_schema_name(namespace, entry->object_name);
+	quoted_table_name = mdb->default_backend->quote_schema_name(namespace, entry->object_name);
 
 	/* drop the table if it exists */
 	if (export_options & MDB_SHEXP_DROPTABLE)
@@ -693,10 +657,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index (table->columns, i);
 
-		if (sanitize)
-			quoted_name = sanitize_name(col->name);
-		else
-			quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 		fprintf (outfile, "\t%s\t\t\t%s", quoted_name,
 			mdb_get_colbacktype_string (col));
 		free(quoted_name);
@@ -773,10 +734,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 		if (!props)
 			continue;
 
-		if (sanitize)
-			quoted_name = sanitize_name(col->name);
-		else
-			quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 
 		if (export_options & MDB_SHEXP_CST_NOTEMPTY) {
 			prop_value = mdb_col_get_prop(col, "AllowZeroLength");
@@ -816,7 +774,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 
 	if (export_options & MDB_SHEXP_INDEXES)
 		// prints all the indexes of that table
-		mdb_print_indexes(outfile, table, namespace, sanitize);
+		mdb_print_indexes(outfile, table, namespace);
 
 	free(quoted_table_name);
 
