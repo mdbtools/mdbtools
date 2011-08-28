@@ -167,7 +167,7 @@ mdb_read_indices(MdbTableDef *table)
 			/* here we have the internal column number that does not
 			 * always match the table columns because of deletions */
 			cleaned_col_num = -1;
-			for (k=0; k<=table->num_cols; k++) {
+			for (k=0; k<table->num_cols; k++) {
 				MdbColumn *col = g_ptr_array_index(table->columns,k);
 				if (col->col_num == col_num) {
 					cleaned_col_num = k;
