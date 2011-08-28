@@ -6,7 +6,7 @@
 #include "dmalloc.h"
 #endif
 
-void buffer_dump(const void* buf, int start, size_t len)
+void mdb_buffer_dump(const void* buf, int start, size_t len)
 {
 	char asc[20];
 	int j, k;

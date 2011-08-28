@@ -84,7 +84,7 @@ char *sargcol, *sargop, *sargval;
 
         mdb_rewind_table(table);
 	while (mdb_fetch_row(table)) {
-		buffer_dump(ole_data, 0, len);
+		mdb_buffer_dump(ole_data, 0, len);
 		printf("---\n");
 	}
 

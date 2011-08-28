@@ -283,7 +283,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 #endif 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, row_start, row_size);
+	mdb_buffer_dump(mdb->pg_buf, row_start, row_size);
 #endif
 
 	/* take advantage of mdb_crack_row() to clean up binding */
@@ -546,7 +546,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		if (col->bind_ptr) {
 			memcpy(col->bind_ptr, buf + row_start, len);
 			if (mdb_get_option(MDB_DEBUG_OLE))
-				buffer_dump(col->bind_ptr, 0, 16);
+				mdb_buffer_dump(col->bind_ptr, 0, 16);
 		}
 		return len;
 	} else if ((ole_len & 0xff000000) == 0) {
@@ -683,7 +683,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	} 
 
 #if MDB_DEBUG
-	buffer_dump(pg_buf, start, MDB_MEMO_OVERHEAD);
+	mdb_buffer_dump(pg_buf, start, MDB_MEMO_OVERHEAD);
 #endif
 
 	/* The 32 bit integer at offset 0 is the length of the memo field
@@ -710,7 +710,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 #if MDB_DEBUG
 		printf("row num %d start %d len %d\n",
 			pg_row & 0xff, row_start, len);
-		buffer_dump(buf, row_start, len);
+		mdb_buffer_dump(buf, row_start, len);
 #endif
 		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;

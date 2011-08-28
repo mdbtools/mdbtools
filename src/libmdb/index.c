@@ -645,9 +645,9 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		/* handle compressed indexes, single key indexes only? */
 		if (idx->num_keys==1 && idx_sz>0 && ipg->len - 4 < idx_sz) {
 			//printf("short index found\n");
-			//buffer_dump(ipg->cache_value, 0, idx_sz);
+			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
 			memcpy(&ipg->cache_value[idx_sz - (ipg->len - 4)], &mdb->pg_buf[ipg->offset], ipg->len);
-			//buffer_dump(ipg->cache_value, 0, idx_sz);
+			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
 		} else {
 			idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
 			memcpy(ipg->cache_value, &mdb->pg_buf[idx_start], idx_sz);
@@ -660,7 +660,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	} while (!passed);
 
 	//fprintf(stdout,"len = %d pos %d\n", ipg->len, ipg->mask_pos);
-	//buffer_dump(mdb->pg_buf, ipg->offset, ipg->len);
+	//mdb_buffer_dump(mdb->pg_buf, ipg->offset, ipg->len);
 
 	return ipg->len;
 }

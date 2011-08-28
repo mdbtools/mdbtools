@@ -31,7 +31,7 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 	names = g_ptr_array_new();
 	int i=0;
 #if MDB_DEBUG
-	buffer_dump(kkd, 0, len);
+	mdb_buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
 	while (pos < len) {
@@ -39,7 +39,7 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 		pos += 2;
 		if (mdb_get_option(MDB_DEBUG_PROPS)) {
 			fprintf(stderr, "%02d ",i++);
-			buffer_dump(kkd, pos - 2, record_len + 2);
+			mdb_buffer_dump(kkd, pos - 2, record_len + 2);
 		}
 		name = g_malloc(3*record_len + 1); /* worst case scenario is 3 bytes out per byte in */
 		mdb_unicode2ascii(mdb, &kkd[pos], record_len, name, 3*record_len);
@@ -86,7 +86,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 	int i=0;
 
 #if MDB_DEBUG
-	buffer_dump(kkd, 0, len);
+	mdb_buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
 
@@ -116,7 +116,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		if (mdb_get_option(MDB_DEBUG_PROPS)) {
 			fprintf(stderr, "%02d ",i++);
 			mdb_debug(MDB_DEBUG_PROPS,"elem %d (%s) dsize %d dtype %d", elem, name, dsize, dtype);
-			buffer_dump(value, 0, dsize);
+			mdb_buffer_dump(value, 0, dsize);
 		}
 		if (dtype == MDB_MEMO) dtype = MDB_TEXT;
 		if (dtype == MDB_BOOL) {
@@ -161,12 +161,12 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 	MdbProperties *props;
 
 #if MDB_DEBUG
-	buffer_dump(buffer, 0, len);
+	mdb_buffer_dump(buffer, 0, len);
 #endif
 	mdb_debug(MDB_DEBUG_PROPS,"starting prop parsing of type %s", buffer);
 	if (strcmp("KKD", buffer) && strcmp("MR2", buffer)) {
 		fprintf(stderr, "Unrecognized format.\n");
-		buffer_dump(buffer, 0, len);
+		mdb_buffer_dump(buffer, 0, len);
 		return NULL;
 	}
 
@@ -177,7 +177,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 		record_len = mdb_get_int32(buffer, pos);
 		record_type = mdb_get_int16(buffer, pos + 4);
 		mdb_debug(MDB_DEBUG_PROPS,"prop chunk type:0x%04x len:%d", record_type, record_len);
-		//buffer_dump(buffer, pos+4, record_len);
+		//mdb_buffer_dump(buffer, pos+4, record_len);
 		switch (record_type) {
 			case 0x80:
 				if (names) free_names(names);

@@ -98,7 +98,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
 	table->usage_map = g_memdup(buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
-		buffer_dump(buf, row_start, table->map_sz);
+		mdb_buffer_dump(buf, row_start, table->map_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld row %d start %d len %d",
 		pg_row >> 8, pg_row & 0xff, row_start, table->map_sz);
 
@@ -232,7 +232,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	for (i=0;i<table->num_cols;i++) {
 #ifdef MDB_DEBUG
 	/* printf("column %d\n", i);
-	buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
+	mdb_buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
 #endif
 		read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size);
 		pcol = (MdbColumn *) g_malloc0(sizeof(MdbColumn));
