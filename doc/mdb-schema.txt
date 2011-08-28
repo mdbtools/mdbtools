@@ -1,5 +1,6 @@
 NAME
   mdb-schema - Generate schema creation DDL
+
 SYNOPSIS
   mdb-schema [options] <database> [<backend>]
 

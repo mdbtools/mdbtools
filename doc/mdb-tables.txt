@@ -1,5 +1,6 @@
 NAME
   mdb-tables - Get listing of tables in an MDB database
+
 SYNOPSIS
   mdb-tables [-S] [-1 | -d<delimiter>] <database>
 
@@ -16,6 +17,20 @@ OPTIONS
   -d delimiter  specifies an alternative delimiter. If no delimiter is specified, table names will be delimited by a tab character, or by newline if the -1 option was specified.
 
 NOTES 
+
+ENVIRONMENT
+  MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
+  MDBICONV            Defines the output charset. Default is UTF-8. mdbtools must have been compiled with iconv.
+  MDBOPTS             semi-column separated list of options:
+                      * use_index
+                      * no_memo
+                      * debug_like
+                      * debug_write
+                      * debug_usage
+                      * debug_ole
+                      * debug_row
+                      * debug_props
+                      * debug_all is a shortcut for all debug_* options
 
 HISTORY
   mdb-tables first appeared in MDB Tools 0\.3
