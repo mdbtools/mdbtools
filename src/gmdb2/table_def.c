@@ -16,7 +16,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "gmdb.h"
-#include "pixmaps/pk.xpm"
 
 extern GtkWidget *app;
 extern MdbHandle *mdb;
@@ -48,8 +47,8 @@ GtkWidget *scroll;
 GdkPixmap *pixmap;
 GdkBitmap *mask;
 int i,j;
-gchar *titles[] = { "", "Column", "Name", "Type", "Size", "Allow Nulls" };
-gchar *row[6];
+gchar *titles[] = { "", "Column", "Name", "Type", "Size", "Allow Nulls", "Description" };
+gchar *row[sizeof(titles)/sizeof(titles[0])];
 GMdbDefWindow *defw;
 GtkStyle *style;
 
@@ -84,18 +83,20 @@ GtkStyle *style;
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
-	clist = gtk_clist_new_with_titles(5, titles);
+	clist = gtk_clist_new_with_titles(sizeof(titles)/sizeof(titles[0]), titles);
 	gtk_clist_set_column_width (GTK_CLIST(clist), 0, 20);
 	gtk_clist_set_column_width (GTK_CLIST(clist), 1, 35);
 	gtk_clist_set_column_width (GTK_CLIST(clist), 2, 80);
 	gtk_clist_set_column_width (GTK_CLIST(clist), 3, 60);
 	gtk_clist_set_column_width (GTK_CLIST(clist), 4, 30);
 	gtk_clist_set_column_width (GTK_CLIST(clist), 5, 30);
+	gtk_clist_set_column_width (GTK_CLIST(clist), 6, 60);
 	gtk_widget_show(clist);
 	gtk_container_add(GTK_CONTAINER(scroll),clist);
 
 	for (i=0;i<table->num_cols;i++) {
 		/* display column titles */
+		const char *propval;
 		col=g_ptr_array_index(table->columns,i);
 		row[0] = (char *) g_malloc0(MDB_BIND_SIZE);
 		row[1] = (char *) g_malloc0(MDB_BIND_SIZE);
@@ -103,16 +104,15 @@ GtkStyle *style;
 		row[3] = (char *) g_malloc0(MDB_BIND_SIZE);
 		row[4] = (char *) g_malloc0(MDB_BIND_SIZE);
 		row[5] = (char *) g_malloc0(MDB_BIND_SIZE);
+		row[6] = (char *) g_malloc0(MDB_BIND_SIZE);
 		strcpy(row[0],"");
 		sprintf(row[1],"%d", col->col_num+1);
 		strcpy(row[2],col->name);
 		strcpy(row[3], mdb_get_colbacktype_string(col));
 		sprintf(row[4],"%d",col->col_size);
-		if (col->is_fixed) {
-			strcpy(row[5],"No");
-		} else {
-			strcpy(row[5],"Yes");
-		}
+		strcpy(row[5], col->is_fixed ? "No" : "Yes");
+		propval = mdb_col_get_prop(col, "Description");
+		strcpy(row[6], propval ? propval : "");
 		gtk_clist_append(GTK_CLIST(clist), row);
 	}
 	style = gtk_widget_get_style(clist);
@@ -120,8 +120,6 @@ GtkStyle *style;
 		&mask,
 		&style->bg[GTK_STATE_NORMAL], 
 		GMDB_ICONDIR "pk.xpm");
-	//pixmap = gdk_pixmap_colormap_create_from_xpm_d( NULL,
-		//gtk_widget_get_colormap(app), &mask, NULL, pk_xpm);
 
 	mdb_read_indices(table);
 	for (i=0;i<table->num_idxs;i++) {
@@ -137,6 +135,8 @@ GtkStyle *style;
 			//}
 		} 
 	} /* for */
+
+	gtk_clist_columns_autosize(GTK_CLIST(clist));
 
 	/* add this one to the window list */
 	window_list = g_list_append(window_list, defw);
