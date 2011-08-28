@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include "connectparams.h"
 #ifdef HAVE_CONFIG_H
@@ -46,10 +47,12 @@
 static char line[max_line];
 
 static guint HashFunction (gconstpointer key);
+#if !HAVE_SQLGETPRIVATEPROFILESTRING
 static GString* GetIniFileName ();
 static int FileExists (const gchar* name);
 static int FindSection (FILE* stream, const char* section);
 static int GetNextItem (FILE* stream, char** name, char** value);
+#endif //!HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data);
 static gboolean cleanup (gpointer key, gpointer value, gpointer user_data);
@@ -360,6 +363,20 @@ gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
  * Begin local function definitions
  */
 
+/*
+ * Make a hash from all the characters
+ */
+static guint HashFunction (gconstpointer key)
+{
+   guint value = 0;
+   const char* s = key;
+
+   while (*s) value += *s++;
+
+   return value;
+}
+
+#if !HAVE_SQLGETPRIVATEPROFILESTRING
 static GString* GetIniFileName ()
 {
    char* setting;
@@ -438,19 +455,6 @@ static int FindSection (FILE* stream, const char* section)
    return 0;
 }
 
-/*
- * Make a hash from all the characters
- */
-static guint HashFunction (gconstpointer key)
-{
-   guint value = 0;
-   const char* s = key;
-
-   while (*s) value += *s++;
-
-   return value;
-}
-
 static int GetNextItem (FILE* stream, char** name, char** value)
 {
    char* s;
@@ -499,12 +503,12 @@ static int GetNextItem (FILE* stream, char** name, char** value)
 
    return 1;
 }
+#endif //!HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data)
 {
    FILE* output = (FILE*) user_data;
-
-   g_printerr ("Parameter: %s, Value: %s\n", key, value);
+   fprintf(output, "Parameter: %s, Value: %s\n", (char*)key, (char*)value);
 }
 
 static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
