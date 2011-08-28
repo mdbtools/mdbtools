@@ -960,13 +960,8 @@ static SQLRETURN SQL_API _SQLExecute( SQLHSTMT hstmt)
 
 	mdb_sql_reset(env->sql);
 
-	/* calls to yyparse would need to be serialized for thread safety */
-
-	/* begin unsafe */
-	g_input_ptr = stmt->query;
-	_mdb_sql(env->sql);
-	if (yyparse()) {
-	/* end unsafe */
+	mdb_sql_run_query(env->sql, stmt->query);
+	if (mdb_sql_has_error(env->sql)) {
 		LogError("Couldn't parse SQL\n");
 		mdb_sql_reset(env->sql);
 		return SQL_ERROR;
