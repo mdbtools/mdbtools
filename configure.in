@@ -41,7 +41,7 @@ dnl ---------------------------------------------------------------------
 sql=true
 AC_MSG_CHECKING( Are we using flex )
 if test "x$LEX" = "xflex"; then
-LFLAGS="$LFLAGS -i"
+LFLAGS="$LFLAGS -i -8"
 AC_MSG_RESULT( yes );
 else
 AC_MSG_RESULT( no - SQL engine disable);

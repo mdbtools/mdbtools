@@ -74,7 +74,7 @@ char *readline(char *prompt)
 char *buf, line[1000];
 int i = 0;
 
-	printf("%s",prompt);
+	puts(prompt);
 	if (! fgets(line,1000,stdin)) {
 		return NULL;
 	}
@@ -90,6 +90,15 @@ int i = 0;
 	return buf;
 }
 #endif
+
+static int strlen_utf(const char *s) {
+	int len = 0;
+	while (*s) {
+		if ((*s++ & 0xc0) != 0x80)
+			len++;
+	}
+	return len;
+}
 
 void
 do_set_cmd(MdbSQL *sql, char *s)
@@ -215,25 +224,22 @@ void print_value(FILE *out, char *v, int sz, int first)
 int i;
 int vlen;
 
-	if (first) {
-		fprintf(out,"|");
-	}
-	vlen = strlen(v);
-	for (i=0;i<sz;i++) {
-		fprintf(out,"%c",i >= vlen ? ' ' : v[i]);
-	}
-	fprintf(out,"|");
+	if (first)
+		fputc('|', out);
+	vlen = strlen_utf(v);
+	fputs(v, out);
+	for (i=vlen;i<sz;i++)
+		fputc(' ', out);
+	fputc('|', out);
 }
 static void print_break(FILE *out, int sz, int first)
 {
 int i;
-	if (first) {
-		fprintf(out,"+");
-	}
-	for (i=0;i<sz;i++) {
-		fprintf(out,"-");
-	}
-	fprintf(out,"+");
+	if (first)
+		fputc('+', out);
+	for (i=0;i<sz;i++)
+		fputc('-', out);
+	fputc('+', out);
 }
 void print_rows_retrieved(FILE *out, unsigned long row_count)
 {
