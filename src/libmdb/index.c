@@ -718,11 +718,12 @@ mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 
 
 void mdb_index_walk(MdbTableDef *table, MdbIndex *idx)
 {
-MdbHandle *mdb = table->entry->mdb;
-int cur_pos = 0;
-unsigned char marker;
-MdbColumn *col;
-unsigned int i;
+/*
+	MdbHandle *mdb = table->entry->mdb;
+	int cur_pos = 0;
+	unsigned char marker;
+	MdbColumn *col;
+	unsigned int i;
 
 	if (idx->num_keys!=1) return;
 
@@ -734,6 +735,7 @@ unsigned int i;
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
 		//printf("column %d coltype %d col_size %d (%d)\n",i,col->col_type, mdb_col_fixed_size(col), col->col_size);
 	}
+*/
 }
 void 
 mdb_index_dump(MdbTableDef *table, MdbIndex *idx)

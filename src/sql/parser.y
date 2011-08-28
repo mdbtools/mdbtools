@@ -19,6 +19,8 @@
  */
 #include "mdbsql.h"
 
+int yylex(void);
+int yyerror(char *);
 
 MdbSQL *_mdb_sql(MdbSQL *sql)
 {

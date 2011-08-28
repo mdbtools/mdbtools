@@ -244,7 +244,6 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbHandle *mdb = table->entry->mdb;
 	MdbColumn *col;
 	unsigned int i;
-	int rc;
 	int row_start;
 	size_t row_size;
 	int delflag, lookupflag;
@@ -290,7 +289,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	/* use num_cols instead of num_fields -- bsb 03/04/02 */
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index(table->columns,fields[i].colnum);
-		rc = _mdb_attempt_bind(mdb, col, fields[i].is_null,
+		_mdb_attempt_bind(mdb, col, fields[i].is_null,
 			fields[i].start, fields[i].siz);
 	}
 
