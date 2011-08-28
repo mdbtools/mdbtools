@@ -544,7 +544,7 @@ extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int
 /* props.c */
 extern void mdb_free_props(MdbProperties *props);
 extern void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
-extern GArray* kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
+extern GArray* mdb_kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
 
 
 /* worktable.c */

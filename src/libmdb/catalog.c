@@ -117,7 +117,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 				size_t kkd_len;
 				void *kkd = mdb_ole_read_full(mdb, col_props, &kkd_len);
 				//buffer_dump(kkd, 0, kkd_len);
-				entry->props = kkd_to_props(mdb, kkd, kkd_len);
+				entry->props = mdb_kkd_to_props(mdb, kkd, kkd_len);
 				free(kkd);
 			}
 		}

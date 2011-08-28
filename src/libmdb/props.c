@@ -147,8 +147,13 @@ mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name) {
 		fputc('\n', outfile);
 }
 
+/*
+ * That function takes a raw KKD/MR2 binary buffer,
+ * typically read from LvProp in table MSysbjects
+ * and returns a GPtrArray of MdbProps*
+ */
 GArray*
-kkd_to_props(MdbHandle *mdb, void *kkd, size_t len) {
+mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 	guint32 record_len;
 	guint16 record_type;
 	size_t pos;
@@ -156,12 +161,12 @@ kkd_to_props(MdbHandle *mdb, void *kkd, size_t len) {
 	MdbProperties *props;
 
 #if MDB_DEBUG
-	buffer_dump(kkd, 0, len);
+	buffer_dump(buffer, 0, len);
 #endif
-	mdb_debug(MDB_DEBUG_PROPS,"starting prop parsing of type %s", kkd);
-	if (strcmp("KKD", kkd) && strcmp("MR2", kkd)) {
+	mdb_debug(MDB_DEBUG_PROPS,"starting prop parsing of type %s", buffer);
+	if (strcmp("KKD", buffer) && strcmp("MR2", buffer)) {
 		fprintf(stderr, "Unrecognized format.\n");
-		buffer_dump(kkd, 0, len);
+		buffer_dump(buffer, 0, len);
 		return NULL;
 	}
 
@@ -169,14 +174,14 @@ kkd_to_props(MdbHandle *mdb, void *kkd, size_t len) {
 
 	pos = 4;
 	while (pos < len) {
-		record_len = mdb_get_int32(kkd, pos);
-		record_type = mdb_get_int16(kkd, pos + 4);
+		record_len = mdb_get_int32(buffer, pos);
+		record_type = mdb_get_int16(buffer, pos + 4);
 		mdb_debug(MDB_DEBUG_PROPS,"prop chunk type:0x%04x len:%d", record_type, record_len);
-		//buffer_dump(kkd, pos+4, record_len);
+		//buffer_dump(buffer, pos+4, record_len);
 		switch (record_type) {
 			case 0x80:
 				if (names) free_names(names);
-				names = mdb_read_props_list(mdb, kkd+pos+6, record_len - 6);
+				names = mdb_read_props_list(mdb, buffer+pos+6, record_len - 6);
 				break;
 			case 0x00:
 			case 0x01:
@@ -184,7 +189,7 @@ kkd_to_props(MdbHandle *mdb, void *kkd, size_t len) {
 					fprintf(stderr,"sequence error!\n");
 					break;
 				}
-				props = mdb_read_props(mdb, names, kkd+pos+6, record_len - 6);
+				props = mdb_read_props(mdb, names, buffer+pos+6, record_len - 6);
 				g_array_append_val(result, props);
 				//mdb_dump_props(props, stderr, 1);
 				break;

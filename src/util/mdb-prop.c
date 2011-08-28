@@ -96,8 +96,10 @@ main(int argc, char **argv)
 }
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 {
-	GArray *aprops = kkd_to_props(mdb, kkd, len);
+	GArray *aprops = mdb_kkd_to_props(mdb, kkd, len);
 	int i;
+	if (!aprops)
+		return;
 	for (i=0; i<aprops->len; ++i) {
 		MdbProperties *props = g_array_index(aprops, MdbProperties*, i);
 		mdb_dump_props(props, stdout, 1);
