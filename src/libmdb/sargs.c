@@ -28,7 +28,7 @@
  * a mdb_test_[type]() function and invoke it from mdb_test_sarg()
  */
 #include "mdbtools.h"
-
+#include <time.h>
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -97,8 +97,49 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 	}
 	return 0;
 }
-#if 0
-#endif
+
+int
+mdb_test_date(MdbSargNode *node, double td)
+{
+	struct tm found;
+	char date_tmp[MDB_BIND_SIZE];	//you should figure out a way to pull mdb_date_to_string in here
+
+	time_t found_t;
+	time_t asked_t;
+
+	double diff;
+
+	mdb_date_to_tm(td, &found);
+
+	asked_t = node->value.i;
+	found_t = mktime(&found);
+
+	diff = difftime(asked_t, found_t);
+
+	switch (node->op) {
+	case MDB_EQUAL:
+		if (diff==0) return 1;
+		break;
+	case MDB_GT:
+		if (diff<0) return 1;
+		break;
+	case MDB_LT:
+		if (diff>0) return 1;
+		break;
+	case MDB_GTEQ:
+		if (diff<=0) return 1;
+		break;
+	case MDB_LTEQ:
+		if (diff>=0) return 1;
+		break;
+	default:
+		fprintf(stderr, "Calling mdb_test_sarg on unknown operator. Add code to mdb_test_date() for operator %d\n", node->op);
+		break;
+	}
+	return 0;
+}
+
+
 int
 mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 {
@@ -155,6 +196,8 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 		case MDB_TEXT:
 			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, 256);
 			return mdb_test_string(node, tmpbuf);
+		case MDB_DATETIME:
+			return mdb_test_date(node, mdb_get_double(field->value, 0));
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
 			break;
