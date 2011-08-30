@@ -326,7 +326,6 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 {
 	char *fbuf;
 	char *tbuf;
-	int length;
 	int i, j;
 	char line[80];
 	char field[10];
@@ -347,15 +346,13 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	gtk_entry_set_text(GTK_ENTRY(entry),pagestr);
 	g_free(pagestr);
 
-	lseek(mdb->f->fd, page * mdb->fmt->pg_size, SEEK_SET);
-	
+	mdb_read_pg(mdb, page);
 	fbuf = g_malloc(mdb->fmt->pg_size);
-	tbuf = g_malloc0( (mdb->fmt->pg_size / 16) * 80);
-	length = read(mdb->f->fd, fbuf, mdb->fmt->pg_size);
-	if (length<mdb->fmt->pg_size) {
-	}
+	memcpy(fbuf, mdb->pg_buf, mdb->fmt->pg_size);
+
+	tbuf = g_malloc0( (mdb->fmt->pg_size / 16) * sizeof(line));
 	i = 0;
-	while (i<length) {
+	while (i<mdb->fmt->pg_size) {
 		sprintf(line,"%06x  ", i);
 
 		for(j=0; j<16; j++) {
@@ -383,7 +380,7 @@ gmdb_debug_display(GladeXML *xml, guint32 page)
 	window = glade_xml_get_widget(xml, "debug_window");
 	dissect = g_object_get_data(G_OBJECT(window),"dissect");
 	if (!dissect || *dissect)
-		gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, length);
+		gmdb_debug_dissect(GTK_TREE_STORE(store), fbuf, 0, mdb->fmt->pg_size);
 
 	g_free(fbuf);
 	g_free(tbuf);
@@ -409,7 +406,7 @@ int i = 0;
 			return strptr;
 		}
 		i++;	
-	} while (*strptr);
+	} while (strptr);
 	return "unknown";
 }
 static guint16 
