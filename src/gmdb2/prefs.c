@@ -18,6 +18,7 @@
 #include "gmdb.h"
 
 #include <libgnome/gnome-config.h>
+#include <libgnome/gnome-help.h>
 
 extern GtkWidget *app;
 extern MdbHandle *mdb;

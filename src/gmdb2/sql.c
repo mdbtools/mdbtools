@@ -80,7 +80,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	
 	filesel = glade_xml_get_widget (xml, "export_dialog");
 	sql_xml = g_object_get_data(G_OBJECT(filesel), "sql_xml");
-	printf("sql_xml %lu\n",sql_xml);
+	//printf("sql_xml %p\n",sql_xml);
 
 	gmdb_export_get_delimiter(xml, delimiter, 10);
 	gmdb_export_get_lineterm(xml, lineterm, 5);
@@ -102,7 +102,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	glist = gtk_tree_view_get_columns(GTK_TREE_VIEW(treeview));
 	i = 0;
 	if (need_headers)  {
-		while (col = g_list_nth_data(glist, i)) {
+		while ((col = g_list_nth_data(glist, i))) {
 			gchar *title;
 			if (i>0) fputs(delimiter, outfile);
 			title = g_strdup(gtk_tree_view_column_get_title(col));
@@ -304,7 +304,7 @@ GtkTreeIter iter2;
 		selection_data,
 		GDK_SELECTION_TYPE_STRING,
 		8,  /* 8 bits per character. */
-		tablename, strlen(tablename));
+		(guchar*)tablename, strlen(tablename));
 }
 static void gmdb_sql_dnd_datareceived_cb(
         GtkWidget *w,
@@ -351,11 +351,10 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	gchar *bound_data[256];
 	int i;
 	MdbSQLColumn *sqlcol;
-	gchar *titles[256];
 	GtkTextBuffer *txtbuffer;
 	GtkTextIter start, end;
 	GtkWidget *textview, *combo, *treeview, *store;
-	GtkWidget *window;
+	/*GtkWidget *window;*/
 	GList *history;
 	GType *gtypes;
 	GtkTreeIter iter;
@@ -405,8 +404,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 
 	store = (GtkWidget *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 	if (store) {
-		i=0;
-		while (column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), i)) {
+		while ((column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), 0))) {
 			gtk_tree_view_remove_column(GTK_TREE_VIEW(treeview), column);
 		}
 		gtk_widget_destroy(store);

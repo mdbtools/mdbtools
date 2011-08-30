@@ -72,5 +72,5 @@ struct stat st;
 
 	g_free(filepath);
 
-	return propswin_xml;
+	return propswin;
 }

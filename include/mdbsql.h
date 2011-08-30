@@ -51,6 +51,10 @@ extern char *g_input_ptr;
 #undef YY_INPUT
 #define YY_INPUT(b, r, ms) (r = mdb_sql_yyinput(b, ms));
 
+#define mdb_sql_has_error(sql) ((sql)->error_msg[0] ? 1 : 0)
+#define mdb_sql_last_error(sql) ((sql)->error_msg)
+
+void mdb_sql_error(MdbSQL* sql, char *fmt, ...);
 extern MdbSQL *_mdb_sql(MdbSQL *sql);
 extern MdbSQL *mdb_sql_init();
 extern MdbSQLSarg *mdb_sql_alloc_sarg();

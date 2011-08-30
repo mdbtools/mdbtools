@@ -157,10 +157,6 @@ int i;
 			  
 	if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 	{
-		long   p1;
-		long   p1Len = sizeof(p1);
-		long   sAge  = 1023;
-		long   cbAge = sizeof(long);
 		UCHAR  szCol1[60];
 		SQLINTEGER length;
 
@@ -189,7 +185,7 @@ int i;
 		while ((retcode = SQLFetch(hstmt)) == SQL_SUCCESS)
 		{
 			i++;
-			printf("%d: szCol1 = %s (%d)\n",i,szCol1, length);
+			printf("%d: szCol1 = %s (%d)\n", i, szCol1, (int)length);
 		}
 		if (retcode != SQL_NO_DATA_FOUND)
 		{

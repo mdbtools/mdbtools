@@ -20,6 +20,7 @@
 #include <string.h>
 #include "mdbsql.h"
 #include "parser.h"
+extern int mdb_sql_yyinput(char *buf, int need);
 %}
 
 %%

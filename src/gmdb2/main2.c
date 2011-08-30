@@ -62,7 +62,7 @@ GdkPixbuf *pixbuf=NULL;
 	if (!pixbuf)
 		pixbuf = gdk_pixbuf_new_from_file (GMDB_ICONDIR "logo.xpm", NULL);
 
-  	gtk_show_about_dialog (parent,
+  	gtk_show_about_dialog ((GtkWindow*)parent,
    		"authors", authors,
 		"comments", _("GNOME MDB Viewer is a grapical interface to "
 			"MDB Tools. It lets you view and export data and schema "
@@ -129,50 +129,9 @@ gchar *text, *text2;
 	}
 }
 
-static void
-gmdb_load_icons(GladeXML *xml)
-{
-	GtkWidget *icon;
-	char file[256];
-	GValue value = { 0, };
-	int i = 0;
-
-	char *icons[] = {
-		"table_icon",
-		"query_icon",
-		"form_icon",
-		"report_icon",
-		"macro_icon",
-		"module_icon",
-		"debug_icon",
-		NULL
-	};
-	char *files[] = {
-		"table.xpm",
-		"query.xpm",
-		"forms.xpm",
-		"reports.xpm",
-		"macros.xpm",
-		"code.xpm",
-		"debug.xpm",
-		NULL
-	};
-
-	while (icons[i]) {
-		icon =  glade_xml_get_widget (xml, icons[i]); 
-
-		g_value_init (&value, G_TYPE_STRING);
-		g_snprintf(file,256,"%s%s", GMDB_ICONDIR, files[i]); 
-		g_value_set_static_string (&value, file);
-		g_object_set_property (G_OBJECT (icon), "file" , &value);
-		g_value_unset (&value);
-		i++;
-	}
-}
 int main(int argc, char *argv[]) 
 {
 GtkWidget *gmdb;
-GnomeProgram *program;
 
 #ifdef SQL
 	/* initialize the SQL engine */
@@ -181,9 +140,9 @@ GnomeProgram *program;
 	/* initialize MDB Tools library */
 	mdb_init();
 
-        /* Initialize GNOME */
-	       /* Initialize gnome program */
-	program = gnome_program_init ("gmdb", "0.2",
+	/* Initialize GNOME */
+	/* Initialize gnome program */
+	gnome_program_init ("gmdb", MDB_VERSION_NO,
 		LIBGNOMEUI_MODULE, argc, argv,
 		GNOME_PARAM_POPT_TABLE, NULL,
 		GNOME_PARAM_HUMAN_READABLE_NAME,
@@ -202,8 +161,6 @@ GnomeProgram *program;
 	gmdb = glade_xml_get_widget (mainwin_xml, "gmdb");
 	gtk_signal_connect (GTK_OBJECT (gmdb), "delete_event",
 		GTK_SIGNAL_FUNC (delete_event), NULL);
-
-	//gmdb_load_icons(mainwin_xml);
 
 	if (argc>1) {
 		gmdb_file_open(argv[1]);
