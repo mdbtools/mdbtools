@@ -6,7 +6,7 @@ PRODUCT = MDBTools
 
 dist_man_MANS	= mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
 	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 gmdb2.1
-
+DISTCLEANFILES = ${dist_man_MANS}
 EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.txt faq.html txt2man install.sgml
 
 html:	install.tgz
