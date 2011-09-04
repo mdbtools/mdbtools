@@ -732,12 +732,20 @@ SQLRETURN SQL_API SQLDescribeCol(
 			break;
 		}
 	}
+	if (i==table->num_cols) {
+		fprintf(stderr, "Column %s lost\n", (char*)sqlcol->name);
+		return SQL_ERROR;
+	}
 
 	if (szColName) {
 		namelen = MIN(cbColNameMax,strlen(sqlcol->name));
 		strncpy((char*)szColName, sqlcol->name, namelen);
 		szColName[namelen]='\0';
-		*pcbColName=namelen;
+		if (pcbColName)
+			*pcbColName=namelen;
+	} else {
+		if (pcbColName)
+			*pcbColName = strlen(sqlcol->name);
 	}
 	if (pfSqlType) { //Currently libmdbodbc.so returns values as string in SQLGetData() even though it is a number.
 		*pfSqlType = SQL_VARCHAR;//_odbc_get_client_type(col->col_type);
