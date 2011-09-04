@@ -652,7 +652,7 @@ gmdb_debug_dissect_data_pg3(GtkTreeStore *store, char *fbuf, int offset, int len
 			row_len = (get_uint16(fbuf+offset+10+(i-1)*2) 
 				& 0x0FFF) - row_start;
 		str = g_strdup_printf("Row %d", i+1);
-		/*container = */gmdb_debug_add_item(store, NULL, str,
+		container = gmdb_debug_add_item(store, NULL, str,
 			row_start, row_len); 
 		
 		/* usage pages have parent id of 0 (database) and do not 
