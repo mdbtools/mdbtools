@@ -1377,8 +1377,8 @@ SQLRETURN SQL_API SQLGetData(
     SQLUSMALLINT       icol,
     SQLSMALLINT        fCType,
     SQLPOINTER         rgbValue,
-    SQLINTEGER         cbValueMax,
-    SQLINTEGER FAR    *pcbValue)
+    SQLLEN             cbValueMax,
+    SQLLEN FAR         *pcbValue)
 {
 	struct _hstmt *stmt;
 	struct _hdbc *dbc;

@@ -158,7 +158,7 @@ int i;
 	if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 	{
 		UCHAR  szCol1[60];
-		SQLINTEGER length;
+		SQLLEN length;
 
 		printf("excecuting first statement\n");
 		retcode = SQLExecute(hstmt);         
