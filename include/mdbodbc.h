@@ -49,8 +49,8 @@ struct _hstmt {
 	char query[4096];
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
-	int icol;
-	int pos;
+	int icol; /* SQLGetData: last column */
+	int pos; /* SQLGetData: last position (truncated result) */
 };
 
 struct _sql_bind_info {

@@ -35,7 +35,7 @@
 static iconv_t iconv_in,iconv_out;
 #endif //ENABLE_ODBC_W
 
-static SQLSMALLINT _odbc_get_client_type(int srv_type);
+static SQLSMALLINT _odbc_get_client_type(MdbColumn *col);
 static int _odbc_fix_literals(struct _hstmt *stmt);
 //static int _odbc_get_server_type(int clt_type);
 static int _odbc_get_string_size(int size, SQLCHAR FAR *str);
@@ -747,8 +747,8 @@ SQLRETURN SQL_API SQLDescribeCol(
 		if (pcbColName)
 			*pcbColName = strlen(sqlcol->name);
 	}
-	if (pfSqlType) { //Currently libmdbodbc.so returns values as string in SQLGetData() even though it is a number.
-		*pfSqlType = SQL_VARCHAR;//_odbc_get_client_type(col->col_type);
+	if (pfSqlType) {
+		*pfSqlType = _odbc_get_client_type(col);
 	}
 	if (pcbColDef) {
 		*pcbColDef = col->col_size;
@@ -1310,8 +1310,8 @@ SQLRETURN SQL_API SQLColumns(
 			ts3 = mdb_ascii2unicode(mdb, col->name, 0, (char*)t3, MDB_BIND_SIZE);
 			ts5 = mdb_ascii2unicode(mdb, "FIX ME", 0,  (char*)t5, MDB_BIND_SIZE);
 			nullable = SQL_NO_NULLS;
-			datatype = _odbc_get_client_type(col->col_type);
-			sqldatatype = _odbc_get_client_type(col->col_type);
+			datatype = _odbc_get_client_type(col);
+			sqldatatype = _odbc_get_client_type(col);
 			ordinal = j+1;
 
 			/* Set all fields to NULL */
@@ -1411,42 +1411,124 @@ SQLRETURN SQL_API SQLGetData(
 		}
 	}
 
-	if(icol!=stmt->icol){stmt->icol=icol;stmt->pos=0;}
+	if (icol!=stmt->icol) {
+		stmt->icol=icol;
+		stmt->pos=0;
+	}
+
+	if (!rgbValue) {
+		strcpy(sqlState, "HY009");
+	 	return SQL_ERROR;
+	}
+	if (pcbValue && *pcbValue<0) {
+		strcpy(sqlState, "HY090");
+	 	return SQL_ERROR;
+	}
+
 	if (col->col_type == MDB_BOOL) {
-	    if(cbValueMax==0){if(pcbValue)*pcbValue=1;return SQL_SUCCESS_WITH_INFO;}
-		if(stmt->pos>=1)return SQL_NO_DATA;
-		if(!rgbValue){
-		  strcpy(sqlState,"HY009");
-		  return SQL_ERROR;
-		}
-		strcpy(rgbValue, (col->cur_value_len)?"0":"1");
+		// bool cannot be null
+		*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
 		if (pcbValue)
 			*pcbValue = 1;
-		stmt->pos=1;
-	} else if (col->cur_value_len) {
-		char *str = mdb_col_to_string(mdb,mdb->pg_buf,
-			col->cur_value_start,col->col_type,col->cur_value_len);
-		if(cbValueMax==0){if(pcbValue)*pcbValue=strlen(str);g_free(str);return SQL_SUCCESS_WITH_INFO;}
-		if(stmt->pos>=strlen(str))return SQL_NO_DATA;
-		if(!rgbValue){
-		  strcpy(sqlState,"HY009");
-		  return SQL_ERROR;
-		}
-		i=cbValueMax<=strlen(str+stmt->pos)?cbValueMax-1:strlen(str+stmt->pos);
-		memcpy(rgbValue,str+stmt->pos,i);
-		*((char*)(rgbValue)+i)=0;
-		stmt->pos+=i;
-		g_free(str);
-		if (pcbValue)
-			*pcbValue = i;
-	} else {
-		/* When NULL data is retrieved, non-null pcbValue is required */
-		if (pcbValue) {
-			*pcbValue = SQL_NULL_DATA;
-		} else {
+		return SQL_SUCCESS;
+	}
+	if (col->cur_value_len == 0) {
+		/* When NULL data is retrieved, non-null pcbValue is
+		   required */
+		if (!pcbValue) {
 			strcpy(sqlState, "22002");
 			return SQL_ERROR;
-		}		
+		}
+		*pcbValue = SQL_NULL_DATA;
+		return SQL_SUCCESS;
+	}
+
+	switch(col->col_type) {
+		case MDB_BYTE:
+			*(SQLSMALLINT*)rgbValue = mdb_get_byte(mdb->pg_buf, col->cur_value_start);
+			if (pcbValue)
+				*pcbValue = sizeof(SQLSMALLINT);
+			break;
+		case MDB_INT:
+			*(SQLSMALLINT*)rgbValue = (SQLSMALLINT)mdb_get_int16(mdb->pg_buf, col->cur_value_start);
+			if (pcbValue)
+				*pcbValue = sizeof(SQLSMALLINT);
+			break;
+		case MDB_LONGINT:
+			*(SQLINTEGER*)rgbValue = mdb_get_int32(mdb->pg_buf, col->cur_value_start);
+			if (pcbValue)
+				*pcbValue = sizeof(SQLINTEGER);
+			break;
+		// case MDB_MONEY: TODO
+		case MDB_FLOAT:
+			*(float*)rgbValue = mdb_get_single(mdb->pg_buf, col->cur_value_start);
+			if (pcbValue)
+				*pcbValue = sizeof(float);
+			break;
+		case MDB_DOUBLE:
+			*(double*)rgbValue = mdb_get_double(mdb->pg_buf, col->cur_value_start);
+			if (pcbValue)
+			  *pcbValue = sizeof(double);
+			break;
+		case MDB_DATETIME: ;
+#if ODBCVER >= 0x0300
+			struct tm tmp_t;
+			mdb_date_to_tm(mdb_get_double(mdb->pg_buf, col->cur_value_start), &tmp_t);
+
+			const char *format = mdb_col_get_prop(col, "Format");
+			if (format && !strcmp(format, "Short Date")) {
+				DATE_STRUCT sql_dt;
+				sql_dt.year     = tmp_t.tm_year + 1900;
+				sql_dt.month    = tmp_t.tm_mon + 1;
+				sql_dt.day      = tmp_t.tm_mday;
+				*(DATE_STRUCT*)rgbValue = sql_dt;
+				if (pcbValue)
+					*pcbValue = sizeof(DATE_STRUCT);
+			} else {
+				TIMESTAMP_STRUCT sql_ts;
+				sql_ts.year     = tmp_t.tm_year + 1900;
+				sql_ts.month    = tmp_t.tm_mon + 1;
+				sql_ts.day      = tmp_t.tm_mday;
+				sql_ts.hour     = tmp_t.tm_hour;
+				sql_ts.minute   = tmp_t.tm_min;
+				sql_ts.second   = tmp_t.tm_sec;
+				sql_ts.fraction = 0;
+
+				*(TIMESTAMP_STRUCT*)rgbValue = sql_ts;
+				if (pcbValue)
+					*pcbValue = sizeof(TIMESTAMP_STRUCT);
+			}
+			break;
+#endif // returns text if old odbc
+		default: ;
+			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
+				col->cur_value_start, col->col_type, col->cur_value_len);
+			int len = strlen(str);
+			if (stmt->pos >= len)
+				return SQL_NO_DATA;
+			if (!cbValueMax) {
+				if (pcbValue)
+					*pcbValue = len;
+				free(str);
+				return SQL_SUCCESS_WITH_INFO;
+			}
+			if (len - stmt->pos > cbValueMax) {
+				/* the buffer we were given is too small, so
+				   truncate it to the size of the buffer */
+				strncpy(rgbValue, str, cbValueMax);
+				if (pcbValue)
+					*pcbValue = cbValueMax;
+				stmt->pos += cbValueMax;
+				free(str);
+				strcpy(sqlState, "01004"); // trunctated
+				return SQL_SUCCESS_WITH_INFO;
+			}
+			strncpy(rgbValue, str + stmt->pos, len - stmt->pos);
+			if (pcbValue)
+				*pcbValue = len - stmt->pos;
+			stmt->pos += len - stmt->pos;
+			free(str);
+			break;
 	}
 	return SQL_SUCCESS;
 }
@@ -1998,33 +2080,33 @@ static int _odbc_get_server_type(int clt_type)
 	}
 	return 0;
 }*/
-static SQLSMALLINT _odbc_get_client_type(int srv_type)
+static SQLSMALLINT _odbc_get_client_type(MdbColumn *col)
 {
-	switch (srv_type) {
+	switch (col->col_type) {
 		case MDB_BOOL:
 			return SQL_BIT;
-			break;
 		case MDB_BYTE:
 			return SQL_TINYINT;
-			break;
 		case MDB_INT:
 			return SQL_SMALLINT;
-			break;
 		case MDB_LONGINT:
 			return SQL_INTEGER;
-			break;
 		case MDB_MONEY:
 			return SQL_DECIMAL;
-			break;
 		case MDB_FLOAT:
 			return SQL_FLOAT;
-			break;
 		case MDB_DOUBLE:
 			return SQL_DOUBLE;
-			break;
+		case MDB_DATETIME: ;
+#if ODBCVER >= 0x0300
+			const char *format = mdb_col_get_prop(col, "Format");
+			if (format && !strcmp(format, "Short Date"))
+				return SQL_TYPE_DATE;
+			else
+				return SQL_TYPE_TIMESTAMP;
+#endif // returns text otherwise
 		case MDB_TEXT:
 			return SQL_VARCHAR;
-			break;
 		default:
 			// fprintf(stderr,"Unknown type %d\n",srv_type);
 			break;
