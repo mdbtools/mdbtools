@@ -1,8 +1,4 @@
-LIBMDB_1.0 {
-# global:
-# 	*;
-# }
-# LIBMDB_2.0 {
+{
 global:
 	mdb_*;
 	_mdb_put_int16;

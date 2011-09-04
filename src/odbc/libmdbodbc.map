@@ -1,10 +1,7 @@
-LIBMDBODBC_0.0 {
-#global:
-#	*;
-#}
-#LIBMDBODBC_1.0 {
+{
 global:
 	SQL*;
+	ODBCINST*;
 
 local:
 	*;

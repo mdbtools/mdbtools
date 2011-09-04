@@ -1,8 +1,4 @@
-LIBMDBSQL_1.0 {
-#global:
-#	*;
-#}
-#LIBMDBSQL_2.0 {
+{
 global:
 	mdb_sql_*;
 
