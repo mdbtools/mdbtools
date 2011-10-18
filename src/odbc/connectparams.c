@@ -14,15 +14,15 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include "connectparams.h"
 #ifdef HAVE_CONFIG_H
@@ -46,10 +46,12 @@
 static char line[max_line];
 
 static guint HashFunction (gconstpointer key);
+#if !HAVE_SQLGETPRIVATEPROFILESTRING
 static GString* GetIniFileName ();
 static int FileExists (const gchar* name);
 static int FindSection (FILE* stream, const char* section);
 static int GetNextItem (FILE* stream, char** name, char** value);
+#endif //!HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data);
 static gboolean cleanup (gpointer key, gpointer value, gpointer user_data);
@@ -319,10 +321,61 @@ gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
    return params->dsnName->str;   
 }
 
+gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
+{
+   char *p, *q, *s;
+
+   if (!params)
+      return NULL;
+   /*
+    * Position ourselves to the beginning of "DSN"
+    */
+   p = strstr (connectString, "DBQ");
+   if (!p) return NULL;
+   /*
+    * Position ourselves to the "="
+    */
+   q = strchr (p, '=');
+   if (!q) return NULL;
+   /*
+    * Skip over any leading spaces
+    */
+   q++;
+   while (isspace(*q))
+     q++;
+   /*
+    * Copy the DSN value to a buffer
+    */
+   s = line;
+   while (*q && *q != ';')
+      *s++ = *q++;
+   *s = '\0';
+   /*
+    * Save it as a string in the params object
+    */
+   params->dsnName = g_string_assign (params->dsnName, line);
+
+   return params->dsnName->str;
+}
+
 /*
  * Begin local function definitions
  */
 
+/*
+ * Make a hash from all the characters
+ */
+static guint HashFunction (gconstpointer key)
+{
+   guint value = 0;
+   const char* s = key;
+
+   while (*s) value += *s++;
+
+   return value;
+}
+
+#if !HAVE_SQLGETPRIVATEPROFILESTRING
 static GString* GetIniFileName ()
 {
    char* setting;
@@ -401,19 +454,6 @@ static int FindSection (FILE* stream, const char* section)
    return 0;
 }
 
-/*
- * Make a hash from all the characters
- */
-static guint HashFunction (gconstpointer key)
-{
-   guint value = 0;
-   const char* s = key;
-
-   while (*s) value += *s++;
-
-   return value;
-}
-
 static int GetNextItem (FILE* stream, char** name, char** value)
 {
    char* s;
@@ -462,12 +502,12 @@ static int GetNextItem (FILE* stream, char** name, char** value)
 
    return 1;
 }
+#endif //!HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data)
 {
    FILE* output = (FILE*) user_data;
-
-   g_printerr ("Parameter: %s, Value: %s\n", key, value);
+   fprintf(output, "Parameter: %s, Value: %s\n", (char*)key, (char*)value);
 }
 
 static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)

@@ -1,5 +1,6 @@
 NAME
   mdb-ver - Return the format of a given MDB database.
+
 SYNOPSIS
   mdb-ver <database>
 
@@ -14,6 +15,20 @@ OPTIONS
 
 NOTES 
   Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats.
+
+ENVIRONMENT
+  MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
+  MDBICONV            Defines the output charset. Default is UTF-8. mdbtools must have been compiled with iconv.
+  MDBOPTS             semi-column separated list of options:
+                      * use_index
+                      * no_memo
+                      * debug_like
+                      * debug_write
+                      * debug_usage
+                      * debug_ole
+                      * debug_row
+                      * debug_props
+                      * debug_all is a shortcut for all debug_* options
 
 HISTORY
   mdb-ver first appeared in MDB Tools 0\.4

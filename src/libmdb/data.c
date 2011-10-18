@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "mdbtools.h"
@@ -244,7 +243,6 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbHandle *mdb = table->entry->mdb;
 	MdbColumn *col;
 	unsigned int i;
-	int rc;
 	int row_start;
 	size_t row_size;
 	int delflag, lookupflag;
@@ -283,14 +281,14 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 #endif 
 
 #if MDB_DEBUG
-	buffer_dump(mdb->pg_buf, row_start, row_size);
+	mdb_buffer_dump(mdb->pg_buf, row_start, row_size);
 #endif
 
 	/* take advantage of mdb_crack_row() to clean up binding */
 	/* use num_cols instead of num_fields -- bsb 03/04/02 */
 	for (i = 0; i < table->num_cols; i++) {
 		col = g_ptr_array_index(table->columns,fields[i].colnum);
-		rc = _mdb_attempt_bind(mdb, col, fields[i].is_null,
+		_mdb_attempt_bind(mdb, col, fields[i].is_null,
 			fields[i].start, fields[i].siz);
 	}
 
@@ -546,7 +544,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		if (col->bind_ptr) {
 			memcpy(col->bind_ptr, buf + row_start, len);
 			if (mdb_get_option(MDB_DEBUG_OLE))
-				buffer_dump(col->bind_ptr, 0, 16);
+				mdb_buffer_dump(col->bind_ptr, 0, 16);
 		}
 		return len;
 	} else if ((ole_len & 0xff000000) == 0) {
@@ -683,7 +681,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	} 
 
 #if MDB_DEBUG
-	buffer_dump(pg_buf, start, MDB_MEMO_OVERHEAD);
+	mdb_buffer_dump(pg_buf, start, MDB_MEMO_OVERHEAD);
 #endif
 
 	/* The 32 bit integer at offset 0 is the length of the memo field
@@ -710,7 +708,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 #if MDB_DEBUG
 		printf("row num %d start %d len %d\n",
 			pg_row & 0xff, row_start, len);
-		buffer_dump(buf, row_start, len);
+		mdb_buffer_dump(buf, row_start, len);
 #endif
 		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;
@@ -779,56 +777,63 @@ static int trim_trailing_zeros(char * buff)
 /* Date/Time is stored as a double, where the whole
    part is the days from 12/30/1899 and the fractional
    part is the fractional part of one day. */
-static char *
-mdb_date_to_string(MdbHandle *mdb, int start)
+
+void
+mdb_date_to_tm(double td, struct tm *t)
 {
-	struct tm t;
 	long int day, time;
 	int yr, q;
 	int *cal;
 	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
 	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
-	char *text = (char *) g_malloc(MDB_BIND_SIZE);
-	double td = mdb_get_double(mdb->pg_buf, start);
-
 	day = (long int)(td);
 	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
-	t.tm_hour = time / 3600;
-	t.tm_min = (time / 60) % 60;
-	t.tm_sec = time % 60; 
-	t.tm_year = 1 - 1900;
+	t->tm_hour = time / 3600;
+	t->tm_min = (time / 60) % 60;
+	t->tm_sec = time % 60;
+	t->tm_year = 1 - 1900;
 
 	day += 693593; /* Days from 1/1/1 to 12/31/1899 */
-	t.tm_wday = (day+1) % 7;
+	t->tm_wday = (day+1) % 7;
 
 	q = day / 146097;  /* 146097 days in 400 years */
-	t.tm_year += 400 * q;
+	t->tm_year += 400 * q;
 	day -= q * 146097;
 
 	q = day / 36524;  /* 36524 days in 100 years */
 	if (q > 3) q = 3;
-	t.tm_year += 100 * q;
+	t->tm_year += 100 * q;
 	day -= q * 36524;
 
 	q = day / 1461;  /* 1461 days in 4 years */
-	t.tm_year += 4 * q;
+	t->tm_year += 4 * q;
 	day -= q * 1461;
 
 	q = day / 365;  /* 365 days in 1 year */
 	if (q > 3) q = 3;
-	t.tm_year += q;
+	t->tm_year += q;
 	day -= q * 365;
 
-	yr = t.tm_year + 1900;
+	yr = t->tm_year + 1900;
 	cal = ((yr)%4==0 && ((yr)%100!=0 || (yr)%400==0)) ?
 		leap_cal : noleap_cal;
-	for (t.tm_mon=0; t.tm_mon<12; t.tm_mon++) {
-		if (day < cal[t.tm_mon+1]) break;
+	for (t->tm_mon=0; t->tm_mon<12; t->tm_mon++) {
+		if (day < cal[t->tm_mon+1]) break;
 	}
-	t.tm_mday = day - cal[t.tm_mon] + 1;
-	t.tm_yday = day;
-	t.tm_isdst = -1;
+	t->tm_mday = day - cal[t->tm_mon] + 1;
+	t->tm_yday = day;
+	t->tm_isdst = -1;
+}
+
+static char *
+mdb_date_to_string(MdbHandle *mdb, int start)
+{
+	struct tm t;
+	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	double td = mdb_get_double(mdb->pg_buf, start);
+
+	mdb_date_to_tm(td, &t);
 
 	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
 

@@ -11,9 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "gmdb.h"
 
@@ -129,10 +129,10 @@ gmdb_export_get_headers(GladeXML *xml)
 gchar *
 gmdb_export_get_filepath(GladeXML *xml)
 {
-	GtkWidget *fentry;
+	GtkWidget *fchoose;
 
-	fentry = glade_xml_get_widget(xml, "filename_entry");
-	return (gchar *) gtk_entry_get_text(GTK_ENTRY(fentry));
+	fchoose = glade_xml_get_widget(xml, "filechooserbutton1");
+	return (gchar *) gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (fchoose));
 }
 
 void
@@ -160,7 +160,6 @@ int need_quote = 0;
 gchar delimiter[11];
 gchar quotechar;
 gchar lineterm[5];
-gchar *str;
 int rows=0;
 
 	GtkWidget *exportwin, *dlg;
@@ -231,9 +230,6 @@ int rows=0;
 }
 void gmdb_table_export(MdbCatalogEntry *entry) 
 {
-GtkWidget *export_button;
-GtkWidget *close_button;
-   
 	cat_entry = entry;
 
 	/* load the interface */

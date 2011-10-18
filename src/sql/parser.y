@@ -13,12 +13,13 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "mdbsql.h"
 
+int yylex(void);
+int yyerror(char *);
 
 MdbSQL *_mdb_sql(MdbSQL *sql)
 {
@@ -41,7 +42,7 @@ static MdbSQL *g_sql;
 
 
 %token <name> IDENT NAME PATH STRING NUMBER 
-%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES WHERE AND OR NOT
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE IS NUL
 

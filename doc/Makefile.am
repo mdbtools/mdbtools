@@ -1,14 +1,12 @@
 # Converting DocBook to HTML (several small files)
 # http://www.freebsd.org/tutorials/docproj-primer/x3132.html#AEN3140
-# version: $Id: Makefile.am,v 1.5 2005/01/15 05:02:11 calvinrsmith Exp $
 SHELL = /bin/sh
 TXT2MAN = txt2man
-RELEASE = 0.6
 PRODUCT = MDBTools
 
 dist_man_MANS	= mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
 	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 gmdb2.1
-
+DISTCLEANFILES = ${dist_man_MANS}
 EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.txt faq.html txt2man install.sgml
 
 html:	install.tgz
@@ -35,4 +33,4 @@ install.tgz: $(srcdir)/install.sgml
 man:	mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-sql.1
 
 .txt.1:
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(RELEASE) -s 1 $(srcdir)/$< > $@
+	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(VERSION) -s 1 $(srcdir)/$< > $@

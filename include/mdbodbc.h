@@ -35,10 +35,6 @@
 extern "C" {
 #endif
 
-static char  rcsid_sql_h [ ] =
-         "$Id: mdbodbc.h,v 1.5 2005/01/15 05:02:13 calvinrsmith Exp $";
-static void *no_unused_sql_h_warn[]={rcsid_sql_h, no_unused_sql_h_warn};
-
 struct _henv {
 	MdbSQL *sql;	
 };
@@ -53,6 +49,8 @@ struct _hstmt {
 	char query[4096];
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
+	int icol; /* SQLGetData: last column */
+	int pos; /* SQLGetData: last position (truncated result) */
 };
 
 struct _sql_bind_info {

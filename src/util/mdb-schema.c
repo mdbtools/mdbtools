@@ -11,9 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 /* this utility dumps the schema for an existing database */
@@ -39,13 +39,11 @@ main (int argc, char **argv)
 		fprintf (stderr, "where options are:\n");
 		fprintf (stderr, "  -T <table>     Only create schema for named table\n");
 		fprintf (stderr, "  -N <namespace> Prefix identifiers with namespace\n");
-		fprintf (stderr, "  -S             Sanitize names (replace spaces etc. with underscore)\n");
 		exit (1);
 	}
 
-	int digit_optind = 0;
 	while (1) {
-		int this_option_optind = optind ? optind : 1;
+		//int this_option_optind = optind ? optind : 1;
 		int option_index = 0;
 		static struct option long_options[] = {
 			{"table", 1, NULL, 'T'},
@@ -64,11 +62,9 @@ main (int argc, char **argv)
 			{"no-indexes", 0, NULL, 0},
 			{"relations", 0, NULL, 0},
 			{"no-relations", 0, NULL, 0},
-			{"sanitize", 0, NULL, 'S'},
-			{"no-sanitize", 0, NULL, 0},
 			{NULL, 0, NULL, 0},
 		};
-		opt = getopt_long(argc, argv, "T:N:S", long_options, &option_index);
+		opt = getopt_long(argc, argv, "T:N:", long_options, &option_index);
 		if (opt == -1)
 			break;
 
@@ -130,10 +126,6 @@ main (int argc, char **argv)
 				export_options &= ~MDB_SHEXP_RELATIONS;
 				break;
 			}
-			if (!strcmp(long_options[option_index].name, "no-sanitize")) {
-				export_options &= ~MDB_SHEXP_SANITIZE;
-				break;
-			}
 			fprintf(stderr, "unimplemented option %s", long_options[option_index].name);
 			if (optarg)
 				fprintf(stderr, " with arg %s", optarg);
@@ -147,10 +139,6 @@ main (int argc, char **argv)
 
 		case 'N':
 			namespace = (char *) g_strdup(optarg);
-			break;
-
-		case 'S':
-			export_options |= MDB_SHEXP_SANITIZE;
 			break;
 		}
 	}

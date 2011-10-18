@@ -13,14 +13,14 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
 #include <string.h>
 #include "mdbsql.h"
 #include "parser.h"
-
+extern int mdb_sql_yyinput(char *buf, int need);
 %}
 
 %%
@@ -63,7 +63,7 @@ like		{ return LIKE; }
 		return IDENT;
 	}
 
-[A-Za-z][A-Za-z0-9_#@]*		{ yylval.name = strdup(yytext); return NAME; }
+[a-z\xa0-\xff][a-z0-9_#@\xa0-\xff]*		{ yylval.name = strdup(yytext); return NAME; }
 
 '[^']*''  {
 		yyless(yyleng-1);
@@ -74,10 +74,13 @@ like		{ return LIKE; }
 		return STRING;
 	}
 
-(-*[0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?) { 
-				yylval.name = strdup(yytext); return NUMBER; 
-			}
-~?(\/?[A-Za-z0-9\.]+)+		{ yylval.name = strdup(yytext); return PATH; }
+(-*[0-9]+|([0-9]*\.[0-9]+)(e[-+]?[0-9]+)?) {
+		yylval.name = strdup(yytext); return NUMBER;
+	}
+~?(\/?[a-z0-9\.\xa0-\xff]+)+ {
+		yylval.name = strdup(yytext); return PATH;
+	}
+
 .	{ return yytext[0]; }
 %%
 

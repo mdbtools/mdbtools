@@ -11,9 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "gmdb.h"
 
@@ -27,7 +27,6 @@ extern MdbHandle *mdb;
 GladeXML *schemawin_xml;
 static gchar backend[100];
 static gchar tabname[MDB_MAX_OBJ_NAME+1];
-static gchar file_path[PATH_MAX+1];
 static guint32 export_options;
 
 #define ALL_TABLES   "(All Tables)"
@@ -47,7 +46,7 @@ static struct {
 #define n_capabilities (sizeof(capabilities_xlt)/sizeof(capabilities_xlt[0]))
 
 static void
-gmdb_schema_export()
+gmdb_schema_export(const gchar *file_path)
 {
 FILE *outfile;
 
@@ -76,14 +75,14 @@ FILE *outfile;
 void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)
 {
-GtkWidget *schemawin, *combo, *checkbox, *entry;
+GtkWidget *schemawin, *combo, *checkbox, *chooser;
+gchar *file_path;
 int i;
 
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
 
-	entry = glade_xml_get_widget (schemawin_xml, "filename_entry");
-	strncpy(file_path,gtk_entry_get_text(GTK_ENTRY(entry)),PATH_MAX);
-	file_path[PATH_MAX]=0;
+	chooser = glade_xml_get_widget (schemawin_xml, "filechooserbutton1");
+	file_path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
 
 	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
 	strncpy(tabname,gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),MDB_MAX_OBJ_NAME);
@@ -112,7 +111,7 @@ int i;
 	//printf("%s %s %02X\n",tabname,backend,export_options);
 
 	gtk_widget_destroy(schemawin);
-	gmdb_schema_export();
+	gmdb_schema_export(file_path);
 }
 static void
 check_default_options() {

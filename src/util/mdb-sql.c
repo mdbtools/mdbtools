@@ -1,21 +1,21 @@
 /* MDB Tools - A library for reading MS Access database file
  * Copyright (C) 2000 Brian Bruns
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 #include <config.h>
 
 #include <stdio.h>
@@ -55,7 +55,6 @@ extern void clear_history ();
 
 void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
 void dump_results_pp(FILE *out, MdbSQL *sql);
-int yyparse(void);
 
 #if SQL
 
@@ -75,7 +74,7 @@ char *readline(char *prompt)
 char *buf, line[1000];
 int i = 0;
 
-	printf("%s",prompt);
+	puts(prompt);
 	if (! fgets(line,1000,stdin)) {
 		return NULL;
 	}
@@ -92,19 +91,13 @@ int i = 0;
 }
 #endif
 
-int parse(MdbSQL *sql, char *buf)
-{
-	g_input_ptr = buf;
-	/* begin unsafe */
-	_mdb_sql(sql);
-	if (yyparse()) {
-		/* end unsafe */
-		fprintf(stderr, "Couldn't parse SQL\n");
-		mdb_sql_reset(sql);
-		return 1;
-	} else {
-		return 0;
+static int strlen_utf(const char *s) {
+	int len = 0;
+	while (*s) {
+		if ((*s++ & 0xc0) != 0x80)
+			len++;
 	}
+	return len;
 }
 
 void
@@ -204,7 +197,8 @@ run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
 	MdbTableDef *table;
 
-	if (!parse(sql, mybuf) && sql->cur_table) {
+	mdb_sql_run_query(sql, mybuf);
+	if (!mdb_sql_has_error(sql)) {
 		if (showplan) {
 			table = sql->cur_table;
 			if (table->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
@@ -230,25 +224,22 @@ void print_value(FILE *out, char *v, int sz, int first)
 int i;
 int vlen;
 
-	if (first) {
-		fprintf(out,"|");
-	}
-	vlen = strlen(v);
-	for (i=0;i<sz;i++) {
-		fprintf(out,"%c",i >= vlen ? ' ' : v[i]);
-	}
-	fprintf(out,"|");
+	if (first)
+		fputc('|', out);
+	vlen = strlen_utf(v);
+	fputs(v, out);
+	for (i=vlen;i<sz;i++)
+		fputc(' ', out);
+	fputc('|', out);
 }
 static void print_break(FILE *out, int sz, int first)
 {
 int i;
-	if (first) {
-		fprintf(out,"+");
-	}
-	for (i=0;i<sz;i++) {
-		fprintf(out,"-");
-	}
-	fprintf(out,"+");
+	if (first)
+		fputc('+', out);
+	for (i=0;i<sz;i++)
+		fputc('-', out);
+	fputc('+', out);
 }
 void print_rows_retrieved(FILE *out, unsigned long row_count)
 {
@@ -282,11 +273,11 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		row_count++;
   		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			fprintf(out, "%s%s", sql->bound_values[j],
+			fprintf(out, "%s%s", (char*)(sql->bound_values[j]),
 				delimiter ? delimiter : "\t");
 		}
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
-		fprintf(out, "%s", sql->bound_values[sql->num_columns-1]);
+		fprintf(out, "%s", (char*)(sql->bound_values[sql->num_columns-1]));
 		fprintf(out,"\n");
 		fflush(out);
 	}

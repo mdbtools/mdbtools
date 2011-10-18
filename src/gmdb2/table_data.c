@@ -11,9 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "gmdb.h"
 
@@ -43,7 +43,7 @@ MdbTableDef *table;
 MdbColumn *col;
 GtkWidget *clist;
 GtkWidget *scroll;
-int i, rownum;
+int i;
 long row, maxrow;
 gchar *bound_data[256];
 GMdbDataWindow *dataw = NULL;
@@ -104,7 +104,7 @@ GMdbDataWindow *dataw = NULL;
 	while(mdb_fetch_row(table) && 
 			(!maxrow || (row < maxrow))) {
 		row++;
-		rownum = gtk_clist_append(GTK_CLIST(clist), bound_data);
+		gtk_clist_append(GTK_CLIST(clist), bound_data);
 	}
 
 	/* free the memory used to bind */

@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "mdbtools.h"
@@ -76,7 +75,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
-	int len, row_start, pg_row;
+	int row_start, pg_row;
 	void *buf, *pg_buf = mdb->pg_buf;
 	guint i;
 
@@ -85,7 +84,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		return NULL;
 	table = mdb_alloc_tabledef(entry);
 
-	len = mdb_get_int16(pg_buf, 8);
+	mdb_get_int16(pg_buf, 8); /* len */
 
 	table->num_rows = mdb_get_int32(pg_buf, fmt->tab_num_rows_offset);
 	table->num_var_cols = mdb_get_int16(pg_buf, fmt->tab_num_cols_offset-2);
@@ -98,7 +97,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
 	table->usage_map = g_memdup(buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
-		buffer_dump(buf, row_start, table->map_sz);
+		mdb_buffer_dump(buf, row_start, table->map_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld row %d start %d len %d",
 		pg_row >> 8, pg_row & 0xff, row_start, table->map_sz);
 
@@ -232,7 +231,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	for (i=0;i<table->num_cols;i++) {
 #ifdef MDB_DEBUG
 	/* printf("column %d\n", i);
-	buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
+	mdb_buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
 #endif
 		read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size);
 		pcol = (MdbColumn *) g_malloc0(sizeof(MdbColumn));

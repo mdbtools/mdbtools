@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "mdbtools.h"
@@ -116,8 +115,8 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 			if (kkd_size_ole) {
 				size_t kkd_len;
 				void *kkd = mdb_ole_read_full(mdb, col_props, &kkd_len);
-				//buffer_dump(kkd, 0, kkd_len);
-				entry->props = kkd_to_props(mdb, kkd, kkd_len);
+				//mdb_buffer_dump(kkd, 0, kkd_len);
+				entry->props = mdb_kkd_to_props(mdb, kkd, kkd_len);
 				free(kkd);
 			}
 		}

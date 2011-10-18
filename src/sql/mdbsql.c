@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "mdbsql.h"
@@ -24,14 +23,27 @@
 #include "dmalloc.h"
 #endif
 
-void mdb_dump_results(MdbSQL *sql);
-
 #ifdef HAVE_WORDEXP_H
 #define HAVE_WORDEXP
 #include <wordexp.h>
 #endif
 
 char *g_input_ptr;
+
+/* Prevent warnings from -Wmissing-prototypes.  */
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void *YYPARSE_PARAM);
+#else
+int yyparse ();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void);
+#else
+int yyparse ();
+#endif
+#endif /* ! YYPARSE_PARAM */
 
 void
 mdb_sql_error(MdbSQL* sql, char *fmt, ...)
@@ -44,21 +56,7 @@ va_list ap;
 	va_end(ap);
 	fprintf(stderr,"\n");
 }
-void
-mdb_sql_clear_error(MdbSQL* sql)
-{
-	sql->error_msg[0]='\0';
-}
-char *
-mdb_sql_last_error(MdbSQL* sql)
-{
-	return sql->error_msg;
-}
-unsigned char
-mdb_sql_has_error(MdbSQL* sql)
-{
-	return (sql->error_msg[0] ? 1 : 0);
-}
+
 int mdb_sql_yyinput(char *buf, int need)
 {
 int cplen, have;
@@ -91,8 +89,6 @@ MdbSQL *sql;
 #define _(x) x
 #endif
 
-void mdb_sql_bind_all (MdbSQL*);
-
 /**
  * mdb_sql_run_query:
  * @sql: MDB SQL object to execute the query on.
@@ -113,7 +109,7 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 
 	/* begin unsafe */
 	_mdb_sql (sql);
-	mdb_sql_clear_error(sql);
+	sql->error_msg[0]='\0';
 	if (yyparse()) {
 		/* end unsafe */
 		mdb_sql_error (sql, _("Could not parse '%s' command"), querystr);
@@ -806,4 +802,3 @@ mdb_sql_dump_results(MdbSQL *sql)
 	/* the column and table names are no good now */
 	mdb_sql_reset(sql);
 }
-

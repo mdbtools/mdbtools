@@ -1,0 +1,9 @@
+{
+global:
+	mdb_*;
+	_mdb_put_int16;
+	_mdb_put_int32;
+
+local:
+	*;
+};

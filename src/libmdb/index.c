@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include "mdbtools.h"
@@ -167,7 +166,7 @@ mdb_read_indices(MdbTableDef *table)
 			/* here we have the internal column number that does not
 			 * always match the table columns because of deletions */
 			cleaned_col_num = -1;
-			for (k=0; k<=table->num_cols; k++) {
+			for (k=0; k<table->num_cols; k++) {
 				MdbColumn *col = g_ptr_array_index(table->columns,k);
 				if (col->col_num == col_num) {
 					cleaned_col_num = k;
@@ -645,9 +644,9 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		/* handle compressed indexes, single key indexes only? */
 		if (idx->num_keys==1 && idx_sz>0 && ipg->len - 4 < idx_sz) {
 			//printf("short index found\n");
-			//buffer_dump(ipg->cache_value, 0, idx_sz);
+			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
 			memcpy(&ipg->cache_value[idx_sz - (ipg->len - 4)], &mdb->pg_buf[ipg->offset], ipg->len);
-			//buffer_dump(ipg->cache_value, 0, idx_sz);
+			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
 		} else {
 			idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
 			memcpy(ipg->cache_value, &mdb->pg_buf[idx_start], idx_sz);
@@ -660,7 +659,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	} while (!passed);
 
 	//fprintf(stdout,"len = %d pos %d\n", ipg->len, ipg->mask_pos);
-	//buffer_dump(mdb->pg_buf, ipg->offset, ipg->len);
+	//mdb_buffer_dump(mdb->pg_buf, ipg->offset, ipg->len);
 
 	return ipg->len;
 }
@@ -718,11 +717,12 @@ mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 
 
 void mdb_index_walk(MdbTableDef *table, MdbIndex *idx)
 {
-MdbHandle *mdb = table->entry->mdb;
-int cur_pos = 0;
-unsigned char marker;
-MdbColumn *col;
-unsigned int i;
+/*
+	MdbHandle *mdb = table->entry->mdb;
+	int cur_pos = 0;
+	unsigned char marker;
+	MdbColumn *col;
+	unsigned int i;
 
 	if (idx->num_keys!=1) return;
 
@@ -734,6 +734,7 @@ unsigned int i;
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
 		//printf("column %d coltype %d col_size %d (%d)\n",i,col->col_type, mdb_col_fixed_size(col), col->col_size);
 	}
+*/
 }
 void 
 mdb_index_dump(MdbTableDef *table, MdbIndex *idx)

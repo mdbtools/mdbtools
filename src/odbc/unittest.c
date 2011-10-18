@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 /* #include <windows.h> */
@@ -22,11 +21,6 @@
 #include <sqlext.h>
 
 #include <stdio.h>
-
-static char  software_version[]   = "$Id: unittest.c,v 1.8 2005/04/29 03:08:22 whydoubt Exp $";
-static void *no_unused_var_warn[] = {software_version,
-                                     no_unused_var_warn};
-
 
 
 #define SALES_PERSON_LEN 2
@@ -163,12 +157,8 @@ int i;
 			  
 	if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 	{
-		long   p1;
-		long   p1Len = sizeof(p1);
-		long   sAge  = 1023;
-		long   cbAge = sizeof(long);
 		UCHAR  szCol1[60];
-		SQLINTEGER length;
+		SQLLEN length;
 
 		printf("excecuting first statement\n");
 		retcode = SQLExecute(hstmt);         
@@ -195,7 +185,7 @@ int i;
 		while ((retcode = SQLFetch(hstmt)) == SQL_SUCCESS)
 		{
 			i++;
-			printf("%d: szCol1 = %s (%d)\n",i,szCol1, length);
+			printf("%d: szCol1 = %s (%d)\n", i, szCol1, (int)length);
 		}
 		if (retcode != SQL_NO_DATA_FOUND)
 		{

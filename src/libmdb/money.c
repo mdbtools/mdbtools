@@ -12,9 +12,8 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <stdio.h>
@@ -43,7 +42,7 @@ static char *array_to_string(unsigned char *array, int unsigned scale, int neg);
  */
 char *mdb_money_to_string(MdbHandle *mdb, int start)
 {
-       int num_bytes=8, prec=19, scale=4;
+	int num_bytes=8, scale=4;
 	int i;
 	int neg=0;
        unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];

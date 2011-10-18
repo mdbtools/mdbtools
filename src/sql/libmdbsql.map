@@ -1,0 +1,7 @@
+{
+global:
+	mdb_sql_*;
+
+local:
+	*;
+};
