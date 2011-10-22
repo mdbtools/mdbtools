@@ -181,6 +181,8 @@ fi
 
 AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
 
+AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
+
 dnl Checks for library functions.
 VL_LIB_READLINE
 
