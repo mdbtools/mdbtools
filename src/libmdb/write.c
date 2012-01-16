@@ -554,8 +554,8 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	}
 	mdb_debug(MDB_DEBUG_WRITE, "writing page %d", pgnum);
 	if (!mdb_write_pg(mdb, pgnum)) {
-		fprintf(stderr, "write failed! exiting...\n");
-		exit(1);
+		fprintf(stderr, "write failed!\n");
+		return 0;
 	}
 
 	mdb_update_indexes(table, num_fields, fields, pgnum, rownum);
@@ -685,8 +685,14 @@ unsigned int num_fields;
 	}
 	/* do it! */
 	mdb_replace_row(table, table->cur_row-1, row_buffer, new_row_size);
-	return 0;
+	return 0; /* FIXME */
 }
+
+/* WARNING the return code is opposite to convention used elsewhere:
+ * returns 0 on success
+ * returns 1 on failure
+ * This might change on next ABI break.
+ */
 int 
 mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size)
 {
@@ -745,8 +751,8 @@ int i, pos;
 	}
 	/* drum roll, please */
 	if (!mdb_write_pg(mdb, table->cur_phys_pg)) {
-		fprintf(stderr, "write failed! exiting...\n");
-		exit(1);
+		fprintf(stderr, "write failed!\n");
+		return 1;
 	}
 	return 0;
 }
