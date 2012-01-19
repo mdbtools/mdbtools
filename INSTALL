@@ -52,7 +52,7 @@ mutually exclusive.
                  causes the iODBC driver to be built.
 
 
-Installation from CVS Sources
+Installation from sources
 =============================
 
 First, you must have reasonably current installations of:
@@ -62,10 +62,9 @@ First, you must have reasonably current installations of:
 If you don't you should install them first.  Sources are available at
 ftp.gnu.org.
 
-Second, download the sources from CVS at sourceforge:
+Second, download the sources from github:
 
-   $ cvs -d:pserver:anonymous@cvs.mdbtools.sourceforge.net:/cvsroot/mdbtools login
-   $ cvs -z3 -d:pserver:anonymous@cvs.mdbtools.sourceforge.net:/cvsroot/mdbtools co mdbtools
+   $ git clone git://github.com/brianb/mdbtools.git
 
 Third, run autogen.sh to configure everything:
 
