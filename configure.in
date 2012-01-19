@@ -114,15 +114,11 @@ fi
 
 
 dnl check for glib/gtk/gnome
-AM_PATH_GLIB_2_0(2.0.0)
-
-if test "$no_glib" = "yes"; then
-	echo
-	echo "glib 2.0 is required by MDB Tools."
-	echo "It can be downloaded at www.gtk.org."
-	echo
-	exit 1
-fi
+PKG_CHECK_MODULES(GLIB, glib-2.0, ,
+	AC_MSG_ERROR([
+glib 2.0 is required by MDB Tools (runtime and devel).
+It can be downloaded at www.gtk.org.
+]))
 
 PKG_CHECK_MODULES(GNOME,gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0, HAVE_GNOME=true, HAVE_GNOME=false)
 
