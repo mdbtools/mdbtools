@@ -9,7 +9,7 @@ dist_man_MANS	= mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
 if ENABLE_DOCBOOK
   dist_man_MANS += install.tgz
 endif
-DISTCLEANFILES = ${dist_man_MANS}
+CLEANFILES = ${dist_man_MANS} install install.tgz
 EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.txt \
 	mdb-array.txt mdb-header.txt mdb-hexdump.txt mdb-parsecsv.txt mdb-prop.txt gmdb2.txt \
 	faq.html install.sgml
@@ -20,18 +20,14 @@ EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.tx
 # Converting DocBook to HTML (several small files)
 # http://www.freebsd.org/tutorials/docproj-primer/x3132.html#AEN3140
 install.tgz: $(srcdir)/install.sgml
-	rm -rf html && \
-	mkdir html && \
+	rm -rf html
+	mkdir html
 	cd html && \
-	openjade -d ${DOCBOOK_DSL} -t sgml ../$(srcdir)/install.sgml; \
-	test -f book1.htm && \
-	ln -s book1.htm index.html && \
-	cd .. && \
-	if ! [ -L userguide ]; then \
-	        ln -s html install; \
-	fi ; \
+	    openjade -d ${DOCBOOK_DSL} -t sgml ../install.sgml
+	[ -f html/book1.htm ]
+	ln -s book1.htm html/index.html
+	[ -L install ] || ln -s html install
 	tar zcf install.tgz install/*
 
 clean-local:
 	-rm -rf html
-	-rm -f install
