@@ -36,6 +36,7 @@ int
 main (int argc, char **argv)
 {
 unsigned int   i, j, k;
+unsigned int unsupported = 0;
 MdbHandle *mdb;
 MdbCatalogEntry *entry;
 MdbTableDef *table;
@@ -122,6 +123,9 @@ FILE *cfile;
 		       fprintf (typesfile, "\tchar *\t");
 		       fprintf (cfile, "\tdump_string (x.");
 		       break;
+		     default:
+		       unsupported = 1;
+		       break;
 		     }
 		   for (j = 0; j < strlen (col->name); j++)
 		     {
@@ -146,6 +150,8 @@ FILE *cfile;
  mdb_close (mdb);
  mdb_exit();
 
- exit(0);
+ if (unsupported)
+  fputs("ERROR: unsupported type.\n", stderr);
+ exit(unsupported);
 }
 
