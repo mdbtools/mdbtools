@@ -12,12 +12,13 @@ DESCRIPTION
 OPTIONS
   -H            Supress header row
   -Q            Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
-  -d 		Specify an alternative column delimiter If no delimiter is specified, table names will be delimited by a , (comma) character.
+  -d            Specify an alternative column delimiter If no delimiter is specified, table names will be delimited by a , (comma) character.
   -R            Specify a row delimiter
   -I            INSERT statements (instead of CSV). You must specify the SQL dialect.
   -D            Set the date format (see strftime(3) for details)
   -q            Use to wrap text-like fields. Default is ".
   -X            Use to escape quoted characters within a field.  Default is doubling.
+  -N namespace  Prefix identifiers with namespace.
 
 
 NOTES 

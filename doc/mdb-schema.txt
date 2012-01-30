@@ -11,6 +11,7 @@ DESCRIPTION
 
 OPTIONS
   -T <table>, --table <table>       Single table option.  Create schema for this table only. Default is to export all tables.
+  -N namespace  Prefix identifiers with namespace.
   --drop-table        Issue DROP TABLE statement.
   --no-drop-table     Don't issue DROP TABLE statement. This is the default.
   --not-null          Issue NOT NULL constraints. This is the default.
