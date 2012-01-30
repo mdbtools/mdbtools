@@ -83,7 +83,7 @@ main(int argc, char **argv)
 	char header_row = 1;
 	char quote_text = 1;
 	char *insert_dialect = NULL;
-	char *namespace = "";
+	char *namespace = NULL;
 	int  opt;
 	char *value;
 	size_t length;
@@ -209,8 +209,8 @@ main(int argc, char **argv)
 
 		if (insert_dialect) {
 			char *quoted_name;
-			quoted_name = mdb->default_backend->quote_schema_name(NULL, argv[optind + 1]);
-			fprintf(stdout, "INSERT INTO %s%s (", namespace, quoted_name);
+			quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[optind + 1]);
+			fprintf(stdout, "INSERT INTO %s (", quoted_name);
 			free(quoted_name);
 			for (j=0;j<table->num_cols;j++) {
 				if (j>0) fputs(", ", stdout);
