@@ -55,6 +55,8 @@ gmdb_sql_close_all()
 	}
 }
 
+gchar* gmdb_export_get_filepath (GladeXML*);	/* from table_export.c */
+
 /* callbacks */
 static void
 gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
@@ -74,7 +76,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	GtkWidget *treeview;
 	GtkTreeViewColumn *col;
 	GList *glist;
-	GtkTreeStore *store;
+	GtkTreeModel *store;
 	GtkTreeIter iter;
 	GValue value = { 0, };
 	
@@ -118,17 +120,16 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 		g_list_free(glist);
 	}
 
-	store = (GtkTreeStore *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
-	gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
+	store = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
+	gtk_tree_model_get_iter_first(store, &iter);
 	rows=0;
 	g_value_init (&value, G_TYPE_STRING);
 	do {
 		rows++;
-		n_columns = gtk_tree_model_get_n_columns(GTK_TREE_MODEL(store));
+		n_columns = gtk_tree_model_get_n_columns(store);
 		for (i=0; i < n_columns; i++) {
 			if (i>0) fputs(delimiter, outfile);
-			gtk_tree_model_get_value(GTK_TREE_MODEL(store), 
-					&iter, i, &value);
+			gtk_tree_model_get_value(store, &iter, i, &value);
 			str = (gchar *) g_value_get_string(&value);
 			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, str);
 			fputs(str, outfile);
@@ -136,7 +137,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 			g_value_unset(&value);
 		}
 		fputs(lineterm, outfile);
-	} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter));
+	} while (gtk_tree_model_iter_next(store, &iter));
 
 	fclose(outfile);
 	gtk_widget_destroy(filesel);
@@ -353,7 +354,8 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	MdbSQLColumn *sqlcol;
 	GtkTextBuffer *txtbuffer;
 	GtkTextIter start, end;
-	GtkWidget *textview, *combo, *treeview, *store;
+	GtkWidget *textview, *combo, *treeview;
+	GtkTreeModel *store;
 	/*GtkWidget *window;*/
 	GList *history;
 	GType *gtypes;
@@ -402,17 +404,17 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	for (i=0;i<sql->num_columns;i++) 
 		gtypes[i]=G_TYPE_STRING;
 
-	store = (GtkWidget *) gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
+	store = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 	if (store) {
 		while ((column = gtk_tree_view_get_column(GTK_TREE_VIEW(treeview), 0))) {
 			gtk_tree_view_remove_column(GTK_TREE_VIEW(treeview), column);
 		}
-		gtk_widget_destroy(store);
+		g_object_unref(store);
 	}
-	store = (GtkWidget *) gtk_list_store_newv(sql->num_columns, gtypes);
+	store = (GtkTreeModel*)gtk_list_store_newv(sql->num_columns, gtypes);
 	g_free(gtypes);
 
-	gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), GTK_TREE_MODEL(store));
+	gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), store);
 	
 	GtkCellRenderer *renderer;
 	renderer = gtk_cell_renderer_text_new(); 
