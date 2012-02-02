@@ -31,10 +31,14 @@ ENVIRONMENT
                       * debug_all is a shortcut for all debug_* options
 
 HISTORY
-  mdb-ver first appeared in MDB Tools 0\.4
+  mdb-ver first appeared in MDB Tools 0.4.
+
+SEE ALSO
+  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-prop(1) mdb-sql(1) mdb-array(1)
+  mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
 
 AUTHORS
-  The mdb-ver utility was written by Brian Bruns
+  The mdb-ver utility was written by Brian Bruns.
 
 BUGS
   mdb-ver does minimal checking on the validity of a file. It is possbile for it to misidentify a non-MDB file.

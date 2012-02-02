@@ -37,11 +37,15 @@ ENVIRONMENT
                       * debug_props
                       * debug_all is a shortcut for all debug_* options
 
+SEE ALSO
+  gmdb2(1) mdb-hexdump(1) mdb-prop(1) mdb-sql(1) mdb-ver(1) mdb-array(1)
+  mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
+
 HISTORY
-  mdb-export first appeared in MDB Tools 0\.1
+  mdb-export first appeared in MDB Tools 0.1.
 
 AUTHORS
-  The mdb-export utility was written by Brian Bruns
+  The mdb-export utility was written by Brian Bruns.
 
 BUGS
   Memo fields are allowed to contain a newline characters, the current program does nothing about this.

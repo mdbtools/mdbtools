@@ -27,5 +27,9 @@ ENVIRONMENT
                       * debug_props
                       * debug_all is a shortcut for all debug_* options
 
+SEE ALSO
+  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-sql(1) mdb-ver(1) mdb-array(1)
+  mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
+
 AUTHORS
-  The mdb-prop utility was written by Brian Bruns
+  The mdb-prop utility was written by Brian Bruns.
