@@ -51,7 +51,11 @@ int main(int argc, char **argv)
 	exit(1);
    }
    fseek(in,0x14,SEEK_SET);
-   fread(data,1,1,in);
+   length = fread(data,1,1,in);
+   if (!length) {
+	fprintf(stderr, "fread failed at position 0x14\n");
+	exit(1);
+   }
    if (data[0]==0x01) {
 	jet4 = 1;
 	pg_size = 4096;

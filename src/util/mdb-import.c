@@ -209,7 +209,10 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	for (i=0;i<header_rows;i++)
-		fgets(line, MAX_ROW_SIZE, in);
+		if (!fgets(line, MAX_ROW_SIZE, in)) {
+			fprintf(stderr, "Error while reading header column #%d. Check -H parameter.\n", i);
+			exit(1);
+		}
 
 	row = 1;
 	while (fgets(line, MAX_ROW_SIZE, in)) {
