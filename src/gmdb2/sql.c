@@ -39,8 +39,10 @@ extern GtkWidget *app;
 extern MdbHandle *mdb;
 extern MdbSQL *sql;
 
-static void gmdb_sql_tree_populate(MdbHandle *mdb, GladeXML *xml);
-static void gmdb_sql_load_query(GladeXML *xml, gchar *file_path);
+static void gmdb_sql_tree_populate (MdbHandle*, GladeXML*);
+static void gmdb_sql_load_query (GladeXML*, gchar*);
+static void gmdb_sql_save_query (GladeXML*, gchar*);
+static void gmdb_sql_save_as_cb (GtkWidget*, GladeXML*);
 
 void
 gmdb_sql_close_all()
@@ -190,7 +192,7 @@ gmdb_sql_save_cb(GtkWidget *w, GladeXML *xml)
 	}
 	gmdb_sql_save_query(xml, str);
 }
-void
+static void
 gmdb_sql_save_as_cb(GtkWidget *w, GladeXML *xml)
 {
 	GtkWindow *parent_window = (GtkWindow *) glade_xml_get_widget (xml, "gmdb");
@@ -458,8 +460,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 }
 
 void
-gmdb_sql_new_cb(GtkWidget *w, gpointer data)
-{
+gmdb_sql_new_cb (GtkWidget *w, gpointer data) {
 	GtkTargetEntry src;
 	GtkWidget *mi, *but, *combo;
 	GladeXML *sqlwin_xml;
@@ -619,9 +620,9 @@ gmdb_sql_set_file(GladeXML *xml, gchar *file_name)
 	textview = glade_xml_get_widget(xml, "sql_textview");
 	g_object_set_data(G_OBJECT(textview), "file_name", file_name);
 }
-void
-gmdb_sql_save_query(GladeXML *xml, gchar *file_path)
-{
+
+static void
+gmdb_sql_save_query (GladeXML *xml, gchar *file_path) {
 	FILE *out;
 	GtkWidget *textview;
         GtkTextBuffer *txtbuffer;
@@ -697,8 +698,7 @@ GtkTreeIter *iter2;
 #else
 
 void
-gmdb_sql_new_cb(GtkWidget *w, gpointer data)
-{
+gmdb_sql_new_cb (GtkWidget *w, gpointer data) {
 	GtkWidget* dlg = gtk_message_dialog_new (gtk_widget_get_toplevel (w),
 	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
 	    _("SQL support was not built.\nRun configure with the --enable-sql option."));

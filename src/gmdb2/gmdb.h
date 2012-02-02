@@ -57,10 +57,8 @@ void gmdb_debug_set_dissect_cb(GtkWidget *w, gpointer data);
 void gmdb_debug_close_all(void);
 
 /* sql.c */
-void gmdb_sql_save_as_cb(GtkWidget *w, GladeXML *xml);
 void gmdb_sql_new_cb(GtkWidget *w, gpointer data);
 void gmdb_sql_close_all(void);
-void gmdb_sql_save_query(GladeXML *xml, gchar *file_path);
 
 unsigned long gmdb_prefs_get_maxrows(void);
 
