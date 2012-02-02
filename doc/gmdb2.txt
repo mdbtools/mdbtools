@@ -2,7 +2,7 @@ NAME
   gmdb2 - GNOME UI for MDB Tools
 
 SYNOPSIS
-  gmdb2 [<database>]
+  gmdb2 [database]
 
 DESCRIPTION
   gmdb2 is a GNOME UI for MDB Tools.

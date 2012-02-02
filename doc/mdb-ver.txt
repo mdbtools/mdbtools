@@ -2,7 +2,7 @@ NAME
   mdb-ver - Return the format of a given MDB database.
 
 SYNOPSIS
-  mdb-ver <database>
+  mdb-ver [-M] database
 
 DESCRIPTION
   mdb-ver is a utility program distributed with MDB Tools. 

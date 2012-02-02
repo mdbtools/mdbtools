@@ -2,7 +2,7 @@ NAME
   mdb-parsecsv - Convert CSV table dump into C file.
 
 SYNOPSIS
-  mdb-parsecsv <file>
+  mdb-parsecsv file
 
 DESCRIPTION
   mdb-parsecsv is a utility program distributed with MDB Tools.

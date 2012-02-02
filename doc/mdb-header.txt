@@ -2,7 +2,7 @@ NAME
   mdb-header - Write header file from an MDB database
 
 SYNOPSIS
-  mdb-header [<database>]
+  mdb-header [database]
 
 DESCRIPTION
   mdb-header is a utility program distributed with MDB Tools.

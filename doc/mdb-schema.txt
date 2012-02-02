@@ -2,7 +2,7 @@ NAME
   mdb-schema - Generate schema creation DDL
 
 SYNOPSIS
-  mdb-schema [options] <database> [<backend>]
+  mdb-schema [options] database [backend]
 
 DESCRIPTION
   mdb-schema is a utility program distributed with MDB Tools. 

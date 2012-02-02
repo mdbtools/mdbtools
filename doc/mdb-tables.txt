@@ -2,7 +2,7 @@ NAME
   mdb-tables - Get listing of tables in an MDB database
 
 SYNOPSIS
-  mdb-tables [-S] [-1 | -d<delimiter>] <database>
+  mdb-tables [-S] [-1 | -d delimiter] database
 
 DESCRIPTION
   mdb-tables is a utility program distributed with MDB Tools. 

@@ -2,7 +2,7 @@ NAME
   mdb-sql - SQL interface to MDB Tools
 
 SYNOPSIS
-  mdb-sql [-HFp] [-d <delimiter>] [-i <file>] [-o <file>] [<database>]
+  mdb-sql [-HFp] [-d delimiter] [-i file] [-o file] [database]
 
 DESCRIPTION
   mdb-sql is a utility program distributed with MDB Tools. 

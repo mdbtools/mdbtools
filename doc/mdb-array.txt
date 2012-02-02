@@ -2,7 +2,7 @@ NAME
   mdb-array - Export data in an MDB database table to a C array.
 
 SYNOPSIS
-  mdb-array <database> <table>
+  mdb-array database table
 
 DESCRIPTION
   mdb-array is a utility program distributed with MDB Tools.
