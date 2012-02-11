@@ -492,7 +492,7 @@ extern void mdb_init_backends();
 extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
 extern void mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
-extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, guint32 export_options);
+extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 
 /* sargs.c */
 extern int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);

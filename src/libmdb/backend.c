@@ -427,9 +427,10 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
  * mdb_print_indexes
  * @output: Where to print the sql
  * @table: Table to process
+ * @dbnamespace: Target namespace/schema name
  */
 static void
-mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace)
+mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 {
 	unsigned int i, j;
 	char* quoted_table_name;
@@ -449,7 +450,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace)
 
 	fprintf (outfile, "-- CREATE INDEXES ...\n");
 
-	quoted_table_name = mdb->default_backend->quote_schema_name(namespace, table->name);
+	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, table->name);
 
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
@@ -465,7 +466,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace)
 			strcat(index_name, idx->name);
 			strcat(index_name, "_idx");
 		}
-		quoted_name = mdb->default_backend->quote_schema_name(namespace, index_name);
+		quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
 		if (idx->index_type==1) {
 			fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
 		} else {
@@ -514,7 +515,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *namespace)
  *   The caller is responsible for freeing this string.
  */
 static char *
-mdb_get_relationships(MdbHandle *mdb, const gchar *namespace, const char* tablename)
+mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tablename)
 {
 	unsigned int i;
 	gchar *text = NULL;  /* String to be returned */
@@ -585,13 +586,13 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *namespace, const char* tablen
 			break;
 	}
 
-	quoted_table_1 = mdb->default_backend->quote_schema_name(namespace, bound[1]);
-	quoted_column_1 = mdb->default_backend->quote_schema_name(namespace, bound[0]);
-	quoted_table_2 = mdb->default_backend->quote_schema_name(namespace, bound[3]);
-	quoted_column_2 = mdb->default_backend->quote_schema_name(namespace, bound[2]);
+	quoted_table_1 = mdb->default_backend->quote_schema_name(dbnamespace, bound[1]);
+	quoted_column_1 = mdb->default_backend->quote_schema_name(dbnamespace, bound[0]);
+	quoted_table_2 = mdb->default_backend->quote_schema_name(dbnamespace, bound[3]);
+	quoted_column_2 = mdb->default_backend->quote_schema_name(dbnamespace, bound[2]);
 	grbit = atoi(bound[4]);
 	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
-	quoted_constraint_name = mdb->default_backend->quote_schema_name(namespace, constraint_name);
+	quoted_constraint_name = mdb->default_backend->quote_schema_name(dbnamespace, constraint_name);
 	free(constraint_name);
 
 	if (grbit & 0x00000002) {
@@ -626,7 +627,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *namespace, const char* tablen
 }
 
 static void
-generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, guint32 export_options)
+generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options)
 {
 	MdbTableDef *table;
 	MdbHandle *mdb = entry->mdb;
@@ -637,7 +638,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 	MdbProperties *props;
 	const char *prop_value;
 
-	quoted_table_name = mdb->default_backend->quote_schema_name(namespace, entry->object_name);
+	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, entry->object_name);
 
 	/* drop the table if it exists */
 	if (export_options & MDB_SHEXP_DROPTABLE)
@@ -773,7 +774,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 
 	if (export_options & MDB_SHEXP_INDEXES)
 		// prints all the indexes of that table
-		mdb_print_indexes(outfile, table, namespace);
+		mdb_print_indexes(outfile, table, dbnamespace);
 
 	free(quoted_table_name);
 
@@ -782,7 +783,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *namespace, gu
 
 
 void
-mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, guint32 export_options)
+mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options)
 {
 	unsigned int   i;
 	char		*the_relation;
@@ -813,7 +814,7 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, 
 		if (entry->object_type == MDB_TABLE) {
 			if ((tabname && !strcmp(entry->object_name, tabname))
 			 || (!tabname && mdb_is_user_table(entry))) {
-				generate_table_schema(outfile, entry, namespace, export_options);
+				generate_table_schema(outfile, entry, dbnamespace, export_options);
 			}
 		}
 	}
@@ -821,7 +822,7 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *namespace, 
 
 	if (export_options & MDB_SHEXP_RELATIONS) {
 		fputs ("-- CREATE Relationships ...\n", outfile);
-		while ((the_relation=mdb_get_relationships(mdb, namespace, tabname)) != NULL) {
+		while ((the_relation=mdb_get_relationships(mdb, dbnamespace, tabname)) != NULL) {
 			fputs(the_relation, outfile);
 			g_free(the_relation);
 		}
