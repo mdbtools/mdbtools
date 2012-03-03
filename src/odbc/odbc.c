@@ -16,6 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#define ENABLE_ODBC_W
+
+#ifdef ENABLE_ODBC_W
+#define SQL_NOUNICODEMAP
+#define UNICODE
+#endif //ENABLE_ODBC_W
+
 #include <sql.h>
 #include <sqlext.h>
 
@@ -28,8 +35,6 @@
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
-
-//#define ENABLE_ODBC_W
 
 #ifdef ENABLE_ODBC_W
 static iconv_t iconv_in,iconv_out;
@@ -113,7 +118,7 @@ void __attribute__ ((constructor)) my_init(){
 			wcharset = "UCS-4BE";
 	else
 		fprintf(stderr, "Unsupported SQLWCHAR width %d\n", sizeof(SQLWCHAR));
-
+//fprintf(stderr,"charset %s\n", wcharset);
 	//fprintf(stderr, "SQLWCHAR width %d\n", sizeof(SQLWCHAR));
 /*
 #if __SIZEOF_WCHAR_T__ == 4 || __WCHAR_MAX__ > 0x10000
@@ -141,8 +146,10 @@ int unicode2ascii(char *_in,unsigned int *_lin,char *_out,unsigned int *_lout){
 }
 
 int ascii2unicode(char *_in,unsigned int *_lin,char *_out,unsigned int *_lout){
+	//fprintf(stderr,"ascii2unicode %08x %08x %08x %08x\n",_in,_lin,_out,_lout);
 	char *in=_in,*out=_out;
 	unsigned lin=*_lin,lout=*_lout;
+	//fprintf(stderr,"ascii2unicode %d %d\n",lin,lout);
 	int ret=iconv(iconv_out,&in,&lin,&out,&lout);
 	*_lin-=lin,*_lout-=lout;
 	return ret;
@@ -195,11 +202,11 @@ static SQLRETURN do_connect (
 SQLRETURN SQL_API SQLDriverConnect(
     SQLHDBC            hdbc,
     SQLHWND            hwnd,
-    SQLCHAR FAR       *szConnStrIn,
+    SQLCHAR        *szConnStrIn,
     SQLSMALLINT        cbConnStrIn,
-    SQLCHAR FAR       *szConnStrOut,
+    SQLCHAR        *szConnStrOut,
     SQLSMALLINT        cbConnStrOutMax,
-    SQLSMALLINT FAR   *pcbConnStrOut,
+    SQLSMALLINT    *pcbConnStrOut,
     SQLUSMALLINT       fDriverCompletion)
 {
 	char* dsn = NULL;
@@ -233,6 +240,16 @@ SQLRETURN SQL_API SQLDriverConnect(
 	return SQL_ERROR;
 }
 
+static SQLRETURN SQL_API _SQLDriverConnect(
+    SQLHDBC            hdbc,
+    SQLHWND            hwnd,
+    SQLCHAR FAR       *szConnStrIn,
+    SQLSMALLINT        cbConnStrIn,
+    SQLCHAR FAR       *szConnStrOut,
+    SQLSMALLINT        cbConnStrOutMax,
+    SQLSMALLINT FAR   *pcbConnStrOut,
+    SQLUSMALLINT       fDriverCompletion) __attribute__((alias("SQLDriverConnect")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLDriverConnectW(
     SQLHDBC            hdbc,
@@ -244,15 +261,15 @@ SQLRETURN SQL_API SQLDriverConnectW(
     SQLSMALLINT FAR   *pcbConnStrOut,
     SQLUSMALLINT       fDriverCompletion)
 {
-	if(cbConnStrIn==SQL_NTS)
-		cbConnStrIn=sqlwlen(szConnStrIn);
+	TRACE("SQLDriverConnectW");
+	if(cbConnStrIn==SQL_NTS)cbConnStrIn=sqlwlen(szConnStrIn);
 	{
 		unsigned int l = cbConnStrIn*sizeof(SQLWCHAR), z = (cbConnStrIn+1)*3;
 		SQLCHAR *tmp = malloc(z);
 		SQLRETURN ret;
 		unicode2ascii((char*)szConnStrIn, &l, (char*)tmp, &z);
 		tmp[z] = 0;
-		ret=SQLDriverConnect(hdbc,hwnd,tmp,SQL_NTS,NULL,0,pcbConnStrOut,fDriverCompletion);
+		ret=_SQLDriverConnect(hdbc,hwnd,tmp,SQL_NTS,NULL,0,pcbConnStrOut,fDriverCompletion);
 		free(tmp);
 		if (szConnStrOut && cbConnStrOutMax>0)
 			szConnStrOut[0] = 0;
@@ -671,6 +688,15 @@ SQLRETURN SQL_API SQLConnect(
 	return ret;
 }
 
+static SQLRETURN SQL_API _SQLConnect(
+    SQLHDBC            hdbc,
+    SQLCHAR FAR       *szDSN,
+    SQLSMALLINT        cbDSN,
+    SQLCHAR FAR       *szUID,
+    SQLSMALLINT        cbUID,
+    SQLCHAR FAR       *szAuthStr,
+    SQLSMALLINT        cbAuthStr) __attribute__((alias("SQLConnect")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLConnectW(
     SQLHDBC            hdbc,
@@ -693,7 +719,7 @@ SQLRETURN SQL_API SQLConnectW(
 		unicode2ascii((char*)szDSN, &z1, (char*)tmp1, &l1);
 		unicode2ascii((char*)szUID, &z2, (char*)tmp2, &l2);
 		unicode2ascii((char*)szAuthStr, &z3, (char*)tmp3, &l3);
-		ret=SQLConnect(hdbc,tmp1,l1,tmp2,l2,tmp3,l3);
+		ret=_SQLConnect(hdbc,tmp1,l1,tmp2,l2,tmp3,l3);
 		free(tmp1),free(tmp2),free(tmp3);
 		return ret;
 	}
@@ -764,6 +790,17 @@ SQLRETURN SQL_API SQLDescribeCol(
 	return SQL_SUCCESS;
 }
 
+static SQLRETURN SQL_API _SQLDescribeCol(
+    SQLHSTMT           hstmt,
+    SQLUSMALLINT       icol,
+    SQLCHAR FAR       *szColName,
+    SQLSMALLINT        cbColNameMax,
+    SQLSMALLINT FAR   *pcbColName,
+    SQLSMALLINT FAR   *pfSqlType,
+    SQLULEN FAR       *pcbColDef, /* precision */
+    SQLSMALLINT FAR   *pibScale,
+    SQLSMALLINT FAR   *pfNullable) __attribute__((alias("SQLDescribeCol")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLDescribeColW(
     SQLHSTMT           hstmt,
@@ -776,13 +813,12 @@ SQLRETURN SQL_API SQLDescribeColW(
     SQLSMALLINT FAR   *pibScale,
     SQLSMALLINT FAR   *pfNullable)
 {
-	if(cbColNameMax==SQL_NTS)
-		cbColNameMax=sqlwlen(szColName);
+	if(cbColNameMax==SQL_NTS)cbColNameMax=sqlwlen(szColName);
 	{
 		SQLCHAR *tmp=calloc(cbColNameMax*4,1);
 		unsigned int l=cbColNameMax*4;
-		SQLRETURN ret=SQLDescribeCol(hstmt,icol,tmp,cbColNameMax*4,&l,pfSqlType,pcbColDef,pibScale,pfNullable);
-		ascii2unicode((char*)tmp, &l, (char*)szColName, pcbColName);
+		SQLRETURN ret=_SQLDescribeCol(hstmt,icol,tmp,cbColNameMax*4,(SQLSMALLINT*)&l,pfSqlType,pcbColDef,pibScale,pfNullable);
+		ascii2unicode((char*)tmp, &l, (char*)szColName, (unsigned int*)pcbColName);
 		*pcbColName/=sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
@@ -856,6 +892,15 @@ SQLRETURN SQL_API SQLColAttributes(
 	return SQL_SUCCESS;
 }
 
+static SQLRETURN SQL_API _SQLColAttributes(
+    SQLHSTMT           hstmt,
+    SQLUSMALLINT       icol,
+    SQLUSMALLINT       fDescType,
+    SQLPOINTER         rgbDesc,
+    SQLSMALLINT        cbDescMax,
+    SQLSMALLINT FAR   *pcbDesc,
+    SQLLEN FAR        *pfDesc)__attribute__((alias("SQLColAttributes")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLColAttributesW(
     SQLHSTMT           hstmt,
@@ -867,12 +912,12 @@ SQLRETURN SQL_API SQLColAttributesW(
     SQLINTEGER FAR    *pfDesc)
 {
 	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL)
-		return SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
+		return _SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
 	else{
 		SQLCHAR *tmp=calloc(cbDescMax*4,1);
 		unsigned int l=cbDescMax*4;
-		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,l,pfDesc);
-		ascii2unicode((char*)tmp, &l, (char*)rgbDesc, pcbDesc);
+		SQLRETURN ret=_SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,(SQLSMALLINT*)&l,pfDesc);
+		ascii2unicode((char*)tmp, &l, (char*)rgbDesc, (unsigned int*)pcbDesc);
 		*pcbDesc/=sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
@@ -908,6 +953,7 @@ SQLRETURN SQL_API SQLError(
 	SQLRETURN result = SQL_NO_DATA_FOUND;
    
 	TRACE("SQLError");
+	//if(pfNativeError)fprintf(stderr,"NativeError %05d\n", *pfNativeError);
 	if (strlen (lastError) > 0)
 	{
 		strcpy ((char*)szSqlState, "08001");
@@ -923,6 +969,16 @@ SQLRETURN SQL_API SQLError(
 
 	return result;
 }
+
+static SQLRETURN SQL_API _SQLError(
+    SQLHENV            henv,
+    SQLHDBC            hdbc,
+    SQLHSTMT           hstmt,
+    SQLCHAR FAR       *szSqlState,
+    SQLINTEGER FAR    *pfNativeError,
+    SQLCHAR FAR       *szErrorMsg,
+    SQLSMALLINT        cbErrorMsgMax,
+    SQLSMALLINT FAR   *pcbErrorMsg) __attribute__((alias("SQLError")));
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLErrorW(
@@ -942,7 +998,7 @@ SQLRETURN SQL_API SQLErrorW(
 
 	TRACE("SQLErrorW");
 
-	result = SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
+	result = _SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
 	if (result == SQL_SUCCESS) {
 		unsigned int l=6, z=6*sizeof(SQLWCHAR);
 		ascii2unicode((char*)szSqlState8, &l, (char*)szSqlState, &z);
@@ -991,20 +1047,26 @@ SQLRETURN SQL_API SQLExecDirect(
 	return _SQLExecute(hstmt);
 }
 
+static SQLRETURN SQL_API _SQLExecDirect(
+    SQLHSTMT           hstmt,
+    SQLCHAR FAR       *szSqlStr,
+    SQLINTEGER         cbSqlStr)__attribute__((alias("SQLExecDirect")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLExecDirectW(
     SQLHSTMT           hstmt,
     SQLWCHAR FAR       *szSqlStr,
     SQLINTEGER         cbSqlStr)
 {
-	if(cbSqlStr==SQL_NTS)
-		cbSqlStr=sqlwlen(szSqlStr);
+	TRACE("SQLExecDirectW");
+	if(cbSqlStr==SQL_NTS)cbSqlStr=sqlwlen(szSqlStr);
 	{
 		SQLCHAR *tmp=calloc(cbSqlStr*4,1);
 		unsigned int l=cbSqlStr*4,z=cbSqlStr*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szSqlStr, &z, (char*)tmp, &l);
-		ret=SQLExecDirect(hstmt,tmp,l);
+		ret=_SQLExecDirect(hstmt,tmp,l);
+		TRACE("SQLExecDirectW end");
 		free(tmp);
 		return ret;
 	}
@@ -1338,6 +1400,17 @@ SQLRETURN SQL_API SQLColumns(
 	return SQL_SUCCESS;
 }
 
+static SQLRETURN SQL_API _SQLColumns(
+    SQLHSTMT           hstmt,
+    SQLCHAR FAR       *szCatalogName,
+    SQLSMALLINT        cbCatalogName,
+    SQLCHAR FAR       *szSchemaName,
+    SQLSMALLINT        cbSchemaName,
+    SQLCHAR FAR       *szTableName,
+    SQLSMALLINT        cbTableName,
+    SQLCHAR FAR       *szColumnName,
+    SQLSMALLINT        cbColumnName)__attribute__((alias("SQLColumns")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLColumnsW(
     SQLHSTMT           hstmt,
@@ -1356,7 +1429,7 @@ SQLRETURN SQL_API SQLColumnsW(
 		unsigned int l=cbTableName*4,z=cbTableName*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szTableName, &z, (char*)tmp, &l);
-		ret=SQLColumns(hstmt,NULL,0,NULL,0,tmp,l,NULL,0);
+		ret=_SQLColumns(hstmt,NULL,0,NULL,0,tmp,l,NULL,0);
 		free(tmp);
 		return ret;
 	}
@@ -1533,6 +1606,14 @@ SQLRETURN SQL_API SQLGetData(
 	return SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API _SQLGetData(
+    SQLHSTMT           hstmt,
+    SQLUSMALLINT       icol,
+    SQLSMALLINT        fCType,
+    SQLPOINTER         rgbValue,
+    SQLLEN             cbValueMax,
+    SQLLEN FAR         *pcbValue)__attribute__((alias("SQLGetData")));
+
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLGetDataW(
     SQLHSTMT           hstmt,
@@ -1542,9 +1623,11 @@ SQLRETURN SQL_API SQLGetDataW(
     SQLINTEGER         cbValueMax,
     SQLINTEGER FAR    *pcbValue)
 {
+	//todo: treat numbers correctly
+
 	SQLCHAR *tmp=calloc(cbValueMax*4,1);
 	unsigned int l=cbValueMax*4;
-	SQLRETURN ret=SQLGetData(hstmt,icol,fCType,tmp,cbValueMax*4,(SQLINTEGER FAR*)&l);
+	SQLRETURN ret=_SQLGetData(hstmt,icol,fCType,tmp,cbValueMax*4,(SQLINTEGER FAR*)&l);
 	ascii2unicode((char*)tmp, &l, (char*)rgbValue, (unsigned int*)pcbValue);
 	*pcbValue/=sizeof(SQLWCHAR);
 	free(tmp);
@@ -1743,7 +1826,7 @@ SQLRETURN SQL_API SQLGetInfo(
 		*pcbInfoValue = sizeof(SQLSMALLINT);
 	break;
 	case SQL_CATALOG_NAME_SEPARATOR:
-		rgbInfoValue = ".";
+		memcpy(rgbInfoValue,".",1);
 		*pcbInfoValue = 1;
 	break;
 	case SQL_CATALOG_LOCATION:
@@ -1751,17 +1834,49 @@ SQLRETURN SQL_API SQLGetInfo(
 		*pcbInfoValue = sizeof(SQLSMALLINT);
 	break;
 	case SQL_IDENTIFIER_QUOTE_CHAR:
-		rgbInfoValue = "\"";
+		memcpy(rgbInfoValue,"\"",1);
 		*pcbInfoValue = 1;
 	break;
 	case SQL_DBMS_NAME:
-		rgbInfoValue = "MDBTOOLS";
+		memcpy(rgbInfoValue,"MDBTOOLS",8);
 		*pcbInfoValue = 8;
 	break;
 	}
 
 	return SQL_SUCCESS;
 }
+
+SQLRETURN SQL_API _SQLGetInfo(
+    SQLHDBC            hdbc,
+    SQLUSMALLINT       fInfoType,
+    SQLPOINTER         rgbInfoValue,
+    SQLSMALLINT        cbInfoValueMax,
+    SQLSMALLINT FAR   *pcbInfoValue) __attribute__((alias("SQLGetInfo")));
+
+#ifdef ENABLE_ODBC_W
+SQLRETURN SQL_API SQLGetInfoW(
+    SQLHDBC            hdbc,
+    SQLUSMALLINT       fInfoType,
+    SQLPOINTER         rgbInfoValue,
+    SQLSMALLINT        cbInfoValueMax,
+    SQLSMALLINT   *pcbInfoValue)
+{
+	//TRACE("SQLGetInfoW");
+
+	if(fInfoType==SQL_MAX_STATEMENT_LEN||fInfoType==SQL_SCHEMA_USAGE||fInfoType==SQL_CATALOG_LOCATION)
+		return _SQLGetInfo(hdbc,fInfoType,rgbInfoValue,cbInfoValueMax,pcbInfoValue);
+
+	SQLCHAR *tmp=calloc(cbInfoValueMax*4,1);
+	unsigned int l=cbInfoValueMax*4;
+	SQLRETURN ret=_SQLGetInfo(hdbc,fInfoType,tmp,cbInfoValueMax*4,(SQLSMALLINT FAR*)&l);
+	unsigned int pcb=cbInfoValueMax;
+	ascii2unicode((char*)tmp, &l, (char*)rgbInfoValue, &pcb);
+	pcb/=sizeof(SQLWCHAR);
+	if(pcbInfoValue)*pcbInfoValue=pcb;
+	free(tmp);
+	return ret;
+}
+#endif //ENABLE_ODBC_W
 
 SQLRETURN SQL_API SQLGetStmtOption(
     SQLHSTMT           hstmt,
