@@ -1,7 +1,7 @@
 Basic Installation - from a packaged tarball (.tgz)
 ===================================================
 
-See below if you are installing from CVS.
+See below if you are installing from git.
 
    $ ./configure 
    $ make 
@@ -26,7 +26,7 @@ gmdb2      -- a graphical utility to browse MDB files.
 
 And some utilities useful for debugging:
 
-prcat      -- prints the catalog table from an mdb file,
+prcat      -- prints the catalog table from an mdb file.
 prkkd      -- dump of information about design view data given the offset to it.
 prtable    -- dump of a table definition.
 prdata     -- dump of the data given a table name.
@@ -53,7 +53,7 @@ mutually exclusive.
 
 
 Installation from sources
-=============================
+=========================
 
 First, you must have reasonably current installations of:
 	libtool
