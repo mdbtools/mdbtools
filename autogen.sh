@@ -18,14 +18,20 @@ DIE=0
   DIE=1
 }
 
-(grep "^A[CM]_PROG_LIBTOOL" $srcdir/configure.in >/dev/null) && {
-  (libtool --version) < /dev/null > /dev/null 2>&1 || {
-    echo
-    echo "**Error**: You must have \`libtool' installed."
-    echo "Get ftp://ftp.gnu.org/pub/gnu/libtool-1.2d.tar.gz"
-    echo "(or a newer version if it is available)"
-    DIE=1
-  }
+grep "^A[CM]_PROG_LIBTOOL" configure.in >/dev/null && {
+  if which libtoolize && (libtooloze --version) < /dev/null > /dev/null 2>&1; then
+    LIBTOOLIZE=libtoolize
+  else
+      if which glibtoolize && (glibtoolize --version) < /dev/null > /dev/null 2>&1; then
+        LIBTOOLIZE=glibtoolize
+      else
+        echo
+        echo "**Error**: You must have \`libtool' installed."
+        echo "Get ftp://ftp.gnu.org/pub/gnu/libtool-1.2d.tar.gz"
+        echo "(or a newer version if it is available)"
+        DIE=1
+      fi
+  fi
 }
 
 grep "^AM_GNU_GETTEXT" $srcdir/configure.in >/dev/null && {
@@ -129,7 +135,7 @@ do
       aclocal $aclocalinclude
       if grep "^A[CM]_PROG_LIBTOOL" configure.in >/dev/null; then
 	echo "Running libtoolize..."
-	libtoolize --force --copy
+	${LIBTOOLIZE} --force --copy
       fi
       if grep "^A[CM]_CONFIG_HEADER" configure.in >/dev/null; then
 	echo "Running autoheader..."
