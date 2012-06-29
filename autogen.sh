@@ -19,7 +19,7 @@ DIE=0
 }
 
 grep "^A[CM]_PROG_LIBTOOL" configure.in >/dev/null && {
-  if which libtoolize && (libtooloze --version) < /dev/null > /dev/null 2>&1; then
+  if which libtoolize && (libtoolize --version) < /dev/null > /dev/null 2>&1; then
     LIBTOOLIZE=libtoolize
   else
       if which glibtoolize && (glibtoolize --version) < /dev/null > /dev/null 2>&1; then
