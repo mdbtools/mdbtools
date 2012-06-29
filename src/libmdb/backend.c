@@ -145,7 +145,7 @@ static MdbBackendType mdb_mysql_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
 		MdbBackendType_STRUCT_ELEMENT("blob",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
+		MdbBackendType_STRUCT_ELEMENT("char(38)",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
 };
 static MdbBackendType mdb_mysql_shortdate_type =

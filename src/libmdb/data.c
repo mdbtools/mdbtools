@@ -840,6 +840,27 @@ mdb_date_to_string(MdbHandle *mdb, int start)
 	return text;
 }
 
+static char *
+mdb_uuid_to_string(MdbHandle *mdb, int start)
+{
+	char *text = NULL;
+  unsigned short uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7, uuid8;
+
+  uuid1 = mdb_get_int16(mdb->pg_buf, start);
+  uuid2 = mdb_get_int16(mdb->pg_buf, start + 2);
+  uuid3 = mdb_get_int16(mdb->pg_buf, start + 4);
+  uuid4 = mdb_get_int16(mdb->pg_buf, start + 6);
+  uuid5 = mdb_get_int16(mdb->pg_buf, start + 8);
+  uuid6 = mdb_get_int16(mdb->pg_buf, start + 10);
+  uuid7 = mdb_get_int16(mdb->pg_buf, start + 12);
+  uuid8 = mdb_get_int16(mdb->pg_buf, start + 14);
+
+  text = g_strdup_printf("{%04x%04x-%04x-%04x-%04x-%04x%04x%04x}",
+    uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7, uuid8);
+
+	return text;
+}
+
 #if 0
 int floor_log10(double f, int is_single)
 {
@@ -927,6 +948,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = mdb_money_to_string(mdb, start);
 		case MDB_NUMERIC:
 		break;
+    case MDB_REPID:
+      text = mdb_uuid_to_string(mdb, start);
+    break;
 		default:
 			text = g_strdup("");
 		break;
