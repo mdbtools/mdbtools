@@ -107,7 +107,7 @@ gmdb_file_add_recent(gchar *file_path)
 	} else {
 		strncpy(basename,file_path,32);
 	}
-	basename[33]='\0';
+	basename[32]='\0';
 	gnome_config_set_string("/gmdb/RecentFiles/menu_recent1.basename", basename);
 	gnome_config_set_string("/gmdb/RecentFiles/menu_recent1.filepath", file_path);
 	gnome_config_sync();
