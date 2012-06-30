@@ -23,6 +23,9 @@
 extern int mdb_sql_yyinput(char *buf, int need);
 %}
 
+%option nounput
+%option noinput
+
 %%
 select	{ return SELECT; }
 from		{ return FROM; }
