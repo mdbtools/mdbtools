@@ -61,6 +61,7 @@ AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
+CFLAGS="$CFLAGS -Wall"
 LDFLAGS="$LDFLAGS -Wl,--as-needed"
 
 dnl check for iODBC
