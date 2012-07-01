@@ -140,8 +140,10 @@ mdb_read_indices(MdbTableDef *table)
 			if (pidx->index_type!=2 && pidx->index_num==i)
 				break;
 		}
-		if (j==table->num_idxs)
+		if (j==table->num_idxs) {
 			fprintf(stderr, "ERROR: can't find index #%d.\n", i);
+			continue;
+		}
 		//fprintf(stderr, "index %d #%d (%s) index_type:%d\n", i, pidx->index_num, pidx->name, pidx->index_type);
 
 		pidx->num_rows = mdb_get_int32(mdb->alt_pg_buf, 
