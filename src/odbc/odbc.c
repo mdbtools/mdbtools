@@ -870,6 +870,9 @@ SQLRETURN SQL_API SQLColAttributes(
 			break;
           	}
 	}
+	if (i==table->num_cols) {
+		return SQL_ERROR;
+	}
 
 	// fprintf(stderr,"fDescType = %d\n", fDescType);
 	switch(fDescType) {
@@ -1483,6 +1486,8 @@ SQLRETURN SQL_API SQLGetData(
 			break;
 		}
 	}
+	if (i==table->num_cols)
+		return SQL_ERROR;
 
 	if (icol!=stmt->icol) {
 		stmt->icol=icol;
