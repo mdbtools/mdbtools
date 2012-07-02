@@ -46,12 +46,20 @@
 static char line[max_line];
 
 static guint HashFunction (gconstpointer key);
-#if !HAVE_SQLGETPRIVATEPROFILESTRING
+#if HAVE_SQLGETPRIVATEPROFILESTRING
+#include <sqltypes.h>
+extern int  SQLGetPrivateProfileString( LPCSTR lpszSection,
+					LPCSTR lpszEntry,
+					LPCSTR lpszDefault,
+					LPSTR  lpszRetBuffer,
+					int    cbRetBuffer,
+					LPCSTR lpszFilename);
+#else
 static GString* GetIniFileName ();
 static int FileExists (const gchar* name);
 static int FindSection (FILE* stream, const char* section);
 static int GetNextItem (FILE* stream, char** name, char** value);
-#endif //!HAVE_SQLGETPRIVATEPROFILESTRING
+#endif //HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data);
 static gboolean cleanup (gpointer key, gpointer value, gpointer user_data);
