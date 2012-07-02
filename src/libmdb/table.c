@@ -287,14 +287,10 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		char *tmp_buf;
 		pcol = g_ptr_array_index(table->columns, i);
 
-		if (IS_JET4(mdb)) {
-			name_sz = read_pg_if_16(mdb, &cur_pos);
-		} else if (IS_JET3(mdb)) {
+		if (IS_JET3(mdb))
 			name_sz = read_pg_if_8(mdb, &cur_pos);
-		} else {
-			fprintf(stderr,"Unknown MDB version\n");
-			continue;
-		}
+		else
+			name_sz = read_pg_if_16(mdb, &cur_pos);
 		tmp_buf = (char *) g_malloc(name_sz);
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);

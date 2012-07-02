@@ -172,12 +172,12 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 		mdb_buffer_dump(pg_buf, row_start, row_end - row_start + 1);
 	}
 
-	if (IS_JET4(mdb)) {
-		row_cols = mdb_get_int16(pg_buf, row_start);
-		col_count_size = 2;
-	} else {
+	if (IS_JET3(mdb)) {
 		row_cols = mdb_get_byte(pg_buf, row_start);
 		col_count_size = 1;
+	} else {
+		row_cols = mdb_get_int16(pg_buf, row_start);
+		col_count_size = 2;
 	}
 
 	bitmask_sz = (row_cols + 7) / 8;
@@ -185,15 +185,15 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 
 	/* read table of variable column locations */
 	if (table->num_var_cols > 0) {
-		row_var_cols = IS_JET4(mdb) ?
-			mdb_get_int16(pg_buf, row_end - bitmask_sz - 1) :
-			mdb_get_byte(pg_buf, row_end - bitmask_sz);
+		row_var_cols = IS_JET3(mdb) ?
+			mdb_get_byte(pg_buf, row_end - bitmask_sz) :
+			mdb_get_int16(pg_buf, row_end - bitmask_sz - 1);
 		var_col_offsets = (unsigned int *)g_malloc((row_var_cols+1)*sizeof(int));
-		if (IS_JET4(mdb)) {
-			mdb_crack_row4(mdb, row_start, row_end, bitmask_sz,
+		if (IS_JET3(mdb)) {
+			mdb_crack_row3(mdb, row_start, row_end, bitmask_sz,
 				 row_var_cols, var_col_offsets);
 		} else {
-			mdb_crack_row3(mdb, row_start, row_end, bitmask_sz,
+			mdb_crack_row4(mdb, row_start, row_end, bitmask_sz,
 				 row_var_cols, var_col_offsets);
 		}
 	}
@@ -415,10 +415,10 @@ mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, int unsigned num_fie
 			}
 		}
 	}
-	if (IS_JET4(table->entry->mdb)) {
-		return mdb_pack_row4(table, row_buffer, num_fields, fields);
-	} else {
+	if (IS_JET3(table->entry->mdb)) {
 		return mdb_pack_row3(table, row_buffer, num_fields, fields);
+	} else {
+		return mdb_pack_row4(table, row_buffer, num_fields, fields);
 	}
 }
 int

@@ -76,14 +76,14 @@ mdb_read_indices(MdbTableDef *table)
 
 	table->indices = g_ptr_array_new();
 
-	if (IS_JET4(mdb)) {
-		cur_pos = table->index_start + 52 * table->num_real_idxs;
-		idx2_sz = 28;
-		type_offset = 23;
-	} else {
+	if (IS_JET3(mdb)) {
 		cur_pos = table->index_start + 39 * table->num_real_idxs;
 		idx2_sz = 20;
 		type_offset = 19;
+	} else {
+		cur_pos = table->index_start + 52 * table->num_real_idxs;
+		idx2_sz = 28;
+		type_offset = 23;
 	}
 
 	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
@@ -117,10 +117,10 @@ mdb_read_indices(MdbTableDef *table)
 
 	for (i=0;i<table->num_idxs;i++) {
 		pidx = g_ptr_array_index (table->indices, i);
-		if (IS_JET4(mdb)) {
-			name_sz=read_pg_if_16(mdb, &cur_pos);
-		} else {
+		if (IS_JET3(mdb)) {
 			name_sz=read_pg_if_8(mdb, &cur_pos);
+		} else {
+			name_sz=read_pg_if_16(mdb, &cur_pos);
 		}
 		tmpbuf = g_malloc(name_sz);
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, name_sz);
@@ -133,7 +133,7 @@ mdb_read_indices(MdbTableDef *table)
 	mdb_read_pg(mdb, index_start_pg);
 	cur_pos = table->index_start;
 	for (i=0;i<table->num_real_idxs;i++) {
-		if (IS_JET4(mdb)) cur_pos += 4;
+		if (!IS_JET3(mdb)) cur_pos += 4;
 		/* look for index number i */
 		for (j=0; j<table->num_idxs; ++j) {
 			pidx = g_ptr_array_index (table->indices, j);
@@ -195,7 +195,7 @@ mdb_read_indices(MdbTableDef *table)
 		pidx->first_pg = read_pg_if_32(mdb, &cur_pos);
 		pidx->flags = read_pg_if_8(mdb, &cur_pos);
 		//fprintf(stderr, "pidx->first_pg:%d pidx->flags:0x%02x\n",	pidx->first_pg, pidx->flags);
-		if (IS_JET4(mdb)) cur_pos += 9;
+		if (!IS_JET3(mdb)) cur_pos += 9;
 	}
 	return NULL;
 }

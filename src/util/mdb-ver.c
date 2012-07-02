@@ -70,6 +70,8 @@ main(int argc, char **argv)
 		printf("JET3\n");
 	} else if (IS_JET4(mdb)) {
 		printf("JET4\n");
+	} else if (IS_JET5(mdb)) {
+		printf("JET5\n");
 	} else {
 		printf(_("unknown database version\n"));
 	}

@@ -58,7 +58,8 @@ enum {
 };
 enum {
 	MDB_VER_JET3 = 0,
-	MDB_VER_JET4 = 1
+	MDB_VER_JET4 = 1,
+	MDB_VER_JET5 = 2
 };
 enum {
 	MDB_FORM = 0,
@@ -165,6 +166,7 @@ enum {
 };
 #define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
+#define IS_JET5(mdb) (mdb->f->jet_version==MDB_VER_JET5)
 #define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4)
 #define IS_JET3(mdb) (mdb->f->jet_version==MDB_VER_JET3)
 

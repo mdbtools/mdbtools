@@ -38,7 +38,7 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 		return 0;
 
 	/* Uncompress 'Unicode Compressed' string into tmp */
-	if (IS_JET4(mdb) && (slen>=2)
+	if (!IS_JET3(mdb) && (slen>=2)
 	 && ((src[0]&0xff)==0xff) && ((src[1]&0xff)==0xfe)) {
 		unsigned int compress=1;
 		src += 2;
@@ -72,8 +72,8 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 		iconv(mdb->iconv_in, &in_ptr, &len_in, &out_ptr, &len_out);
 		if ((!len_in) || (errno == E2BIG)) break;
 		/* Don't bail if impossible conversion is encountered */
-		in_ptr += (IS_JET4(mdb)) ? 2 : 1;
-		len_in -= (IS_JET4(mdb)) ? 2 : 1;
+		in_ptr += (IS_JET3(mdb)) ? 1 : 2;
+		len_in -= (IS_JET3(mdb)) ? 1 : 2;
 		*out_ptr++ = '?';
 		len_out--;
 	}
@@ -139,7 +139,7 @@ mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 #endif
 
 	/* Unicode Compression */
-	if(IS_JET4(mdb) && (dlen>4)) {
+	if(!IS_JET3(mdb) && (dlen>4)) {
 		unsigned char *tmp = g_malloc(dlen);
 		unsigned int tptr = 0, dptr = 0;
 		int comp = 1;
@@ -189,7 +189,7 @@ mdb_target_charset(MdbHandle *mdb)
 		iconv_code = "UTF-8";
 	return iconv_code;
 #else
-	if (IS_JET4(mdb))
+	if (!IS_JET3(mdb))
 		return "ISO-8859-1";
 	return NULL; // same as input: unknown
 #endif
@@ -205,7 +205,7 @@ void mdb_iconv_init(MdbHandle *mdb)
 	}
 
 #ifdef HAVE_ICONV
-	if (IS_JET4(mdb)) {
+	if (!IS_JET3(mdb)) {
 		mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
 		mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
 	} else {

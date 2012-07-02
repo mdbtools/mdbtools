@@ -217,7 +217,9 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 		return NULL; 
 	}
 	mdb->f->jet_version = mdb_get_int32(mdb->pg_buf, 0x14);
-	if (IS_JET4(mdb)) {
+	if (IS_JET5(mdb)) {
+		mdb->fmt = &MdbJet4Constants;
+	} else if (IS_JET4(mdb)) {
 		mdb->fmt = &MdbJet4Constants;
 	} else if (IS_JET3(mdb)) {
 		mdb->fmt = &MdbJet3Constants;
