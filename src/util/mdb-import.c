@@ -55,14 +55,14 @@ convert_field(MdbColumn *col, char *s, MdbField *field)
 			if (*c) return 1;
 			field->siz = mdb_col_fixed_size(col);
 			field->value = g_malloc(field->siz);
-			_mdb_put_int16(field->value, 0, any.i);
+			mdb_put_int16(field->value, 0, any.i);
 			break;
 		case MDB_LONGINT:
 			any.i = strtol(s, &c, 16);
 			if (*c) return 1;
 			field->siz = mdb_col_fixed_size(col);
 			field->value = g_malloc(field->siz);
-			_mdb_put_int32(field->value, 0, any.i);
+			mdb_put_int32(field->value, 0, any.i);
 			break;
 		case MDB_BOOL:
 			if (*s == '1') {
@@ -78,13 +78,13 @@ convert_field(MdbColumn *col, char *s, MdbField *field)
 			any.d = strtod(s, &c);
 			if (*c) return 1;
 			field.value = g_malloc(mdb_col_fixed_size(col));
-			_mdb_put_single(field.value, 0, any.i);
+			mdb_put_single(field.value, 0, any.i);
 			break;
 		case MDB_DOUBLE:
 			any.d = strtod(s, &c);
 			if (*c) return 1;
 			field.value = g_malloc(mdb_col_fixed_size(col));
-			_mdb_put_double(field.value, 0, any.i);
+			mdb_put_double(field.value, 0, any.i);
 			break;
 		*/
 			/*

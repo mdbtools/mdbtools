@@ -529,9 +529,13 @@ extern void mdb_dump_stats(MdbHandle *mdb);
 extern int mdb_like_cmp(char *s, char *r);
 
 /* write.c */
+extern void mdb_put_int16(void *buf, guint32 offset, guint32 value);
+extern void mdb_put_int32(void *buf, guint32 offset, guint32 value);
+extern void mdb_put_int32_msb(void *buf, guint32 offset, guint32 value);
 extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
 extern guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
 extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
+extern int mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields);
 extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
 extern int mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size);
 extern int mdb_pg_get_freespace(MdbHandle *mdb);
