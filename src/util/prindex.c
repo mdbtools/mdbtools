@@ -74,7 +74,7 @@ page_name(int page_type)
 		default: return "Unknown";
 	}
 }
-void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char *idxrow, int len)
+void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row)
 {
 	MdbField fields[256];
 	unsigned int num_fields, i, j;
@@ -101,6 +101,10 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 				break;
 			}
 		}
+		if (j==num_fields) {
+			fprintf(stderr, "ERROR Lost field #%d\n", idx->key_col_num[i]);
+			continue;
+		}
 		//j = idx->key_col_num[i];
 		strncpy(buf, fields[elem].value, fields[elem].siz);
 		buf[fields[elem].siz]=0;
@@ -113,7 +117,6 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row, unsigned char
 void
 walk_index(MdbHandle *mdb, MdbIndex *idx)
 {
-	int start, len;
 	guint32 pg;
 	guint16 row;
 	MdbHandle *mdbidx;
@@ -139,7 +142,7 @@ walk_index(MdbHandle *mdb, MdbIndex *idx)
 	//printf("page type %02x %s\n", mdbidx->pg_buf[0], page_name(mdbidx->pg_buf[0]));
 	while (mdb_index_find_next(mdbidx, idx, &chain, &pg, &row)) {
 		printf("row = %d pg = %lu\n", row, (long unsigned) pg);
-		check_row(mdb, idx, pg, row, &mdbidx->pg_buf[start], len - 4);
+		check_row(mdb, idx, pg, row);
 	}
 	mdb_close(mdbidx);
 }
