@@ -779,7 +779,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	MdbHandle *mdb = entry->mdb;
 	MdbColumn *col;
 	guint32 pg_row;
-	guint16 row;
+	guint16 row = 0;
 	void *new_pg;
 	unsigned char key_hash[256];
 	int keycol;
@@ -830,6 +830,11 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 		ipg->len = 0;
 
 		row++;
+	}
+
+	if (!row) {
+		fprintf(stderr,"missing indexes not yet supported, aborting\n");
+		return 0;
 	}
 	//mdb_put_int16(new_pg, mdb->fmt->row_count_offset, row);
 	/* free space left */

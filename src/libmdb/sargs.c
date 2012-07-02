@@ -101,7 +101,9 @@ int
 mdb_test_date(MdbSargNode *node, double td)
 {
 	struct tm found;
-	char date_tmp[MDB_BIND_SIZE];	//you should figure out a way to pull mdb_date_to_string in here
+	/* TODO: you should figure out a way to pull mdb_date_to_string in here
+	 * char date_tmp[MDB_BIND_SIZE];
+	 */
 
 	time_t found_t;
 	time_t asked_t;
