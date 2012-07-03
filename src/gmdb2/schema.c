@@ -75,8 +75,10 @@ FILE *outfile;
 void
 gmdb_schema_export_cb(GtkWidget *w, gpointer data)
 {
-GtkWidget *schemawin, *combo, *checkbox, *chooser;
+GtkWidget *schemawin, *checkbox, *chooser;
+GtkComboBox *combobox;
 gchar *file_path;
+gchar *tmp;
 int i;
 
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
@@ -84,18 +86,27 @@ int i;
 	chooser = glade_xml_get_widget (schemawin_xml, "filechooserbutton1");
 	file_path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
 
-	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
-	strncpy(tabname,gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),MDB_MAX_OBJ_NAME);
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(schemawin_xml, "table_combo"));
+	tmp = gtk_combo_box_get_active_text(combobox);
+	strncpy(tabname,tmp,MDB_MAX_OBJ_NAME);
 	tabname[MDB_MAX_OBJ_NAME]=0;
-	if (!strcmp(tabname,ALL_TABLES)) tabname[0]='\0';
+	if (!strcmp(tabname,ALL_TABLES))
+		tabname[0]='\0';
 
-	combo = glade_xml_get_widget (schemawin_xml, "backend_combo");
-	if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"Oracle")) strcpy(backend,"oracle");
-	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"Sybase")) strcpy(backend,"sybase");
-	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"MS SQL Server")) strcpy(backend,"sybase");
-	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"PostgreSQL")) strcpy(backend,"postgres");
-	else if (!strcmp(gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry)),"MySQL")) strcpy(backend,"mysql");
-	else strcpy(backend,"access");
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget (schemawin_xml, "backend_combo"));
+	tmp = gtk_combo_box_get_active_text(combobox);
+	if (!strcmp(tmp, "Oracle"))
+		strcpy(backend, "oracle");
+	else if (!strcmp(tmp, "Sybase"))
+		strcpy(backend,"sybase");
+	else if (!strcmp(tmp,"MS SQL Server"))
+		strcpy(backend,"sybase");
+	else if (!strcmp(tmp, "PostgreSQL"))
+		strcpy(backend,"postgres");
+	else if (!strcmp(tmp,"MySQL"))
+		strcpy(backend,"mysql");
+	else
+		strcpy(backend,"access");
 
 	/* make sure unknown default options are enabled */
 	export_options = MDB_SHEXP_DEFAULT;
@@ -124,16 +135,17 @@ check_default_options() {
 }
 static void
 refresh_available_options() {
-	GtkWidget *combo, *checkbox;
+	GtkComboBox *combobox; 
+	GtkWidget *checkbox;
 	guint32 capabilities;
 	extern GHashTable *mdb_backends; /* FIXME */
 	MdbBackend *backend_obj;
 	int i;
 
-	combo = glade_xml_get_widget (schemawin_xml, "backend_combo");
-	if (!combo) return; /* window is beeing destroyed */
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget (schemawin_xml, "backend_combo"));
+	if (!combobox) return; /* window is beeing destroyed */
 
-	const gchar *backend_name = gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	const gchar *backend_name = gtk_combo_box_get_active_text(combobox);
 	if      (!strcmp(backend_name,"Oracle")) strcpy(backend,"oracle");
 	else if (!strcmp(backend_name,"Sybase")) strcpy(backend,"sybase");
 	else if (!strcmp(backend_name,"MS SQL Server")) strcpy(backend,"sybase");
@@ -153,7 +165,8 @@ refresh_available_options() {
 }
 
 void
-gmdb_schema_capabilities_cb(GtkList *list) {
+gmdb_schema_backend_cb(GtkComboBox *widget, gpointer data)
+{
 	refresh_available_options();
 }
 
@@ -172,8 +185,8 @@ gmdb_schema_help_cb(GtkWidget *w, gpointer data)
 void 
 gmdb_schema_new_cb(GtkWidget *w, gpointer data) 
 {
-	GList *glist = NULL;
-	GtkWidget *combo;
+	GtkComboBox *combobox;
+	GtkFileChooser *filechooser;
 	MdbCatalogEntry *entry;
 	int i;
    
@@ -182,23 +195,25 @@ gmdb_schema_new_cb(GtkWidget *w, gpointer data)
 	/* connect the signals in the interface */
 	glade_xml_signal_autoconnect(schemawin_xml);
 	/* set up capabilities call back. TODO: autoconnect should do that */
-	combo = glade_xml_get_widget(schemawin_xml, "combo-list2");
-	g_signal_connect( G_OBJECT (combo), "selection_changed",
-		G_CALLBACK(gmdb_schema_capabilities_cb), schemawin_xml);
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(schemawin_xml, "backend_combo"));
+	gtk_combo_box_set_active(combobox, 0);
+	g_signal_connect( G_OBJECT (combobox), "changed",
+		G_CALLBACK(gmdb_schema_backend_cb), NULL);
 	
 	/* set signals with user data, anyone know how to do this in glade? */
-	combo = glade_xml_get_widget (schemawin_xml, "table_combo");
-
-	glist = g_list_append(glist, ALL_TABLES);
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(schemawin_xml, "table_combo"));
+	gtk_combo_box_append_text(combobox, ALL_TABLES);
 	/* add all user tables in catalog to list */
 	for (i=0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index (mdb->catalog, i);
 		if (mdb_is_user_table(entry)) {
-			glist = g_list_append(glist, entry->object_name);
+			gtk_combo_box_append_text(combobox, entry->object_name);
 		}
 	} /* for */
-	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
-	g_list_free(glist);
+	gtk_combo_box_set_active(combobox, 0);
+
+	filechooser = GTK_FILE_CHOOSER(glade_xml_get_widget(schemawin_xml, "filechooserbutton1"));
+	gtk_file_chooser_set_action(filechooser, GTK_FILE_CHOOSER_ACTION_SAVE);
 
 	check_default_options();
 	refresh_available_options();

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <glade-interface>
-  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-requires gtk+ 2.14 -->
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkWindow" id="sql_window">
     <property name="visible">True</property>
@@ -321,26 +321,9 @@
                           </packing>
                         </child>
                         <child>
-                          <widget class="GtkCombo" id="sql_combo">
+                          <widget class="GtkComboBox" id="sql_combo">
                             <property name="visible">True</property>
-                            <property name="enable_arrows_always">False</property>
-                            <child internal-child="entry">
-                              <widget class="GtkEntry" id="combo_entry">
-                                <property name="height_request">24</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="tooltip" translatable="yes">Recently Executed Queries</property>
-                              </widget>
-                              <packing>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child internal-child="list">
-                              <widget class="GtkList" id="combo-list1">
-                                <property name="visible">True</property>
-                                <property name="selection_mode">browse</property>
-                              </widget>
-                            </child>
+                            <property name="items" translatable="yes"></property>
                           </widget>
                           <packing>
                             <property name="position">1</property>

@@ -331,15 +331,13 @@ GtkWidget *textview;
 }
 
 static void
-gmdb_sql_select_hist_cb(GtkList *list, GladeXML *xml)
+gmdb_sql_select_hist_cb(GtkComboBox *combobox, GladeXML *xml)
 {
 	gchar *buf;
 	GtkTextBuffer *txtbuffer;
-	GtkWidget *combo, *textview;
+	GtkWidget *textview;
 
-	combo = glade_xml_get_widget(xml, "sql_combo");
-	if (!combo) return;
-	buf = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	buf = gtk_combo_box_get_active_text(combobox);
 	if (!buf) return;
 	textview = glade_xml_get_widget(xml, "sql_textview");
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
@@ -356,10 +354,9 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	MdbSQLColumn *sqlcol;
 	GtkTextBuffer *txtbuffer;
 	GtkTextIter start, end;
-	GtkWidget *textview, *combo, *treeview;
+	GtkWidget *textview, *combobox, *treeview;
 	GtkTreeModel *store;
 	/*GtkWidget *window;*/
-	GList *history;
 	GType *gtypes;
 	GtkTreeIter iter;
 	GtkTreeViewColumn *column;
@@ -375,7 +372,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 
 	/* stuff this query on the history */
 	textview = glade_xml_get_widget(xml, "sql_textview");
-	combo = glade_xml_get_widget(xml, "sql_combo");
+	combobox = glade_xml_get_widget(xml, "sql_combo");
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
         len = gtk_text_buffer_get_char_count(txtbuffer);
 	gtk_text_buffer_get_iter_at_offset (txtbuffer, &start, 0);
@@ -383,10 +380,8 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	buf = gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE);
 
 	/* add to the history */
-	history = g_object_get_data(G_OBJECT(combo),"hist_list");
-	history = g_list_prepend(history, g_strdup(buf));
-	g_object_set_data(G_OBJECT(combo), "hist_list", history);
-	gtk_combo_set_popdown_strings(GTK_COMBO(combo), history);
+	gtk_combo_box_prepend_text(GTK_COMBO_BOX(combobox), buf);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combobox), 0);
 
 	/* ok now execute it */
 	mdb_sql_run_query(sql, buf);
@@ -462,7 +457,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 void
 gmdb_sql_new_cb (GtkWidget *w, gpointer data) {
 	GtkTargetEntry src;
-	GtkWidget *mi, *but, *combo;
+	GtkWidget *mi, *but, *combobox;
 	GladeXML *sqlwin_xml;
 
 	/* load the interface */
@@ -528,8 +523,8 @@ gmdb_sql_new_cb (GtkWidget *w, gpointer data) {
 	g_signal_connect (G_OBJECT (mi), "activate",
 		G_CALLBACK (gmdb_sql_execute_cb), sqlwin_xml);
 
-	combo = glade_xml_get_widget(sqlwin_xml, "sql_combo");
-	g_signal_connect (G_OBJECT(GTK_COMBO(combo)->list), "selection-changed",
+	combobox = glade_xml_get_widget(sqlwin_xml, "sql_combo");
+	g_signal_connect (G_OBJECT(GTK_COMBO_BOX(combobox)), "changed",
 		G_CALLBACK (gmdb_sql_select_hist_cb), sqlwin_xml);
 
 	but = glade_xml_get_widget (sqlwin_xml, "execute_button");

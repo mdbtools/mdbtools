@@ -17,6 +17,7 @@
  */
 #include "gmdb.h"
 
+#include <gtk/gtk.h>
 #include <gtk/gtkmessagedialog.h>
 #include <libgnome/gnome-i18n.h>
 #include <libgnome/gnome-help.h>
@@ -56,11 +57,11 @@ gmdb_print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, ch
 void
 gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
 {
-	GtkWidget *combo;
+	GtkComboBox *combobox;
 	gchar *str;
 
-	combo = glade_xml_get_widget(xml, "sep_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "sep_combo"));
+	str = gtk_combo_box_get_active_text(combobox);
 	if (!strcmp(str,COMMA)) { strcpy(delimiter, ","); }
 	else if (!strcmp(str,TAB)) { strcpy(delimiter, "\t"); }
 	else if (!strcmp(str,SPACE)) { strcpy(delimiter, " "); }
@@ -76,11 +77,11 @@ gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
 void
 gmdb_export_get_lineterm(GladeXML *xml, gchar *lineterm, int max_buf)
 {
-	GtkWidget *combo;
+	GtkComboBox *combobox;
 	gchar *str;
 
-	combo = glade_xml_get_widget(xml, "term_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "term_combo"));
+	str = gtk_combo_box_get_active_text (combobox);
 	if (!strcmp(str,LF)) { strcpy(lineterm, "\n"); }
 	else if (!strcmp(str,CR)) { strcpy(lineterm, "\r"); }
 	else if (!strcmp(str,CRLF)) { strcpy(lineterm, "\r\n"); }
@@ -89,12 +90,12 @@ gmdb_export_get_lineterm(GladeXML *xml, gchar *lineterm, int max_buf)
 int
 gmdb_export_get_quote(GladeXML *xml)
 {
-	GtkWidget *combo;
+	GtkComboBox *combobox;
 	int need_quote = 0;
 	gchar *str;
 
-	combo = glade_xml_get_widget(xml, "quote_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "quote_combo"));
+	str = gtk_combo_box_get_active_text (combobox);
 	if (!strcmp(str,ALWAYS)) { need_quote = 1; }
 	else if (!strcmp(str,NEVER)) { need_quote = 0; }
 	else if (!strcmp(str,AUTOMAT)) { need_quote = -1; }
@@ -105,12 +106,12 @@ gmdb_export_get_quote(GladeXML *xml)
 char
 gmdb_export_get_quotechar(GladeXML *xml)
 {
-	GtkWidget *combo;
+	GtkComboBox *combobox;
 	gchar *str;
 	char quotechar;
 
-	combo = glade_xml_get_widget(xml, "qchar_combo");
-	str = (gchar *) gtk_entry_get_text(GTK_ENTRY(GTK_COMBO(combo)->entry));
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "qchar_combo"));
+	str = gtk_combo_box_get_active_text (combobox);
 	quotechar = str[0];
 
 	return quotechar;
@@ -241,41 +242,33 @@ void gmdb_table_export(MdbCatalogEntry *entry)
 void
 gmdb_table_export_populate_dialog(GladeXML *xml)
 {
-	GList *glist = NULL;
-	GtkWidget *combo;
+	GtkComboBox *combobox;
 
-	/* Create the widgets */
-	combo = glade_xml_get_widget (xml, "term_combo");
-	glist = g_list_append(glist, LF);
-	glist = g_list_append(glist, CR);
-	glist = g_list_append(glist, CRLF);
-    	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
-	g_list_free(glist);
+	/* Populate the widgets */
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "term_combo"));
+	gtk_combo_box_append_text(combobox, LF);
+	gtk_combo_box_append_text(combobox, CR);
+	gtk_combo_box_append_text(combobox, CRLF);
+	gtk_combo_box_set_active(combobox, 0);
 
-	combo = glade_xml_get_widget (xml, "sep_combo");
-	glist = NULL;
-	glist = g_list_append(glist, COMMA);
-	glist = g_list_append(glist, TAB);
-	glist = g_list_append(glist, SPACE);
-	glist = g_list_append(glist, COLON);
-	glist = g_list_append(glist, SEMICOLON);
-	glist = g_list_append(glist, PIPE);
-    	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
-	g_list_free(glist);
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "sep_combo"));
+	gtk_combo_box_append_text(combobox, COMMA);
+	gtk_combo_box_append_text(combobox, TAB);
+	gtk_combo_box_append_text(combobox, SPACE);
+	gtk_combo_box_append_text(combobox, COLON);
+	gtk_combo_box_append_text(combobox, SEMICOLON);
+	gtk_combo_box_append_text(combobox, PIPE);
+	gtk_combo_box_set_active(combobox, 0);
 
-	combo = glade_xml_get_widget (xml, "quote_combo");
-	glist = NULL;
-	glist = g_list_append(glist, ALWAYS);
-	glist = g_list_append(glist, NEVER);
-	glist = g_list_append(glist, AUTOMAT);
-    	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
-	g_list_free(glist);
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "quote_combo"));
+	gtk_combo_box_append_text(combobox, ALWAYS);
+	gtk_combo_box_append_text(combobox, NEVER);
+	gtk_combo_box_append_text(combobox, AUTOMAT);
+	gtk_combo_box_set_active(combobox, 0);
 
-	combo = glade_xml_get_widget (xml, "qchar_combo");
-	glist = NULL;
-	glist = g_list_append(glist, "\"");
-	glist = g_list_append(glist, "'");
-	glist = g_list_append(glist, "`");
-    	gtk_combo_set_popdown_strings(GTK_COMBO(combo), glist);
-	g_list_free(glist);
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "qchar_combo"));
+	gtk_combo_box_append_text(combobox, "\"");
+	gtk_combo_box_append_text(combobox, "'");
+	gtk_combo_box_append_text(combobox, "`");
+	gtk_combo_box_set_active(combobox, 0);
 }
