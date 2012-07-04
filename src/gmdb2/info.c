@@ -65,7 +65,10 @@ char* version;
 	else
 		version = "Unknown";
 	gtk_label_set_text(GTK_LABEL(label), version);
-		
+
+	label = glade_xml_get_widget (propswin_xml, "props_encrypted");
+	gtk_label_set_text(GTK_LABEL(label), mdb->f->db_key ? "Yes" : "No");	
+
 	assert( fstat(mdb->f->fd, &st)!=-1 );
 	sprintf(tmpstr, "%ld K", st.st_size/1024);
 	label = glade_xml_get_widget (propswin_xml, "props_filesize");
