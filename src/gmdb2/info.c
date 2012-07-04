@@ -37,6 +37,7 @@ gchar tmpstr[20];
 gchar *filename, *filepath;
 int i;
 struct stat st;
+char* version;
 
 	/* load the interface */
 	propswin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-props.glade", NULL, NULL);
@@ -55,7 +56,15 @@ struct stat st;
 	gtk_label_set_text(GTK_LABEL(label), filename);	
 		
 	label = glade_xml_get_widget (propswin_xml, "props_jetver");
-	gtk_label_set_text(GTK_LABEL(label), mdb->f->jet_version == MDB_VER_JET3 ? "3 (Access 97)" : "4 (Access 2000/XP)");	
+	if (mdb->f->jet_version == MDB_VER_JET3)
+		version = "3 (Access 97)";
+	else if (mdb->f->jet_version == MDB_VER_JET4)
+		version = "4 (Access 2000/XP/2003)";
+	else if (mdb->f->jet_version == MDB_VER_JET5)
+		version = "5 (Access 2007)";
+	else
+		version = "Unknown";
+	gtk_label_set_text(GTK_LABEL(label), version);
 		
 	assert( fstat(mdb->f->fd, &st)!=-1 );
 	sprintf(tmpstr, "%ld K", st.st_size/1024);
