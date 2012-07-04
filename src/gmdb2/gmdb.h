@@ -14,7 +14,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-void gmdb_info_msg(gchar *message);
+/* info.c */
 GtkWidget *gmdb_info_new(void);
 
 /* main2.c */

@@ -20,14 +20,9 @@
 #include <gtk/gtkiconview.h>
 #include <glade/glade.h>
 
-GtkWidget *table_list;
-GtkWidget *table_data_window;
-GtkWidget *table_def_window;
-extern GtkWidget *app;
 extern GladeXML* mainwin_xml;
 extern MdbHandle *mdb;
 int selected_table = -1;
-extern char *mdb_access_types[];
 
 /* callbacks */
 void
