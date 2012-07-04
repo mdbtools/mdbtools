@@ -103,16 +103,31 @@ GdkPixbuf *pixbuf;
 	mdb_rewind_table(table);
 
 	for (i=0;i<table->num_cols;i++) {
+		int required = 0;
 		gtk_list_store_append (store, &iter);
 		col=g_ptr_array_index(table->columns,i);
-		propval = mdb_col_get_prop(col, "Description");
 		gtk_list_store_set (store, &iter,
-			//0, pixbuf,
 			COL_NAME, col->name,
 			COL_TYPE, mdb_get_colbacktype_string(col),
-			COL_DESCRIPTION, propval ? propval : "",
 			COL_LEN, col->col_size,
-			COL_NULL, col->is_fixed ? 0 : 1,
+			COL_NULL, 1,
+			-1);
+
+		propval = mdb_col_get_prop(col, "Description");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_DESCRIPTION, propval,
+				-1);
+
+		if (col->col_type == MDB_BOOL)
+			required = 1;
+		else {
+			propval = mdb_col_get_prop(col, "Required");
+			if (propval && propval[0]=='y')
+				required = 1;
+		}
+		gtk_list_store_set (store, &iter,
+			COL_NULL, !required,
 			-1);
 	}
 
