@@ -46,6 +46,7 @@ const gchar *authors[] = {
 	"Jeff Smith",
 	"Filip Van Raemdonck",
 	"Bernhard Reiter",
+	"Nirgal Vourgère",
 	NULL
 };
 const gchar *documenters[] = {
@@ -66,11 +67,11 @@ GdkPixbuf *pixbuf=NULL;
    		"authors", authors,
 		"comments", _("GNOME MDB Viewer is a grapical interface to "
 			"MDB Tools. It lets you view and export data and schema "
-			"from MDB files produced by MS Access 97/2000/XP/2003."),
-		"copyright", _("Copyright 2002-2006 Brian Bruns and others"),
+			"from MDB files produced by MS Access 97/2000/XP/2003/2007."),
+		"copyright", _("Copyright 2002-2012 Brian Bruns and others"),
 		"documenters", documenters,
 		"logo", pixbuf,
-		"name", _("GNOME MDB Viewer"),
+		"program-name", _("GNOME MDB Viewer"),
 		"version", MDB_VERSION_NO,
 		"website", "http://mdbtools.sourceforge.net/",
 		NULL);
