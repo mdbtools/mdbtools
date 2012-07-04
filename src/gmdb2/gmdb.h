@@ -25,11 +25,12 @@ void gmdb_about_cb(GtkWidget *w, gpointer data);
 void gmdb_load_recent_files(void);
 
 GtkWidget *gmdb_table_data_new(MdbCatalogEntry *entry);
-GtkWidget *gmdb_table_def_new(MdbCatalogEntry *entry);
 GtkWidget *gmdb_table_export_new(MdbCatalogEntry *entry);
 void gmdb_table_export(MdbCatalogEntry *entry) ;
-
 void gmdb_table_export_populate_dialog(GladeXML *xml);
+
+/* table_def.c */
+void gmdb_table_def_new(MdbCatalogEntry *entry);
 
 /* file.c */
 void gmdb_file_select_cb(GtkWidget *w, gpointer data);

@@ -7,7 +7,8 @@ glade_DATA =			\
 	gmdb-export.glade	\
 	gmdb-schema.glade	\
 	gmdb-prefs.glade	\
-	gmdb-props.glade
+	gmdb-props.glade	\
+	gmdb-tabledef.glade
 
 EXTRA_DIST = $(glade_DATA) 
 

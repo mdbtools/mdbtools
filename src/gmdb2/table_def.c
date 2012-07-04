@@ -1,5 +1,5 @@
 /* MDB Tools - A library for reading MS Access database file
- * Copyright (C) 2000 Brian Bruns
+ * Copyright (C) 2000-2012 Brian Bruns and others
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,14 @@
  */
 #include "gmdb.h"
 
-extern GtkWidget *app;
-extern MdbHandle *mdb;
+#define COL_PK 0
+#define COL_NAME 1
+#define COL_TYPE 2
+#define COL_DESCRIPTION 3
+#define COL_LEN 4
+#define COL_NULL 5
+
+static void update_bottom_properties(GtkTreeView *treeview, GladeXML *xml);
 
 typedef struct GMdbDefWindow {
     gchar table_name[MDB_MAX_OBJ_NAME];
@@ -36,110 +42,175 @@ gmdb_table_def_close(GtkList *list, GtkWidget *w, GMdbDefWindow *defw)
 	return FALSE;
 }
 
-GtkWidget *
+static gint
+gmdb_table_def_cursorchanged(GtkTreeView *treeview, GladeXML *xml)
+{
+	update_bottom_properties(treeview, xml);
+	return FALSE;
+}
+
+void
 gmdb_table_def_new(MdbCatalogEntry *entry)
 {
-MdbTableDef *table;
-MdbIndex *idx;
-MdbColumn *col;
-GtkWidget *clist;
-GtkWidget *scroll;
-GdkPixmap *pixmap;
-GdkBitmap *mask;
-int i,j;
-gchar *titles[] = { "", "Column", "Name", "Type", "Size", "Allow Nulls", "Description" };
-gchar *row[sizeof(titles)/sizeof(titles[0])];
+/* FIXME: many reference should be freed */
+GladeXML *xml;
+GtkWindow *win;
+GtkTreeView *treeview;
+GtkListStore *store;
+GtkTreeModel *model;
+GtkTreeIter iter;
+GtkTreeSelection *selection;
+int i, j;
 GMdbDefWindow *defw;
-GtkStyle *style;
+MdbTableDef *table;
+MdbColumn *col;
+const char *propval;
+MdbIndex *idx;
+GdkPixbuf *pixbuf;
 
 	/* do we have an active window for this object? if so raise it */
 	for (i=0;i<g_list_length(window_list);i++) {
 		defw = g_list_nth_data(window_list, i);
 		if (!strcmp(defw->table_name, entry->object_name) && entry->object_type == MDB_TABLE) {
 			gdk_window_raise (defw->window->window);
-			return defw->window;
+			return;
 		}
 	}
 
-	defw = g_malloc(sizeof(GMdbDefWindow));
-	strcpy(defw->table_name, entry->object_name);
+	/* load the interface */
+	xml = glade_xml_new(GMDB_GLADEDIR "gmdb-tabledef.glade", NULL, NULL);
+	glade_xml_signal_autoconnect(xml);
+	win = GTK_WINDOW(glade_xml_get_widget(xml, "window1"));
 
-	defw->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);	
-	gtk_window_set_title(GTK_WINDOW(defw->window), entry->object_name);
-	gtk_widget_set_usize(defw->window, 300,200);
-	gtk_widget_show(defw->window);
+	gtk_window_set_title(win, entry->object_name);
+	gtk_window_set_default_size(win, 600, 400);
+	
+	/* icon to be used as primary key member indicator */
+	pixbuf = gdk_pixbuf_new_from_file(GMDB_ICONDIR "pk.xpm", NULL);
 
-	gtk_signal_connect (GTK_OBJECT (defw->window), "delete_event",
-		GTK_SIGNAL_FUNC (gmdb_table_def_close), defw);
-
-	scroll = gtk_scrolled_window_new(NULL,NULL);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
-		GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_widget_show (scroll);
-	gtk_container_add(GTK_CONTAINER(defw->window), scroll);
+	store = gtk_list_store_new(6,
+		GDK_TYPE_PIXBUF, /* part of primary key */
+		G_TYPE_STRING, /* column name */
+		G_TYPE_STRING, /* type */
+		G_TYPE_STRING, /* description */
+		G_TYPE_INT, /* length */
+		G_TYPE_BOOLEAN /* allow null */
+		);
 
 	/* read table */
 	table = mdb_read_table(entry);
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
-	clist = gtk_clist_new_with_titles(sizeof(titles)/sizeof(titles[0]), titles);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 0, 20);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 1, 35);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 2, 80);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 3, 60);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 4, 30);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 5, 30);
-	gtk_clist_set_column_width (GTK_CLIST(clist), 6, 60);
-	gtk_widget_show(clist);
-	gtk_container_add(GTK_CONTAINER(scroll),clist);
-
 	for (i=0;i<table->num_cols;i++) {
-		/* display column titles */
-		const char *propval;
+		gtk_list_store_append (store, &iter);
 		col=g_ptr_array_index(table->columns,i);
-		row[0] = (char *) g_malloc0(MDB_BIND_SIZE);
-		row[1] = (char *) g_malloc0(MDB_BIND_SIZE);
-		row[2] = (char *) g_malloc0(MDB_BIND_SIZE);
-		row[3] = (char *) g_malloc0(MDB_BIND_SIZE);
-		row[4] = (char *) g_malloc0(MDB_BIND_SIZE);
-		row[5] = (char *) g_malloc0(MDB_BIND_SIZE);
-		row[6] = (char *) g_malloc0(MDB_BIND_SIZE);
-		strcpy(row[0],"");
-		sprintf(row[1],"%d", col->col_num+1);
-		strcpy(row[2],col->name);
-		strcpy(row[3], mdb_get_colbacktype_string(col));
-		sprintf(row[4],"%d",col->col_size);
-		strcpy(row[5], col->is_fixed ? "No" : "Yes");
 		propval = mdb_col_get_prop(col, "Description");
-		strcpy(row[6], propval ? propval : "");
-		gtk_clist_append(GTK_CLIST(clist), row);
+		gtk_list_store_set (store, &iter,
+			//0, pixbuf,
+			COL_NAME, col->name,
+			COL_TYPE, mdb_get_colbacktype_string(col),
+			COL_DESCRIPTION, propval ? propval : "",
+			COL_LEN, col->col_size,
+			COL_NULL, col->is_fixed ? 0 : 1,
+			-1);
 	}
-	style = gtk_widget_get_style(clist);
-	pixmap = gdk_pixmap_create_from_xpm(clist->window,
-		&mask,
-		&style->bg[GTK_STATE_NORMAL], 
-		GMDB_ICONDIR "pk.xpm");
 
+	model = GTK_TREE_MODEL(store);
 	mdb_read_indices(table);
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
-		if (idx->index_type==1) {
+		if (idx->index_type==1)
     		for (j=0;j<idx->num_keys;j++) {
-			if (pixmap) gtk_clist_set_pixmap(GTK_CLIST(clist), idx->key_col_num[j]-1,0, pixmap, mask);
-    		}
-		// } else {
-    		//for (j=0;j<idx->num_keys;j++) {
-				//sprintf(tmpstr,"%s:%d",idx->name,j);
-				//gtk_clist_set_text(GTK_CLIST(clist), idx->key_col_num[j]-1,0, tmpstr);
-			//}
-		} 
-	} /* for */
+				gtk_tree_model_iter_nth_child(model, &iter, NULL, idx->key_col_num[j]-1);
+				gtk_list_store_set (store, &iter,
+					COL_PK, pixbuf,
+					-1);
+			}
+	}
 
-	gtk_clist_columns_autosize(GTK_CLIST(clist));
 
-	/* add this one to the window list */
+	treeview = GTK_TREE_VIEW(glade_xml_get_widget(xml, "columns_treeview"));
+	gtk_tree_view_insert_column_with_attributes (treeview,
+		-1,      
+		"PK", gtk_cell_renderer_pixbuf_new(),
+		"pixbuf", COL_PK,
+		NULL);
+	gtk_tree_view_insert_column_with_attributes (treeview,
+		-1,      
+		"Name", gtk_cell_renderer_text_new(),
+		"text", COL_NAME,
+		NULL);
+	gtk_tree_view_insert_column_with_attributes (treeview,
+		-1,      
+		"Type", gtk_cell_renderer_text_new(),
+		"text", COL_TYPE,
+		NULL);
+	gtk_tree_view_insert_column_with_attributes (treeview,
+		-1,      
+		"Description", gtk_cell_renderer_text_new(),
+		"text", COL_DESCRIPTION,
+		NULL);
+
+	gtk_tree_view_set_model (GTK_TREE_VIEW (treeview), model);
+
+	/* The tree view has acquired its own reference to the
+	 *  model, so we can drop ours. That way the model will
+	 *  be freed automatically when the tree view is destroyed */
+	g_object_unref (model);
+
+	/* select first item */
+	gtk_tree_model_iter_nth_child(model, &iter, NULL, 0);
+	selection = gtk_tree_view_get_selection(treeview);
+	gtk_tree_selection_select_iter(selection, &iter);
+	update_bottom_properties(treeview, xml);
+
+	gtk_widget_show(GTK_WIDGET(win));
+	
+	defw = g_malloc(sizeof(GMdbDefWindow));
+	strcpy(defw->table_name, entry->object_name);
+	defw->window = GTK_WIDGET(win);
 	window_list = g_list_append(window_list, defw);
 
-	return defw->window;
+	gtk_signal_connect (GTK_OBJECT (treeview), "cursor-changed",
+		GTK_SIGNAL_FUNC (gmdb_table_def_cursorchanged), xml);
+	gtk_signal_connect (GTK_OBJECT (defw->window), "delete_event",
+		GTK_SIGNAL_FUNC (gmdb_table_def_close), defw);
+}
+
+/* That function is called when selection is changed
+ * It updates the window bottom information
+ */
+static void
+update_bottom_properties_selected(GtkTreeModel *model,
+	GtkTreePath *path,
+	GtkTreeIter *iter,
+	GladeXML *xml)
+{
+gint size;
+gboolean allownulls;
+GtkEntry *entry;
+char tmp[20];
+
+	gtk_tree_model_get(model, iter,
+		COL_LEN, &size,
+		COL_NULL, &allownulls,
+		-1);
+	
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "size_entry"));
+	sprintf(tmp, "%d", size);
+	gtk_entry_set_text(entry, tmp);
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "allownulls_entry"));
+	gtk_entry_set_text(entry, allownulls ? "Yes" : "No");
+}
+
+static void
+update_bottom_properties(GtkTreeView *treeview, GladeXML *xml) {
+GtkTreeSelection *selection;
+	
+	selection = gtk_tree_view_get_selection(treeview);
+	gtk_tree_selection_selected_foreach(selection,
+		(GtkTreeSelectionForeachFunc)update_bottom_properties_selected,
+		xml);
 }
