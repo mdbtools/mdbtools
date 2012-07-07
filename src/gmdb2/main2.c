@@ -67,7 +67,7 @@ GdkPixbuf *pixbuf=NULL;
    		"authors", authors,
 		"comments", _("GNOME MDB Viewer is a grapical interface to "
 			"MDB Tools. It lets you view and export data and schema "
-			"from MDB files produced by MS Access 97/2000/XP/2003/2007."),
+			"from MDB files produced by MS Access 97/2000/XP/2003/2007/2010."),
 		"copyright", _("Copyright 2002-2012 Brian Bruns and others"),
 		"documenters", documenters,
 		"logo", pixbuf,

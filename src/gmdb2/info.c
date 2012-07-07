@@ -60,8 +60,10 @@ char* version;
 		version = "3 (Access 97)";
 	else if (mdb->f->jet_version == MDB_VER_JET4)
 		version = "4 (Access 2000/XP/2003)";
-	else if (mdb->f->jet_version == MDB_VER_JET5)
-		version = "5 (Access 2007)";
+	else if (mdb->f->jet_version == MDB_VER_ACCDB_2007)
+		version = "ACE 12 (Access 2007)";
+	else if (mdb->f->jet_version == MDB_VER_ACCDB_2010)
+		version = "ACE 14 (Access 2010)";
 	else
 		version = "Unknown";
 	gtk_label_set_text(GTK_LABEL(label), version);

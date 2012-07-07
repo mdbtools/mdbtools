@@ -8,14 +8,14 @@ SYNOPSIS
 DESCRIPTION
   mdb-ver is a utility program distributed with MDB Tools. 
 
-  It will return a single line of output with either 'JET3' for those files produced in Access 97 format or 'JET4' for those produced by Access 2000 and XP.
+  It will return a single line of output with 'JET3' for those files produced in Access 97 format, 'JET4' for those produced by Access 2000, XP and 2003, 'ACE12' for those produced by Access 2007, or 'ACE14' for those produced by Access 2010.
 
 OPTIONS
 
   -M	Prints the version of MDB Tools itself instead of the MDB file.
 
 NOTES 
-  Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats.
+  Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats. Newer version are very much like Jet4.
 
 ENVIRONMENT
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
@@ -44,4 +44,4 @@ AUTHORS
 BUGS
   mdb-ver does minimal checking on the validity of a file. It is possbile for it to misidentify a non-MDB file.
 
-  mdb-ver does not recognize Access 2.0 (Jet 2) or the newer MSDE format files.
+  mdb-ver does not recognize Access 2.0 (Jet 2).

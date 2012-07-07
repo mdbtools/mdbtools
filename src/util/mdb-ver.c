@@ -66,14 +66,22 @@ main(int argc, char **argv)
 		mdb_exit();
 		exit(1);
 	}
-	if (IS_JET3(mdb)) {
+	switch(mdb->f->jet_version) {
+	case MDB_VER_JET3:
 		printf("JET3\n");
-	} else if (IS_JET4(mdb)) {
+		break;
+	case MDB_VER_JET4:
 		printf("JET4\n");
-	} else if (IS_JET5(mdb)) {
-		printf("JET5\n");
-	} else {
+		break;
+	case MDB_VER_ACCDB_2007:
+		printf("ACE12\n");
+		break;
+	case MDB_VER_ACCDB_2010:
+		printf("ACE14\n");
+		break;
+	default:
 		printf(_("unknown database version\n"));
+		break;
 	}
 	
 	mdb_close(mdb);

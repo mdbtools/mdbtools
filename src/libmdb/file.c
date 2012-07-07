@@ -217,13 +217,16 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 		return NULL; 
 	}
 	mdb->f->jet_version = mdb_get_int32(mdb->pg_buf, 0x14);
-	if (IS_JET5(mdb)) {
-		mdb->fmt = &MdbJet4Constants;
-	} else if (IS_JET4(mdb)) {
-		mdb->fmt = &MdbJet4Constants;
-	} else if (IS_JET3(mdb)) {
+	switch(mdb->f->jet_version) {
+	case MDB_VER_JET3:
 		mdb->fmt = &MdbJet3Constants;
-	} else {
+		break;
+	case MDB_VER_JET4:
+	case MDB_VER_ACCDB_2007:
+	case MDB_VER_ACCDB_2010:
+		mdb->fmt = &MdbJet4Constants;
+		break;
+	default:
 		fprintf(stderr,"Unknown Jet version.\n");
 		mdb_close(mdb);
 		return NULL; 
