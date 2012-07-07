@@ -81,7 +81,10 @@ main(int argc, char **argv)
 		MdbColumn *col = g_ptr_array_index(table->columns, col_num-1);
 		size_t size;
 		void *kkd = mdb_ole_read_full(mdb, col, &size);
-		dump_kkd(mdb, kkd, size);
+		if (size)
+			dump_kkd(mdb, kkd, size);
+		else
+			printf("No properties.\n");
 		free(kkd);
 	}
 
