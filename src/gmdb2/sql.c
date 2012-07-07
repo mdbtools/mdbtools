@@ -22,20 +22,8 @@
 
 #if SQL
 
-typedef struct GMdbSQLWindow {
-	GtkWidget *window;
-	GtkWidget *textbox;
-	GtkWidget *combo;
-	GtkWidget *clist;
-	GtkWidget *scroll;
-	GtkWidget *ctree;
-	GtkCTreeNode *current_node;
-	GList *history;
-} GMdbSQLWindow;
-
 GList *sql_list;
 
-extern GtkWidget *app;
 extern MdbHandle *mdb;
 extern MdbSQL *sql;
 
