@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	fprintf(stderr, "fread failed at position 0x14\n");
 	exit(1);
    }
-   if (data[0]==0x01) {
+   if (data[0]) {
 	jet4 = 1;
 	pg_size = 4096;
    } 
