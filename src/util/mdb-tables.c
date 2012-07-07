@@ -84,21 +84,25 @@ main (int argc, char **argv)
 	char *delimiter = NULL;
 	int line_break=0;
 	int skip_sys=1;
+	int show_type=0;
 	int opt;
 	int objtype = MDB_TABLE;
 
 
 	if (argc < 2) {
-		fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] [-t <type>] <file>\n",argv[0]);
+		fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] [-t <type>] [-T] <file>\n",argv[0]);
 		fprintf (stderr, "       Valid types are: %s\n",valid_types());
 
 		exit (1);
 	}
 
-	while ((opt=getopt(argc, argv, "S1d:t:"))!=-1) {
+	while ((opt=getopt(argc, argv, "S1Td:t:"))!=-1) {
         switch (opt) {
         case 'S':
             skip_sys = 0;
+		break;
+        case 'T':
+            show_type = 1;
 		break;
         case '1':
             line_break = 1;
@@ -142,12 +146,17 @@ main (int argc, char **argv)
 		if (skip_sys && mdb_is_system_table(entry))
 			continue;
 
-       		if (line_break) 
-			fprintf (stdout, "%s\n", entry->object_name);
+		if (show_type) {
+			if (delimiter)
+				puts(delimiter);
+			printf("%d ", entry->object_type);
+		}
+		if (line_break) 
+			printf ("%s\n", entry->object_name);
 		else if (delimiter) 
-			fprintf (stdout, "%s%s", entry->object_name, delimiter);
+			printf ("%s%s", entry->object_name, delimiter);
 		else 
-			fprintf (stdout, "%s ", entry->object_name);
+			printf ("%s ", entry->object_name);
 	}
 	if (!line_break) 
 		fprintf (stdout, "\n");
