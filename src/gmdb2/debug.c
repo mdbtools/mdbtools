@@ -530,7 +530,7 @@ gmdb_debug_dissect_row(GtkTreeStore *store, GtkTreeIter *parent, char *fbuf, int
 		((unsigned char*)fbuf)[eod_ptr], ((unsigned char*)fbuf)[eod_ptr]);
 	gmdb_debug_add_item(store, parent, str, eod_ptr, 1);
 	for (i=0;i<var_cols;i++) {
-		g_strdup_printf("Var col %d offset: 0x%02x (%u)", var_cols-i,
+		str = g_strdup_printf("Var col %d offset: 0x%02x (%u)", var_cols-i,
 			((unsigned char*)fbuf)[eod_ptr+i+1], ((unsigned char*)fbuf)[eod_ptr+i+1]);
 		gmdb_debug_add_item(store, parent, str, eod_ptr + i + 1, 1);
 	}
