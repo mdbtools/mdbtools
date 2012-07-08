@@ -20,9 +20,18 @@
 #define COL_PK 0
 #define COL_NAME 1
 #define COL_TYPE 2
-#define COL_DESCRIPTION 3
-#define COL_LEN 4
-#define COL_NULL 5
+#define COL_TYPETEXT 3
+#define COL_DESCRIPTION 4
+#define COL_LEN 5
+#define COL_FORMAT 6
+#define COL_DECIMALPLACES 7
+#define COL_INPUTMASK 8
+#define COL_CAPTION 9
+#define COL_DEFAULTVALUE 10
+#define COL_VALIDATIONRULE 11
+#define COL_VALIDATIONTEXT 12
+#define COL_REQUIRED 13
+#define COL_ALLOWZEROLENGTH 14
 
 static void update_bottom_properties(GtkTreeView *treeview, GladeXML *xml);
 
@@ -88,13 +97,22 @@ GdkPixbuf *pixbuf;
 	/* icon to be used as primary key member indicator */
 	pixbuf = gdk_pixbuf_new_from_file(GMDB_ICONDIR "pk.xpm", NULL);
 
-	store = gtk_list_store_new(6,
+	store = gtk_list_store_new(15,
 		GDK_TYPE_PIXBUF, /* part of primary key */
 		G_TYPE_STRING, /* column name */
-		G_TYPE_STRING, /* type */
+		G_TYPE_INT, /* type */
+		G_TYPE_STRING, /* type as text */
 		G_TYPE_STRING, /* description */
 		G_TYPE_INT, /* length */
-		G_TYPE_BOOLEAN /* allow null */
+		G_TYPE_STRING, /* format */
+		G_TYPE_INT, /* decimal places */
+		G_TYPE_STRING, /* inputmask */
+		G_TYPE_STRING, /* caption */
+		G_TYPE_STRING, /* default value */
+		G_TYPE_STRING, /* validation rule */
+		G_TYPE_STRING, /* validation text */
+		G_TYPE_BOOLEAN, /* required */
+		G_TYPE_BOOLEAN /* allow zero length */
 		);
 
 	/* read table */
@@ -108,15 +126,64 @@ GdkPixbuf *pixbuf;
 		col=g_ptr_array_index(table->columns,i);
 		gtk_list_store_set (store, &iter,
 			COL_NAME, col->name,
-			COL_TYPE, mdb_get_colbacktype_string(col),
+			COL_TYPE, col->col_type,
+			COL_TYPETEXT, mdb_get_colbacktype_string(col),
 			COL_LEN, col->col_size,
-			COL_NULL, 1,
+			COL_REQUIRED, 0,
 			-1);
 
 		propval = mdb_col_get_prop(col, "Description");
 		if (propval)
 			gtk_list_store_set (store, &iter,
 				COL_DESCRIPTION, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "Format");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_FORMAT, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "DecimalPlaces");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_DECIMALPLACES, atoi(propval),
+				-1);
+
+		propval = mdb_col_get_prop(col, "InputMask");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_INPUTMASK, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "Caption");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_CAPTION, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "DefaultValue");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_DEFAULTVALUE, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "ValidationRule");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_VALIDATIONRULE, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "ValidationText");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_VALIDATIONTEXT, propval,
+				-1);
+
+		propval = mdb_col_get_prop(col, "AllowZeroLength");
+		if (propval)
+			gtk_list_store_set (store, &iter,
+				COL_ALLOWZEROLENGTH, propval,
 				-1);
 
 		if (col->col_type == MDB_BOOL)
@@ -127,7 +194,7 @@ GdkPixbuf *pixbuf;
 				required = 1;
 		}
 		gtk_list_store_set (store, &iter,
-			COL_NULL, !required,
+			COL_REQUIRED, required,
 			-1);
 	}
 
@@ -159,7 +226,7 @@ GdkPixbuf *pixbuf;
 	gtk_tree_view_insert_column_with_attributes (treeview,
 		-1,      
 		"Type", gtk_cell_renderer_text_new(),
-		"text", COL_TYPE,
+		"text", COL_TYPETEXT,
 		NULL);
 	gtk_tree_view_insert_column_with_attributes (treeview,
 		-1,      
@@ -202,22 +269,258 @@ update_bottom_properties_selected(GtkTreeModel *model,
 	GtkTreeIter *iter,
 	GladeXML *xml)
 {
-gint size;
-gboolean allownulls;
-GtkEntry *entry;
 char tmp[20];
+gint col_type;
+gint size;
+char *format;
+gint decimalplaces;
+char *inputmask;
+char *caption;
+char *defaultvalue;
+char *validationrule;
+char *validationtext;
+gboolean required;
+gboolean  allowzerolength;
+GtkLabel *label;
+GtkEntry *entry;
 
 	gtk_tree_model_get(model, iter,
+		COL_TYPE, &col_type,
 		COL_LEN, &size,
-		COL_NULL, &allownulls,
+		COL_FORMAT, &format,
+		COL_DECIMALPLACES, &decimalplaces,
+		COL_INPUTMASK, &inputmask,
+		COL_CAPTION, &caption,
+		COL_DEFAULTVALUE, &defaultvalue,
+		COL_VALIDATIONRULE, &validationrule,
+		COL_VALIDATIONTEXT, &validationtext,
+		COL_REQUIRED, &required,
+		COL_ALLOWZEROLENGTH, &allowzerolength,
 		-1);
 	
+	//fprintf(stderr, "type=%d\n", col_type);
+	label = GTK_LABEL(glade_xml_get_widget(xml, "size_label"));
 	entry = GTK_ENTRY(glade_xml_get_widget(xml, "size_entry"));
-	sprintf(tmp, "%d", size);
-	gtk_entry_set_text(entry, tmp);
+	switch (col_type) {
+	//case MDB_BOOL:
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_MONEY:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+	case MDB_DATETIME:
+	//case MDB_BINARY:
+	//case MDB_TEXT:
+	//case MDB_OLE:
+	//case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		sprintf(tmp, "%d", size);
+		gtk_entry_set_text(entry, tmp);
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
 
-	entry = GTK_ENTRY(glade_xml_get_widget(xml, "allownulls_entry"));
-	gtk_entry_set_text(entry, allownulls ? "Yes" : "No");
+	label = GTK_LABEL(glade_xml_get_widget(xml, "format_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "format_entry"));
+	switch (col_type) {
+	case MDB_BOOL:
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_MONEY:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+	case MDB_DATETIME:
+	//case MDB_BINARY:
+	case MDB_TEXT:
+	//case MDB_OLE:
+	case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		sprintf(tmp, "%d", size);
+		gtk_entry_set_text(entry, format ? format : "");
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
+	g_free(format);
+
+	label = GTK_LABEL(glade_xml_get_widget(xml, "decimalplaces_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "decimalplaces_entry"));
+	switch (col_type) {
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		if (decimalplaces) {
+			sprintf(tmp, "%d", decimalplaces);
+			gtk_entry_set_text(entry, tmp);
+		} else
+			gtk_entry_set_text(entry, "");
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
+
+	label = GTK_LABEL(glade_xml_get_widget(xml, "inputmask_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "inputmask_entry"));
+	switch (col_type) {
+	//case MDB_BOOL:
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_MONEY:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+	case MDB_DATETIME:
+	//case MDB_BINARY:
+	case MDB_TEXT:
+	//case MDB_OLE:
+	case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		gtk_entry_set_text(entry, inputmask ? inputmask : "");
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
+	g_free(inputmask);
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "caption_entry"));
+	gtk_entry_set_text(entry, caption ? caption : "");
+	g_free(caption);
+
+	label = GTK_LABEL(glade_xml_get_widget(xml, "defaultvalue_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "defaultvalue_entry"));
+	switch (col_type) {
+	case MDB_BOOL:
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_MONEY:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+	case MDB_DATETIME:
+	//case MDB_BINARY:
+	case MDB_TEXT:
+	//case MDB_OLE:
+	//case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		gtk_entry_set_text(entry, defaultvalue ? defaultvalue : "");
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
+	g_free(defaultvalue);
+
+	label = GTK_LABEL(glade_xml_get_widget(xml, "validationrule_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "validationrule_entry"));
+	switch (col_type) {
+	case MDB_BOOL:
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_MONEY:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+	case MDB_DATETIME:
+	//case MDB_BINARY:
+	case MDB_TEXT:
+	//case MDB_OLE:
+	case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		gtk_entry_set_text(entry, validationrule ? validationrule : "");
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
+	g_free(validationrule);
+
+	label = GTK_LABEL(glade_xml_get_widget(xml, "validationtext_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "validationtext_entry"));
+	switch (col_type) {
+	case MDB_BOOL:
+	case MDB_BYTE:
+	case MDB_INT:
+	case MDB_LONGINT:
+	case MDB_MONEY:
+	case MDB_FLOAT:
+	case MDB_DOUBLE:
+	case MDB_DATETIME:
+	//case MDB_BINARY:
+	case MDB_TEXT:
+	//case MDB_OLE:
+	case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		gtk_entry_set_text(entry, validationtext ? validationtext : "");
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
+	g_free(validationtext);
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "required_entry"));
+	gtk_entry_set_text(entry, required ? "Yes" : "No");
+
+	label = GTK_LABEL(glade_xml_get_widget(xml, "allowzerolength_label"));
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "allowzerolength_entry"));
+	switch (col_type) {
+	//case MDB_BOOL:
+	//case MDB_BYTE:
+	//case MDB_INT:
+	//case MDB_LONGINT:
+	//case MDB_MONEY:
+	//case MDB_FLOAT:
+	//case MDB_DOUBLE:
+	//case MDB_DATETIME:
+	//case MDB_BINARY:
+	case MDB_TEXT:
+	//case MDB_OLE:
+	case MDB_MEMO:
+	//case MDB_REPID:
+	//case MDB_NUMERIC:
+	//case MDB_COMPLEX:
+		gtk_widget_show(GTK_WIDGET(label));
+		gtk_widget_show(GTK_WIDGET(entry));
+		gtk_entry_set_text(entry, allowzerolength ? "Yes" : "No");
+		break;
+	default:
+		gtk_widget_hide(GTK_WIDGET(label));
+		gtk_widget_hide(GTK_WIDGET(entry));
+	}
 }
 
 static void
