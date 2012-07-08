@@ -38,6 +38,7 @@ gchar *filename, *filepath;
 int i;
 struct stat st;
 char* version;
+MdbCatalogEntry *entry = mdb_get_catalogentry_by_name(mdb, "SummaryInfo");
 
 	/* load the interface */
 	propswin_xml = glade_xml_new(GMDB_GLADEDIR "gmdb-props.glade", NULL, NULL);
@@ -56,16 +57,22 @@ char* version;
 	gtk_label_set_text(GTK_LABEL(label), filename);	
 		
 	label = glade_xml_get_widget (propswin_xml, "props_jetver");
-	if (mdb->f->jet_version == MDB_VER_JET3)
+	switch(mdb->f->jet_version) {
+	case MDB_VER_JET3:
 		version = "3 (Access 97)";
-	else if (mdb->f->jet_version == MDB_VER_JET4)
+		break;
+	case MDB_VER_JET4:
 		version = "4 (Access 2000/XP/2003)";
-	else if (mdb->f->jet_version == MDB_VER_ACCDB_2007)
+		break;
+	case MDB_VER_ACCDB_2007:
 		version = "ACE 12 (Access 2007)";
-	else if (mdb->f->jet_version == MDB_VER_ACCDB_2010)
+		break;
+	case MDB_VER_ACCDB_2010:
 		version = "ACE 14 (Access 2010)";
-	else
+		break;
+	default:
 		version = "Unknown";
+	}
 	gtk_label_set_text(GTK_LABEL(label), version);
 
 	label = glade_xml_get_widget (propswin_xml, "props_encrypted");
@@ -83,6 +90,29 @@ char* version;
 	sprintf(tmpstr, "%d", mdb->num_catalog);
 	label = glade_xml_get_widget (propswin_xml, "props_numobjs");
 	gtk_label_set_text(GTK_LABEL(label), tmpstr);	
+
+	if (entry && entry->props && entry->props->len)
+	{
+		// There is only one MdbProps for that kind of entry
+		MdbProperties *props = g_array_index(entry->props, MdbProperties*, 0);
+		const char *propval;
+		
+		propval = g_hash_table_lookup(props->hash, "Title");
+		if (propval) {
+			label = glade_xml_get_widget (propswin_xml, "props_title");
+			gtk_label_set_text(GTK_LABEL(label), propval);
+		}
+		propval = g_hash_table_lookup(props->hash, "Company");
+		if (propval) {
+			label = glade_xml_get_widget (propswin_xml, "props_company");
+			gtk_label_set_text(GTK_LABEL(label), propval);
+		}
+		propval = g_hash_table_lookup(props->hash, "Author");
+		if (propval) {
+			label = glade_xml_get_widget (propswin_xml, "props_author");
+			gtk_label_set_text(GTK_LABEL(label), propval);
+		}
+	}
 
 	g_free(filepath);
 

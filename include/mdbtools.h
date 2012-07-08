@@ -441,6 +441,7 @@ extern void mdb_swap_pgbuf(MdbHandle *mdb);
 /* catalog.c */
 extern void mdb_free_catalog(MdbHandle *mdb);
 extern GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
+MdbCatalogEntry *mdb_get_catalogentry_by_name(MdbHandle *mdb, const gchar* name);
 extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
 extern char *mdb_get_objtype_string(int obj_type);
 

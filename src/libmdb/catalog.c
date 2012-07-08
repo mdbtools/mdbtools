@@ -128,6 +128,21 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	return mdb->catalog;
 }
 
+
+MdbCatalogEntry *
+mdb_get_catalogentry_by_name(MdbHandle *mdb, const gchar* name)
+{
+	unsigned int i;
+	MdbCatalogEntry *entry;
+
+	for (i=0; i<mdb->num_catalog; i++) {
+		entry = g_ptr_array_index(mdb->catalog, i);
+		if (!strcasecmp(entry->object_name, name))
+			return entry;
+	}
+	return NULL;
+}
+
 void 
 mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 {
