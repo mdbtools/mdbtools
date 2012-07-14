@@ -8,7 +8,8 @@ glade_DATA =			\
 	gmdb-schema.glade	\
 	gmdb-prefs.glade	\
 	gmdb-props.glade	\
-	gmdb-tabledef.glade
+	gmdb-tabledef.glade	\
+	../../../COPYING
 
 EXTRA_DIST = $(glade_DATA) 
 

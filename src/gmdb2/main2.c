@@ -55,6 +55,9 @@ const gchar *documenters[] = {
 };
 GtkWidget *parent;
 GdkPixbuf *pixbuf=NULL;
+FILE *flicense;
+guint32 licenselen;
+char *license;
 
 	parent = gtk_widget_get_toplevel (button);
 	if (!GTK_WIDGET_TOPLEVEL (parent))
@@ -62,6 +65,21 @@ GdkPixbuf *pixbuf=NULL;
 
 	if (!pixbuf)
 		pixbuf = gdk_pixbuf_new_from_file (GMDB_ICONDIR "logo.xpm", NULL);
+
+	flicense = fopen(GMDB_ICONDIR "COPYING", "r");
+	if (flicense)
+	{
+		fseek(flicense, 0, SEEK_END);
+		licenselen = ftell(flicense);
+		fseek(flicense, 0, SEEK_SET);
+		license = g_malloc(licenselen+1);
+		fread(license, 1, licenselen, flicense);
+		license[licenselen] = 0;
+		fclose(flicense);
+	} else {
+		fprintf(stderr, "Can't open " GMDB_ICONDIR "COPYING\n");
+		license = NULL;
+	}
 
   	gtk_show_about_dialog ((GtkWindow*)parent,
    		"authors", authors,
@@ -74,7 +92,9 @@ GdkPixbuf *pixbuf=NULL;
 		"program-name", _("GNOME MDB Viewer"),
 		"version", MDB_VERSION_NO,
 		"website", "http://mdbtools.sourceforge.net/",
+		"license", license,
 		NULL);
+	g_free(license);
 }
 
 void
