@@ -63,7 +63,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="validationtext_label">
+              <widget class="GtkLabel" id="required_label">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">Required</property>
               </widget>
@@ -151,7 +151,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label8">
+              <widget class="GtkLabel" id="validationtext_label">
                 <property name="visible">True</property>
                 <property name="label" translatable="yes">Validation error message</property>
               </widget>
