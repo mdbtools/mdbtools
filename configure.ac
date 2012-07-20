@@ -3,6 +3,7 @@ AC_INIT(mdbtools, 0.7, [mdbtools-dev@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
 AM_INIT_AUTOMAKE
 
+AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_CONFIG_HEADERS(include/config.h)
