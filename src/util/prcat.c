@@ -24,8 +24,9 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 
 
-	if (argc<2) {
-		fprintf(stderr,"Usage: %s <file> [<objtype>]\n",argv[0]);
+	if (argc<2 || argc>3) {
+		fprintf(stderr, "Usage: %s <file> [<objtype>]\n", argv[0]);
+		fprintf(stderr, "Use objtype -1 for all\n");
 		exit(1);
 	}
 	

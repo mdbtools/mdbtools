@@ -35,7 +35,7 @@ static char *type_name[] = {"Form",
 			"Module",
 			"Relationship",
 			"Unknown 0x09",
-			"Unknown 0x0a",
+			"User Info",
 			"Database"
 		};
 
@@ -153,10 +153,10 @@ mdb_dump_catalog(MdbHandle *mdb, int obj_type)
 	for (i=0;i<mdb->num_catalog;i++) {
                 entry = g_ptr_array_index(mdb->catalog,i);
 		if (obj_type==MDB_ANY || entry->object_type==obj_type) {
-			fprintf(stdout,"Type: %-10s Name: %-18s T pg: %04x",
+			printf("Type: %-12s Name: %-48s Page: %06lx\n",
 			mdb_get_objtype_string(entry->object_type),
 			entry->object_name,
-			(unsigned int) entry->table_pg);
+			entry->table_pg);
 		}
 	}
 	return;
