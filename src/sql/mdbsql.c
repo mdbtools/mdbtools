@@ -74,7 +74,6 @@ MdbSQL *mdb_sql_init()
 {
 MdbSQL *sql;
 
-	mdb_init();
 	sql = (MdbSQL *) g_malloc0(sizeof(MdbSQL));
 	sql->columns = g_ptr_array_new();
 	sql->tables = g_ptr_array_new();

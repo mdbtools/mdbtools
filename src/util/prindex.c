@@ -34,7 +34,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	
-	mdb_init();
 	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
 		fprintf(stderr,"Unable to open database.\n");
 		exit(1);
@@ -57,9 +56,7 @@ main(int argc, char **argv)
 	}
 
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 char *
 page_name(int page_type)

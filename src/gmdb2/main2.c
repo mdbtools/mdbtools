@@ -158,8 +158,6 @@ GtkWidget *gmdb;
 	/* initialize the SQL engine */
 	sql = mdb_sql_init();
 #endif
-	/* initialize MDB Tools library */
-	mdb_init();
 
 	/* Initialize GNOME */
 	/* Initialize gnome program */
@@ -196,7 +194,6 @@ GtkWidget *gmdb;
 	/* free MDB Tools library */
 	mdb_sql_exit(sql);
 #endif
-	mdb_exit();
 
 	return 0;
 }

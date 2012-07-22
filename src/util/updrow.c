@@ -39,7 +39,6 @@ int len;
 		exit(1);
 	}
 	
-	mdb_init();
 	mdb = mdb_open(argv[1], MDB_WRITABLE);
 	tabname = argv[2];
 	sargname = argv[3];
@@ -64,9 +63,7 @@ int len;
 	}
 
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 
 void read_to_row(MdbTableDef *table, char *sargname)

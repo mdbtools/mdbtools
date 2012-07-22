@@ -45,7 +45,6 @@ int started;
      exit (1);
    }
 
- mdb_init();
  mdb = mdb_open (argv [1], MDB_NOFLAGS);
  
  table = mdb_read_table_by_name (mdb, argv[2], MDB_TABLE);
@@ -117,12 +116,11 @@ int started;
        }
  
  mdb_close (mdb);
- mdb_exit();
 
  fprintf (stdout, "const int %s_array_length = %d;\n", 
 	  argv [2],
 	  count);
 
- exit(0);
+ return 0;
 }
 

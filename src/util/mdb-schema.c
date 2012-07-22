@@ -143,20 +143,16 @@ main (int argc, char **argv)
 		}
 	}
  
-	mdb_init();
-
 	/* open the database */
 	mdb = mdb_open (argv[optind], MDB_NOFLAGS);
 	if (!mdb) {
 		fprintf(stderr, "Could not open file\n");
-		mdb_exit();
 		exit(1);
 	}
 
 	if (argc - optind >= 2) {
 		if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
 			fprintf(stderr, "Invalid backend type\n");
-			mdb_exit();
 			exit(1);
 		}
 	}
@@ -172,7 +168,6 @@ main (int argc, char **argv)
 	g_free(namespace);
 	g_free(tabname);
 	mdb_close (mdb);
-	mdb_exit();
 
 	return 0;
 }

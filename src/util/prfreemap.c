@@ -33,7 +33,6 @@ unsigned char *map_buf;
 		exit(1);
 	}
 	
-	mdb_init();
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_read_pg (mdb, 1);
@@ -57,8 +56,6 @@ unsigned char *map_buf;
 	if (coln!=1) printf("\n");
 
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 

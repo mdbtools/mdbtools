@@ -416,8 +416,8 @@ typedef struct {
 } MdbSarg;
 
 /* mem.c */
-extern void mdb_init();
-extern void mdb_exit();
+extern void mdb_init(); // DEPRECATED
+extern void mdb_exit(); // DEPRECATED
 
 /* file.c */
 extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);

@@ -30,15 +30,12 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	
-	mdb_init();
-
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_dump_catalog(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
 
 	mdb_close(mdb);
-	mdb_exit();
 
-	exit(0);
+	return 0;
 }
 

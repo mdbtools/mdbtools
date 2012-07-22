@@ -41,18 +41,14 @@ main(int argc, char **argv)
 	else
 		propColName = argv[3];
 
-	mdb_init();
-
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 	if (!mdb) {
-		mdb_exit();
 		return 1;
 	}
 
 	table = mdb_read_table_by_name(mdb, "MSysObjects", MDB_ANY);
 	if (!table) {
 		mdb_close(mdb);
-		mdb_exit();
 		return 1;
 	}
 	mdb_read_columns(table);
@@ -65,7 +61,6 @@ main(int argc, char **argv)
 		g_free(buf);
 		mdb_free_tabledef(table);
 		mdb_close(mdb);
-		mdb_exit();
 		printf("Column %s not found in MSysObjects!\n", argv[3]);
 		return 1;
 	}
@@ -91,8 +86,7 @@ main(int argc, char **argv)
 	g_free(buf);
 	mdb_free_tabledef(table);
 	mdb_close(mdb);
-	mdb_exit();
-
+	
 	return 0;
 }
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)

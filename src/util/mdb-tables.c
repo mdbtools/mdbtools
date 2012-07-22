@@ -121,9 +121,6 @@ main (int argc, char **argv)
 	}
 
  
- 	/* initialize the library */
- 	mdb_init();
-
  	/* open the database */
  	if (!(mdb = mdb_open (argv[optind], MDB_NOFLAGS))) {
 		fprintf(stderr,"Couldn't open database.\n");
@@ -162,9 +159,8 @@ main (int argc, char **argv)
 		fprintf (stdout, "\n");
  
 	mdb_close(mdb);
-	mdb_exit();
 	g_free(delimiter);
 
-	exit(0);
+	return 0;
 }
 

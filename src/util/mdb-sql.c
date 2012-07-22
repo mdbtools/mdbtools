@@ -490,13 +490,13 @@ char *delimiter = NULL;
 	}
 #endif
 
-	exit(0);
+	return 0;
 }
 #else
 int main(int argc, char **argv)
 {
 	fprintf(stderr,"You must configure using --enable-sql to get SQL support\n");
 
-	exit(-1);
+	return -1;
 }
 #endif

@@ -16,37 +16,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef JAVA
-#include "javadefines.h"
-#else
 #include "mdbtools.h"
-#include <locale.h>
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-#endif  /* JAVA */
-/**
- * mdb_init:
- *
- * Initializes the LibMDB library.  This function should be called exactly once
- * by calling program and prior to any other function.
- *
- **/
-/* METHOD */ void mdb_init()
+void __attribute__ ((constructor)) _mdb_init()
 {
 	mdb_init_backends();
 }
-
-/**
- * mdb_exit:
- *
- * Cleans up the LibMDB library.  This function should be called exactly once
- * by the calling program prior to exiting (or prior to final use of LibMDB 
- * functions).
- *
- **/
-/* METHOD */ void mdb_exit()
+void __attribute__ ((destructor)) _mdb_exit()
 {
 	mdb_remove_backends();
+}
+
+void mdb_init()
+{
+	fprintf(stderr, "mdb_init() is DEPRECATED and does nothing. Stop calling it.\n");
+}
+
+void mdb_exit()
+{
+	fprintf(stderr, "mdb_exit() is DEPRECATED and does nothing. Stop calling it.\n");
 }

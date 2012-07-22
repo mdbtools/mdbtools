@@ -31,7 +31,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	
-	mdb_init();
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
@@ -43,7 +42,6 @@ main(int argc, char **argv)
 	mdb_kkd_dump(table->entry);
 
 	mdb_close(mdb);
-	mdb_exit();
 #endif
-	exit(0);
+	return 0;
 }

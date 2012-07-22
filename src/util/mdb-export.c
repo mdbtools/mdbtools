@@ -155,14 +155,11 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	mdb_init();
-
 	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
 		g_free (delimiter);
 		g_free (row_delimiter);
 		g_free (quote_char);
 		if (escape_char) g_free (escape_char);
-		mdb_exit();
 		exit(1);
 	}
 
@@ -170,7 +167,6 @@ main(int argc, char **argv)
 		if (!mdb_set_default_backend(mdb, insert_dialect)) {
 			fprintf(stderr, "Invalid backend type\n");
 			if (escape_char) g_free (escape_char);
-			mdb_exit();
 			exit(1);
 		}
 
@@ -182,7 +178,6 @@ main(int argc, char **argv)
 		g_free (quote_char);
 		if (escape_char) g_free (escape_char);
 		mdb_close(mdb);
-		mdb_exit();
 		exit(1);
 	}
 
@@ -255,9 +250,8 @@ main(int argc, char **argv)
 	g_free (row_delimiter);
 	g_free (quote_char);
 	if (escape_char) g_free (escape_char);
+	
 	mdb_close(mdb);
-	mdb_exit();
-
 	return 0;
 }
 

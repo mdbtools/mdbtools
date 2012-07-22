@@ -50,13 +50,10 @@ FILE *cfile;
    exit (1);
  }
 
- mdb_init();
-
  /* open the database */
 
  mdb = mdb_open (argv[1], MDB_NOFLAGS);
  if (!mdb) {
- 	mdb_exit();
 	exit(1);
  }
 
@@ -148,7 +145,6 @@ FILE *cfile;
  fclose (cfile);
  
  mdb_close (mdb);
- mdb_exit();
 
  if (unsupported)
   fputs("ERROR: unsupported type.\n", stderr);

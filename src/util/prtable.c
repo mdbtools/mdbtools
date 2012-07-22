@@ -32,7 +32,6 @@ int found = 0;
 		exit(1);
 	}
 	
-	mdb_init();
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 
 	mdb_read_catalog(mdb, MDB_TABLE);
@@ -50,8 +49,6 @@ int found = 0;
 		fprintf(stderr,"No table named %s found.\n", argv[2]);
 	}
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 

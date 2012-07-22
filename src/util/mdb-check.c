@@ -59,8 +59,6 @@ int opt;
      }
   }
  
- mdb_init();
-
  /* open the database */
 
  mdb = mdb_open (argv[optind], MDB_NOFLAGS);
@@ -101,8 +99,7 @@ int opt;
 
 	g_free(tabname);
 	mdb_close (mdb);
-	mdb_exit();
 
-	exit(0);
+	return 0;
 }
 

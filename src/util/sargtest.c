@@ -29,8 +29,6 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 	MdbTableDef *table;
 
-	mdb_init();
-
 	if (!(mdb = mdb_open(MDB_FILE, MDB_NOFLAGS))) {
 		exit(1);
 	}
@@ -43,9 +41,7 @@ main(int argc, char **argv)
 	}
 
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 
 void print_table(MdbTableDef *table)

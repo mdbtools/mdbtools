@@ -185,8 +185,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	mdb_init();
-
 	if (!(mdb = mdb_open(argv[optind], MDB_WRITABLE))) {
 		exit(1);
 	}
@@ -230,8 +228,6 @@ main(int argc, char **argv)
 	mdb_free_tabledef(table);
 	fclose(in);
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 

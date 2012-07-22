@@ -34,7 +34,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	
-	mdb_init();
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 	dot = strchr(argv[2],'.');
 	if (argc>3) sargname = argv[3];
@@ -56,9 +55,7 @@ main(int argc, char **argv)
 	}
 
 	mdb_close(mdb);
-	mdb_exit();
-
-	exit(0);
+	return 0;
 }
 
 void dump_ole(MdbTableDef *table, char *colname, char *sargname)
