@@ -139,12 +139,12 @@ mdb_find_end_of_row(MdbHandle *mdb, int row)
 	if (row > 1000) return -1;
 
 	/* if lookupflag is not set, it's good (deleteflag is ok) */
-        for (i = row; i > 0; i--) {
-                row_start = mdb_get_int16(mdb->pg_buf, (rco + i*2));
-                if (!(row_start & 0x8000)) {
-                        break;
-                }
-        }
+	for (i = row; i > 0; i--) {
+		row_start = mdb_get_int16(mdb->pg_buf, (rco + i*2));
+		if (!(row_start & 0x8000)) {
+			break;
+		}
+	}
 
 	row_end = (i == 0) ? mdb->fmt->pg_size : row_start & OFFSET_MASK;
 #endif
@@ -223,9 +223,9 @@ int ret;
 			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
 			char *str;
 			if (col->col_type == MDB_NUMERIC) {
-                               str = mdb_numeric_to_string(mdb, start, col->col_prec, col->col_scale);
+				str = mdb_numeric_to_string(mdb, start, col->col_prec, col->col_scale);
 			} else {
-                               str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
+				str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}
 			strcpy(col->bind_ptr, str);
 			g_free(str);
@@ -477,15 +477,15 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	int row_start;
 	size_t len;
 
-    if (ole_ptr) {
-	    ole_len = mdb_get_int32(ole_ptr, 0);
-	    mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %02x",
-	    	ole_len & 0x00ffffff, ole_len >> 24);
+	if (ole_ptr) {
+		ole_len = mdb_get_int32(ole_ptr, 0);
+		mdb_debug(MDB_DEBUG_OLE,"ole len = %d ole flags = %02x",
+		    ole_len & 0x00ffffff, ole_len >> 24);
 
-	    if ((ole_len & 0x80000000)
-	     || (ole_len & 0x40000000))
-	    	/* inline or single-page fields don't have a next */
-	    	return 0;
+		if ((ole_len & 0x80000000)
+		 || (ole_len & 0x40000000))
+			/* inline or single-page fields don't have a next */
+			return 0;
 	}
 	mdb_debug(MDB_DEBUG_OLE, "pg_row %d", col->cur_blob_pg_row);
 	if (!col->cur_blob_pg_row)
@@ -949,9 +949,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = mdb_money_to_string(mdb, start);
 		case MDB_NUMERIC:
 		break;
-    case MDB_REPID:
-      text = mdb_uuid_to_string(mdb, start);
-    break;
+		case MDB_REPID:
+		  text = mdb_uuid_to_string(mdb, start);
+		break;
 		default:
 			text = g_strdup("");
 		break;
