@@ -547,9 +547,9 @@ void mdb_sql_listtables(MdbSQL *sql)
 
  	/* add all user tables in catalog to list */
  	for (i=0; i < mdb->num_catalog; i++) {
-     		entry = g_ptr_array_index (mdb->catalog, i);
-     		if (mdb_is_user_table(entry)) {
-          		//col = g_ptr_array_index(table->columns,0);
+ 		entry = g_ptr_array_index (mdb->catalog, i);
+ 		if (mdb_is_user_table(entry)) {
+			//col = g_ptr_array_index(table->columns,0);
 			tmpsiz = mdb_ascii2unicode(mdb, entry->object_name, 0, tmpstr, 100);
 			mdb_fill_temp_field(&fields[0],tmpstr, tmpsiz, 0,0,0,0);
 			row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
@@ -611,9 +611,9 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	mdb_sql_add_temp_col(sql, ttable, 1, "Type", MDB_TEXT, 20, 0);
 	mdb_sql_add_temp_col(sql, ttable, 2, "Size", MDB_TEXT, 10, 0);
 
-     for (i=0;i<table->num_cols;i++) {
+	for (i=0;i<table->num_cols;i++) {
 
-        col = g_ptr_array_index(table->columns,i);
+		col = g_ptr_array_index(table->columns,i);
 		tmpsiz = mdb_ascii2unicode(mdb, col->name, 0, col_name, 100);
 		mdb_fill_temp_field(&fields[0],col_name, tmpsiz, 0,0,0,0);
 
@@ -628,7 +628,7 @@ void mdb_sql_describe_table(MdbSQL *sql)
 		row_size = mdb_pack_row(ttable, row_buffer, 3, fields);
 		mdb_add_row_to_pg(ttable,row_buffer, row_size);
 		ttable->num_rows++;
-     }
+	}
 
 	/* the column and table names are no good now */
 	//mdb_sql_reset(sql);
