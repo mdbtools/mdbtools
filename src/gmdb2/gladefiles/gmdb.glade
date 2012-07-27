@@ -48,8 +48,9 @@
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkToolButton" id="button7">
+                  <widget class="GtkToolButton" id="close_button">
                     <property name="visible">True</property>
+                    <property name="sensitive">False</property>
                     <property name="tooltip" translatable="yes">Close database file</property>
                     <property name="stock_id">gtk-close</property>
                     <signal name="clicked" handler="gmdb_file_close_cb"/>
@@ -136,9 +137,10 @@
                           </widget>
                         </child>
                         <child>
-                          <widget class="GtkImageMenuItem" id="close1">
+                          <widget class="GtkImageMenuItem" id="close_menu">
                             <property name="label">gtk-close</property>
                             <property name="visible">True</property>
+                            <property name="sensitive">False</property>
                             <property name="use_underline">True</property>
                             <property name="use_stock">True</property>
                             <signal name="activate" handler="gmdb_file_close_cb"/>

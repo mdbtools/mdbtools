@@ -28,7 +28,7 @@ MdbHandle *mdb;
 extern int main_show_debug;
 extern GladeXML *mainwin_xml;
 
-#define MAX_ACTIONITEMS 7
+#define MAX_ACTIONITEMS 9
 #define MAX_ICONVIEWS 6
 typedef struct {
 	GtkWidget* actionitems[MAX_ACTIONITEMS];
@@ -156,7 +156,7 @@ gmdb_file_init (void) {
 	GtkWidget* w;
 	GtkListStore* store;
 	int i;
-	gchar* ainames[] = { "sql_menu", "debug_menu", "schema_menu", "info_menu", "sql_button", "schema_button", "info_button" };
+	gchar* ainames[] = { "sql_menu", "debug_menu", "schema_menu", "info_menu", "close_menu", "sql_button", "schema_button", "info_button", "close_button" };
 	gchar* swnames[] = { "sw_form", "sw_macro", "sw_module", "sw_query", "sw_report", "sw_table" };
 
 	if (gmdbwidgets) {
