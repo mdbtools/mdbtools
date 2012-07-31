@@ -238,9 +238,15 @@
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="use_underline">True</property>
-                            <property name="use_stock">True</property>
+                            <property name="use_stock">False</property>
                             <signal name="activate" handler="gmdb_sql_new_cb"/>
                             <accelerator key="G" signal="activate" modifiers="GDK_CONTROL_MASK"/>
+                            <child internal-child="image">
+                              <widget class="GtkImage" id="image1">
+                                <property name="visible">True</property>
+                                <property name="stock">gtk-execute</property>
+                              </widget>
+                            </child>
                           </widget>
                         </child>
                         <child>
@@ -249,8 +255,14 @@
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="use_underline">True</property>
-                            <property name="use_stock">True</property>
+                            <property name="use_stock">False</property>
                             <signal name="activate" handler="gmdb_debug_new_cb"/>
+                            <child internal-child="image">
+                              <widget class="GtkImage" id="image2">
+                                <property name="visible">True</property>
+                                <property name="stock">gtk-find</property>
+                              </widget>
+                            </child>
                           </widget>
                         </child>
                         <child>
@@ -259,8 +271,14 @@
                             <property name="visible">True</property>
                             <property name="sensitive">False</property>
                             <property name="use_underline">True</property>
-                            <property name="use_stock">True</property>
+                            <property name="use_stock">False</property>
                             <signal name="activate" handler="gmdb_schema_new_cb"/>
+                            <child internal-child="image">
+                              <widget class="GtkImage" id="image3">
+                                <property name="visible">True</property>
+                                <property name="stock">gtk-convert</property>
+                              </widget>
+                            </child>
                           </widget>
                         </child>
                       </widget>
@@ -290,7 +308,7 @@
                         </child>
                         <child>
                           <widget class="GtkImageMenuItem" id="contents1">
-                            <property name="label">Contents</property>
+                            <property name="label">gtk-help</property>
                             <property name="visible">True</property>
                             <property name="use_underline">True</property>
                             <property name="use_stock">True</property>
@@ -345,6 +363,7 @@
                             <property name="width_request">120</property>
                             <property name="visible">True</property>
                             <property name="border_width">18</property>
+                            <property name="orientation">vertical</property>
                             <property name="spacing">10</property>
                             <child>
                               <widget class="GtkButton" id="table_definition">
