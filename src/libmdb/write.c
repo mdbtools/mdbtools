@@ -36,7 +36,11 @@ mdb_put_int16(void *buf, guint32 offset, guint32 value)
 }
 void
 _mdb_put_int16(void *buf, guint32 offset, guint32 value)
+#ifdef HAVE_ATTRIBUTE_ALIAS
 __attribute__((alias("mdb_put_int16")));
+#else
+{ mdb_put_int16(buf, offset, value); }
+#endif
 
 void
 mdb_put_int32(void *buf, guint32 offset, guint32 value)
@@ -46,7 +50,11 @@ mdb_put_int32(void *buf, guint32 offset, guint32 value)
 }
 void
 _mdb_put_int32(void *buf, guint32 offset, guint32 value)
+#ifdef HAVE_ATTRIBUTE_ALIAS
 __attribute__((alias("mdb_put_int32")));
+#else
+{ mdb_put_int32(buf, offset, value); }
+#endif
 
 void
 mdb_put_int32_msb(void *buf, guint32 offset, guint32 value)
@@ -56,7 +64,11 @@ mdb_put_int32_msb(void *buf, guint32 offset, guint32 value)
 }
 void
 _mdb_put_int32_mdb(void *buf, guint32 offset, guint32 value)
+#ifdef HAVE_ATTRIBUTE_ALIAS
 __attribute__((alias("mdb_put_int32_msb")));
+#else
+{ mdb_put_int32_msb(buf, offset, value); }
+#endif
 
 ssize_t
 mdb_write_pg(MdbHandle *mdb, unsigned long pg)

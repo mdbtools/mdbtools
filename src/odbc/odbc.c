@@ -248,7 +248,12 @@ static SQLRETURN SQL_API _SQLDriverConnect(
     SQLCHAR FAR       *szConnStrOut,
     SQLSMALLINT        cbConnStrOutMax,
     SQLSMALLINT FAR   *pcbConnStrOut,
-    SQLUSMALLINT       fDriverCompletion) __attribute__((alias("SQLDriverConnect")));
+    SQLUSMALLINT       fDriverCompletion)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLDriverConnect")));
+#else
+{ return SQLDriverConnect(hdbc, hwnd, szConnStrIn, cbConnStrIn, szConnStrOut, cbConnStrOutMax, pcbConnStrOut, fDriverCompletion); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLDriverConnectW(
@@ -695,7 +700,12 @@ static SQLRETURN SQL_API _SQLConnect(
     SQLCHAR FAR       *szUID,
     SQLSMALLINT        cbUID,
     SQLCHAR FAR       *szAuthStr,
-    SQLSMALLINT        cbAuthStr) __attribute__((alias("SQLConnect")));
+    SQLSMALLINT        cbAuthStr)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLConnect")));
+#else
+{ return SQLConnect(hdbc, szDSN, cbDSN, szUID, cbUID, szAuthStr, cbAuthStr); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLConnectW(
@@ -799,7 +809,12 @@ static SQLRETURN SQL_API _SQLDescribeCol(
     SQLSMALLINT FAR   *pfSqlType,
     SQLULEN FAR       *pcbColDef, /* precision */
     SQLSMALLINT FAR   *pibScale,
-    SQLSMALLINT FAR   *pfNullable) __attribute__((alias("SQLDescribeCol")));
+    SQLSMALLINT FAR   *pfNullable)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLDescribeCol")));
+#else
+{ return SQLDescribeCol(hstmt, icol, szColName, cbColNameMax, pcbColName, pfSqlType, pcbColDef, pibScale, pfNullable); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLDescribeColW(
@@ -902,7 +917,12 @@ static SQLRETURN SQL_API _SQLColAttributes(
     SQLPOINTER         rgbDesc,
     SQLSMALLINT        cbDescMax,
     SQLSMALLINT FAR   *pcbDesc,
-    SQLLEN FAR        *pfDesc)__attribute__((alias("SQLColAttributes")));
+    SQLLEN FAR        *pfDesc)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLColAttributes")));
+#else
+{ return SQLColAttributes(hstmt, icol, fDescType, rgbDesc, cbDescMax, pcbDesc, pfDesc); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLColAttributesW(
@@ -981,7 +1001,12 @@ static SQLRETURN SQL_API _SQLError(
     SQLINTEGER FAR    *pfNativeError,
     SQLCHAR FAR       *szErrorMsg,
     SQLSMALLINT        cbErrorMsgMax,
-    SQLSMALLINT FAR   *pcbErrorMsg) __attribute__((alias("SQLError")));
+    SQLSMALLINT FAR   *pcbErrorMsg)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLError")));
+#else
+{ return SQLError(henv, hdbc, hstmt, szSqlState, pfNativeError, szErrorMsg, cbErrorMsgMax, pcbErrorMsg); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLErrorW(
@@ -1053,7 +1078,12 @@ SQLRETURN SQL_API SQLExecDirect(
 static SQLRETURN SQL_API _SQLExecDirect(
     SQLHSTMT           hstmt,
     SQLCHAR FAR       *szSqlStr,
-    SQLINTEGER         cbSqlStr)__attribute__((alias("SQLExecDirect")));
+    SQLINTEGER         cbSqlStr)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLExecDirect")));
+#else
+{ return SQLExecDirect(hstmt, szSqlStr, cbSqlStr); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLExecDirectW(
@@ -1412,7 +1442,12 @@ static SQLRETURN SQL_API _SQLColumns(
     SQLCHAR FAR       *szTableName,
     SQLSMALLINT        cbTableName,
     SQLCHAR FAR       *szColumnName,
-    SQLSMALLINT        cbColumnName)__attribute__((alias("SQLColumns")));
+    SQLSMALLINT        cbColumnName)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLColumns")));
+#else
+{ return SQLColumns(hstmt, szCatalogName, cbCatalogName, szSchemaName, cbSchemaName, szTableName, cbTableName, szColumnName, cbColumnName); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLColumnsW(
@@ -1617,7 +1652,12 @@ SQLRETURN SQL_API _SQLGetData(
     SQLSMALLINT        fCType,
     SQLPOINTER         rgbValue,
     SQLLEN             cbValueMax,
-    SQLLEN FAR         *pcbValue)__attribute__((alias("SQLGetData")));
+    SQLLEN FAR         *pcbValue)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLGetData")));
+#else
+{ return SQLGetData(hstmt, icol, fCType, rgbValue, cbValueMax, pcbValue); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLGetDataW(
@@ -1856,7 +1896,12 @@ SQLRETURN SQL_API _SQLGetInfo(
     SQLUSMALLINT       fInfoType,
     SQLPOINTER         rgbInfoValue,
     SQLSMALLINT        cbInfoValueMax,
-    SQLSMALLINT FAR   *pcbInfoValue) __attribute__((alias("SQLGetInfo")));
+    SQLSMALLINT FAR   *pcbInfoValue)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((alias("SQLGetInfo")));
+#else
+{ return SQLGetInfo(hdbc, fInfoType, rgbInfoValue, cbInfoValueMax, pcbInfoValue); }
+#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLGetInfoW(
