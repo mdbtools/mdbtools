@@ -27,12 +27,12 @@ void __attribute__ ((destructor)) _mdb_exit()
 	mdb_remove_backends();
 }
 
-void mdb_init()
+void __attribute__((deprecated)) mdb_init() 
 {
 	fprintf(stderr, "mdb_init() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
-void mdb_exit()
+void __attribute__((deprecated)) mdb_exit()
 {
 	fprintf(stderr, "mdb_exit() is DEPRECATED and does nothing. Stop calling it.\n");
 }
