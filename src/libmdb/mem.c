@@ -18,15 +18,6 @@
 
 #include "mdbtools.h"
 
-void __attribute__ ((constructor)) _mdb_init()
-{
-	mdb_init_backends();
-}
-void __attribute__ ((destructor)) _mdb_exit()
-{
-	mdb_remove_backends();
-}
-
 void __attribute__((deprecated)) mdb_init() 
 {
 	fprintf(stderr, "mdb_init() is DEPRECATED and does nothing. Stop calling it.\n");
