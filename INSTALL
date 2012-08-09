@@ -34,7 +34,10 @@ prole      -- dump of ole columns given a table name and sargs.
 
 Once MDB Tools has been compiled, libmdb.[so|a] will be in the src/libmdb 
 directory and the utility programs will be in the src/util directory.
+
 You can then run 'make install' as root to install (to /usr/local by default).
+Some systems will also need the ld cache to be updated after installation;
+You can do that running 'ldconfig' as root.
 
 
 Installation Options
