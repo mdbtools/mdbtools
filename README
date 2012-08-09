@@ -5,7 +5,7 @@ programs to help you use Microsoft Access file in various settings.  The major
 pieces are:
 
 . libmdb    - the core library that allows access to MDB files programatically.
-. libmdbsql - builds on libmdb to provide a SQL engine (ala Jet)
+. libmdbsql - builds on libmdb to provide a SQL engine (aka Jet)
 . utils     - provides command line utilities to list tables, export schema, 
               and data, show the version of the files, and other useful stuff.
 . mdb-sql   - a command line SQL tool that allows one to type sql queries and
