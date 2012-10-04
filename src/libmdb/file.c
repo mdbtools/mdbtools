@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include <inttypes.h>
 
 #ifdef DMALLOC
 #include "dmalloc.h"
@@ -364,7 +365,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 
         fstat(mdb->f->fd, &status);
         if (status.st_size < offset) { 
-                fprintf(stderr,"offset %lu is beyond EOF\n",offset);
+                fprintf(stderr,"offset %jd is beyond EOF\n",(intmax_t)offset);
                 return 0;
         }
 	if (mdb->stats && mdb->stats->collect) 
