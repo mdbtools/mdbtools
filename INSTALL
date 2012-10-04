@@ -54,6 +54,11 @@ mutually exclusive.
 --with-iodbc     specifies the location of the iODBC driver manager and 
                  causes the iODBC driver to be built.
 
+If you want to build the html version of the docbook documentation, you need to
+set the environment variable DOCBOOK_DSL to the modular dsl translation file.
+For exemple, before configure, you need something like:
+
+   $ export DOCBOOK_DSL=/usr/share/sgml/docbook/stylesheet/dsssl/modular/html/docbook.dsl
 
 Installation from sources
 =========================
