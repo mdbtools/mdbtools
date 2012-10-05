@@ -67,7 +67,25 @@ AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
 CFLAGS="$CFLAGS -Wall"
-LDFLAGS="$LDFLAGS -Wl,--as-needed"
+dnl Enable -Wl,--as-needed by default to prevent overlinking
+
+AC_ARG_ENABLE([as-needed],
+  AC_HELP_STRING([--disable-as-needed],
+  [Disable overlinking protection]),
+  [enable_as_needed=$enableval], [enable_as_needed=yes])
+
+if test "x$enable_as_needed" != "xno"; then
+  AC_MSG_CHECKING([whether $LD accepts --as-needed])
+  case `$LD --as-needed -v 2>&1 </dev/null` in
+  *GNU* | *'with BFD'*)
+    LDFLAGS="$LDFLAGS -Wl,--as-needed"
+    AC_MSG_RESULT([yes])
+    ;;
+  *)
+    AC_MSG_RESULT([no])
+    ;;
+  esac
+fi
 
 dnl check whether ld supports --version-script
 VERSION_SCRIPT=yes
