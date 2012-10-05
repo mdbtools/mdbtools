@@ -70,6 +70,9 @@ First, you must have reasonably current installations of:
 If you don't you should install them first.  Sources are available at
 ftp.gnu.org.
 
+You will also need txt2man in order to build the man pages. Source is available
+at http://mvertes.free.fr/download/.
+
 Second, download the sources from github:
 
    $ git clone git://github.com/brianb/mdbtools.git
