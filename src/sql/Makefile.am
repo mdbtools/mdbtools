@@ -7,5 +7,5 @@ LIBS	=	$(GLIB_LIBS)
 libmdbsql_la_LIBADD =	../libmdb/libmdb.la
 YACC = @YACC@ -d
 if VERSION_SCRIPT
-  libmdbsql_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libmdbsql.map
+  libmdbsql_la_LDFLAGS += $(VERSION_SCRIPT_FLAG)$(srcdir)/libmdbsql.map
 endif

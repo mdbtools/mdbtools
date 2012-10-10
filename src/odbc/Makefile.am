@@ -8,5 +8,5 @@ libmdbodbc_la_LDFLAGS = -version-info 1:1:0
 LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBC_LIBS)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 if VERSION_SCRIPT
-  libmdbodbc_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libmdbodbc.map
+  libmdbodbc_la_LDFLAGS += $(VERSION_SCRIPT_FLAG)$(srcdir)/libmdbodbc.map
 endif
