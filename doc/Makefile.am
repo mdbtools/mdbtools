@@ -15,7 +15,7 @@ EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.tx
 	faq.html install.sgml
 
 .txt.1:
-	- $(TXT2MAN) -P $(PRODUCT) -t $(PRODUCT) -r $(VERSION) -s 1 $(srcdir)/$< > $@
+	- $(TXT2MAN) -t $* -r "$(PRODUCT) $(VERSION)" -s 1 -v "Executable programs or shell commands" $(srcdir)/$< > $@
 
 # Converting DocBook to HTML (several small files)
 # http://www.freebsd.org/tutorials/docproj-primer/x3132.html#AEN3140
