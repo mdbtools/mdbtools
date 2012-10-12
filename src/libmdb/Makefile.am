@@ -4,5 +4,5 @@ libmdb_la_LDFLAGS = -version-info 2:1:0
 AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LIBS = $(GLIB_LIBS) @LIBS@
 if VERSION_SCRIPT
-  libmdb_la_LDFLAGS += $(VERSION_SCRIPT_FLAG)$(srcdir)/libmdb.map
+  libmdb_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libmdb.map
 endif

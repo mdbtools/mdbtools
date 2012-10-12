@@ -88,38 +88,29 @@ if test "x$enable_as_needed" != "xno"; then
 fi
 
 dnl check whether ld supports --version-script
-VERSION_SCRIPT=yes
 AC_ARG_ENABLE([ld-version-script],
   AS_HELP_STRING([--disable-ld-version-script],
     [Disable linker version script for libraries (default is to use linker version script if the linker supports it)]),
-    [VERSION_SCRIPT=$enableval], [])
+  [enable_version_script=$enableval],
+  [enable_version_script=auto])
 
-AC_MSG_CHECKING([whether the linker supports version scripts])
-SAVED_LDFLAGS="$LDFLAGS"
-LDFLAGS="$LDFLAGS -Wl,--version-script=conftest.map"
-cat > conftest.map <<EOF
-VERS_1 {
-  global: *;
-};
+if test "$enable_version_script" = auto
+then
+	AC_MSG_CHECKING([whether $LD supports --version-scripts. enable_version_script=$enable_version_script])
+	SAVED_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$LDFLAGS -Wl,--version-script=conftest.map"
+	cat > conftest.map <<EOF
+	VERS_1 {
+	  global: *;
+	};
 EOF
-AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
-  [VERSION_SCRIPT_FLAG=-Wl,--version-script=; AC_MSG_RESULT([yes (GNU style)])], [])
-if test "x$VERSION_SCRIPT_FLAG" = "x"; then
-  LDFLAGS="$SAVED_LDFLAGS -Wl,-M,conftest.map"
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
-    [VERSION_SCRIPT_FLAG=-Wl,-M,; AC_MSG_RESULT([yes (Sun style)])], [])
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+	  [enable_version_script=yes; AC_MSG_RESULT([yes])],
+	  [enable_version_script=no; AC_MSG_RESULT([no])])
+	LDFLAGS="$SAVED_LDFLAGS"
 fi
-if test "x$VERSION_SCRIPT_FLAG" = "x"; then
-  VERSION_SCRIPT=no
-  AC_MSG_RESULT(no)
-fi
-LDFLAGS="$SAVED_LDFLAGS"
 
-AC_MSG_CHECKING([whether to use version script when building libraries])
-AC_MSG_RESULT($VERSION_SCRIPT)
-
-AM_CONDITIONAL(VERSION_SCRIPT, test "x$VERSION_SCRIPT" = "xyes")
-AC_SUBST(VERSION_SCRIPT_FLAG)
+AM_CONDITIONAL(VERSION_SCRIPT, test x$enable_version_script = xyes)
 
 dnl check for iODBC
 
