@@ -96,7 +96,7 @@ AC_ARG_ENABLE([ld-version-script],
 
 if test "$enable_version_script" = auto
 then
-	AC_MSG_CHECKING([whether $LD supports --version-scripts. enable_version_script=$enable_version_script])
+	AC_MSG_CHECKING([whether $LD supports --version-scripts.])
 	SAVED_LDFLAGS="$LDFLAGS"
 	LDFLAGS="$LDFLAGS -Wl,--version-script=conftest.map"
 	cat > conftest.map <<EOF

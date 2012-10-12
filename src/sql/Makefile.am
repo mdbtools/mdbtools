@@ -8,4 +8,6 @@ libmdbsql_la_LIBADD =	../libmdb/libmdb.la
 YACC = @YACC@ -d
 if VERSION_SCRIPT
   libmdbsql_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libmdbsql.map
+else
+  libmdbsql_la_LDFLAGS += -export-symbols-regex '^mdb_sql_'
 endif

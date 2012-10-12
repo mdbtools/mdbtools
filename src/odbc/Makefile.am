@@ -9,4 +9,6 @@ LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBC_LIBS)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
 if VERSION_SCRIPT
   libmdbodbc_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libmdbodbc.map
+else
+  libmdbodbc_la_LDFLAGS += -export-symbols-regex '^(SQL|ODBCINST)'
 endif

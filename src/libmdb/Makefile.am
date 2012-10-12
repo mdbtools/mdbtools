@@ -5,4 +5,6 @@ AM_CPPFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LIBS = $(GLIB_LIBS) @LIBS@
 if VERSION_SCRIPT
   libmdb_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libmdb.map
+else
+  libmdb_la_LDFLAGS += -export-symbols-regex '^(mdb_|_mdb_put_int16$$|_mdb_put_int32$$)'
 endif
