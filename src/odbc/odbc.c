@@ -120,7 +120,7 @@ void __attribute__ ((constructor)) my_init(){
 		else
 			wcharset = "UCS-4BE";
 	else
-		fprintf(stderr, "Unsupported SQLWCHAR width %d\n", sizeof(SQLWCHAR));
+		fprintf(stderr, "Unsupported SQLWCHAR width %zd\n", sizeof(SQLWCHAR));
 //fprintf(stderr,"charset %s\n", wcharset);
 	//fprintf(stderr, "SQLWCHAR width %d\n", sizeof(SQLWCHAR));
 /*
@@ -140,21 +140,23 @@ void __attribute__ ((destructor)) my_fini(){
 	if(iconv_in != (iconv_t)-1)iconv_close(iconv_in);
 }
 
-int unicode2ascii(char *_in,unsigned int *_lin,char *_out,unsigned int *_lout){
-	char *in=_in,*out=_out;
-	unsigned lin=*_lin,lout=*_lout;
-	int ret=iconv(iconv_in,&in,&lin,&out,&lout);
-	*_lin-=lin,*_lout-=lout;
+int unicode2ascii(char *_in, size_t *_lin, char *_out, size_t *_lout){
+	char *in=_in, *out=_out;
+	unsigned lin=*_lin, lout=*_lout;
+	int ret=iconv(iconv_in, &in, &lin, &out, &lout);
+	*_lin -= lin;
+	*_lout -= lout;
 	return ret;
 }
 
-int ascii2unicode(char *_in,unsigned int *_lin,char *_out,unsigned int *_lout){
+int ascii2unicode(char *_in, size_t *_lin, char *_out, size_t *_lout){
 	//fprintf(stderr,"ascii2unicode %08x %08x %08x %08x\n",_in,_lin,_out,_lout);
-	char *in=_in,*out=_out;
-	unsigned lin=*_lin,lout=*_lout;
-	//fprintf(stderr,"ascii2unicode %d %d\n",lin,lout);
-	int ret=iconv(iconv_out,&in,&lin,&out,&lout);
-	*_lin-=lin,*_lout-=lout;
+	char *in=_in, *out=_out;
+	unsigned lin=*_lin, lout=*_lout;
+	//fprintf(stderr,"ascii2unicode %zd %zd\n",lin,lout);
+	int ret=iconv(iconv_out, &in, &lin, &out, &lout);
+	*_lin -= lin;
+	*_lout -= lout;
 	return ret;
 }
 
@@ -272,7 +274,7 @@ SQLRETURN SQL_API SQLDriverConnectW(
 	TRACE("SQLDriverConnectW");
 	if(cbConnStrIn==SQL_NTS)cbConnStrIn=sqlwlen(szConnStrIn);
 	{
-		unsigned int l = cbConnStrIn*sizeof(SQLWCHAR), z = (cbConnStrIn+1)*3;
+		size_t l = cbConnStrIn*sizeof(SQLWCHAR), z = (cbConnStrIn+1)*3;
 		SQLCHAR *tmp = malloc(z);
 		SQLRETURN ret;
 		unicode2ascii((char*)szConnStrIn, &l, (char*)tmp, &z);
@@ -725,9 +727,9 @@ SQLRETURN SQL_API SQLConnectW(
 	if(cbAuthStr==SQL_NTS)cbAuthStr=sqlwlen(szAuthStr);
 	{
 		SQLCHAR *tmp1=calloc(cbDSN*4,1),*tmp2=calloc(cbUID*4,1),*tmp3=calloc(cbAuthStr*4,1);
-		unsigned int l1=cbDSN*4,z1=cbDSN*2;
-		unsigned int l2=cbUID*4,z2=cbUID*2;
-		unsigned int l3=cbAuthStr*4,z3=cbAuthStr*2;
+		size_t l1=cbDSN*4,z1=cbDSN*2;
+		size_t l2=cbUID*4,z2=cbUID*2;
+		size_t l3=cbAuthStr*4,z3=cbAuthStr*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szDSN, &z1, (char*)tmp1, &l1);
 		unicode2ascii((char*)szUID, &z2, (char*)tmp2, &l2);
@@ -827,16 +829,16 @@ SQLRETURN SQL_API SQLDescribeColW(
     SQLSMALLINT        cbColNameMax,
     SQLSMALLINT FAR   *pcbColName,
     SQLSMALLINT FAR   *pfSqlType,
-    SQLUINTEGER FAR   *pcbColDef, /* precision */
+    SQLULEN FAR       *pcbColDef, /* precision */
     SQLSMALLINT FAR   *pibScale,
     SQLSMALLINT FAR   *pfNullable)
 {
 	if(cbColNameMax==SQL_NTS)cbColNameMax=sqlwlen(szColName);
 	{
 		SQLCHAR *tmp=calloc(cbColNameMax*4,1);
-		unsigned int l=cbColNameMax*4;
+		size_t l=cbColNameMax*4;
 		SQLRETURN ret=_SQLDescribeCol(hstmt,icol,tmp,cbColNameMax*4,(SQLSMALLINT*)&l,pfSqlType,pcbColDef,pibScale,pfNullable);
-		ascii2unicode((char*)tmp, &l, (char*)szColName, (unsigned int*)pcbColName);
+		ascii2unicode((char*)tmp, &l, (char*)szColName, (size_t*)pcbColName);
 		*pcbColName/=sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
@@ -935,15 +937,15 @@ SQLRETURN SQL_API SQLColAttributesW(
     SQLPOINTER         rgbDesc,
     SQLSMALLINT        cbDescMax,
     SQLSMALLINT FAR   *pcbDesc,
-    SQLINTEGER FAR    *pfDesc)
+    SQLLEN FAR        *pfDesc)
 {
 	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL)
 		return _SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
 	else{
 		SQLCHAR *tmp=calloc(cbDescMax*4,1);
-		unsigned int l=cbDescMax*4;
+		size_t l=cbDescMax*4;
 		SQLRETURN ret=_SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,(SQLSMALLINT*)&l,pfDesc);
-		ascii2unicode((char*)tmp, &l, (char*)rgbDesc, (unsigned int*)pcbDesc);
+		ascii2unicode((char*)tmp, &l, (char*)rgbDesc, (size_t*)pcbDesc);
 		*pcbDesc/=sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
@@ -1031,10 +1033,10 @@ SQLRETURN SQL_API SQLErrorW(
 
 	result = _SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
 	if (result == SQL_SUCCESS) {
-		unsigned int l=6, z=6*sizeof(SQLWCHAR);
+		size_t l=6, z=6*sizeof(SQLWCHAR);
 		ascii2unicode((char*)szSqlState8, &l, (char*)szSqlState, &z);
 		l = cbErrorMsgMax;
-		ascii2unicode((char*)szErrorMsg8, (unsigned int*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
+		ascii2unicode((char*)szErrorMsg8, (size_t*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
 		if (pcbErrorMsg)
 			*pcbErrorMsg = l;
 	}
@@ -1098,7 +1100,7 @@ SQLRETURN SQL_API SQLExecDirectW(
 	if(cbSqlStr==SQL_NTS)cbSqlStr=sqlwlen(szSqlStr);
 	{
 		SQLCHAR *tmp=calloc(cbSqlStr*4,1);
-		unsigned int l=cbSqlStr*4,z=cbSqlStr*2;
+		size_t l=cbSqlStr*4,z=cbSqlStr*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szSqlStr, &z, (char*)tmp, &l);
 		ret=_SQLExecDirect(hstmt,tmp,l);
@@ -1467,7 +1469,7 @@ SQLRETURN SQL_API SQLColumnsW(
 	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
 	{
 		SQLCHAR *tmp=calloc(cbTableName*4,1);
-		unsigned int l=cbTableName*4,z=cbTableName*2;
+		size_t l=cbTableName*4,z=cbTableName*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szTableName, &z, (char*)tmp, &l);
 		ret=_SQLColumns(hstmt,NULL,0,NULL,0,tmp,l,NULL,0);
@@ -1668,15 +1670,15 @@ SQLRETURN SQL_API SQLGetDataW(
     SQLUSMALLINT       icol,
     SQLSMALLINT        fCType,
     SQLPOINTER         rgbValue,
-    SQLINTEGER         cbValueMax,
-    SQLINTEGER FAR    *pcbValue)
+    SQLLEN             cbValueMax,
+    SQLLEN FAR         *pcbValue)
 {
 	//todo: treat numbers correctly
 
 	SQLCHAR *tmp=calloc(cbValueMax*4,1);
-	unsigned int l=cbValueMax*4;
+	size_t l=cbValueMax*4;
 	SQLRETURN ret=_SQLGetData(hstmt,icol,fCType,tmp,cbValueMax*4,(SQLINTEGER FAR*)&l);
-	ascii2unicode((char*)tmp, &l, (char*)rgbValue, (unsigned int*)pcbValue);
+	ascii2unicode((char*)tmp, &l, (char*)rgbValue, (size_t*)pcbValue);
 	*pcbValue/=sizeof(SQLWCHAR);
 	free(tmp);
 	return ret;
@@ -1920,9 +1922,9 @@ SQLRETURN SQL_API SQLGetInfoW(
 		return _SQLGetInfo(hdbc,fInfoType,rgbInfoValue,cbInfoValueMax,pcbInfoValue);
 
 	SQLCHAR *tmp=calloc(cbInfoValueMax*4,1);
-	unsigned int l=cbInfoValueMax*4;
+	size_t l=cbInfoValueMax*4;
 	SQLRETURN ret=_SQLGetInfo(hdbc,fInfoType,tmp,cbInfoValueMax*4,(SQLSMALLINT FAR*)&l);
-	unsigned int pcb=cbInfoValueMax;
+	size_t pcb=cbInfoValueMax;
 	ascii2unicode((char*)tmp, &l, (char*)rgbInfoValue, &pcb);
 	pcb/=sizeof(SQLWCHAR);
 	if(pcbInfoValue)*pcbInfoValue=pcb;
