@@ -87,31 +87,6 @@ if test "x$enable_as_needed" != "xno"; then
   esac
 fi
 
-dnl check whether ld supports --version-script
-AC_ARG_ENABLE([ld-version-script],
-  AS_HELP_STRING([--disable-ld-version-script],
-    [Disable linker version script for libraries (default is to use linker version script if the linker supports it)]),
-  [enable_version_script=$enableval],
-  [enable_version_script=auto])
-
-if test "$enable_version_script" = auto
-then
-	AC_MSG_CHECKING([whether $LD supports --version-scripts.])
-	SAVED_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LDFLAGS -Wl,--version-script=conftest.map"
-	cat > conftest.map <<EOF
-	VERS_1 {
-	  global: *;
-	};
-EOF
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
-	  [enable_version_script=yes; AC_MSG_RESULT([yes])],
-	  [enable_version_script=no; AC_MSG_RESULT([no])])
-	LDFLAGS="$SAVED_LDFLAGS"
-fi
-
-AM_CONDITIONAL(VERSION_SCRIPT, test x$enable_version_script = xyes)
-
 dnl check for iODBC
 
 AC_ARG_WITH(iodbc,
