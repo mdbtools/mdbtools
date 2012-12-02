@@ -2,7 +2,7 @@ NAME
   mdb-export - Export data in an MDB database table to CSV format.
 
 SYNOPSIS
-  mdb-export [-H] [-d delimiter] [-R row_delim] [[-Q] | [-q quote [-X escape]]] [-I backend] [-D format] [-N namespace] database table
+  mdb-export [-H] [-d delimiter] [-R row_delim] [[-Q] | [-q quote [-X escape]]] [-I backend] [-D format] [-N namespace] [-b strip|raw|octal] database table
 
 DESCRIPTION
   mdb-export is a utility program distributed with MDB Tools. 
@@ -10,15 +10,16 @@ DESCRIPTION
   It produces a CSV (comma separated value) output for the given table. Such output is suitable for importation into databases or spreadsheets.
 
 OPTIONS
-  -H            Supress header row
-  -Q            Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
-  -d            Specify an alternative column delimiter If no delimiter is specified, table names will be delimited by a , (comma) character.
-  -R            Specify a row delimiter
-  -I backend    INSERT statements (instead of CSV). You must specify which SQL backend dialect to use. Allowed values are: access, sybase, oracle, postgres and mysql.
-  -D            Set the date format (see strftime(3) for details)
-  -q            Use to wrap text-like fields. Default is ".
-  -X            Use to escape quoted characters within a field.  Default is doubling.
-  -N namespace  Prefix identifiers with namespace.
+  -H                  Supress header row
+  -Q                  Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
+  -d                  Specify an alternative column delimiter If no delimiter is specified, table names will be delimited by a , (comma) character.
+  -R                  Specify a row delimiter
+  -I backend          INSERT statements (instead of CSV). You must specify which SQL backend dialect to use. Allowed values are: access, sybase, oracle, postgres and mysql.
+  -D                  Set the date format (see strftime(3) for details)
+  -q                  Use to wrap text-like fields. Default is ".
+  -X                  Use to escape quoted characters within a field.  Default is doubling.
+  -N namespace        Prefix identifiers with namespace.
+  -b strip|raw|octal  Binary export mode: strip binaries, export as-is, or output \ooo style octal data.
 
 
 NOTES 

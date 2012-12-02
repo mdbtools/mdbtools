@@ -28,11 +28,15 @@
 #define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 
+#define BIN_MODE_STRIP   0
+#define BIN_MODE_RAW     1
+#define BIN_MODE_OCTAL   2
+
 static char *escapes(char *s);
 
 //#define DONT_ESCAPE_ESCAPE
 static void
-print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char)
+print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
 {
 	size_t quote_len = strlen(quote_char); /* multibyte */
 
@@ -46,6 +50,8 @@ print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote
 		fputs(quote_char,stdout);
 		while (1) {
 			if (is_binary_type(col_type)) {
+				if (bin_mode == BIN_MODE_STRIP)
+					break;
 				if (!bin_len--)
 					break;
 			} else /* use \0 sentry */
@@ -60,12 +66,14 @@ print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote
 				fprintf(stdout, "%s%s", escape_char, escape_char);
 				col_val += orig_escape_len;
 #endif
-			} else
+			} else if (is_binary_type(col_type) && *col_val < 0 && bin_mode == BIN_MODE_OCTAL)
+				fprintf(stdout, "\\%03o", *(unsigned char*)col_val++);
+			else
 				putc(*col_val++, stdout);
 		}
-		fputs(quote_char,stdout);
+		fputs(quote_char, stdout);
 	} else
-		fputs(col_val,stdout);
+		fputs(col_val, stdout);
 }
 int
 main(int argc, char **argv)
@@ -84,11 +92,12 @@ main(int argc, char **argv)
 	char quote_text = 1;
 	char *insert_dialect = NULL;
 	char *namespace = NULL;
+	int bin_mode = BIN_MODE_RAW;
 	int  opt;
 	char *value;
 	size_t length;
 
-	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:N:"))!=-1) {
+	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:N:b:"))!=-1) {
 		switch (opt) {
 		case 'H':
 			header_row = 0;
@@ -118,6 +127,18 @@ main(int argc, char **argv)
 		case 'N':
 			namespace = (char *) g_strdup(optarg);
 		break;
+		case 'b':
+			if (!strcmp(optarg, "strip"))
+				bin_mode = BIN_MODE_STRIP;
+			else if (!strcmp(optarg, "raw"))
+				bin_mode = BIN_MODE_RAW;
+			else if (!strcmp(optarg, "octal"))
+				bin_mode = BIN_MODE_OCTAL;
+			else {
+				fprintf(stderr, "Invalid binary mode\n");
+				exit(1);
+			}
+		break;
 		default:
 		break;
 		}
@@ -139,15 +160,16 @@ main(int argc, char **argv)
 	if (argc-optind < 2) {
 		fprintf(stderr,"Usage: %s [options] <file> <table>\n",argv[0]);
 		fprintf(stderr,"where options are:\n");
-		fprintf(stderr,"  -H             supress header row\n");
-		fprintf(stderr,"  -Q             don't wrap text-like fields in quotes\n");
-		fprintf(stderr,"  -d <delimiter> specify a column delimiter\n");
-		fprintf(stderr,"  -R <delimiter> specify a row delimiter\n");
-		fprintf(stderr,"  -I <backend>   INSERT statements (instead of CSV)\n");
-		fprintf(stderr,"  -D <format>    set the date format (see strftime(3) for details)\n");
-		fprintf(stderr,"  -q <char>      Use <char> to wrap text-like fields. Default is \".\n");
-		fprintf(stderr,"  -X <char>      Use <char> to escape quoted characters within a field. Default is doubling.\n");
-		fprintf(stderr,"  -N <namespace> Prefix identifiers with namespace\n");
+		fprintf(stderr,"  -H                   supress header row\n");
+		fprintf(stderr,"  -Q                   don't wrap text-like fields in quotes\n");
+		fprintf(stderr,"  -d <delimiter>       specify a column delimiter\n");
+		fprintf(stderr,"  -R <delimiter>       specify a row delimiter\n");
+		fprintf(stderr,"  -I <backend>         INSERT statements (instead of CSV)\n");
+		fprintf(stderr,"  -D <format>          set the date format (see strftime(3) for details)\n");
+		fprintf(stderr,"  -q <char>            Use <char> to wrap text-like fields. Default is \".\n");
+		fprintf(stderr,"  -X <char>            Use <char> to escape quoted characters within a field. Default is doubling.\n");
+		fprintf(stderr,"  -N <namespace>       Prefix identifiers with namespace\n");
+		fprintf(stderr,"  -b strip|raw|octal   Binary export mode.\n");
 		g_free (delimiter);
 		g_free (row_delimiter);
 		g_free (quote_char);
@@ -231,7 +253,7 @@ main(int argc, char **argv)
 					value = bound_values[j];
 					length = bound_lens[j];
 				}
-				print_col(value, quote_text, col->col_type, length, quote_char, escape_char);
+				print_col(value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
 				if (col->col_type == MDB_OLE)
 					free(value);
 			}

@@ -88,6 +88,7 @@ void gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf);
 void gmdb_export_get_lineterm(GladeXML *xml, gchar *lineterm, int max_buf);
 int gmdb_export_get_quote(GladeXML *xml);
 char gmdb_export_get_quotechar(GladeXML *xml);
+int gmdb_export_get_binmode(GladeXML *xml);
 int gmdb_export_get_headers(GladeXML *xml);
 gchar *gmdb_export_get_filepath(GladeXML *xml);
 

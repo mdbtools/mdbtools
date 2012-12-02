@@ -60,6 +60,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	int need_quote = 0;
 	gchar delimiter[11];
 	gchar quotechar;
+	//TODO int binmode;
 	gchar lineterm[5];
 	gchar *str;
 	int rows=0, n_columns;
@@ -78,6 +79,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 	gmdb_export_get_lineterm(xml, lineterm, 5);
 	need_quote = gmdb_export_get_quote(xml);
 	quotechar = gmdb_export_get_quotechar(xml);
+	//TODO binmode = gmdb_export_get_binmode(xml);
 	need_headers = gmdb_export_get_headers(xml);
 	file_path = gmdb_export_get_filepath(xml);
 

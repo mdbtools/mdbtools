@@ -42,6 +42,10 @@ MdbCatalogEntry *cat_entry;
 #define NEVER "Never"
 #define AUTOMAT "Automatic (where necessary)"
 
+#define BIN_STRIP "Strip"
+#define BIN_RAW "Raw"
+#define BIN_OCTAL "Octal"
+
 void
 gmdb_print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *str)
 {
@@ -116,6 +120,22 @@ gmdb_export_get_quotechar(GladeXML *xml)
 
 	return quotechar;
 }
+
+int
+gmdb_export_get_binmode(GladeXML *xml)
+{
+	GtkComboBox *combobox;
+	gchar *str;
+
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "bin_combo"));
+	str = gtk_combo_box_get_active_text (combobox);
+
+	if (!strcmp(str,BIN_STRIP)) return 1;
+	else if (!strcmp(str,BIN_OCTAL)) return 2;
+	else return 0;
+}
+
+
 int
 gmdb_export_get_headers(GladeXML *xml)
 {
@@ -161,6 +181,7 @@ int need_quote = 0;
 gchar delimiter[11];
 gchar quotechar;
 gchar lineterm[5];
+int binmode = 1;
 int rows=0;
 
 	GtkWidget *exportwin, *dlg;
@@ -170,6 +191,7 @@ int rows=0;
 	need_quote = gmdb_export_get_quote(exportwin_xml);
 	quotechar = gmdb_export_get_quotechar(exportwin_xml);
 	need_headers = gmdb_export_get_headers(exportwin_xml);
+	binmode = gmdb_export_get_binmode(exportwin_xml);
 	file_path = gmdb_export_get_filepath(exportwin_xml);
 
 	// printf("file path %s\n",file_path);
@@ -271,4 +293,10 @@ gmdb_table_export_populate_dialog(GladeXML *xml)
 	gtk_combo_box_append_text(combobox, "'");
 	gtk_combo_box_append_text(combobox, "`");
 	gtk_combo_box_set_active(combobox, 0);
+
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "bin_combo"));
+	gtk_combo_box_append_text(combobox, BIN_STRIP);
+	gtk_combo_box_append_text(combobox, BIN_RAW);
+	gtk_combo_box_append_text(combobox, BIN_OCTAL);
+	gtk_combo_box_set_active(combobox, 1);
 }
