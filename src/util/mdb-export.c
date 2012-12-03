@@ -66,7 +66,7 @@ print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote
 				fprintf(stdout, "%s%s", escape_char, escape_char);
 				col_val += orig_escape_len;
 #endif
-			} else if (is_binary_type(col_type) && *col_val < 0 && bin_mode == BIN_MODE_OCTAL)
+			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == BIN_MODE_OCTAL)
 				fprintf(stdout, "\\%03o", *(unsigned char*)col_val++);
 			else
 				putc(*col_val++, stdout);
