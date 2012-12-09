@@ -36,7 +36,7 @@ static char *escapes(char *s);
 
 //#define DONT_ESCAPE_ESCAPE
 static void
-print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
+print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
 {
 	size_t quote_len = strlen(quote_char); /* multibyte */
 
@@ -47,7 +47,7 @@ print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote
 		escape_char = quote_char;
 
 	if (quote_text && is_quote_type(col_type)) {
-		fputs(quote_char,stdout);
+		fputs(quote_char, outfile);
 		while (1) {
 			if (is_binary_type(col_type)) {
 				if (bin_mode == BIN_MODE_STRIP)
@@ -59,21 +59,21 @@ print_col(gchar *col_val, int quote_text, int col_type, int bin_len, char *quote
 					break;
 
 			if (quote_len && !strncmp(col_val, quote_char, quote_len)) {
-				fprintf(stdout, "%s%s", escape_char, quote_char);
+				fprintf(outfile, "%s%s", escape_char, quote_char);
 				col_val += quote_len;
 #ifndef DONT_ESCAPE_ESCAPE
 			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len)) {
-				fprintf(stdout, "%s%s", escape_char, escape_char);
+				fprintf(outfile, "%s%s", escape_char, escape_char);
 				col_val += orig_escape_len;
 #endif
 			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == BIN_MODE_OCTAL)
-				fprintf(stdout, "\\%03o", *(unsigned char*)col_val++);
+				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
 			else
-				putc(*col_val++, stdout);
+				putc(*col_val++, outfile);
 		}
-		fputs(quote_char, stdout);
+		fputs(quote_char, outfile);
 	} else
-		fputs(col_val, stdout);
+		fputs(col_val, outfile);
 }
 int
 main(int argc, char **argv)
@@ -253,7 +253,7 @@ main(int argc, char **argv)
 					value = bound_values[j];
 					length = bound_lens[j];
 				}
-				print_col(value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+				print_col(stdout, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
 				if (col->col_type == MDB_OLE)
 					free(value);
 			}
