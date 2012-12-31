@@ -17,7 +17,7 @@
  */
 
 #include "mdbtools.h"
-#include <inttypes.h>
+//#include <inttypes.h>
 
 #ifdef DMALLOC
 #include "dmalloc.h"
@@ -174,6 +174,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 	int open_flags;
 
 	mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
+	mdb_init_backends();
 	mdb_set_default_backend(mdb, "access");
 #ifdef HAVE_ICONV
 	mdb->iconv_in = (iconv_t)-1;
@@ -284,6 +285,7 @@ void
 mdb_close(MdbHandle *mdb)
 {
 	if (!mdb) return;	
+	mdb_remove_backends();
 	mdb_free_catalog(mdb);
 	g_free(mdb->stats);
 	g_free(mdb->backend_name);
@@ -299,7 +301,7 @@ mdb_close(MdbHandle *mdb)
 	}
 
 	mdb_iconv_close(mdb);
-
+	
 	g_free(mdb);
 }
 /**
@@ -365,7 +367,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 
         fstat(mdb->f->fd, &status);
         if (status.st_size < offset) { 
-                fprintf(stderr,"offset %jd is beyond EOF\n",(intmax_t)offset);
+                fprintf(stderr,"offset %jd is beyond EOF\n",offset);
                 return 0;
         }
 	if (mdb->stats && mdb->stats->collect) 
@@ -416,7 +418,7 @@ unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 	return mdb->pg_buf[offset];
 }
 
-int mdb_get_int16(void *buf, int offset)
+int mdb_get_int16(unsigned char *buf, int offset)
 {
 	guint16 l;
 	memcpy(&l, buf + offset, 2);
@@ -429,13 +431,13 @@ int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 	return mdb_get_int16(mdb->pg_buf, offset);
 }
 
-long mdb_get_int32_msb(void *buf, int offset)
+long mdb_get_int32_msb(unsigned char *buf, int offset)
 {
 	gint32 l;
 	memcpy(&l, buf + offset, 4);
 	return (long)GINT32_FROM_BE(l);
 }
-long mdb_get_int32(void *buf, int offset)
+long mdb_get_int32(unsigned char *buf, int offset)
 {
 	gint32 l;
 	memcpy(&l, buf + offset, 4);
@@ -448,7 +450,7 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 	return mdb_get_int32(mdb->pg_buf, offset);
 }
 
-float mdb_get_single(void *buf, int offset)
+float mdb_get_single(unsigned char *buf, int offset)
 {
 	union {guint32 g; float f;} f;
 	memcpy(&f, buf + offset, 4);
@@ -462,7 +464,7 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
        return mdb_get_single(mdb->pg_buf, offset);
 }
 
-double mdb_get_double(void *buf, int offset)
+double mdb_get_double(unsigned char *buf, int offset)
 {
 	union {guint64 g; double d;} d;
 	memcpy(&d, buf + offset, 8);

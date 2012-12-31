@@ -47,7 +47,7 @@ char *mdb_money_to_string(MdbHandle *mdb, int start)
 	int neg=0;
        unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];
        unsigned char product[MAX_NUMERIC_PRECISION];
-       unsigned char bytes[num_bytes];
+       unsigned char bytes[8];
 
        memset(multiplier,0,MAX_NUMERIC_PRECISION);
        memset(product,0,MAX_NUMERIC_PRECISION);
@@ -85,7 +85,7 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
        int neg=0;
        unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];
        unsigned char product[MAX_NUMERIC_PRECISION];
-       unsigned char bytes[num_bytes];
+       unsigned char bytes[16];
 
        memset(multiplier,0,MAX_NUMERIC_PRECISION);
        memset(product,0,MAX_NUMERIC_PRECISION);

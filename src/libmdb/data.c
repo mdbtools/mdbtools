@@ -473,7 +473,7 @@ size_t
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
-	void *buf;
+	unsigned char* buf;
 	int row_start;
 	size_t len;
 
@@ -496,6 +496,7 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	}
 	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
+	
 	if (col->bind_ptr)
 		memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
 	col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
@@ -506,7 +507,7 @@ size_t
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint32 ole_len;
-	void *buf;
+	unsigned char* buf;
 	int row_start;
 	size_t len;
 
@@ -536,7 +537,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 			col->cur_blob_pg_row >> 8);
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
-			&buf, &row_start, &len)) {
+			(void**) &buf, &row_start, &len)) {
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -554,7 +555,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 			col->cur_blob_pg_row >> 8);
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
-			&buf, &row_start, &len)) {
+			(void**) &buf, &row_start, &len)) {
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -672,7 +673,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	guint32 memo_len;
 	gint32 row_start, pg_row;
 	size_t len;
-	void *buf, *pg_buf = mdb->pg_buf;
+	char *buf, *pg_buf = (char*) mdb->pg_buf;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
 	if (size<MDB_MEMO_OVERHEAD) {
@@ -830,13 +831,17 @@ static char *
 mdb_date_to_string(MdbHandle *mdb, int start)
 {
 	struct tm t;
-	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	char *text;
 	double td = mdb_get_double(mdb->pg_buf, start);
 
-	mdb_date_to_tm(td, &t);
-
-	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
-
+	//If td == 0, t->tm_year == -1, which fails the debug assertion >= 0
+	if (!td) {
+		text = (char *) g_strdup("00:00:00");
+	} else {
+		 text = (char *) g_malloc(MDB_BIND_SIZE); 
+		 mdb_date_to_tm(td, &t);
+		 strftime(text, MDB_BIND_SIZE, date_fmt, &t);
+	}
 	return text;
 }
 
@@ -892,7 +897,7 @@ int floor_log10(double f, int is_single)
 }
 #endif
 
-char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
+char *mdb_col_to_string(MdbHandle *mdb, char *buf, int start, int datatype, int size)
 {
 	char *text = NULL;
 	float tf;
@@ -927,7 +932,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			if (size<0) {
 				text = g_strdup("");
 			} else {
-				text = g_malloc(size);
+				text = (char *) g_malloc(size);
 				memcpy((char*)buf+start, text, size);
 			}
 		case MDB_TEXT:

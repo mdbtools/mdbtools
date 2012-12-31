@@ -18,12 +18,12 @@
 
 #include "mdbtools.h"
 
-void __attribute__((deprecated)) mdb_init() 
+void mdb_init() 
 {
 	fprintf(stderr, "mdb_init() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
-void __attribute__((deprecated)) mdb_exit()
+void mdb_exit()
 {
 	fprintf(stderr, "mdb_exit() is DEPRECATED and does nothing. Stop calling it.\n");
 }

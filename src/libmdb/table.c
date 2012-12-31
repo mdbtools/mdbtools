@@ -76,7 +76,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	int row_start, pg_row;
-	void *buf, *pg_buf = mdb->pg_buf;
+	unsigned char *buf, *pg_buf = mdb->pg_buf;
 	guint i;
 
 	mdb_read_pg(mdb, entry->table_pg);
@@ -94,8 +94,8 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	/* grab a copy of the usage map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_usage_map_offset);
-	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
-	table->usage_map = g_memdup(buf + row_start, table->map_sz);
+	mdb_find_pg_row(mdb, pg_row, (void**) &buf, &row_start, &(table->map_sz));
+	table->usage_map = (unsigned char*) g_memdup(buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		mdb_buffer_dump(buf, row_start, table->map_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld row %d start %d len %d",
@@ -103,8 +103,8 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	/* grab a copy of the free space page map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_free_map_offset);
-	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz));
-	table->free_usage_map = g_memdup(buf + row_start, table->freemap_sz);
+	mdb_find_pg_row(mdb, pg_row, (void**) &buf, &row_start, &(table->freemap_sz));
+	table->free_usage_map = (unsigned char*) g_memdup(buf + row_start, table->freemap_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
@@ -127,7 +127,7 @@ MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_t
 	mdb_read_catalog(mdb, obj_type);
 
 	for (i=0; i<mdb->num_catalog; i++) {
-		entry = g_ptr_array_index(mdb->catalog, i);
+		entry = (MdbCatalogEntry *) g_ptr_array_index(mdb->catalog, i);
 		if (!strcasecmp(entry->object_name, table_name))
 			return mdb_read_table(entry);
 	}
@@ -166,7 +166,7 @@ read_pg_if_8(MdbHandle *mdb, int *cur_pos)
  * are still advanced and the page cursor is still updated.
  */
 void * 
-read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
+read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, size_t len)
 {
 	/* Advance to page which contains the first byte */
 	while (*cur_pos >= mdb->fmt->pg_size) {
@@ -215,6 +215,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	unsigned int i, j;
 	int cur_pos;
 	size_t name_sz;
+	GArray *allprops;
 	
 	table->columns = g_ptr_array_new();
 
@@ -302,7 +303,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	/* Sort the columns by col_num */
 	g_ptr_array_sort(table->columns, (GCompareFunc)mdb_col_comparer);
 
-	GArray *allprops = table->entry->props;
+	allprops = table->entry->props;
 	if (allprops)
 		for (i=0;i<table->num_cols;i++) {
 			pcol = g_ptr_array_index(table->columns, i);
