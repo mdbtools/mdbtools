@@ -150,6 +150,28 @@ static MdbBackendType mdb_mysql_types[] = {
 };
 static MdbBackendType mdb_mysql_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("date",0,0,0);
+
+/*    sqlite data types */
+static MdbBackendType mdb_sqlite_types[] = {
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("DateTime", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("varchar", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+};
+
 #ifndef JAVA
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
@@ -367,6 +389,16 @@ void __attribute__ ((constructor)) _mdb_init_backends()
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_rquotes_merge);
+	mdb_register_backend("sqlite",
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
+		mdb_sqlite_types, NULL, NULL,
+		"date('now')", "date('now')",
+		"-- That file uses encoding %s\n",
+		"DROP TABLE IF EXISTS %s;\n",
+		NULL,
+		NULL,
+		NULL,
+		quote_schema_name_rquotes_merge);
 }
 void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
@@ -539,6 +571,8 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		backend = 1;
 	} else if (!strcmp(mdb->backend_name, "postgres")) {
 		backend = 2;
+	} else if (!strcmp(mdb->backend_name, "sqlite")) {
+		backend = 3;
 	} else {
 		if (is_init == 0) { /* the first time through */
 			is_init = 1;
@@ -613,6 +647,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		switch (backend) {
 		  case 1:  /* oracle */
 		  case 2:  /* postgres */
+		  case 3:  /* sqlite */
 			text = g_strconcat(
 				"ALTER TABLE ", quoted_table_1,
 				" ADD CONSTRAINT ", quoted_constraint_name,
