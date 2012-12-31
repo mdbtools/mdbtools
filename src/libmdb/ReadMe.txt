@@ -17,3 +17,4 @@ List of changes:
 Requirements to build and use:
 
 The only dependency is on glib. You need to provide the glib headers for the project to be built.
+
