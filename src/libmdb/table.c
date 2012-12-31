@@ -215,6 +215,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	unsigned int i, j;
 	int cur_pos;
 	size_t name_sz;
+	GArray *allprops;
 	
 	table->columns = g_ptr_array_new();
 
@@ -302,7 +303,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	/* Sort the columns by col_num */
 	g_ptr_array_sort(table->columns, (GCompareFunc)mdb_col_comparer);
 
-	GArray *allprops = table->entry->props;
+	allprops = table->entry->props;
 	if (allprops)
 		for (i=0;i<table->num_cols;i++) {
 			pcol = g_ptr_array_index(table->columns, i);

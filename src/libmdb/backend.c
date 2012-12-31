@@ -515,7 +515,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				fprintf (outfile, " UNIQUE");
 			fprintf(outfile, " INDEX %s ON %s (", quoted_name, quoted_table_name);
 		}
-		free(quoted_name);
+		g_free(quoted_name);
 		free(index_name);
 
 		for (j=0;j<idx->num_keys;j++) {
@@ -528,7 +528,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				/* no DESC for primary keys */
 				fprintf(outfile, " DESC");
 
-			free(quoted_name);
+			g_free(quoted_name);
 
 		}
 		fprintf (outfile, ");\n");
@@ -635,7 +635,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	grbit = atoi(bound[4]);
 	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
 	quoted_constraint_name = mdb->default_backend->quote_schema_name(dbnamespace, constraint_name);
-	free(constraint_name);
+	g_free(constraint_name);
 
 	if (grbit & 0x00000002) {
 		text = g_strconcat(
@@ -660,11 +660,11 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 			break;
 		}
 	}
-	free(quoted_table_1);
-	free(quoted_column_1);
-	free(quoted_table_2);
-	free(quoted_column_2);
-	free(quoted_constraint_name);
+	g_free(quoted_table_1);
+	g_free(quoted_column_1);
+	g_free(quoted_table_2);
+	g_free(quoted_column_2);
+	g_free(quoted_constraint_name);
 
 	return (char *)text;
 }
@@ -703,7 +703,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 		fprintf (outfile, "\t%s\t\t\t%s", quoted_name,
 			mdb_get_colbacktype_string (col));
-		free(quoted_name);
+		g_free(quoted_name);
 
 		if (mdb_colbacktype_takes_length(col)) {
 
@@ -736,7 +736,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 					if (defval[0]=='"' && defval[def_len-1]=='"') {
 						/* this is a string */
 						gchar *output_default = malloc(def_len-1);
-						gchar *output_default_escaped = malloc(def_len-1);
+						gchar *output_default_escaped;
 						memcpy(output_default, defval+1, def_len-2);
 						output_default[def_len-2] = 0;
 						output_default_escaped = quote_with_squotes(output_default);
@@ -794,11 +794,11 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 				fprintf(outfile,
 					mdb->default_backend->column_comment_statement,
 					quoted_table_name, quoted_name, comment);
-				free(comment);
+				g_free(comment);
 			}
 		}
 
-		free(quoted_name);
+		g_free(quoted_name);
 	}
 
 	/* Add the constraints on table */
@@ -809,7 +809,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			fprintf(outfile,
 				mdb->default_backend->table_comment_statement,
 				quoted_table_name, comment);
-			free(comment);
+			g_free(comment);
 		}
 	}
 	fputc('\n', outfile);
@@ -819,7 +819,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		// prints all the indexes of that table
 		mdb_print_indexes(outfile, table, dbnamespace);
 
-	free(quoted_table_name);
+	g_free(quoted_table_name);
 
 	mdb_free_tabledef (table);
 }
@@ -831,6 +831,7 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 	unsigned int   i;
 	char		*the_relation;
 	MdbCatalogEntry *entry;
+	const char *charset;
 
 	/* clear unsupported options */
 	export_options &= mdb->default_backend->capabilities;
@@ -846,7 +847,7 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 		"-- ----------------------------------------------------------\n\n",
 		outfile);
 
-	const char *charset = mdb_target_charset(mdb);
+	charset = mdb_target_charset(mdb);
 	if (charset) {
 		fprintf(outfile, mdb->default_backend->charset_statement, charset);
 		fputc('\n', outfile);
