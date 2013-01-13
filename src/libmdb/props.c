@@ -25,9 +25,9 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 	int pos = 0;
 	gchar *name;
 	GPtrArray *names = NULL;
+	int i=0;
 
 	names = g_ptr_array_new();
-	int i=0;
 #if MDB_DEBUG
 	mdb_buffer_dump(kkd, 0, len);
 #endif
@@ -151,24 +151,26 @@ mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name) {
  * and returns a GPtrArray of MdbProps*
  */
 GArray*
-mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
+mdb_kkd_to_props(MdbHandle *mdb, char *buffer, size_t len) {
 	guint32 record_len;
 	guint16 record_type;
 	size_t pos;
 	GPtrArray *names = NULL;
 	MdbProperties *props;
+	GArray *result;
 
 #if MDB_DEBUG
 	mdb_buffer_dump(buffer, 0, len);
 #endif
 	mdb_debug(MDB_DEBUG_PROPS,"starting prop parsing of type %s", buffer);
+	
 	if (strcmp("KKD", buffer) && strcmp("MR2", buffer)) {
 		fprintf(stderr, "Unrecognized format.\n");
 		mdb_buffer_dump(buffer, 0, len);
 		return NULL;
 	}
 
-	GArray *result = g_array_new(0, 0, sizeof(MdbProperties*));
+	result = g_array_new(0, 0, sizeof(MdbProperties*));
 
 	pos = 4;
 	while (pos < len) {
