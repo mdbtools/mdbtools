@@ -57,49 +57,6 @@ static MdbBackendType mdb_access_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Numeric",1,1,0)
 };
 
-/**    SQLite data types. According to the SQLite specs only the first set of elements are supported.
- * However, during testing I found out that if I use the first set, then all texts, and dates are written in
- * Memo fields, which makes them visible only after clicking on them (one at a time) in a DB Manager. The second set of elements
- * makes these fields directly visible in a DB Manager like they are visible in Access and therefore I prefer them.
-*/
-static MdbBackendType mdb_sqlite_types[] = {
-		//MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		//MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		//MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("DateTime", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("varchar", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-};
-
 /*    Oracle data types */
 static MdbBackendType mdb_oracle_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x00",0,0,0),
@@ -193,6 +150,28 @@ static MdbBackendType mdb_mysql_types[] = {
 };
 static MdbBackendType mdb_mysql_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("date",0,0,0);
+
+/*    sqlite data types */
+static MdbBackendType mdb_sqlite_types[] = {
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("DateTime", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("varchar", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+};
+
 #ifndef JAVA
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
@@ -280,7 +259,7 @@ quote_with_squotes(const gchar* value)
 	return quote_generic(value, '\'', '\'');
 }
 
-char * 
+char * MDB_DEPRECATED
 mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
 	static int warn_deprecated = 0;
@@ -298,7 +277,7 @@ mdb_get_coltype_string(MdbBackend *backend, int col_type)
 		return backend->types_table[col_type].name;
 }
 
-int 
+int MDB_DEPRECATED
 mdb_coltype_takes_length(MdbBackend *backend, int col_type)
 {
 	static int warn_deprecated = 0;
@@ -346,13 +325,17 @@ mdb_colbacktype_takes_length(const MdbColumn *col)
 	return type->needs_length;
 }
 
+void MDB_DEPRECATED mdb_init_backends() {
+	fprintf(stderr, "mdb_init_backends() is DEPRECATED and does nothing. Stop calling it.\n");
+}
+
 /**
  * _mdb_init_backends
  *
  * Initializes the mdb_backends hash and loads the builtin backends.
  * Use mdb_remove_backends() to destroy this hash when done.
  */
-void _mdb_init_backends()
+void __attribute__ ((constructor)) _mdb_init_backends()
 {
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
@@ -366,16 +349,6 @@ void _mdb_init_backends()
 		NULL,
 		NULL,
 		quote_schema_name_bracket_merge);
-	mdb_register_backend("sqlite", //A lot of guessing and gut feelings went into this one. For my DBs it works fine.
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
-		mdb_sqlite_types, NULL, NULL,
-		"date('now')", "date('now')",
-		"-- That file uses encoding %s\n",
-		"DROP TABLE IF EXISTS %s;\n",
-		NULL,
-		NULL,
-		NULL,
-		quote_schema_name_rquotes_merge);
 	mdb_register_backend("sybase",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
@@ -416,14 +389,17 @@ void _mdb_init_backends()
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_rquotes_merge);
+	mdb_register_backend("sqlite",
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
+		mdb_sqlite_types, NULL, NULL,
+		"date('now')", "date('now')",
+		"-- That file uses encoding %s\n",
+		"DROP TABLE IF EXISTS %s;\n",
+		NULL,
+		NULL,
+		NULL,
+		quote_schema_name_rquotes_merge);
 }
-
-/** Supposed to be deprecated in version 0.7, however I could not understand how to work without it. */
-void mdb_init_backends() {
-	_mdb_init_backends();
-	//fprintf(stderr, "mdb_init_backends() is DEPRECATED and does nothing. Stop calling it.\n");
-}
-
 void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
 	MdbBackend *backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
@@ -442,23 +418,19 @@ void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendTy
 	g_hash_table_insert(mdb_backends, backend_name, backend);
 }
 
-
+void MDB_DEPRECATED mdb_remove_backends() {
+	fprintf(stderr, "mdb_remove_backends() is DEPRECATED and does nothing. Stop calling it.\n");
+}
 
 /**
  * mdb_remove_backends
  *
  * Removes all entries from and destroys the mdb_backends hash.
  */
-void _mdb_remove_backends()
+void __attribute__ ((destructor)) _mdb_remove_backends()
 {
 	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
 	g_hash_table_destroy(mdb_backends);
-}
-
-/** Supposed to be deprecated in version 0.7, however I could not understand how to work without it. */
-void mdb_remove_backends() {
-	//fprintf(stderr, "mdb_remove_backends() is DEPRECATED and does nothing. Stop calling it.\n");
-	_mdb_remove_backends();
 }
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
 {
@@ -543,7 +515,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				fprintf (outfile, " UNIQUE");
 			fprintf(outfile, " INDEX %s ON %s (", quoted_name, quoted_table_name);
 		}
-		g_free(quoted_name); //changed from free
+		g_free(quoted_name);
 		free(index_name);
 
 		for (j=0;j<idx->num_keys;j++) {
@@ -556,7 +528,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				/* no DESC for primary keys */
 				fprintf(outfile, " DESC");
 
-			g_free(quoted_name); //changed from free
+			g_free(quoted_name);
 
 		}
 		fprintf (outfile, ");\n");
@@ -754,7 +726,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	grbit = atoi(bound[4]);
 	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
 	quoted_constraint_name = mdb->default_backend->quote_schema_name(dbnamespace, constraint_name);
-	g_free(constraint_name); //changed from free
+	g_free(constraint_name);
 
 	if (grbit & 0x00000002) {
 		text = g_strconcat(
@@ -779,11 +751,11 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 			break;
 		}
 	}
-	g_free(quoted_table_1); //changed from free
-	g_free(quoted_column_1); //changed from free
-	g_free(quoted_table_2); //changed from free
-	g_free(quoted_column_2); //changed from free
-	g_free(quoted_constraint_name); //changed from free
+	g_free(quoted_table_1);
+	g_free(quoted_column_1);
+	g_free(quoted_table_2);
+	g_free(quoted_column_2);
+	g_free(quoted_constraint_name);
 
 	return (char *)text;
 }
@@ -822,7 +794,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
 		fprintf (outfile, "\t%s\t\t\t%s", quoted_name,
 			mdb_get_colbacktype_string (col));
-		g_free(quoted_name); //changed from free
+		g_free(quoted_name);
 
 		if (mdb_colbacktype_takes_length(col)) {
 
@@ -913,11 +885,11 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 				fprintf(outfile,
 					mdb->default_backend->column_comment_statement,
 					quoted_table_name, quoted_name, comment);
-				g_free(comment); //changed from free
+				g_free(comment);
 			}
 		}
 
-		g_free(quoted_name); //changed from free
+		g_free(quoted_name);
 	}
 
 	/* Add the constraints on table */
@@ -928,7 +900,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			fprintf(outfile,
 				mdb->default_backend->table_comment_statement,
 				quoted_table_name, comment);
-			g_free(comment); //changed from free
+			g_free(comment);
 		}
 	}
 	fputc('\n', outfile);

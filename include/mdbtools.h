@@ -50,9 +50,7 @@
 #define MDB_MEMO_OVERHEAD 12
 #define MDB_BIND_SIZE 16384
 
-#define BIN_MODE_STRIP   0
-#define BIN_MODE_RAW     1
-#define BIN_MODE_OCTAL   2
+#define MDB_DEPRECATED __attribute__((deprecated))
 
 enum {
 	MDB_PAGE_DB = 0,
@@ -174,11 +172,15 @@ enum {
 };
 #define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
+/* csv export binary options */
+enum {
+	MDB_BINEXPORT_STRIP,
+	MDB_BINEXPORT_RAW,
+	MDB_BINEXPORT_OCTAL
+};
+
 #define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4) /* obsolete */
 #define IS_JET3(mdb) (mdb->f->jet_version==MDB_VER_JET3)
-
-#define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
-#define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 
 /* forward declarations */
 typedef struct mdbindex MdbIndex;
@@ -435,8 +437,8 @@ typedef struct {
 #endif
 
 /* mem.c */
-extern void mdb_init();
-extern void mdb_exit();
+extern void MDB_DEPRECATED mdb_init();
+extern void MDB_DEPRECATED mdb_exit();
 
 /* file.c */
 extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -506,14 +508,14 @@ extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 extern void mdb_buffer_dump(const void *buf, int start, size_t len);
 
 /* backend.c */
-extern char* mdb_get_coltype_string(MdbBackend *backend, int col_type);
-extern int mdb_coltype_takes_length(MdbBackend *backend, int col_type);
+extern char* MDB_DEPRECATED mdb_get_coltype_string(MdbBackend *backend, int col_type);
+extern int MDB_DEPRECATED mdb_coltype_takes_length(MdbBackend *backend, int col_type);
 extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
 extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
 extern int mdb_colbacktype_takes_length(const MdbColumn *col);
-extern void mdb_init_backends();
+extern void MDB_DEPRECATED mdb_init_backends();
 extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
-extern void mdb_remove_backends();
+extern void MDB_DEPRECATED mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 extern void generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options);
 extern void generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options);
