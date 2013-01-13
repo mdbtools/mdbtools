@@ -25,7 +25,7 @@ OPTIONS
   --relations         Export foreign keys constraints. This is the default.
   --no-relations      Don't export foreign keys constraints.
 
-  backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, postgres, and mysql. If not specified the generated DDL will be in access format.
+  backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, postgres, mysql and sqlite. If not specified the generated DDL will be in access format.
 
 ENVIRONMENT
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).

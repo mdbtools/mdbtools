@@ -239,7 +239,8 @@ Oracle
 Sybase
 MS SQL Server
 PostgreSQL
-MySQL</property>
+MySQL
+SQLite</property>
               </widget>
               <packing>
                 <property name="left_attach">1</property>

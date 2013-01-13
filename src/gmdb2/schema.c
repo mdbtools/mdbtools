@@ -105,6 +105,8 @@ int i;
 		strcpy(backend,"postgres");
 	else if (!strcmp(tmp,"MySQL"))
 		strcpy(backend,"mysql");
+	else if (!strcmp(tmp,"SQLite"))
+		strcpy(backend,"sqlite");
 	else
 		strcpy(backend,"access");
 
@@ -151,6 +153,7 @@ refresh_available_options() {
 	else if (!strcmp(backend_name,"MS SQL Server")) strcpy(backend,"sybase");
 	else if (!strcmp(backend_name,"PostgreSQL")) strcpy(backend,"postgres");
 	else if (!strcmp(backend_name,"MySQL")) strcpy(backend,"mysql");
+	else if (!strcmp(backend_name,"SQLite")) strcpy(backend,"sqlite");
 	else strcpy(backend,"access");
 
 	backend_obj = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend);
