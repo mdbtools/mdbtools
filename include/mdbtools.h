@@ -48,6 +48,8 @@
 #define MDB_MEMO_OVERHEAD 12
 #define MDB_BIND_SIZE 16384
 
+#define MDB_DEPRECATED __attribute__((deprecated))
+
 enum {
 	MDB_PAGE_DB = 0,
 	MDB_PAGE_DATA,
@@ -423,8 +425,8 @@ typedef struct {
 } MdbSarg;
 
 /* mem.c */
-extern void __attribute__((deprecated)) mdb_init();
-extern void __attribute__((deprecated)) mdb_exit();
+extern void MDB_DEPRECATED mdb_init();
+extern void MDB_DEPRECATED mdb_exit();
 
 /* file.c */
 extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -494,14 +496,14 @@ extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 extern void mdb_buffer_dump(const void *buf, int start, size_t len);
 
 /* backend.c */
-extern char* __attribute__((deprecated)) mdb_get_coltype_string(MdbBackend *backend, int col_type);
-extern int __attribute__((deprecated)) mdb_coltype_takes_length(MdbBackend *backend, int col_type);
+extern char* MDB_DEPRECATED mdb_get_coltype_string(MdbBackend *backend, int col_type);
+extern int MDB_DEPRECATED mdb_coltype_takes_length(MdbBackend *backend, int col_type);
 extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
 extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
 extern int mdb_colbacktype_takes_length(const MdbColumn *col);
-extern void __attribute__((deprecated)) mdb_init_backends();
+extern void MDB_DEPRECATED mdb_init_backends();
 extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
-extern void __attribute__((deprecated)) mdb_remove_backends();
+extern void MDB_DEPRECATED mdb_remove_backends();
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 

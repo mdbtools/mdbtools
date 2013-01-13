@@ -259,7 +259,7 @@ quote_with_squotes(const gchar* value)
 	return quote_generic(value, '\'', '\'');
 }
 
-char * __attribute__((deprecated))
+char * MDB_DEPRECATED
 mdb_get_coltype_string(MdbBackend *backend, int col_type)
 {
 	static int warn_deprecated = 0;
@@ -277,7 +277,7 @@ mdb_get_coltype_string(MdbBackend *backend, int col_type)
 		return backend->types_table[col_type].name;
 }
 
-int __attribute__((deprecated))
+int MDB_DEPRECATED
 mdb_coltype_takes_length(MdbBackend *backend, int col_type)
 {
 	static int warn_deprecated = 0;
@@ -325,7 +325,7 @@ mdb_colbacktype_takes_length(const MdbColumn *col)
 	return type->needs_length;
 }
 
-void __attribute__((deprecated)) mdb_init_backends() {
+void MDB_DEPRECATED mdb_init_backends() {
 	fprintf(stderr, "mdb_init_backends() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
@@ -418,7 +418,7 @@ void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendTy
 	g_hash_table_insert(mdb_backends, backend_name, backend);
 }
 
-void __attribute__((deprecated)) mdb_remove_backends() {
+void MDB_DEPRECATED mdb_remove_backends() {
 	fprintf(stderr, "mdb_remove_backends() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
