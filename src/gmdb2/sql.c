@@ -51,35 +51,40 @@ gchar* gmdb_export_get_filepath (GladeXML*);	/* from table_export.c */
 static void
 gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 {
+	/* We need to re-run the whole query because some information is not stored
+	 * in the TreeStore, such as column types.
+	 */
 	gchar *file_path;
 	GladeXML *sql_xml;
 	GtkWidget *filesel, *dlg;
 	FILE *outfile;
 	int i;
 	int need_headers = 0;
-	int need_quote = 0;
 	gchar delimiter[11];
-	gchar quotechar;
-	//TODO int binmode;
+	gchar quotechar[5];
+	gchar escape_char[5];
+	int bin_mode;
 	gchar lineterm[5];
-	gchar *str;
-	int rows=0, n_columns;
-	GtkWidget *treeview;
-	GtkTreeViewColumn *col;
-	GList *glist;
-	GtkTreeModel *store;
-	GtkTreeIter iter;
-	GValue value = { 0, };
-	
-	filesel = glade_xml_get_widget (xml, "export_dialog");
-	sql_xml = g_object_get_data(G_OBJECT(filesel), "sql_xml");
-	//printf("sql_xml %p\n",sql_xml);
 
-	gmdb_export_get_delimiter(xml, delimiter, 10);
-	gmdb_export_get_lineterm(xml, lineterm, 5);
-	need_quote = gmdb_export_get_quote(xml);
-	quotechar = gmdb_export_get_quotechar(xml);
-	//TODO binmode = gmdb_export_get_binmode(xml);
+	guint len;
+	gchar *buf;
+	GtkTextIter start, end;
+	GtkTextBuffer *txtbuffer;
+	GtkWidget *textview;
+	char **bound_values;
+	int *bound_lens; 
+	MdbSQLColumn *sqlcol;
+	long row;
+	char *value;
+	size_t length;
+	MdbTableDef *table;
+	MdbColumn *col = NULL;
+
+	gmdb_export_get_delimiter(xml, delimiter, sizeof(delimiter));
+	gmdb_export_get_lineterm(xml, lineterm, sizeof(lineterm));
+	gmdb_export_get_quotechar(xml, quotechar, sizeof(quotechar));
+	gmdb_export_get_escapechar(xml, escape_char, sizeof(escape_char));
+	bin_mode = gmdb_export_get_binmode(xml);
 	need_headers = gmdb_export_get_headers(xml);
 	file_path = gmdb_export_get_filepath(xml);
 
@@ -92,53 +97,104 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 		return;
 	}
 
-	treeview = glade_xml_get_widget (sql_xml, "sql_results");
-	glist = gtk_tree_view_get_columns(GTK_TREE_VIEW(treeview));
-	i = 0;
-	if (need_headers)  {
-		while ((col = g_list_nth_data(glist, i))) {
-			gchar *title;
-			if (i>0) fputs(delimiter, outfile);
-			title = g_strdup(gtk_tree_view_column_get_title(col));
-			gmdb_print_quote(outfile, need_quote, quotechar,
-				delimiter, title);
-			fputs(title, outfile);
-			gmdb_print_quote(outfile, need_quote, quotechar,
-				delimiter, title);
-			g_free(title);
-			i++;
-		}
-		fputs(lineterm, outfile);
-		g_list_free(glist);
+	/* Get SQL */
+	filesel = glade_xml_get_widget (xml, "export_dialog");
+	sql_xml = g_object_get_data(G_OBJECT(filesel), "sql_xml");
+	//printf("sql_xml %p\n",sql_xml);
+	textview = glade_xml_get_widget(sql_xml, "sql_textview");
+	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+	len = gtk_text_buffer_get_char_count(txtbuffer);
+	gtk_text_buffer_get_iter_at_offset (txtbuffer, &start, 0);
+	gtk_text_buffer_get_iter_at_offset (txtbuffer, &end, len);
+	buf = gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE);
+
+
+	/* ok now execute it */
+	mdb_sql_run_query(sql, buf);
+	if (mdb_sql_has_error(sql)) {
+		GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
+		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+		    "%s", mdb_sql_last_error(sql));
+		gtk_dialog_run (GTK_DIALOG (dlg));
+		gtk_widget_destroy (dlg);
+		mdb_sql_reset(sql);
+		
+		fclose(outfile);
+		gtk_widget_destroy(filesel);
+		return;
 	}
 
-	store = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
-	gtk_tree_model_get_iter_first(store, &iter);
-	rows=0;
-	g_value_init (&value, G_TYPE_STRING);
-	do {
-		rows++;
-		n_columns = gtk_tree_model_get_n_columns(store);
-		for (i=0; i < n_columns; i++) {
-			if (i>0) fputs(delimiter, outfile);
-			gtk_tree_model_get_value(store, &iter, i, &value);
-			str = (gchar *) g_value_get_string(&value);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, str);
-			fputs(str, outfile);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, str);
-			g_value_unset(&value);
+	bound_values = (char **) g_malloc(sql->num_columns * sizeof(char *));
+	bound_lens = (int *) g_malloc(sql->num_columns * sizeof(int));
+
+	for (i=0; i<sql->num_columns; i++) {
+		/* bind columns */
+		bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE); 
+		mdb_sql_bind_column(sql, i+1, bound_values[i], &bound_lens[i]);
+
+		/* display column titles */
+		if (need_headers) {
+			if (i>0)
+				fputs(delimiter, outfile);
+			sqlcol = g_ptr_array_index(sql->columns,i);
+			gmdb_print_col(outfile, sqlcol->name, quotechar[0]!='\0', MDB_TEXT, 0, quotechar, escape_char, bin_mode);
+		}
+	}
+
+	row = 0;
+	while (mdb_fetch_row(sql->cur_table)) {
+		row++;
+		for (i=0; i<sql->num_columns; i++) { 
+			if (i>0)
+				fputs(delimiter, outfile);
+
+			sqlcol = g_ptr_array_index(sql->columns, i);
+
+			/* Find col matching sqlcol */
+			table = sql->cur_table;
+			for (i=0; i<table->num_cols; i++) {
+				col = g_ptr_array_index(table->columns, i);
+				if (!strcasecmp(sqlcol->name, col->name))
+					break;
+			}
+			/* assert(i!=table->num_cols). Can't happen, already checked. */
+
+			/* Don't quote NULLs */
+			if (bound_lens[i] && sqlcol->bind_type != MDB_OLE) {
+				if (col->col_type == MDB_OLE) {
+					value = mdb_ole_read_full(mdb, col, &length);
+				} else {
+					value = bound_values[i];
+					length = bound_lens[i];
+				}
+				gmdb_print_col(outfile, value, quotechar[0]!='\0', col->col_type, length, quotechar, escape_char, bin_mode);
+				if (col->col_type == MDB_OLE)
+					free(value);
+			}
 		}
 		fputs(lineterm, outfile);
-	} while (gtk_tree_model_iter_next(store, &iter));
+	}
+
+	/* free the memory used to bind */
+	for (i=0; i<sql->num_columns; i++) {
+		g_free(bound_values[i]);
+	}
+
+	mdb_sql_reset(sql);
+	g_free(buf);
 
 	fclose(outfile);
-	gtk_widget_destroy(filesel);
+
 	dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
 	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-	    _("%d rows successfully exported."), rows);
+	    _("%ld rows successfully exported."), row);
 	gtk_dialog_run (GTK_DIALOG (dlg));
 	gtk_widget_destroy (dlg);
+	
+	gtk_widget_destroy(filesel);
 }
+
+
 static void
 gmdb_sql_results_cb(GtkWidget *w, GladeXML *xml)
 {
@@ -337,6 +393,7 @@ gmdb_sql_select_hist_cb(GtkComboBox *combobox, GladeXML *xml)
 static void
 gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 {
+
 	guint len;
 	gchar *buf;
 	gchar *bound_data[256];
@@ -364,7 +421,7 @@ gmdb_sql_execute_cb(GtkWidget *w, GladeXML *xml)
 	textview = glade_xml_get_widget(xml, "sql_textview");
 	combobox = glade_xml_get_widget(xml, "sql_combo");
 	txtbuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
-        len = gtk_text_buffer_get_char_count(txtbuffer);
+	len = gtk_text_buffer_get_char_count(txtbuffer);
 	gtk_text_buffer_get_iter_at_offset (txtbuffer, &start, 0);
 	gtk_text_buffer_get_iter_at_offset (txtbuffer, &end, len);
 	buf = gtk_text_buffer_get_text(txtbuffer, &start, &end, FALSE);

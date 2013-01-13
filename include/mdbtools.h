@@ -168,6 +168,13 @@ enum {
 };
 #define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
+/* csv export binary options */
+enum {
+	MDB_BINEXPORT_STRIP,
+	MDB_BINEXPORT_RAW,
+	MDB_BINEXPORT_OCTAL
+};
+
 #define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4) /* obsolete */
 #define IS_JET3(mdb) (mdb->f->jet_version==MDB_VER_JET3)
 

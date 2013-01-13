@@ -42,21 +42,11 @@ MdbCatalogEntry *cat_entry;
 #define NEVER "Never"
 #define AUTOMAT "Automatic (where necessary)"
 
+#define NOQUOTE "Don't quote"
+
 #define BIN_STRIP "Strip"
 #define BIN_RAW "Raw"
 #define BIN_OCTAL "Octal"
-
-void
-gmdb_print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *str)
-{
-	if (need_quote==1) {
-		fprintf(outfile, "%c", quotechar);
-	} else if (need_quote==-1) {
-		if (strstr(str,colsep)) {
-			fprintf(outfile, "%c", quotechar);
-		}
-	}
-}
 
 void
 gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
@@ -66,16 +56,22 @@ gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
 
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "sep_combo"));
 	str = gtk_combo_box_get_active_text(combobox);
-	if (!strcmp(str,COMMA)) { strcpy(delimiter, ","); }
-	else if (!strcmp(str,TAB)) { strcpy(delimiter, "\t"); }
-	else if (!strcmp(str,SPACE)) { strcpy(delimiter, " "); }
-	else if (!strcmp(str,COLON)) { strcpy(delimiter, ":"); }
-	else if (!strcmp(str,SEMICOLON)) { strcpy(delimiter, ";"); }
-	else if (!strcmp(str,PIPE)) { strcpy(delimiter, "|"); }
-	else {
-		strncpy(delimiter,str, 10);
-		delimiter[10]='\0';
-	}
+	if (!strcmp(str,COMMA))
+		strncpy(delimiter, ",", max_buf);
+	else if (!strcmp(str,TAB))
+		strncpy(delimiter, "\t", max_buf);
+	else if (!strcmp(str,SPACE))
+		strncpy(delimiter, " ", max_buf);
+	else if (!strcmp(str,COLON))
+		strncpy(delimiter, ":", max_buf);
+	else if (!strcmp(str,SEMICOLON))
+		strncpy(delimiter, ";", max_buf);
+	else if (!strcmp(str,PIPE))
+		strncpy(delimiter, "|", max_buf);
+	else
+		strncpy(delimiter, str, max_buf);
+	if (max_buf)
+		delimiter[max_buf-1] = '\0';
 }
 
 void
@@ -86,39 +82,43 @@ gmdb_export_get_lineterm(GladeXML *xml, gchar *lineterm, int max_buf)
 
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "term_combo"));
 	str = gtk_combo_box_get_active_text (combobox);
-	if (!strcmp(str,LF)) { strcpy(lineterm, "\n"); }
-	else if (!strcmp(str,CR)) { strcpy(lineterm, "\r"); }
-	else if (!strcmp(str,CRLF)) { strcpy(lineterm, "\r\n"); }
+	if (!strcmp(str,LF))
+		strncpy(lineterm, "\n", max_buf);
+	else if (!strcmp(str,CR))
+		strncpy(lineterm, "\r", max_buf);
+	else if (!strcmp(str,CRLF))
+		strncpy(lineterm, "\r\n", max_buf);
+	if (max_buf)
+		lineterm[max_buf-1] = '\0';
 }
 
-int
-gmdb_export_get_quote(GladeXML *xml)
-{
-	GtkComboBox *combobox;
-	int need_quote = 0;
-	gchar *str;
-
-	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "quote_combo"));
-	str = gtk_combo_box_get_active_text (combobox);
-	if (!strcmp(str,ALWAYS)) { need_quote = 1; }
-	else if (!strcmp(str,NEVER)) { need_quote = 0; }
-	else if (!strcmp(str,AUTOMAT)) { need_quote = -1; }
-
-	return need_quote;
-}
-
-char
-gmdb_export_get_quotechar(GladeXML *xml)
+void
+gmdb_export_get_quotechar(GladeXML *xml, gchar *quotechar, int max_buf)
 {
 	GtkComboBox *combobox;
 	gchar *str;
-	char quotechar;
 
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "qchar_combo"));
 	str = gtk_combo_box_get_active_text (combobox);
-	quotechar = str[0];
+	if (!strcmp(str, NOQUOTE))
+		quotechar[0] = '\0'; /* Quoting disabled */
+	else
+		strncpy(quotechar, str, max_buf);
+	if (max_buf)
+		quotechar[max_buf-1] = '\0';
+}
 
-	return quotechar;
+void
+gmdb_export_get_escapechar(GladeXML *xml, gchar *escapechar, int max_buf)
+{
+	GtkComboBox *combobox;
+	gchar *str;
+
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "escchar_combo"));
+	str = gtk_combo_box_get_active_text (combobox);
+	strncpy(escapechar, str, max_buf);
+	if (max_buf)
+		escapechar[max_buf-1] = '\0';
 }
 
 int
@@ -130,9 +130,12 @@ gmdb_export_get_binmode(GladeXML *xml)
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "bin_combo"));
 	str = gtk_combo_box_get_active_text (combobox);
 
-	if (!strcmp(str,BIN_STRIP)) return 1;
-	else if (!strcmp(str,BIN_OCTAL)) return 2;
-	else return 0;
+	if (!strcmp(str,BIN_STRIP))
+		return MDB_BINEXPORT_STRIP;
+	else if (!strcmp(str,BIN_OCTAL))
+		return MDB_BINEXPORT_OCTAL;
+	else
+		return MDB_BINEXPORT_RAW;
 }
 
 
@@ -167,31 +170,83 @@ gmdb_export_help_cb(GtkWidget *w, gpointer data)
 		g_error_free (error);
 	}
 }
+
+/* That function is a duplicate of the one in util/mdb-export.c
+ * They should be merged and moved in libmdb (backend.c)
+ */
+#define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
+#define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
+//#define DONT_ESCAPE_ESCAPE
+void
+gmdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
+{
+	size_t quote_len = strlen(quote_char); /* multibyte */
+
+	size_t orig_escape_len = escape_char ? strlen(escape_char) : 0;
+
+	/* double the quote char if no escape char passed */
+	if (!escape_char)
+		escape_char = quote_char;
+
+	if (quote_text && is_quote_type(col_type)) {
+		fputs(quote_char, outfile);
+		while (1) {
+			if (is_binary_type(col_type)) {
+				if (bin_mode == MDB_BINEXPORT_STRIP)
+					break;
+				if (!bin_len--)
+					break;
+			} else /* use \0 sentry */
+				if (!*col_val)
+					break;
+
+			if (quote_len && !strncmp(col_val, quote_char, quote_len)) {
+				fprintf(outfile, "%s%s", escape_char, quote_char);
+				col_val += quote_len;
+#ifndef DONT_ESCAPE_ESCAPE
+			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len)) {
+				fprintf(outfile, "%s%s", escape_char, escape_char);
+				col_val += orig_escape_len;
+#endif
+			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == MDB_BINEXPORT_OCTAL)
+				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
+			else
+				putc(*col_val++, outfile);
+		}
+		fputs(quote_char, outfile);
+	} else
+		fputs(col_val, outfile);
+}
+
+
 void
 gmdb_table_export_button_cb(GtkWidget *w, gpointer data)
 {
 gchar *file_path;
 FILE *outfile;
-gchar *bound_data[256];
+char **bound_values;
+int *bound_lens; 
 MdbTableDef *table;
 MdbColumn *col;
 int i;
 int need_headers = 0;
-int need_quote = 0;
 gchar delimiter[11];
-gchar quotechar;
+gchar quotechar[5];
+gchar escape_char[5];
 gchar lineterm[5];
-int binmode = 1;
+int bin_mode = MDB_BINEXPORT_RAW;
 int rows=0;
+char *value;
+size_t length;
 
 	GtkWidget *exportwin, *dlg;
 
-	gmdb_export_get_delimiter(exportwin_xml, delimiter, 10);
-	gmdb_export_get_lineterm(exportwin_xml, lineterm, 5);
-	need_quote = gmdb_export_get_quote(exportwin_xml);
-	quotechar = gmdb_export_get_quotechar(exportwin_xml);
+	gmdb_export_get_delimiter(exportwin_xml, delimiter, sizeof(delimiter));
+	gmdb_export_get_lineterm(exportwin_xml, lineterm, sizeof(lineterm));
+	gmdb_export_get_quotechar(exportwin_xml, quotechar, sizeof(quotechar));
+	gmdb_export_get_escapechar(exportwin_xml, escape_char, sizeof(escape_char));
 	need_headers = gmdb_export_get_headers(exportwin_xml);
-	binmode = gmdb_export_get_binmode(exportwin_xml);
+	bin_mode = gmdb_export_get_binmode(exportwin_xml);
 	file_path = gmdb_export_get_filepath(exportwin_xml);
 
 	// printf("file path %s\n",file_path);
@@ -209,18 +264,19 @@ int rows=0;
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
+	bound_values = (char **) g_malloc(table->num_cols * sizeof(char *));
+	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
 	for (i=0;i<table->num_cols;i++) {
 		/* bind columns */
-		bound_data[i] = (char *) g_malloc0(MDB_BIND_SIZE);
-		mdb_bind_column(table, i+1, bound_data[i], NULL);
+		bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+		mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
 
 		/* display column titles */
-		col=g_ptr_array_index(table->columns,i);
-		if (need_headers)  {
-			if (i>0) fputs(delimiter, outfile);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, col->name);
-			fputs(col->name, outfile);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, col->name);
+		if (need_headers) {
+			if (i>0)
+				fputs(delimiter, outfile);
+			col=g_ptr_array_index(table->columns,i);
+			gmdb_print_col(outfile, col->name, quotechar[0]!='\0', MDB_TEXT, 0, quotechar, escape_char, bin_mode);
 		}
 	}
 	if (need_headers) fputs(lineterm, outfile);
@@ -228,10 +284,21 @@ int rows=0;
 	/* fetch those rows! */
 	while(mdb_fetch_row(table)) {
 		for (i=0;i<table->num_cols;i++) {
-			if (i>0) fputs(delimiter, outfile);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
-			fputs(bound_data[i], outfile);
-			gmdb_print_quote(outfile, need_quote, quotechar, delimiter, bound_data[i]);
+			if (i>0)
+				fputs(delimiter, outfile);
+			col=g_ptr_array_index(table->columns,i);
+			/* Don't quote NULLs */
+			if (bound_lens[i]) {
+				if (col->col_type == MDB_OLE) {
+					value = mdb_ole_read_full(mdb, col, &length);
+				} else {
+					value = bound_values[i];
+					length = bound_lens[i];
+				}
+				gmdb_print_col(outfile, value, quotechar[0]!='\0', col->col_type, length, quotechar, escape_char, bin_mode);
+				if (col->col_type == MDB_OLE)
+					free(value);
+			}
 		}
 		fputs(lineterm, outfile);
 		rows++;
@@ -239,8 +306,10 @@ int rows=0;
 
 	/* free the memory used to bind */
 	for (i=0;i<table->num_cols;i++) {
-		g_free(bound_data[i]);
+		g_free(bound_values[i]);
 	}
+	g_free(bound_values);
+	g_free(bound_lens);
 
 	fclose(outfile);
 	exportwin = glade_xml_get_widget (exportwin_xml, "export_dialog");
@@ -282,16 +351,15 @@ gmdb_table_export_populate_dialog(GladeXML *xml)
 	gtk_combo_box_append_text(combobox, PIPE);
 	gtk_combo_box_set_active(combobox, 0);
 
-	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "quote_combo"));
-	gtk_combo_box_append_text(combobox, ALWAYS);
-	gtk_combo_box_append_text(combobox, NEVER);
-	gtk_combo_box_append_text(combobox, AUTOMAT);
-	gtk_combo_box_set_active(combobox, 0);
-
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "qchar_combo"));
 	gtk_combo_box_append_text(combobox, "\"");
 	gtk_combo_box_append_text(combobox, "'");
 	gtk_combo_box_append_text(combobox, "`");
+	gtk_combo_box_append_text(combobox, NOQUOTE);
+	gtk_combo_box_set_active(combobox, 0);
+
+	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "escchar_combo"));
+	gtk_combo_box_append_text(combobox, "\\");
 	gtk_combo_box_set_active(combobox, 0);
 
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(xml, "bin_combo"));

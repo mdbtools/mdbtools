@@ -81,16 +81,16 @@ void gmdb_table_init_popup (GtkWidget*);
 void gmdb_table_set_sensitive(gboolean b);
 
 /* table_export.c */
-void gmdb_export_help_cb(GtkWidget *w, gpointer data);
-void gmdb_table_export_button_cb(GtkWidget *w, gpointer data);
-void gmdb_print_quote(FILE *outfile, int need_quote, char quotechar, char *colsep, char *str);
 void gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf);
 void gmdb_export_get_lineterm(GladeXML *xml, gchar *lineterm, int max_buf);
-int gmdb_export_get_quote(GladeXML *xml);
-char gmdb_export_get_quotechar(GladeXML *xml);
+void gmdb_export_get_quotechar(GladeXML *xml, gchar *quotechar, int max_buf);
+void gmdb_export_get_escapechar(GladeXML *xml, gchar *escapechar, int max_buf);
 int gmdb_export_get_binmode(GladeXML *xml);
 int gmdb_export_get_headers(GladeXML *xml);
 gchar *gmdb_export_get_filepath(GladeXML *xml);
+void gmdb_export_help_cb(GtkWidget *w, gpointer data);
+void gmdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode);
+void gmdb_table_export_button_cb(GtkWidget *w, gpointer data);
 
 extern MdbSQL *sql;
 

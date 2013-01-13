@@ -28,15 +28,13 @@
 #define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 
-#define BIN_MODE_STRIP   0
-#define BIN_MODE_RAW     1
-#define BIN_MODE_OCTAL   2
-
 static char *escapes(char *s);
 
 //#define DONT_ESCAPE_ESCAPE
 static void
 print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
+/* quote_text: Don't quote if 0.
+ */
 {
 	size_t quote_len = strlen(quote_char); /* multibyte */
 
@@ -50,7 +48,7 @@ print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_l
 		fputs(quote_char, outfile);
 		while (1) {
 			if (is_binary_type(col_type)) {
-				if (bin_mode == BIN_MODE_STRIP)
+				if (bin_mode == MDB_BINEXPORT_STRIP)
 					break;
 				if (!bin_len--)
 					break;
@@ -66,7 +64,7 @@ print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_l
 				fprintf(outfile, "%s%s", escape_char, escape_char);
 				col_val += orig_escape_len;
 #endif
-			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == BIN_MODE_OCTAL)
+			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == MDB_BINEXPORT_OCTAL)
 				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
 			else
 				putc(*col_val++, outfile);
@@ -78,12 +76,13 @@ print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_l
 int
 main(int argc, char **argv)
 {
-	unsigned int j;
+	unsigned int i;
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	MdbColumn *col;
 	char **bound_values;
 	int  *bound_lens; 
+	FILE *outfile = stdout;
 	char *delimiter = NULL;
 	char *row_delimiter = NULL;
 	char *quote_char = NULL;
@@ -92,7 +91,7 @@ main(int argc, char **argv)
 	char quote_text = 1;
 	char *insert_dialect = NULL;
 	char *namespace = NULL;
-	int bin_mode = BIN_MODE_RAW;
+	int bin_mode = MDB_BINEXPORT_RAW;
 	int  opt;
 	char *value;
 	size_t length;
@@ -129,11 +128,11 @@ main(int argc, char **argv)
 		break;
 		case 'b':
 			if (!strcmp(optarg, "strip"))
-				bin_mode = BIN_MODE_STRIP;
+				bin_mode = MDB_BINEXPORT_STRIP;
 			else if (!strcmp(optarg, "raw"))
-				bin_mode = BIN_MODE_RAW;
+				bin_mode = MDB_BINEXPORT_RAW;
 			else if (!strcmp(optarg, "octal"))
-				bin_mode = BIN_MODE_OCTAL;
+				bin_mode = MDB_BINEXPORT_OCTAL;
 			else {
 				fprintf(stderr, "Invalid binary mode\n");
 				exit(1);
@@ -203,23 +202,25 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
+	/* read table */
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 	
 	bound_values = (char **) g_malloc(table->num_cols * sizeof(char *));
 	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
-	for (j=0;j<table->num_cols;j++) {
-		bound_values[j] = (char *) g_malloc0(MDB_BIND_SIZE);
-		mdb_bind_column(table, j+1, bound_values[j], &bound_lens[j]);
+	for (i=0;i<table->num_cols;i++) {
+		/* bind columns */
+		bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+		mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
 	}
 	if (header_row) {
-		for (j=0; j<table->num_cols; j++) {
-			col=g_ptr_array_index(table->columns,j);
-			if (j)
-				fputs(delimiter, stdout);
-			fputs(col->name, stdout);
+		for (i=0; i<table->num_cols; i++) {
+			col=g_ptr_array_index(table->columns,i);
+			if (i)
+				fputs(delimiter, outfile);
+			fputs(col->name, outfile);
 		}
-		fputs("\n", stdout);
+		fputs(row_delimiter, outfile);
 	}
 
 	while(mdb_fetch_row(table)) {
@@ -227,42 +228,45 @@ main(int argc, char **argv)
 		if (insert_dialect) {
 			char *quoted_name;
 			quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[optind + 1]);
-			fprintf(stdout, "INSERT INTO %s (", quoted_name);
+			fprintf(outfile, "INSERT INTO %s (", quoted_name);
 			free(quoted_name);
-			for (j=0;j<table->num_cols;j++) {
-				if (j>0) fputs(", ", stdout);
-				col=g_ptr_array_index(table->columns,j);
+			for (i=0;i<table->num_cols;i++) {
+				if (i>0) fputs(", ", outfile);
+				col=g_ptr_array_index(table->columns,i);
 				quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-				fputs(quoted_name, stdout);
+				fputs(quoted_name, outfile);
 				free(quoted_name);
 			} 
-			fputs(") VALUES (", stdout);
+			fputs(") VALUES (", outfile);
 		}
 
-		for (j=0;j<table->num_cols;j++) {
-			if (j>0)
-				fputs(delimiter, stdout);
-			col=g_ptr_array_index(table->columns,j);
-			if (!bound_lens[j]) {
+		for (i=0;i<table->num_cols;i++) {
+			if (i>0)
+				fputs(delimiter, outfile);
+			col=g_ptr_array_index(table->columns,i);
+			if (!bound_lens[i]) {
+				/* Don't quote NULLs */
 				if (insert_dialect)
-					fputs("NULL", stdout);
+					fputs("NULL", outfile);
 			} else {
 				if (col->col_type == MDB_OLE) {
 					value = mdb_ole_read_full(mdb, col, &length);
 				} else {
-					value = bound_values[j];
-					length = bound_lens[j];
+					value = bound_values[i];
+					length = bound_lens[i];
 				}
-				print_col(stdout, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+				print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
 				if (col->col_type == MDB_OLE)
 					free(value);
 			}
 		}
-		if (insert_dialect) fputs(");", stdout);
-		fputs(row_delimiter, stdout);
+		if (insert_dialect) fputs(");", outfile);
+		fputs(row_delimiter, outfile);
 	}
-	for (j=0;j<table->num_cols;j++) {
-		g_free(bound_values[j]);
+	
+	/* free the memory used to bind */
+	for (i=0;i<table->num_cols;i++) {
+		g_free(bound_values[i]);
 	}
 	g_free(bound_values);
 	g_free(bound_lens);
