@@ -17,6 +17,9 @@
  */
 
 #include "mdbtools.h"
+#ifdef _WIN32
+#include <io.h>
+#endif
 //#include <inttypes.h>
 
 #ifdef DMALLOC
@@ -174,7 +177,6 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 	int open_flags;
 
 	mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
-	mdb_init_backends();
 	mdb_set_default_backend(mdb, "access");
 #ifdef HAVE_ICONV
 	mdb->iconv_in = (iconv_t)-1;
@@ -261,7 +263,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 
 	/* get the db password located at 0x42 bytes into the file */
 	for (pos=0;pos<14;pos++) {
-		j = mdb_get_int32(mdb,0x42+pos);
+		j = mdb_get_int32(mdb,0x42+pos);  //warning C4133: 'function' : incompatible types - from 'MdbHandle *' to 'unsigned char *'
 		j ^= key[pos];
 		if ( j != 0)
 			mdb->f->db_passwd[pos] = j;
@@ -285,7 +287,6 @@ void
 mdb_close(MdbHandle *mdb)
 {
 	if (!mdb) return;	
-	mdb_remove_backends();
 	mdb_free_catalog(mdb);
 	g_free(mdb->stats);
 	g_free(mdb->backend_name);

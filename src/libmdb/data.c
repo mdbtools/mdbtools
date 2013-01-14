@@ -36,7 +36,7 @@ static char *mdb_date_to_string(MdbHandle *mdb, int start);
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
-static char date_fmt[64] = "%x %X";
+static char date_fmt[64] = "%Y-%m-%dT%H:%M:%S"; //ISODate
 
 void mdb_set_date_fmt(const char *fmt)
 {
@@ -836,7 +836,7 @@ mdb_date_to_string(MdbHandle *mdb, int start)
 
 	//If td == 0, t->tm_year == -1, which fails the debug assertion >= 0
 	if (!td) {
-		text = (char *) g_strdup("00:00:00");
+		text = (char *) g_strdup("0");
 	} else {
 		 text = (char *) g_malloc(MDB_BIND_SIZE); 
 		 mdb_date_to_tm(td, &t);

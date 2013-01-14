@@ -259,8 +259,8 @@ quote_with_squotes(const gchar* value)
 	return quote_generic(value, '\'', '\'');
 }
 
-char * MDB_DEPRECATED
-mdb_get_coltype_string(MdbBackend *backend, int col_type)
+MDB_DEPRECATED (char *, 
+mdb_get_coltype_string(MdbBackend *backend, int col_type))
 {
 	static int warn_deprecated = 0;
 	static char buf[16];
@@ -277,8 +277,8 @@ mdb_get_coltype_string(MdbBackend *backend, int col_type)
 		return backend->types_table[col_type].name;
 }
 
-int MDB_DEPRECATED
-mdb_coltype_takes_length(MdbBackend *backend, int col_type)
+MDB_DEPRECATED (int,
+mdb_coltype_takes_length(MdbBackend *backend, int col_type))
 {
 	static int warn_deprecated = 0;
 	if (!warn_deprecated) {
@@ -325,9 +325,39 @@ mdb_colbacktype_takes_length(const MdbColumn *col)
 	return type->needs_length;
 }
 
-void MDB_DEPRECATED mdb_init_backends() {
+MDB_DEPRECATED(void, mdb_init_backends()) {
 	fprintf(stderr, "mdb_init_backends() is DEPRECATED and does nothing. Stop calling it.\n");
 }
+
+#ifdef _MSC_VER
+
+#define CCALL __cdecl
+#pragma section(".CRT$XCU",read)
+#define INITIALIZER(f) \
+   static void __cdecl f(void); \
+   __declspec(allocate(".CRT$XCU")) void (__cdecl*f##_)(void) = f; \
+   static void __cdecl f(void)
+
+#elif defined(__GNUC__)
+
+#define CCALL
+#define INITIALIZER(f) \
+   static void f(void) __attribute__((constructor));
+   static void f(void)
+
+#endif
+
+/**
+ * mdb_remove_backends
+ *
+ * Removes all entries from and destroys the mdb_backends hash.
+ */
+static void CCALL _mdb_remove_backends(void)
+{
+	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
+	g_hash_table_destroy(mdb_backends);
+}
+
 
 /**
  * _mdb_init_backends
@@ -335,7 +365,7 @@ void MDB_DEPRECATED mdb_init_backends() {
  * Initializes the mdb_backends hash and loads the builtin backends.
  * Use mdb_remove_backends() to destroy this hash when done.
  */
-void __attribute__ ((constructor)) _mdb_init_backends()
+INITIALIZER(_mdb_init_backends)
 {
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
@@ -399,6 +429,8 @@ void __attribute__ ((constructor)) _mdb_init_backends()
 		NULL,
 		NULL,
 		quote_schema_name_rquotes_merge);
+
+	atexit(_mdb_remove_backends);
 }
 void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
@@ -418,20 +450,10 @@ void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendTy
 	g_hash_table_insert(mdb_backends, backend_name, backend);
 }
 
-void MDB_DEPRECATED mdb_remove_backends() {
+MDB_DEPRECATED(void, mdb_remove_backends()) {
 	fprintf(stderr, "mdb_remove_backends() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
-/**
- * mdb_remove_backends
- *
- * Removes all entries from and destroys the mdb_backends hash.
- */
-void __attribute__ ((destructor)) _mdb_remove_backends()
-{
-	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
-	g_hash_table_destroy(mdb_backends);
-}
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
 {
 	MdbBackend *backend = (MdbBackend *)value;
@@ -760,7 +782,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	return (char *)text;
 }
 
-/*static*/ void
+void
 generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options)
 {
 	MdbTableDef *table;

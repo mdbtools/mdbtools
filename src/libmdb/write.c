@@ -19,6 +19,9 @@
 #include "mdbtools.h"
 #include "time.h"
 #include "math.h"
+#ifdef _WIN32
+#include <io.h>
+#endif
 //#include <inttypes.h>
 
 #ifdef DMALLOC
