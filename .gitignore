@@ -77,3 +77,4 @@ obj/
 _ReSharper*/
 *.*sdf
 glib/
+[Ii]pch*/
