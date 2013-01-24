@@ -259,6 +259,18 @@ quote_with_squotes(const gchar* value)
 	return quote_generic(value, '\'', '\'');
 }
 
+static gchar*
+quote_schema_name_squotes(const gchar* schema, const gchar *name)
+{
+	if (schema) {
+		gchar *combined = g_strconcat(schema, "_", name, NULL);
+		gchar *result = quote_with_squotes(combined);
+		g_free(combined);
+		return result;
+	}
+	return quote_with_squotes(name);
+}
+
 MDB_DEPRECATED (char *, 
 mdb_get_coltype_string(MdbBackend *backend, int col_type))
 {
@@ -428,7 +440,7 @@ INITIALIZER(_mdb_init_backends)
 		NULL,
 		NULL,
 		NULL,
-		quote_schema_name_rquotes_merge);
+		quote_schema_name_squotes);
 
 	atexit(_mdb_remove_backends);
 }
