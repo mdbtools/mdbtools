@@ -959,8 +959,7 @@ generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCata
 		*bi = sprintf (buf, mdb->default_backend->drop_statement, quoted_table_name);
 
 	/* create the table */
-	*bi += sprintf(buf + *bi, "CREATE TABLE %s\n", quoted_table_name);
-	*bi += sprintf(buf + *bi, " (\n");
+	*bi += sprintf(buf + *bi, "CREATE TABLE %s (", quoted_table_name);
 
 	table = mdb_read_table (entry);
 
@@ -980,7 +979,7 @@ generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCata
 		col = (MdbColumn*) g_ptr_array_index (table->columns, i);
 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-		*bi += sprintf(buf + *bi, "\t%s\t\t\t%s", quoted_name,
+		*bi += sprintf(buf + *bi, "%s %s", quoted_name,
 			mdb_get_colbacktype_string (col));
 		g_free(quoted_name); //changed from free
 
@@ -1042,12 +1041,10 @@ generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCata
 				*bi += sprintf(buf + *bi, " DEFAULT FALSE");
 		}
 		if (i < table->num_cols - 1)
-			*bi += sprintf(buf + *bi, ", \n");
-		else
-			*bi += sprintf(buf + *bi, "\n");
+			*bi += sprintf(buf + *bi, ", ");
 	} /* for */
 
-	*bi += sprintf(buf + *bi, ");\n");
+	*bi += sprintf(buf + *bi, ");");
 
 	/* Add the constraints on columns */
 	for (i = 0; i < table->num_cols; i++) {
@@ -1099,7 +1096,7 @@ generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCata
 			g_free(comment); //changed from free
 		}
 	}
-	*bi += sprintf(buf + *bi, "\n");
+	//*bi += sprintf(buf + *bi, "\n");
 
 
 	if (export_options & MDB_SHEXP_INDEXES)
