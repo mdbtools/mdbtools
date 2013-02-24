@@ -16,5 +16,6 @@ List of changes:
 
 Requirements to build and use:
 
-The only dependency is on glib. You need to provide the glib headers for the project to be built.
+The only dependencies are on libintl and glib. You need to provide the libintl and glib headers for the project to be built.
+It is however recommended to have the iconv library as well, because otherwise unicode texts will not get converted correctly.
 

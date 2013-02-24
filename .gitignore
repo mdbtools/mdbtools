@@ -69,12 +69,10 @@ Thumbs.db
 *.cache
 *.ilk
 *.log
-[Bb]in
 [Dd]ebug*/
 *.sbr
 obj/
 [Rr]elease*/
 _ReSharper*/
 *.*sdf
-glib/
 [Ii]pch*/
