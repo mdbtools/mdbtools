@@ -341,10 +341,7 @@ MDB_DEPRECATED(void, mdb_init_backends()) {
 #elif defined(__GNUC__)
 
 #define CCALL
-#define INITIALIZER(f) \
-   static void f(void) __attribute__((constructor));
-   static void f(void)
-
+#define INITIALIZER(f) void __attribute__((constructor)) f(void)
 #endif
 
 /**

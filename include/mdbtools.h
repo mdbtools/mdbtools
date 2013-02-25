@@ -484,7 +484,7 @@ extern void mdb_table_dump(MdbCatalogEntry *entry);
 extern guint8 read_pg_if_8(MdbHandle *mdb, int *cur_pos);
 extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
 extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
-extern void *read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len);
+extern void *read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, size_t len);
 extern int mdb_is_user_table(MdbCatalogEntry *entry);
 extern int mdb_is_system_table(MdbCatalogEntry *entry);
 extern const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
@@ -498,7 +498,7 @@ extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int
 extern int mdb_rewind_table(MdbTableDef *table);
 extern int mdb_fetch_row(MdbTableDef *table);
 extern int mdb_is_fixed_col(MdbColumn *col);
-extern char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
+extern char *mdb_col_to_string(MdbHandle *mdb, char *buf, int start, int datatype, int size);
 extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
 extern int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
 extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
