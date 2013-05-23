@@ -1538,10 +1538,6 @@ static SQLRETURN SQL_API _SQLGetData(
 		strcpy(sqlState, "HY009");
 	 	return SQL_ERROR;
 	}
-	if (pcbValue && *pcbValue<0) {
-		strcpy(sqlState, "HY090");
-	 	return SQL_ERROR;
-	}
 
 	if (col->col_type == MDB_BOOL) {
 		// bool cannot be null
