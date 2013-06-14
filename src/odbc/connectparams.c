@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
+#include <mdbodbc.h>
 #include "connectparams.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -35,13 +35,29 @@
 extern "C" {
 #endif
 
+/* "Base" handle type; lets us sort and free handles properly */
+struct _handle {
+    SQLSMALLINT type;
+};
+
+typedef struct
+{
+   GString* dsnName;
+   GString* iniFileName;
+   GHashTable* table;
+} ConnectParams;
+
 struct _henv {
-	MdbSQL *sql;	
+    SQLSMALLINT type;
+	MdbSQL *sql;
 };
 struct _hdbc {
+    SQLSMALLINT type;
 	struct _henv *henv;
+	ConnectParams *params;
 };
 struct _hstmt {
+    SQLSMALLINT type;
 	struct _hdbc *hdbc;
 	/* reminder to self: the following is here for testing purposes.
 	 * please make dynamic before checking in 

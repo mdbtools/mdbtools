@@ -21,12 +21,12 @@
 
 #include <glib.h>
 
-typedef struct
-{
-   GString* dsnName;
-   GString* iniFileName;
-   GHashTable* table;
-} ConnectParams;
+/* typedef struct */
+/* { */
+/*    GString* dsnName; */
+/*    GString* iniFileName; */
+/*    GHashTable* table; */
+/* } ConnectParams; */
 
 ConnectParams* NewConnectParams ();
 void FreeConnectParams (ConnectParams* params);
