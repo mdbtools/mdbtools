@@ -55,6 +55,7 @@ static SQLRETURN SQL_API _SQLFreeEnv(SQLHENV henv);
 static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
 
 static void bind_columns (struct _hstmt*);
+static void unbind_columns (struct _hstmt*);
 
 #define FILL_FIELD(f,v,s) mdb_fill_temp_field(f,v,s,0,0,0,0)
 
@@ -1125,6 +1126,8 @@ bind_columns(struct _hstmt *stmt)
 	struct _henv *env = (struct _henv *) dbc->henv;
 	struct _sql_bind_info *cur;
 
+	TRACE("bind_columns");
+
 	if (stmt->rows_affected==0) {
 		cur = stmt->bind_head;
 		while (cur) {
@@ -1138,6 +1141,23 @@ bind_columns(struct _hstmt *stmt)
 			cur = cur->next;
 		}
 	}
+}
+
+static void
+unbind_columns(struct _hstmt *stmt)
+{
+	struct _sql_bind_info *cur, *next;
+
+	TRACE("unbind_columns");
+
+	//Free the memory allocated for bound columns
+	cur = stmt->bind_head;
+	while(cur) {
+		next = cur->next;
+		g_free(cur);
+		cur = next;
+	}
+	stmt->bind_head = NULL;
 }
 
 SQLRETURN SQL_API SQLFetch(
@@ -1230,8 +1250,14 @@ static SQLRETURN SQL_API _SQLFreeStmt(
 	TRACE("_SQLFreeStmt");
 	if (fOption==SQL_DROP) {
 		mdb_sql_reset(sql);
+		unbind_columns(stmt);
 		g_free(stmt);
 	} else if (fOption==SQL_CLOSE) {
+		stmt->rows_affected = 0;
+	} else if (fOption==SQL_UNBIND) {
+		unbind_columns(stmt);
+	} else if (fOption==SQL_RESET_PARAMS) {
+		/* Bound parameters not currently implemented */
 	} else {
 	}
 	return SQL_SUCCESS;
