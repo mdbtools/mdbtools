@@ -199,11 +199,20 @@ void mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 }
 void mdb_free_columns(GPtrArray *columns)
 {
-	unsigned int i;
+	unsigned int i, j;
+	MdbColumn *col;
 
 	if (!columns) return;
-	for (i=0; i<columns->len; i++)
-		g_free (g_ptr_array_index(columns, i));
+	for (i=0; i<columns->len; i++) {
+		col = (MdbColumn *) g_ptr_array_index(columns, i);
+		if (col->sargs) {
+			for (j=0; j<col->sargs->len; j++) {
+				g_free( g_ptr_array_index(col->sargs, i));
+			}
+			g_ptr_array_free(col->sargs, TRUE);
+		}
+		g_free(col);
+	}
 	g_ptr_array_free(columns, TRUE);
 }
 GPtrArray *mdb_read_columns(MdbTableDef *table)
