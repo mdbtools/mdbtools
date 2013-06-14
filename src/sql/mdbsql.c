@@ -208,6 +208,7 @@ mdb_sql_free_tree(MdbSargNode *tree)
 
 	if (tree->left) mdb_sql_free_tree(tree->left);
 	if (tree->right) mdb_sql_free_tree(tree->right);
+	if (tree->parent) g_free(tree->parent);
 	g_free(tree);
 }
 void
