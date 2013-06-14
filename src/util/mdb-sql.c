@@ -272,11 +272,11 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		row_count++;
   		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			fprintf(out, "%s%s", (char*)(sql->bound_values[j]),
+			fprintf(out, "%s%s", (char*)(g_ptr_array_index(sql->bound_values, j)),
 				delimiter ? delimiter : "\t");
 		}
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
-		fprintf(out, "%s", (char*)(sql->bound_values[sql->num_columns-1]));
+		fprintf(out, "%s", (char*)(g_ptr_array_index(sql->bound_values, sql->num_columns-1)));
 		fprintf(out,"\n");
 		fflush(out);
 	}
@@ -324,7 +324,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 		row_count++;
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			print_value(out, sql->bound_values[j],sqlcol->disp_size,!j);
+			print_value(out, (char *) g_ptr_array_index(sql->bound_values, j), sqlcol->disp_size,!j);
 		}
 		fprintf(out,"\n");
 		fflush(out);
@@ -341,11 +341,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 		print_rows_retrieved(out, row_count);
 	}
 
-	/* clean up */
-	for (j=0;j<sql->num_columns;j++) {
-		g_free(sql->bound_values[j]);
-	}
-
+	/* Bound values cleaned up in reset */
 	mdb_sql_reset(sql);
 }
 
