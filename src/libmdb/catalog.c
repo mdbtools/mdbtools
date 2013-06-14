@@ -48,11 +48,21 @@ static char *type_name[] = {"Form",
 
 void mdb_free_catalog(MdbHandle *mdb)
 {
-	unsigned int i;
+	unsigned int i, j;
+	MdbCatalogEntry *entry;
 
 	if ((!mdb) || (!mdb->catalog)) return;
-	for (i=0; i<mdb->catalog->len; i++)
-		g_free (g_ptr_array_index(mdb->catalog, i));
+	for (i=0; i<mdb->catalog->len; i++) {
+		entry = (MdbCatalogEntry *)g_ptr_array_index(mdb->catalog, i);
+		if (entry) {
+			if (entry->props) {
+				for (j=0; j<entry->props->len; j++)
+					mdb_free_props(g_array_index(entry->props, MdbProperties*, j));
+				g_array_free(entry->props, TRUE);
+			}
+			g_free(entry);
+		}
+	}
 	g_ptr_array_free(mdb->catalog, TRUE);
 	mdb->catalog = NULL;
 }

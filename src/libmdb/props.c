@@ -50,12 +50,23 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 	}
 	return names;
 }
+static gboolean
+free_hash_entry(gpointer key, gpointer value, gpointer user_data)
+{
+	g_free(key);
+	g_free(value);
+	return TRUE;
+}
 void
 mdb_free_props(MdbProperties *props)
 {
 	if (!props) return;
 
 	if (props->name) g_free(props->name);
+	if (props->hash) {
+		g_hash_table_foreach(props->hash, (GHFunc)free_hash_entry, 0);
+		g_hash_table_destroy(props->hash);
+	}
 	g_free(props);
 }
 
@@ -148,7 +159,7 @@ mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name) {
 /*
  * That function takes a raw KKD/MR2 binary buffer,
  * typically read from LvProp in table MSysbjects
- * and returns a GPtrArray of MdbProps*
+ * and returns a GArray of MdbProps*
  */
 GArray*
 mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
