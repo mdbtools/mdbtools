@@ -1864,29 +1864,46 @@ static SQLRETURN SQL_API _SQLGetInfo(
 	TRACE("_SQLGetInfo");
 	switch (fInfoType) {
 	case SQL_MAX_STATEMENT_LEN:
-		*((SQLUINTEGER *)rgbInfoValue) = (SQLUINTEGER) 65000;
-		*pcbInfoValue = sizeof(SQLUINTEGER);
+		if (rgbInfoValue)
+			*((SQLUINTEGER *)rgbInfoValue) = (SQLUINTEGER)65000;
+		if (pcbInfoValue)
+			*pcbInfoValue = sizeof(SQLUINTEGER);
 	break;
 	case SQL_SCHEMA_USAGE:
-		*((SQLSMALLINT *)rgbInfoValue) = (SQLSMALLINT) 0;
-		*pcbInfoValue = sizeof(SQLSMALLINT);
+		if (rgbInfoValue)
+			*((SQLSMALLINT *)rgbInfoValue) = (SQLSMALLINT)0;
+		if (pcbInfoValue)
+			*pcbInfoValue = sizeof(SQLSMALLINT);
 	break;
 	case SQL_CATALOG_NAME_SEPARATOR:
-		memcpy(rgbInfoValue,".",1);
-		*pcbInfoValue = 1;
+		if (rgbInfoValue)
+			memcpy(rgbInfoValue, ".", 1);
+		if (pcbInfoValue)
+			*pcbInfoValue = 1;
 	break;
 	case SQL_CATALOG_LOCATION:
-		*((SQLSMALLINT *)rgbInfoValue) = (SQLSMALLINT) 1;
-		*pcbInfoValue = sizeof(SQLSMALLINT);
+		if (rgbInfoValue)
+			*((SQLSMALLINT *)rgbInfoValue) = (SQLSMALLINT)1;
+		if (pcbInfoValue)
+			*pcbInfoValue = sizeof(SQLSMALLINT);
 	break;
 	case SQL_IDENTIFIER_QUOTE_CHAR:
-		memcpy(rgbInfoValue,"\"",1);
-		*pcbInfoValue = 1;
+		if (rgbInfoValue)
+			memcpy(rgbInfoValue, "\"", 1);
+		if (pcbInfoValue)
+			*pcbInfoValue = 1;
 	break;
 	case SQL_DBMS_NAME:
-		memcpy(rgbInfoValue,"MDBTOOLS",8);
-		*pcbInfoValue = 8;
+		if (rgbInfoValue)
+			strncpy(rgbInfoValue, "MDBTOOLS", cbInfoValueMax);
+		if (pcbInfoValue)
+			*pcbInfoValue = 9;
 	break;
+	default:
+		if (pcbInfoValue)
+			*pcbInfoValue = 0;
+		strcpy(sqlState, "HYC00");
+		return SQL_ERROR;
 	}
 
 	return SQL_SUCCESS;
