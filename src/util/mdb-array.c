@@ -46,6 +46,8 @@ int started;
    }
 
  mdb = mdb_open (argv [1], MDB_NOFLAGS);
+ if (!mdb)
+	exit(1);
  
  table = mdb_read_table_by_name (mdb, argv[2], MDB_TABLE);
  if (table)
