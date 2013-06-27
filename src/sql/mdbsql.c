@@ -457,19 +457,9 @@ void mdb_sql_dump(MdbSQL *sql)
 }
 void mdb_sql_exit(MdbSQL *sql)
 {
-	mdb_sql_free_columns(sql->columns);
-	mdb_sql_free_tables(sql->tables);
-
-	if (sql->sarg_tree) {
-		mdb_sql_free_tree(sql->sarg_tree);
-		sql->sarg_tree = NULL;
-	}
-	g_list_free(sql->sarg_stack);
-	sql->sarg_stack = NULL;
-
-	if (sql->mdb) {
+	mdb_sql_reset(sql); // Free memory
+	if (sql->mdb)
 		mdb_close(sql->mdb);
-	}
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
