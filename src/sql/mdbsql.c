@@ -465,6 +465,10 @@ void mdb_sql_reset(MdbSQL *sql)
 {
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
+		if (sql->cur_table->sarg_tree) {
+			mdb_sql_free_tree(sql->cur_table->sarg_tree);
+			sql->cur_table->sarg_tree = NULL;
+		}
 		mdb_free_tabledef(sql->cur_table);
 		sql->cur_table = NULL;
 	}
