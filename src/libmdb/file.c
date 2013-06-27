@@ -260,7 +260,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 
 	/* get the db password located at 0x42 bytes into the file */
 	for (pos=0;pos<14;pos++) {
-		j = mdb_get_int32(mdb,0x42+pos);
+		j = mdb_get_int32(mdb->pg_buf, 0x42+pos);
 		j ^= key[pos];
 		if ( j != 0)
 			mdb->f->db_passwd[pos] = j;
