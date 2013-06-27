@@ -106,7 +106,10 @@ TypeInfo type_info[] = {
 #define MAX_TYPE_INFO 11
 
 #ifdef ENABLE_ODBC_W
-void __attribute__ ((constructor)) my_init(){
+void my_fini();
+
+MDB_CONSTRUCTOR(my_init)
+{
 	TRACE("my_init");
 	int endian = 1;
 	const char* wcharset;
@@ -133,9 +136,12 @@ void __attribute__ ((constructor)) my_init(){
 */
 	iconv_out = iconv_open(wcharset, "UTF-8");
 	iconv_in = iconv_open("UTF-8", wcharset);
+
+	atexit(my_fini);
 }
 
-void __attribute__ ((destructor)) my_fini(){
+void my_fini()
+{
 	TRACE("my_fini");
 	if(iconv_out != (iconv_t)-1)iconv_close(iconv_out);
 	if(iconv_in != (iconv_t)-1)iconv_close(iconv_in);
