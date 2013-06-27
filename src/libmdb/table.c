@@ -207,7 +207,7 @@ void mdb_free_columns(GPtrArray *columns)
 		col = (MdbColumn *) g_ptr_array_index(columns, i);
 		if (col->sargs) {
 			for (j=0; j<col->sargs->len; j++) {
-				g_free( g_ptr_array_index(col->sargs, i));
+				g_free( g_ptr_array_index(col->sargs, j));
 			}
 			g_ptr_array_free(col->sargs, TRUE);
 		}
