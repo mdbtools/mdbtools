@@ -743,7 +743,7 @@ void
 gmdb_sql_new_cb (GtkWidget *w, gpointer data) {
 	GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
 	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-	    _("SQL support was not built.\nRun configure with the --enable-sql option."));
+	    _("SQL support was not built.\nMake sure flex and yacc are installed at build time."));
 	gtk_dialog_run (GTK_DIALOG (dlg));
 	gtk_widget_destroy (dlg);
 }
