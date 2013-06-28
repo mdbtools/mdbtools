@@ -53,13 +53,15 @@ AC_MSG_RESULT( no - SQL engine disable);
 sql=false
 fi
 
-if test "x$YACC" = "x"; then
+if ! which $YACC > /dev/null; then
 sql=false
 fi
 
 if test "x$sql" = "xtrue"; then
 	CFLAGS="$CFLAGS -DSQL"
 	OPTDIRS="$OPTDIRS sql"
+else
+	AC_MSG_WARN([Yacc is not available: SQL disabled.])
 fi
 
 AM_CONDITIONAL(SQL, test x$sql = xtrue)

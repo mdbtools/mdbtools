@@ -741,7 +741,7 @@ GtkTreeIter *iter2;
 
 void
 gmdb_sql_new_cb (GtkWidget *w, gpointer data) {
-	GtkWidget* dlg = gtk_message_dialog_new (gtk_widget_get_toplevel (w),
+	GtkWidget* dlg = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_toplevel (w)),
 	    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
 	    _("SQL support was not built.\nRun configure with the --enable-sql option."));
 	gtk_dialog_run (GTK_DIALOG (dlg));
