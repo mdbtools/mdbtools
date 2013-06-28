@@ -544,6 +544,8 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		fprintf (outfile, ");\n");
 	}
 	fputc ('\n', outfile);
+	
+	g_free(quoted_table_name);
 }
 
 /**
