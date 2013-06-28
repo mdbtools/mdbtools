@@ -464,6 +464,7 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 	backend = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend_name);
 	if (backend) {
 		mdb->default_backend = backend;
+		g_free(mdb->backend_name); // NULL is ok
 		mdb->backend_name = (char *) g_strdup(backend_name);
 		is_init = 0;
 		return 1;
