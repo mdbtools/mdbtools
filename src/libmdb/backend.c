@@ -383,14 +383,14 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_DEFVALUES,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
 		"current_date", "now()",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
-		"COMMENT ON COLUMN %s.%s IS %s;\n",
-		"COMMENT ON TABLE %s IS %s;\n",
+		NULL,
+		NULL,
 		quote_schema_name_rquotes_merge);
 	mdb_register_backend("sqlite",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
@@ -813,7 +813,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		g_free(quoted_name);
 	}
 
-	/* Add the constraints on table */
+	/* Add the comments on table */
 	if (export_options & MDB_SHEXP_COMMENTS) {
 		prop_value = mdb_table_get_prop(table, "Description");
 		if (prop_value) {
