@@ -50,7 +50,8 @@ mutually exclusive.
 --enable-sql     will cause the SQL engine to be built, you must have flex 
                  and bison (or yacc) installed for this option.
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
-                 causes the unixODBC driver to be built.
+                 causes the unixODBC driver to be built. You need version
+                 2.2.10 or above.
 --with-iodbc     specifies the location of the iODBC driver manager and 
                  causes the iODBC driver to be built.
 

@@ -528,46 +528,7 @@ static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
 
 
 #ifdef UNIXODBC
-
-/*
- * Begin BIG Hack.
- *  
- * We need these from odbcinstext.h but it wants to 
- * include <log.h> and <ini.h>, which are not in the 
- * standard include path.  XXX smurph
- * confirmed by unixODBC stuff, odbcinstext.h shouldn't be installed. freddy77
- */
-#define     INI_MAX_LINE            1000
-#define     INI_MAX_OBJECT_NAME     INI_MAX_LINE
-#define     INI_MAX_PROPERTY_NAME   INI_MAX_LINE
-#define     INI_MAX_PROPERTY_VALUE  INI_MAX_LINE
-
-#define	ODBCINST_PROMPTTYPE_LABEL		0	/* readonly */
-#define	ODBCINST_PROMPTTYPE_TEXTEDIT	1
-#define	ODBCINST_PROMPTTYPE_LISTBOX		2
-#define	ODBCINST_PROMPTTYPE_COMBOBOX	3
-#define	ODBCINST_PROMPTTYPE_FILENAME	4
-#define	ODBCINST_PROMPTTYPE_HIDDEN	    5
-#define	ODBCINST_PROMPTTYPE_TEXTEDIT_PASSWORD 6
-
-typedef struct tODBCINSTPROPERTY
-{
-	struct tODBCINSTPROPERTY *pNext;	/* pointer to next property, NULL if last property                                                                              */
-
-	char szName[INI_MAX_PROPERTY_NAME + 1];	/* property name                                                                                                                                                */
-	char szValue[INI_MAX_PROPERTY_VALUE + 1];	/* property value                                                                                                                                               */
-	int nPromptType;	/* PROMPTTYPE_TEXTEDIT, PROMPTTYPE_LISTBOX, PROMPTTYPE_COMBOBOX, PROMPTTYPE_FILENAME    */
-	char **aPromptData;	/* array of pointers terminated with a NULL value in array.                                                     */
-	char *pszHelp;		/* help on this property (driver setups should keep it short)                                                   */
-	void *pWidget;		/* CALLER CAN STORE A POINTER TO ? HERE                                                                                                 */
-	int bRefresh;		/* app should refresh widget ie Driver Setup has changed aPromptData or szValue                 */
-	void *hDLL;		/* for odbcinst internal use... only first property has valid one                                               */
-}
-ODBCINSTPROPERTY, *HODBCINSTPROPERTY;
-
-/* 
- * End BIG Hack.
- */
+#include <odbcinstext.h>
 
 int
 ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)
