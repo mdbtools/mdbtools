@@ -242,6 +242,11 @@ Number of characters in a Memo field: 65,535 when entering data through the
 user interface; 2 gigabytes of character storage when entering data
 programmatically. That would mean 31 bits for length.
 
+Note: if a memo field is marked for compression, only at value which is at
+most 1024 characters when uncompressed can be compressed.  fields longer than
+that _must_ be stored uncompressed.
+
+
 LVAL (Long Value) Pages
 -----------------------
 
