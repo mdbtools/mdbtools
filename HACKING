@@ -370,8 +370,10 @@ next_pg field.
 | Iterate while col_num != 0xffff                                         |
 +-------------------------------------------------------------------------+
 | ???? | 2 bytes | col_num     | Column number with variable length       |
-| ???? | 4 bytes | arg1        |                                          |
-| ???? | 4 bytes | arg2        |                                          |
+| ???? | 4 bytes | used_pages  | Points to a record containing the        |
+|      |         |             | usage bitmask for this column.           |
+| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
+|      |         |             | listing pages which contain free space.  |
 +-------------------------------------------------------------------------+
 
 +-------------------------------------------------------------------------+
@@ -465,8 +467,10 @@ next_pg field.
 | Iterate while col_num != 0xffff                                         |
 +-------------------------------------------------------------------------+
 | ???? | 2 bytes | col_num     | Column number with variable length       |
-| ???? | 4 bytes | arg1        |                                          |
-| ???? | 4 bytes | arg2        |                                          |
+| ???? | 4 bytes | used_pages  | Points to a record containing the        |
+|      |         |             | usage bitmask for this column.           |
+| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
+|      |         |             | listing pages which contain free space.  |
 +-------------------------------------------------------------------------+
 
 Columns flags (not complete):
