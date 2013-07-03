@@ -35,6 +35,8 @@
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
+#define DEBUG(x) fprintf(stderr,"DEBUG: %s\n", x);
+/* #define DEBUG(x) */
 
 #ifdef ENABLE_ODBC_W
 static iconv_t iconv_in,iconv_out;
@@ -62,6 +64,9 @@ static void unbind_columns (struct _hstmt*);
 #define _MAX_ERROR_LEN 255
 static char lastError[_MAX_ERROR_LEN+1];
 static char sqlState[6];
+
+static int refCount = 0;
+static GPtrArray *handles = NULL;
 
 typedef struct {
 	SQLCHAR *type_name;
@@ -185,15 +190,54 @@ static void LogError (const char* error)
    lastError[_MAX_ERROR_LEN] = '\0'; /* in case we had a long message */
 }
 
-/*
- * Driver specific connectionn information
- */
-
-typedef struct
+static void drv_init (void)
 {
-   struct _hdbc hdbc;
-   ConnectParams* params;
-} ODBCConnection;
+	TRACE("drv_init");
+	handles = g_ptr_array_new();
+}
+
+static void drv_exit ()
+{
+	unsigned int i;
+	struct _handle *handle;
+	/* struct _hstmt *stmt; */
+	struct _hdbc *dbc;
+	struct _henv *env;
+
+	TRACE("drv_exit");
+
+	if (handles) {
+		for (i=0; i<handles->len; i++) {
+			handle = (struct _handle *) g_ptr_array_index(handles, i);
+			switch(handle->type) {
+				case SQL_HANDLE_STMT:
+					DEBUG("Stmt not freed!");
+					/* stmt = (struct _hstmt *) handle; */
+					/* Not sure what else needs to be done here; should
+					   be taken care of by just freeing the handle*/
+					break;
+
+				case SQL_HANDLE_DBC:
+					DEBUG("Dbc not freed!");
+					dbc = (struct _hdbc *) handle;
+					FreeConnectParams(dbc->params);
+					break;
+
+				case SQL_HANDLE_ENV:
+					DEBUG("Env not freed!");
+					env = (struct _henv *) handle;
+					mdb_sql_exit(env->sql);
+					g_free(env->sql);
+					break;
+			}
+
+			g_free(handle);
+		}
+
+		g_ptr_array_free(handles, TRUE);
+		handles = NULL;
+	}
+}
 
 static SQLRETURN do_connect (
    SQLHDBC hdbc,
@@ -226,7 +270,8 @@ static SQLRETURN SQL_API _SQLDriverConnect(
 	TRACE("_SQLDriverConnect");
 	strcpy (lastError, "");
 
-	params = ((ODBCConnection*) hdbc)->params;
+	struct _hdbc *dbc = (struct _hdbc *) hdbc;
+	params = dbc->params;
 
 	if ((dsn = ExtractDSN (params, (gchar*)szConnStrIn))) {
 		if (!LookupDSN (params, dsn)){
@@ -531,32 +576,43 @@ SQLRETURN SQL_API SQLAllocHandle(
     SQLHANDLE InputHandle,
     SQLHANDLE * OutputHandle)
 {
+	SQLRETURN result;
+	struct _handle *handle;
+
 	TRACE("SQLAllocHandle");
 	switch(HandleType) {
 		case SQL_HANDLE_STMT:
-			return _SQLAllocStmt(InputHandle,OutputHandle);
+			result =  _SQLAllocStmt(InputHandle,OutputHandle);
 			break;
 		case SQL_HANDLE_DBC:
-			return _SQLAllocConnect(InputHandle,OutputHandle);
+			result =  _SQLAllocConnect(InputHandle,OutputHandle);
 			break;
 		case SQL_HANDLE_ENV:
-			return _SQLAllocEnv(OutputHandle);
+			result = _SQLAllocEnv(OutputHandle);
 			break;
+		default:
+			return SQL_ERROR;
 	}
-	return SQL_ERROR;
+	/* Add the handle to the open handles list */
+	handle = (struct _handle *) *OutputHandle;
+	handle->type = HandleType;
+	g_ptr_array_add(handles, (gpointer) handle);
+
+	return result;
 }
 static SQLRETURN SQL_API _SQLAllocConnect(
     SQLHENV            henv,
     SQLHDBC           *phdbc)
 {
 struct _henv *env;
-ODBCConnection* dbc;
+struct _hdbc *dbc;
 
 	TRACE("_SQLAllocConnect");
-	env = (struct _henv *) henv;
-	dbc = (SQLHDBC) g_malloc0(sizeof (ODBCConnection));
-	dbc->hdbc.henv=env;
 
+	env = (struct _henv *) henv;
+	dbc = (struct _hdbc *) g_malloc0(sizeof(struct _hdbc));
+
+	dbc->henv=env;
 	dbc->params = NewConnectParams ();
 	*phdbc=dbc;
 
@@ -576,9 +632,19 @@ static SQLRETURN SQL_API _SQLAllocEnv(
 struct _henv *env;
 
 	TRACE("_SQLAllocEnv");
+
+	//If this is our first instantiation of the driver
+	//Allocate a list of handles so we're not losing memory
+	if(!handles)
+		drv_init();
+
+	refCount++;
+
 	env = (SQLHENV) g_malloc0(sizeof(struct _henv));
-	*phenv=env;
 	env->sql = mdb_sql_init();
+
+	*phenv=env;
+
 	return SQL_SUCCESS;
 }
 SQLRETURN SQL_API SQLAllocEnv(
@@ -683,7 +749,7 @@ static SQLRETURN SQL_API _SQLConnect(
 	TRACE("_SQLConnect");
 	strcpy (lastError, "");
 
-	params = ((ODBCConnection*) hdbc)->params;
+	params = ((struct _hdbc *) hdbc)->params;
 
 	params->dsnName = g_string_assign (params->dsnName, (gchar*)szDSN);
 
@@ -1108,7 +1174,6 @@ SQLRETURN SQL_API SQLExecDirectW(
 		SQLRETURN ret;
 		unicode2ascii((char*)szSqlStr, &z, (char*)tmp, &l);
 		ret = _SQLExecDirect(hstmt, tmp, l);
-		TRACE("SQLExecDirectW end");
 		free(tmp);
 		return ret;
 	}
@@ -1195,6 +1260,7 @@ SQLRETURN SQL_API SQLFreeHandle(
     SQLHANDLE Handle)
 {
 	TRACE("SQLFreeHandle");
+
 	switch(HandleType) {
 		case SQL_HANDLE_STMT:
 			_SQLFreeStmt(Handle,SQL_DROP);
@@ -1212,10 +1278,12 @@ SQLRETURN SQL_API SQLFreeHandle(
 static SQLRETURN SQL_API _SQLFreeConnect(
     SQLHDBC            hdbc)
 {
-	ODBCConnection* dbc = (ODBCConnection*) hdbc;
+	struct _hdbc *dbc = (struct _hdbc *) hdbc;
 
 	TRACE("_SQLFreeConnect");
 
+	if (!g_ptr_array_remove(handles, (gpointer)hdbc))
+		return SQL_INVALID_HANDLE;
 	FreeConnectParams(dbc->params);
 	g_free(dbc);
 
@@ -1232,6 +1300,23 @@ static SQLRETURN SQL_API _SQLFreeEnv(
     SQLHENV            henv)
 {
 	TRACE("_SQLFreeEnv");
+
+	if (!g_ptr_array_remove(handles, (gpointer)henv))
+		return SQL_INVALID_HANDLE;
+
+	struct _henv *env;
+
+	/* Should we assume that env->sql has been properly disconnected? */
+	env = (struct _henv *) henv;
+
+	mdb_sql_exit(env->sql);
+	g_free(env->sql);
+	g_free(env);
+
+	refCount--;
+	if (refCount == 0)
+		drv_exit();
+
 	return SQL_SUCCESS;
 }
 SQLRETURN SQL_API SQLFreeEnv(
@@ -1248,10 +1333,13 @@ static SQLRETURN SQL_API _SQLFreeStmt(
 	struct _hstmt *stmt=(struct _hstmt *)hstmt;
 	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
 	struct _henv *env = (struct _henv *) dbc->henv;
+	
 	MdbSQL *sql = env->sql;
 
 	TRACE("_SQLFreeStmt");
 	if (fOption==SQL_DROP) {
+		if (!g_ptr_array_remove(handles, (gpointer)hstmt))
+			return SQL_INVALID_HANDLE;
 		mdb_sql_reset(sql);
 		unbind_columns(stmt);
 		g_free(stmt);
