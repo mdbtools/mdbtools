@@ -30,6 +30,7 @@
 # include <iodbcinst.h>
 #endif
 
+#include "connectparams.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,6 +41,7 @@ struct _henv {
 };
 struct _hdbc {
 	struct _henv *henv;
+	ConnectParams* params;
 };
 struct _hstmt {
 	struct _hdbc *hdbc;

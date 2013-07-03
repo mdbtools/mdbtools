@@ -31,7 +31,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "mdbodbc.h"
-#include "connectparams.h"
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
@@ -185,16 +184,6 @@ static void LogError (const char* error)
    lastError[_MAX_ERROR_LEN] = '\0'; /* in case we had a long message */
 }
 
-/*
- * Driver specific connectionn information
- */
-
-typedef struct
-{
-   struct _hdbc hdbc;
-   ConnectParams* params;
-} ODBCConnection;
-
 static SQLRETURN do_connect (
    SQLHDBC hdbc,
    char *database)
@@ -226,7 +215,7 @@ static SQLRETURN SQL_API _SQLDriverConnect(
 	TRACE("_SQLDriverConnect");
 	strcpy (lastError, "");
 
-	params = ((ODBCConnection*) hdbc)->params;
+	params = ((struct _hdbc*) hdbc)->params;
 
 	if ((dsn = ExtractDSN (params, (gchar*)szConnStrIn))) {
 		if (!LookupDSN (params, dsn)){
@@ -550,12 +539,12 @@ static SQLRETURN SQL_API _SQLAllocConnect(
     SQLHDBC           *phdbc)
 {
 struct _henv *env;
-ODBCConnection* dbc;
+struct _hdbc* dbc;
 
 	TRACE("_SQLAllocConnect");
 	env = (struct _henv *) henv;
-	dbc = (SQLHDBC) g_malloc0(sizeof (ODBCConnection));
-	dbc->hdbc.henv=env;
+	dbc = (SQLHDBC) g_malloc0(sizeof(struct _hdbc));
+	dbc->henv=env;
 
 	dbc->params = NewConnectParams ();
 	*phdbc=dbc;
@@ -683,7 +672,7 @@ static SQLRETURN SQL_API _SQLConnect(
 	TRACE("_SQLConnect");
 	strcpy (lastError, "");
 
-	params = ((ODBCConnection*) hdbc)->params;
+	params = ((struct _hdbc*) hdbc)->params;
 
 	params->dsnName = g_string_assign (params->dsnName, (gchar*)szDSN);
 
@@ -1212,7 +1201,7 @@ SQLRETURN SQL_API SQLFreeHandle(
 static SQLRETURN SQL_API _SQLFreeConnect(
     SQLHDBC            hdbc)
 {
-	ODBCConnection* dbc = (ODBCConnection*) hdbc;
+	struct _hdbc* dbc = (struct _hdbc*) hdbc;
 
 	TRACE("_SQLFreeConnect");
 
