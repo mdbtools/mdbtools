@@ -37,11 +37,13 @@ extern "C" {
 #endif
 
 struct _henv {
-	MdbSQL *sql;	
+	MdbSQL *sql;
+	GPtrArray *connections;
 };
 struct _hdbc {
 	struct _henv *henv;
 	ConnectParams* params;
+	GPtrArray *statements;
 };
 struct _hstmt {
 	struct _hdbc *hdbc;

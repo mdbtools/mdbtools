@@ -545,8 +545,9 @@ struct _hdbc* dbc;
 	env = (struct _henv *) henv;
 	dbc = (SQLHDBC) g_malloc0(sizeof(struct _hdbc));
 	dbc->henv=env;
-
+	g_ptr_array_add(env->connections, dbc);
 	dbc->params = NewConnectParams ();
+	dbc->statements = g_ptr_array_new();
 	*phdbc=dbc;
 
 	return SQL_SUCCESS;
@@ -566,10 +567,12 @@ struct _henv *env;
 
 	TRACE("_SQLAllocEnv");
 	env = (SQLHENV) g_malloc0(sizeof(struct _henv));
-	*phenv=env;
 	env->sql = mdb_sql_init();
+	env->connections = g_ptr_array_new();
+	*phenv=env;
 	return SQL_SUCCESS;
 }
+
 SQLRETURN SQL_API SQLAllocEnv(
     SQLHENV           *phenv)
 {
@@ -581,18 +584,20 @@ static SQLRETURN SQL_API _SQLAllocStmt(
     SQLHDBC            hdbc,
     SQLHSTMT          *phstmt)
 {
-	/*struct _hdbc *dbc;*/
+	struct _hdbc *dbc;
 	struct _hstmt *stmt;
 
 	TRACE("_SQLAllocStmt");
-	/*dbc = (struct _hdbc *) hdbc;*/
+	dbc = (struct _hdbc *) hdbc;
 
 	stmt = (SQLHSTMT) g_malloc0(sizeof(struct _hstmt));
-	stmt->hdbc=hdbc;
-	*phstmt = stmt;
+	stmt->hdbc=dbc;
+	g_ptr_array_add(dbc->statements, stmt);
 
+	*phstmt = stmt;
 	return SQL_SUCCESS;
 }
+
 SQLRETURN SQL_API SQLAllocStmt(
     SQLHDBC            hdbc,
     SQLHSTMT          *phstmt)
@@ -956,6 +961,9 @@ SQLRETURN SQL_API SQLDisconnect(
 
 	dbc = (struct _hdbc *) hdbc;
 	env = (struct _henv *) dbc->henv;
+	// Automatically close all statements:
+	while (dbc->statements->len)
+		_SQLFreeStmt(g_ptr_array_index(dbc->statements, 0), SQL_DROP);
 	mdb_sql_close(env->sql);
 
 	return SQL_SUCCESS;
@@ -1202,14 +1210,27 @@ static SQLRETURN SQL_API _SQLFreeConnect(
     SQLHDBC            hdbc)
 {
 	struct _hdbc* dbc = (struct _hdbc*) hdbc;
+	struct _henv* env;
 
 	TRACE("_SQLFreeConnect");
 
+	env = dbc->henv;
+
+	if (dbc->statements->len) {
+		// Function sequence error
+		strcpy(sqlState, "HY010");
+		return SQL_ERROR;
+	}
+	if (!g_ptr_array_remove(env->connections, dbc))
+		return SQL_INVALID_HANDLE;
+
 	FreeConnectParams(dbc->params);
+	g_ptr_array_free(dbc->statements, TRUE);
 	g_free(dbc);
 
 	return SQL_SUCCESS;
 }
+
 SQLRETURN SQL_API SQLFreeConnect(
     SQLHDBC            hdbc)
 {
@@ -1220,7 +1241,17 @@ SQLRETURN SQL_API SQLFreeConnect(
 static SQLRETURN SQL_API _SQLFreeEnv(
     SQLHENV            henv)
 {
+	struct _henv* env = (struct _henv*)henv;
+
 	TRACE("_SQLFreeEnv");
+
+	if (env->connections->len) {
+		// Function sequence error
+		strcpy(sqlState, "HY010");
+		return SQL_ERROR;
+	}
+	g_ptr_array_free(env->connections, TRUE);
+
 	return SQL_SUCCESS;
 }
 SQLRETURN SQL_API SQLFreeEnv(
@@ -1241,6 +1272,8 @@ static SQLRETURN SQL_API _SQLFreeStmt(
 
 	TRACE("_SQLFreeStmt");
 	if (fOption==SQL_DROP) {
+		if (!g_ptr_array_remove(dbc->statements, stmt))
+			return SQL_INVALID_HANDLE;
 		mdb_sql_reset(sql);
 		unbind_columns(stmt);
 		g_free(stmt);
