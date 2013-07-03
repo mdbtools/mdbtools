@@ -28,12 +28,9 @@
 
 #include <sql.h>
 #include <sqlext.h>
-
-#include <mdbodbc.h>
-
 #include <string.h>
 #include <stdio.h>
-
+#include "mdbodbc.h"
 #include "connectparams.h"
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
