@@ -203,6 +203,21 @@ fi
 
 AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
 
+##################################################
+# Check for txt2man
+##################################################
+
+AC_ARG_ENABLE(man, [  --disable-man	Disable man generation], enable_man="$enableval", [enable_man=yes])
+if test "$enable_man" = yes; then
+  if ! which txt2man > /dev/null; then
+    AC_MSG_ERROR([Could not find txt2man script. Install it or configure with --disable-man if you are not interrested in manuals.])
+  fi
+fi
+AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)
+
+##################################################
+# Check for docbook
+##################################################
 AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
 
 dnl Checks for library functions.

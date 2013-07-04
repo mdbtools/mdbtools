@@ -3,9 +3,11 @@ TXT2MAN = txt2man
 PRODUCT = MDBTools
 
 # To make the userguide, export DOCBOOK_DSL TO point to docbook.dsl.
-
-dist_man_MANS	= mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
+dist_man_MANS =
+if ENABLE_MAN
+  dist_man_MANS += mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
 	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 gmdb2.1
+endif
 if ENABLE_DOCBOOK
   dist_man_MANS += install.tgz
 endif
@@ -15,7 +17,7 @@ EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.tx
 	faq.html install.sgml
 
 .txt.1:
-	- $(TXT2MAN) -t $* -r "$(PRODUCT) $(VERSION)" -s 1 -v "Executable programs or shell commands" $(srcdir)/$< > $@
+	$(TXT2MAN) -t $* -r "$(PRODUCT) $(VERSION)" -s 1 -v "Executable programs or shell commands" $(srcdir)/$< > $@
 
 # Converting DocBook to HTML (several small files)
 # http://www.freebsd.org/tutorials/docproj-primer/x3132.html#AEN3140
