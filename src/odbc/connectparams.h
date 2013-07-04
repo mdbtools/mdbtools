@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _ODBC_INI_LOAD_
-#define _ODBC_INI_LOAD_
+#ifndef _connectparams_h_
+#define _connectparams_h_
 
 #include <glib.h>
 

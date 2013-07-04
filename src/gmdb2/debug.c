@@ -23,11 +23,11 @@
  *   gboolean *dissect: whether dissecting is turned on
  */ 
 
-#include "gmdb.h"
-
+#include "config.h"
 #include <glade/glade.h>
 #include <gtk/gtkmessagedialog.h>
 #include <libgnome/gnome-i18n.h>
+#include "gmdb.h"
 
 extern MdbHandle *mdb;
 

@@ -1,14 +1,14 @@
-#include <mdbtools.h>
-#include <mdbsql.h>
+#ifndef _gmdb_h_
+#define _gmdb_h_
+
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
-
-#ifndef _gmdb_h_
-#define _gmdb_h_
+#include "mdbtools.h"
+#include "mdbsql.h"
 
 #ifdef __cplusplus
 extern "C" {

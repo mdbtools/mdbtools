@@ -18,16 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <ctype.h>
-
 #include "connectparams.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 /*
  *  * Last resort place to check for INI file. This is usually set at compile time

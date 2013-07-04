@@ -15,14 +15,15 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#include "gmdb.h"
 
-#include <mdbtools.h>
+#include "config.h"
 #include <gtk/gtkiconview.h>
 #include <gtk/gtkliststore.h>
 #include <gtk/gtkmessagedialog.h>
 #include <libgnome/gnome-i18n.h>
 #include <libgnome/gnome-config.h>
+#include "mdbtools.h"
+#include "gmdb.h"
 
 MdbHandle *mdb;
 extern int main_show_debug;

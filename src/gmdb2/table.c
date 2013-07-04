@@ -15,10 +15,11 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#include "gmdb.h"
 
+#include "config.h"
 #include <gtk/gtkiconview.h>
 #include <glade/glade.h>
+#include "gmdb.h"
 
 extern GladeXML* mainwin_xml;
 extern MdbHandle *mdb;

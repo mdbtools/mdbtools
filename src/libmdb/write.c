@@ -16,10 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "mdbtools.h"
-#include "time.h"
-#include "math.h"
+#include "config.h"
+#include <time.h>
+#include <math.h>
 #include <inttypes.h>
+#include "mdbtools.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"

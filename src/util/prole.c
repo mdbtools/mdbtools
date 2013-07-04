@@ -16,6 +16,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "config.h"
 #include "mdbtools.h"
 
 void dump_ole(MdbTableDef *table, char *colname, char *sargname);

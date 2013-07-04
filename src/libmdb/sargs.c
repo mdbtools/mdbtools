@@ -26,8 +26,10 @@
  * datatype support is a bit weak at this point.  To add more types create
  * a mdb_test_[type]() function and invoke it from mdb_test_sarg()
  */
-#include "mdbtools.h"
+
+#include "config.h"
 #include <time.h>
+#include "mdbtools.h"
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif

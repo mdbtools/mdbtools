@@ -16,11 +16,9 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  */
+
 #ifndef _mdbodbc_h_
 #define _mdbodbc_h_
-
-#include <mdbtools.h>
-#include <mdbsql.h>
 
 #include <sql.h>
 #include <sqlext.h>
@@ -30,6 +28,8 @@
 # include <iodbcinst.h>
 #endif
 
+#include "mdbtools.h"
+#include "mdbsql.h"
 #include "connectparams.h"
 
 #ifdef __cplusplus

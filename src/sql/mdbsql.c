@@ -16,8 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "mdbsql.h"
+#include "config.h"
 #include <stdarg.h>
+#include "mdbsql.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
