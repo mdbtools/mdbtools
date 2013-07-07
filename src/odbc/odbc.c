@@ -759,9 +759,11 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
 	MdbTableDef *table;
+	SQLRETURN ret;
 
 	TRACE("_SQLDescribeCol");
 	if (icol<1 || icol>sql->num_columns) {
+		strcpy(sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
@@ -774,18 +776,31 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 	}
 	if (i==table->num_cols) {
 		fprintf(stderr, "Column %s lost\n", (char*)sqlcol->name);
+		strcpy(sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 
+	ret = SQL_SUCCESS;
+	namelen = strlen(sqlcol->name);
+	if (pcbColName)
+		*pcbColName=namelen;
 	if (szColName) {
-		namelen = MIN(cbColNameMax,strlen(sqlcol->name));
-		strncpy((char*)szColName, sqlcol->name, namelen);
-		szColName[namelen]='\0';
-		if (pcbColName)
-			*pcbColName=namelen;
-	} else {
-		if (pcbColName)
-			*pcbColName = strlen(sqlcol->name);
+		if (cbColNameMax < 0) {
+			strcpy(sqlState, "HY090"); // Invalid string or buffer length
+			return SQL_ERROR;
+		}
+		if (namelen + 1 < cbColNameMax) {
+			// Including \0
+			strcpy((char*)szColName, sqlcol->name);
+		} else {
+			if (cbColNameMax > 1) {
+				strncpy((char*)szColName, sqlcol->name, cbColNameMax-1);
+				szColName[cbColNameMax-1] = '\0';
+			}
+			// So there is no \0 if cbColNameMax was 0
+			strcpy(sqlState, "01004"); // String data, right truncated
+			ret = SQL_SUCCESS_WITH_INFO;
+		}
 	}
 	if (pfSqlType) {
 		*pfSqlType = _odbc_get_client_type(col);
@@ -801,7 +816,7 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 		*pfNullable = !col->is_fixed;
 	}
 
-	return SQL_SUCCESS;
+	return ret;
 }
 
 SQLRETURN SQL_API SQLDescribeCol(
@@ -862,6 +877,7 @@ static SQLRETURN SQL_API _SQLColAttributes(
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
 	MdbTableDef *table;
+	SQLRETURN ret;
 
 	TRACE("_SQLColAttributes");
 	stmt = (struct _hstmt *) hstmt;
@@ -872,11 +888,14 @@ static SQLRETURN SQL_API _SQLColAttributes(
 	/* dont check column index for these */
 	switch(fDescType) {
 		case SQL_COLUMN_COUNT:
+		case SQL_DESC_COUNT:
+			*pfDesc = env->sql->num_columns;
 			return SQL_SUCCESS;
 			break;
 	}
 
 	if (icol<1 || icol>sql->num_columns) {
+		strcpy(sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 
@@ -890,28 +909,47 @@ static SQLRETURN SQL_API _SQLColAttributes(
           	}
 	}
 	if (i==table->num_cols) {
+		strcpy(sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 
 	// fprintf(stderr,"fDescType = %d\n", fDescType);
+	ret = SQL_SUCCESS;
 	switch(fDescType) {
-		case SQL_COLUMN_NAME:
-		case SQL_COLUMN_LABEL:
-			namelen = MIN(cbDescMax,strlen(sqlcol->name));
-			strncpy(rgbDesc, sqlcol->name, namelen);
-			((char *)rgbDesc)[namelen]='\0';
+		case SQL_COLUMN_NAME: case SQL_DESC_NAME:
+		case SQL_COLUMN_LABEL: /* = SQL_DESC_LABEL */
+			if (cbDescMax < 0) {
+				strcpy(sqlState, "HY090"); // Invalid string or buffer length
+				return SQL_ERROR;
+			}
+			namelen = strlen(sqlcol->name);
+			if (namelen + 1 < cbDescMax) {
+				strcpy(rgbDesc, sqlcol->name);
+			} else {
+				if (cbDescMax > 1) {
+					strncpy(rgbDesc, sqlcol->name, cbDescMax-1);
+					((char*)rgbDesc)[cbDescMax-1] = '\0';
+				}
+				// So there is no \0 if cbDescMax was 0
+				strcpy(sqlState, "01004"); // String data, right truncated
+				ret = SQL_SUCCESS_WITH_INFO;
+			}
 			break;
-		case SQL_COLUMN_TYPE:
-			*pfDesc = SQL_CHAR;
+		case SQL_COLUMN_TYPE: /* =SQL_DESC_CONCISE_TYPE */
+			//*pfDesc = SQL_CHAR;
+			*pfDesc = _odbc_get_client_type(col);
 			break;
 		case SQL_COLUMN_LENGTH:
 			break;
-		//case SQL_COLUMN_DISPLAY_SIZE:
-		case SQL_DESC_DISPLAY_SIZE:
+		case SQL_COLUMN_DISPLAY_SIZE: /* =SQL_DESC_DISPLAY_SIZE */
 			*pfDesc = mdb_col_disp_size(col);
 			break;
+		default:
+			strcpy(sqlState, "HYC00"); // 	Driver not capable
+			ret = SQL_ERROR;
+			break;
 	}
-	return SQL_SUCCESS;
+	return ret;
 }
 
 SQLRETURN SQL_API SQLColAttributes(
@@ -1952,6 +1990,12 @@ static SQLRETURN SQL_API _SQLGetInfo(
 			strncpy(rgbInfoValue, "MDBTOOLS", cbInfoValueMax);
 		if (pcbInfoValue)
 			*pcbInfoValue = 9;
+	break;
+	case SQL_DBMS_VER:
+		if (rgbInfoValue)
+			strncpy(rgbInfoValue, VERSION, cbInfoValueMax);
+		if (pcbInfoValue)
+			*pcbInfoValue = sizeof(VERSION)+1;
 	break;
 	default:
 		if (pcbInfoValue)
