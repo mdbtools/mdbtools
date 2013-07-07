@@ -629,6 +629,7 @@ SQLRETURN SQL_API SQLBindCol(
 	/* if this is a repeat */
 	if (cur) {
 		cur->column_bindtype = fCType;
+   		cur->column_lenbind = (int *)pcbValue;
    		cur->column_bindlen = cbValueMax;
    		cur->varaddr = (char *) rgbValue;
 	} else {
