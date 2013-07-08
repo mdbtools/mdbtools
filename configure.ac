@@ -138,6 +138,8 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 	OPTDIRS="$OPTDIRS odbc"
 fi
 
+dnl Conditionally build odbc wide version
+AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
 
 dnl check for glib/gtk/gnome
 PKG_CHECK_MODULES(GLIB, glib-2.0, ,

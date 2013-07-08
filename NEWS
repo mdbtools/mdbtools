@@ -1,3 +1,7 @@
+Version 0.7.1
+=============
+An experimental version of ODBC driver is now available: libmdbodbcW.so
+
 Version 0.3
 ===========
 The organization of the project files has changed a bit from that last release.

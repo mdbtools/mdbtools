@@ -16,11 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_ICONV
-/* Disable ODBC wide char if iconv is not available */
-#define ENABLE_ODBC_W
-#endif
-
 #ifdef ENABLE_ODBC_W
 #define SQL_NOUNICODEMAP
 #define UNICODE
