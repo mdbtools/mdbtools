@@ -1595,7 +1595,7 @@ static SQLRETURN SQL_API _SQLGetData(
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
 	MdbTableDef *table;
-	int i;
+	int i, intValue;
 
 	TRACE("_SQLGetData");
 	stmt = (struct _hstmt *) hstmt;
@@ -1648,21 +1648,96 @@ static SQLRETURN SQL_API _SQLGetData(
 		return SQL_SUCCESS;
 	}
 
+	if (fCType==SQL_ARD_TYPE) {
+		// Get _sql_bind_info
+		struct _sql_bind_info *cur;
+		for (cur = stmt->bind_head; cur; cur=cur->next) {
+			if (cur->column_number == icol) {
+				fCType = cur->column_bindtype;
+				goto found_bound_type;
+			}
+		}
+		strcpy(sqlState, "07009");
+		return SQL_ERROR;
+	}
+	found_bound_type:
+	if (fCType==SQL_C_DEFAULT)
+		fCType = _odbc_get_client_type(col);
+	if (fCType == SQL_C_CHAR)
+		goto to_c_char;
 	switch(col->col_type) {
 		case MDB_BYTE:
-			*(SQLSMALLINT*)rgbValue = mdb_get_byte(mdb->pg_buf, col->cur_value_start);
-			if (pcbValue)
-				*pcbValue = sizeof(SQLSMALLINT);
-			break;
+			intValue = (int)mdb_get_byte(mdb->pg_buf, col->cur_value_start);
+			goto to_integer_type;
 		case MDB_INT:
-			*(SQLSMALLINT*)rgbValue = (SQLSMALLINT)mdb_get_int16(mdb->pg_buf, col->cur_value_start);
-			if (pcbValue)
-				*pcbValue = sizeof(SQLSMALLINT);
-			break;
+			intValue = mdb_get_int16(mdb->pg_buf, col->cur_value_start);
+			goto to_integer_type;
 		case MDB_LONGINT:
-			*(SQLINTEGER*)rgbValue = mdb_get_int32(mdb->pg_buf, col->cur_value_start);
-			if (pcbValue)
-				*pcbValue = sizeof(SQLINTEGER);
+			intValue = mdb_get_int32(mdb->pg_buf, col->cur_value_start);
+			goto to_integer_type;
+		to_integer_type:
+			switch (fCType) {
+			case SQL_C_UTINYINT:
+				if (intValue<0 || intValue>UCHAR_MAX) {
+					strcpy(sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLCHAR*)rgbValue = (SQLCHAR)intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLCHAR);
+				break;
+			case SQL_C_TINYINT:
+			case SQL_C_STINYINT:
+				if (intValue<SCHAR_MIN || intValue>SCHAR_MAX) {
+					strcpy(sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLSCHAR*)rgbValue = (SQLSCHAR)intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLSCHAR);
+				break;
+			case SQL_C_USHORT:
+			case SQL_C_SHORT:
+				if (intValue<0 || intValue>USHRT_MAX) {
+					strcpy(sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLSMALLINT*)rgbValue = (SQLSMALLINT)intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLSMALLINT);
+				break;
+			case SQL_C_SSHORT:
+				if (intValue<SHRT_MIN || intValue>SHRT_MAX) {
+					strcpy(sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLSMALLINT*)rgbValue = (SQLSMALLINT)intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLSMALLINT);
+				break;
+			case SQL_C_ULONG:
+				if (intValue<0 || intValue>UINT_MAX) {
+					strcpy(sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLUINTEGER*)rgbValue = (SQLINTEGER)intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLINTEGER);
+				break;
+			case SQL_C_LONG:
+			case SQL_C_SLONG:
+				if (intValue<LONG_MIN || intValue>LONG_MAX) {
+					strcpy(sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLINTEGER*)rgbValue = intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLINTEGER);
+				break;
+			default:
+				strcpy(sqlState, "HYC00"); // Not implemented
+				return SQL_ERROR;
+			}
 			break;
 		// case MDB_MONEY: TODO
 		case MDB_FLOAT:
@@ -1675,8 +1750,10 @@ static SQLRETURN SQL_API _SQLGetData(
 			if (pcbValue)
 			  *pcbValue = sizeof(double);
 			break;
-		case MDB_DATETIME: ;
 #if ODBCVER >= 0x0300
+		// returns text if old odbc
+		case MDB_DATETIME:
+		{
 			struct tm tmp_t;
 			mdb_date_to_tm(mdb_get_double(mdb->pg_buf, col->cur_value_start), &tmp_t);
 
@@ -1704,8 +1781,11 @@ static SQLRETURN SQL_API _SQLGetData(
 					*pcbValue = sizeof(TIMESTAMP_STRUCT);
 			}
 			break;
-#endif // returns text if old odbc
-		default: ;
+		}
+#endif
+		default: /* FIXME here we assume fCType == SQL_C_CHAR */
+		to_c_char:
+		{
 			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
 				col->cur_value_start, col->col_type, col->cur_value_len);
 			int len = strlen(str);
@@ -1736,6 +1816,7 @@ static SQLRETURN SQL_API _SQLGetData(
 			stmt->pos += len - stmt->pos;
 			free(str);
 			break;
+		}
 	}
 	return SQL_SUCCESS;
 }

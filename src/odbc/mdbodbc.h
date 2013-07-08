@@ -58,9 +58,9 @@ struct _hstmt {
 
 struct _sql_bind_info {
 	int column_number;
-	int column_bindtype;
-	int column_bindlen;
-	int *column_lenbind;
+	int column_bindtype; /* type/conversion required */
+	int column_bindlen; /* size of varaddr buffer */
+	int *column_lenbind; /* where to store length of varaddr used */
 	char *varaddr;
 	struct _sql_bind_info *next;
 };
