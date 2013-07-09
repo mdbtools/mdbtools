@@ -1,5 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(mdbtools, 0.7, [mdbtools-dev@lists.sourceforge.net])
+AC_INIT([mdbtools],[0.7],[mdbtools-dev@lists.sourceforge.net])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
 AM_INIT_AUTOMAKE
 
@@ -11,8 +12,9 @@ AC_CONFIG_HEADERS(include/config.h)
 AC_PROG_CC(gcc)
 dnl Checks for programs.
 AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
-AM_PROG_LEX
+AM_PROG_AR
+LT_INIT
+AC_PROG_LEX
 AC_PROG_YACC
 
 dnl Checks for header files.
@@ -53,7 +55,7 @@ AC_MSG_RESULT( no - SQL engine disable);
 sql=false
 fi
 
-if ! which $YACC > /dev/null; then
+if ! $YACC -V >/dev/null 2>&1; then
 sql=false
 fi
 
@@ -72,8 +74,7 @@ CFLAGS="$CFLAGS -Wall"
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],
-  AC_HELP_STRING([--disable-as-needed],
-  [Disable overlinking protection]),
+  AS_HELP_STRING([--disable-as-needed],[Disable overlinking protection]),
   [enable_as_needed=$enableval], [enable_as_needed=yes])
 
 if test "x$enable_as_needed" != "xno"; then
@@ -151,7 +152,7 @@ It can be downloaded at www.gtk.org.
 PKG_CHECK_MODULES(GNOME,gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0, HAVE_GNOME=true, HAVE_GNOME=false)
 
 AC_ARG_ENABLE(gmdb2,
-        AC_HELP_STRING([--disable-gmdb2], [do not build gmdb2]),
+        AS_HELP_STRING([--disable-gmdb2],[do not build gmdb2]),
         [build_gmdb2=$enableval], [build_gmdb2=yes])
 
 if test "$build_gmdb2" = "yes" ; then
@@ -228,7 +229,7 @@ VL_LIB_READLINE
 localedir=${datadir}/locale
 AC_SUBST(localedir)
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 libmdb.pc
 libmdbsql.pc
 src/util/Makefile
@@ -245,4 +246,5 @@ src/gmdb2/help/Makefile
 src/gmdb2/help/C/Makefile
 mdbtools.spec
 include/mdbver.h])
+AC_OUTPUT
 dnl doc/reference/libmdb/Makefile])

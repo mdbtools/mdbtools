@@ -1,6 +1,14 @@
 Version 0.7.1
 =============
-An experimental version of ODBC driver is now available: libmdbodbcW.so
+An experimental (buggy) version of ODBC driver that supports UCS-2 interface
+is now available: libmdbodbcW.so
+Note that libmdbodbc supports UTF-8 really well, so that this is usually not
+needed.
+
+autoconf/automake has been updates to more recent standards.
+- config.guess  config.sub  depcomp  install-sh  ltmain.sh  missing  ylwrap
+  files are now in build-aux/ directory
+You'll now need autoconf >= 2.58
 
 Version 0.3
 ===========
