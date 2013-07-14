@@ -208,17 +208,6 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkFileChooserButton" id="filechooserbutton1">
-                <property name="visible">True</property>
-                <property name="action">save</property>
-                <property name="do_overwrite_confirmation">True</property>
-              </widget>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-              </packing>
-            </child>
-            <child>
               <widget class="GtkComboBox" id="table_combo">
                 <property name="visible">True</property>
                 <property name="items" translatable="yes"></property>
@@ -247,6 +236,18 @@ SQLite</property>
                 <property name="right_attach">2</property>
                 <property name="top_attach">2</property>
                 <property name="bottom_attach">3</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkEntry" id="filename_entry">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">&#x25CF;</property>
+                <property name="text" translatable="yes">export.sql</property>
+              </widget>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="right_attach">2</property>
               </packing>
             </child>
             <child>

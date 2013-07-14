@@ -53,7 +53,7 @@ FILE *outfile;
 
 	GtkWidget *dlg;
 
-	printf("file path %s\n",file_path);
+	//printf("file path %s\n",file_path);
 	if ((outfile=fopen(file_path, "w"))==NULL) {
 		GtkWidget* dlg = gtk_message_dialog_new (NULL,
 		    GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
@@ -78,14 +78,14 @@ gmdb_schema_export_cb(GtkWidget *w, gpointer data)
 {
 GtkWidget *schemawin, *checkbox, *chooser;
 GtkComboBox *combobox;
-gchar *file_path;
+const gchar *file_path;
 gchar *tmp;
 int i;
 
 	schemawin = glade_xml_get_widget (schemawin_xml, "schema_dialog");
 
-	chooser = glade_xml_get_widget (schemawin_xml, "filechooserbutton1");
-	file_path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (chooser));
+	chooser = glade_xml_get_widget (schemawin_xml, "filename_entry");
+	file_path = gtk_entry_get_text(GTK_ENTRY(chooser));
 
 	combobox = GTK_COMBO_BOX(glade_xml_get_widget(schemawin_xml, "table_combo"));
 	tmp = gtk_combo_box_get_active_text(combobox);
@@ -124,8 +124,8 @@ int i;
 	}
 	//printf("%s %s %02X\n",tabname,backend,export_options);
 
-	gtk_widget_destroy(schemawin);
 	gmdb_schema_export(file_path);
+	gtk_widget_destroy(schemawin);
 }
 static void
 check_default_options() {
@@ -190,7 +190,6 @@ void
 gmdb_schema_new_cb(GtkWidget *w, gpointer data) 
 {
 	GtkComboBox *combobox;
-	GtkFileChooser *filechooser;
 	MdbCatalogEntry *entry;
 	int i;
    
@@ -215,9 +214,6 @@ gmdb_schema_new_cb(GtkWidget *w, gpointer data)
 		}
 	} /* for */
 	gtk_combo_box_set_active(combobox, 0);
-
-	filechooser = GTK_FILE_CHOOSER(glade_xml_get_widget(schemawin_xml, "filechooserbutton1"));
-	gtk_file_chooser_set_action(filechooser, GTK_FILE_CHOOSER_ACTION_SAVE);
 
 	check_default_options();
 	refresh_available_options();

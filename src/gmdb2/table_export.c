@@ -156,8 +156,8 @@ gmdb_export_get_filepath(GladeXML *xml)
 {
 	GtkWidget *fchoose;
 
-	fchoose = glade_xml_get_widget(xml, "filechooserbutton1");
-	return (gchar *) gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (fchoose));
+	fchoose = glade_xml_get_widget(xml, "filename_entry");
+	return (gchar *) gtk_entry_get_text (GTK_ENTRY (fchoose));
 }
 
 void
