@@ -14,6 +14,7 @@ dumptypes.h
 Makefile.in
 Makefile
 doc/*.1
+INSTALL
 include/config.h
 include/config.h.in
 include/mdbver.h
