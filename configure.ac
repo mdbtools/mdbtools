@@ -26,19 +26,7 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 
 AM_ICONV
-# add -DHAVE_INCONV to CFLAGS. We should not use #include <config.h> in
-# public headers
-if test "$am_cv_func_iconv" = "yes"; then
-       CFLAGS="$CFLAGS -DHAVE_ICONV"
-fi
-
 AM_GCC_ATTRIBUTE_ALIAS
-if test "$am_cv_gcc_have_attribute_alias" = "yes"; then
-      CFLAGS="$CFLAGS -DHAVE_ATTRIBUTE_ALIAS"
-fi
-
-CFLAGS="$CFLAGS -I$(top_builddir)/include"
-
 
 dnl no optional stuff by default
 OPTDIRS=""
