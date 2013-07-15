@@ -24,8 +24,6 @@
  * exported to calling programs.
  */
 
-#include <config.h>
-
 #define _(String) (String)
 #define N_(String) String
 #define textdomain(Domain)

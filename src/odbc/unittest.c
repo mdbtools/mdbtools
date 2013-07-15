@@ -17,7 +17,6 @@
  */
 
 /* #include <windows.h> */
-#include "config.h"
 #include <stdio.h>
 #include <sql.h>
 #include <sqlext.h>

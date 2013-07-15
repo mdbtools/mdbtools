@@ -17,7 +17,6 @@
  */
 
 /* this utility dumps the schema for an existing database */
-#include "config.h"
 #include <ctype.h>
 #include <getopt.h>
 #include "mdbtools.h"

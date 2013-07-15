@@ -16,7 +16,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "config.h"
 #include "mdbtools.h"
 
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len);

@@ -20,7 +20,6 @@
 /* input FOO.txt, output FOO.c */
 /* generates an array of type FOO */
 
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

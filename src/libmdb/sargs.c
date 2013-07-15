@@ -27,7 +27,6 @@
  * a mdb_test_[type]() function and invoke it from mdb_test_sarg()
  */
 
-#include "config.h"
 #include <time.h>
 #include "mdbtools.h"
 #ifdef DMALLOC

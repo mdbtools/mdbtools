@@ -19,10 +19,7 @@ Makefile.in
 Makefile
 doc/*.1
 INSTALL
-include/config.h
-include/config.h.in
 include/mdbver.h
-include/stamp-h1
 libmdb.pc
 libmdbsql.pc
 libtool

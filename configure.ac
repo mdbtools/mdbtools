@@ -8,8 +8,6 @@ AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-AC_CONFIG_HEADERS(include/config.h)
-
 AC_PROG_CC(gcc)
 dnl Checks for programs.
 AC_PROG_MAKE_SET
@@ -38,6 +36,9 @@ AM_GCC_ATTRIBUTE_ALIAS
 if test "$am_cv_gcc_have_attribute_alias" = "yes"; then
       CFLAGS="$CFLAGS -DHAVE_ATTRIBUTE_ALIAS"
 fi
+
+CFLAGS="$CFLAGS -I$(top_builddir)/include"
+
 
 dnl no optional stuff by default
 OPTDIRS=""

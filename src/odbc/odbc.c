@@ -21,7 +21,6 @@
 #define UNICODE
 #endif //ENABLE_ODBC_W
 
-#include "config.h"
 #include <sql.h>
 #include <sqlext.h>
 #include <string.h>

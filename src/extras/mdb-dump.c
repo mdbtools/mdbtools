@@ -1,6 +1,5 @@
 /* utility program to make a hex dump of a binary file (such as a mdb file) */
 
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

@@ -1,6 +1,6 @@
 noinst_PROGRAMS	=	unittest
 lib_LTLIBRARIES	=	libmdbodbc.la
-AM_CFLAGS	=	$(GLIB_CFLAGS) $(ODBC_CFLAGS)
+AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS) $(ODBC_CFLAGS)
 libmdbodbc_la_SOURCES	= odbc.c connectparams.c mdbodbc.h connectparams.h
 libmdbodbc_la_LIBADD	= ../libmdb/libmdb.la ../sql/libmdbsql.la
 libmdbodbc_la_LDFLAGS	= -avoid-version -export-symbols-regex '^(SQL|ODBCINST)'
