@@ -134,7 +134,11 @@ static char *mdb_find_file(const char *file_name)
 
 	/* try the provided file name first */
 	if (!stat(file_name, &status)) {
-		return g_strdup(file_name);
+		char *result;
+		result = g_strdup(file_name);
+		if (!result)
+			fprintf(stderr, "Can't alloc filename\n");
+		return result;
 	}
 	
 	/* Now pull apart $MDBPATH and try those */
@@ -186,7 +190,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 	mdb->f->fd = -1;
 	mdb->f->filename = mdb_find_file(filename);
 	if (!mdb->f->filename) { 
-		fprintf(stderr, "Can't alloc filename\n");
+		fprintf(stderr, "File not found\n");
 		mdb_close(mdb);
 		return NULL; 
 	}
