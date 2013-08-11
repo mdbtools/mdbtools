@@ -1,6 +1,7 @@
 *.o
 *.lo
 *.la
+*.out
 .deps/
 .libs/
 aclocal.m4
