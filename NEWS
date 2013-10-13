@@ -1,6 +1,6 @@
 Version 0.7.1
 =============
-autogen.sh is no more. Use "autoreconf" -if to bootstrap the configuration.
+autogen.sh is no more. Use "autoreconf -if" to bootstrap the configuration.
 
 autoconf/automake has been updated to more recent standards.
 - config.guess  config.sub  depcomp  install-sh  ltmain.sh  missing  ylwrap
