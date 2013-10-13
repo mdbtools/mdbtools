@@ -51,13 +51,10 @@ mdb_sql_error(MdbSQL* sql, char *fmt, ...)
 va_list ap;
 
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsnprintf(sql->error_msg, sizeof(sql->error_msg), fmt, ap);
 	va_end(ap);
-	fprintf(stderr,"\n");
 
-	va_start(ap, fmt);
-	vsprintf(sql->error_msg, fmt, ap);
-	va_end(ap);
+	fprintf(stderr, "%s\n", sql->error_msg);
 }
 
 int mdb_sql_yyinput(char *buf, int need)
