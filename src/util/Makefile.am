@@ -7,3 +7,4 @@ LDADD	=	../libmdb/libmdb.la
 if SQL
 mdb_sql_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la $(LIBREADLINE)
 endif
+EXTRA_DIST = mdbtools.bash-completion

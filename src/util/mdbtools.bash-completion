@@ -1,0 +1,170 @@
+#-*- mode: shell-script;-*-
+have mdb-export &&
+_mdb_export()
+{
+	local cur prev
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -@(d|R|q|X|D|N) ]] ; then
+		return 0
+	elif [[ "$prev" == -I ]] ; then
+		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql' -- $cur ) )
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-T -H -d -R -Q -q -X -I -D -N' -- $cur ) )
+	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
+		local dbname
+		local tablenames
+		dbname=$prev
+		__expand_tilde_by_ref dbname
+		tablenames=$(eval mdb-tables -S -d / "${dbname}" 2>/dev/null)
+		COMPREPLY=( $( IFS=/ compgen -W "${tablenames}" -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_export mdb-export
+
+have mdb-hexdump &&
+_mdb_hexdump()
+{
+	local cur
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if (( COMP_CWORD == 1 )); then
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_hexdump mdb-hexdump
+
+have mdb-parsecsv &&
+_mdb_parsecsv()
+{
+	local cur
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if (( COMP_CWORD == 1 )); then
+		_filedir '@(txt|csv)'
+	fi
+	return 0
+} &&
+complete -F _mdb_parsecsv mdb-parsecsv
+
+have mdb-prop &&
+_mdb_prop()
+{
+	local cur
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if (( COMP_CWORD == 1 )); then
+		_filedir '@(mdb|mdw|accdb)'
+	elif (( COMP_CWORD == 2 )); then
+		local dbname
+		local tablenames
+		dbname=${COMP_WORDS[1]}
+		__expand_tilde_by_ref dbname
+		tablenames=$(eval mdb-tables -S -d / "${dbname}" 2>/dev/null)
+		COMPREPLY=( $( IFS=/ compgen -W "${tablenames}" -- $cur ) )
+	elif (( COMP_CWORD == 3 )); then
+		COMPREPLY=( $( compgen -W 'Lv LvProp LvModule LvExtra' -- $cur ) )
+	fi
+	return 0
+} &&
+complete -F _mdb_prop mdb-prop
+
+have mdb-schema &&
+_mdb_schema()
+{
+	local cur prev
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -@(T|table|N) ]] ; then
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-T --table -N \
+		            --drop-table --no-drop-table \
+		            --not-null --no-not-null \
+		            --default-values --no-default-values \
+		            --not-empty --no-not-empty \
+		            --indexes --no-indexes \
+		            --relations --no-relations' -- $cur ) )
+	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
+		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_schema mdb-schema
+
+have mdb-sql &&
+_mdb_sql()
+{
+	local cur prev
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -d ]] ; then
+		return 0
+	elif [[ "$prev" == -@(i|o) ]] ; then
+		_filedir
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-H -f -p -d -i -o' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_sql mdb-sql
+
+have mdb-tables &&
+_mdb_tables()
+{
+	local cur prev
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -d ]]; then
+		return 0
+	elif [[ "$prev" == -t ]]; then
+		COMPREPLY=( $( compgen -W 'form table macro systable report query linkedtable module relationship dbprop any all' -- $cur ) )
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-S -1 -d -t' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_tables mdb-tables
+
+have mdb-ver &&
+_mdb_ver()
+{
+	local cur
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-M' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_ver mdb-ver
