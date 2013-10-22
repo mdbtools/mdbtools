@@ -14,3 +14,4 @@ LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la
 #if SQL
 #gmdb_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la
 #endif
+EXTRA_DIST = gmdb.desktop
