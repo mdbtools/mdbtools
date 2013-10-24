@@ -150,6 +150,7 @@ if test "$build_gmdb2" = "yes" ; then
 		AC_SUBST(GNOME_CFLAGS)
 		AC_SUBST(GNOME_LIBS)
 		OPTDIRS="$OPTDIRS gmdb2"
+		GNOME_DOC_INIT
 	fi
 else
         AC_MSG_NOTICE(gmdb2 disabled)
@@ -233,7 +234,6 @@ src/gmdb2/Makefile
 src/gmdb2/gladefiles/Makefile
 src/gmdb2/pixmaps/Makefile
 src/gmdb2/help/Makefile
-src/gmdb2/help/C/Makefile
 mdbtools.spec
 include/mdbver.h])
 AC_OUTPUT

@@ -25,6 +25,12 @@ V1.1//EN"
 <!-- appropriate code -->
   <articleinfo> 
 	 <title>&app; Manual V&manrevision;</title>
+ 	 <abstract role="description">
+		 <para>The &app; application is the graphical
+			interface to MDB Tools. You can use &app;
+			to view and export data and schema from MDB databases.
+			</para>
+	 </abstract>
 	 <copyright> 
 		<year>2003</year>
 		<holder>Brian Bruns</holder> </copyright>
@@ -50,6 +56,14 @@ V1.1//EN"
 			 <address> <email>camber@ais.org</email> </address>
 		  </affiliation>
 		</author>
+		<othercredit role="maintainer">
+		  <firstname>Jean-Michel</firstname>
+		  <surname>Vourgère</surname>
+		  <affiliation>
+			 <orgname>MDB Tools Project</orgname>
+			 <address> <email>contact_mdbtools@nirgal.com</email> </address>
+		  </affiliation>
+		</othercredit>
 <!-- This is appropriate place for other contributors: translators,
       maintainers,  etc. Commented out by default.
        <othercredit role="translator">
@@ -249,8 +263,8 @@ Choose <menuchoice> <guimenu>Tools</guimenu> <guimenuitem>Debug Window </guimenu
 	<title>Maximum Rows to Display</title>
 	<para>This option limits the number of rows that will be returned when
 	<orderedlist>
-		<listitem>Clicking the <guilabel>Data</guilabel> button on the <guilabel>Tables</guilabel> tab window, or</listitem>
-		<listitem>Running a SQL select in the <guilabel>Query Window</guilabel></listitem>
+		<listitem><para>Clicking the <guilabel>Data</guilabel> button on the <guilabel>Tables</guilabel> tab window, or</para></listitem>
+		<listitem><para>Running a SQL select in the <guilabel>Query Window</guilabel></para></listitem>
 	</orderedlist>
 	</para>
 	<para>

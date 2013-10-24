@@ -1,0 +1,10 @@
+<?xml version="1.0" standalone="no"?>
+<omf>
+  <resource>
+    <subject category="GNOME|Applications"/>
+    <type>user's guide</type>
+    <identifier url="gmdb.xml"/>
+    <relation seriesid="081c7e56-2acd-11d6-819f-e6a1118e62db"/>
+    <rights type="GNU FDL" license.version="1.1" holder="Brian Bruns"/>
+  </resource>
+</omf>

@@ -11,6 +11,7 @@ m4/
 !m4/ccalias.m4
 !m4/iconv.m4
 !m4/readline.m4
+!m4/gnome-doc-utils.m4
 config.log
 config.status
 configure
@@ -28,7 +29,7 @@ mdbtools.spec
 types.h
 src/extras/mdb-hexdump
 src/gmdb2/gmdb2
-src/gmdb2/help/C/omf_timestamp
+src/gmdb2/help/gmdb-C.omf
 src/odbc/unittest
 src/sql/lexer.c
 src/sql/parser.c
