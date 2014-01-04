@@ -159,7 +159,7 @@ main(int argc, char **argv)
 	if (argc-optind < 2) {
 		fprintf(stderr,"Usage: %s [options] <file> <table>\n",argv[0]);
 		fprintf(stderr,"where options are:\n");
-		fprintf(stderr,"  -H                   supress header row\n");
+		fprintf(stderr,"  -H                   suppress header row\n");
 		fprintf(stderr,"  -Q                   don't wrap text-like fields in quotes\n");
 		fprintf(stderr,"  -d <delimiter>       specify a column delimiter\n");
 		fprintf(stderr,"  -R <delimiter>       specify a row delimiter\n");

@@ -10,7 +10,7 @@ DESCRIPTION
   It produces a CSV (comma separated value) output for the given table. Such output is suitable for importation into databases or spreadsheets.
 
 OPTIONS
-  -H                  Supress header row
+  -H                  Suppress header row
   -Q                  Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
   -d                  Specify an alternative column delimiter If no delimiter is specified, table names will be delimited by a , (comma) character.
   -R                  Specify a row delimiter

@@ -11,8 +11,8 @@ DESCRIPTION
 language. 
 
 OPTIONS
-  -H            Supress header row.
-  -F            Supress footer row.
+  -H            Suppress header row.
+  -F            Suppress footer row.
   -p		Turn off pretty printing. By default results are printed in an
 ascii table format which looks nice but is not conducive to manipulating the
 output with unix tools. This option prints output plainly in a tab separated
