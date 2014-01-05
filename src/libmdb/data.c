@@ -31,7 +31,7 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
 
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
-static char *mdb_date_to_string(MdbHandle *mdb, int start);
+static char *mdb_date_to_string(void *buf, int start);
 #ifdef MDB_COPY_OLE
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
@@ -831,11 +831,11 @@ mdb_date_to_tm(double td, struct tm *t)
 }
 
 static char *
-mdb_date_to_string(MdbHandle *mdb, int start)
+mdb_date_to_string(void *buf, int start)
 {
 	struct tm t;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
-	double td = mdb_get_double(mdb->pg_buf, start);
+	double td = mdb_get_double(buf, start);
 
 	mdb_date_to_tm(td, &t);
 
@@ -945,7 +945,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			}
 		break;
 		case MDB_DATETIME:
-			text = mdb_date_to_string(mdb, start);
+			text = mdb_date_to_string(buf, start);
 		break;
 		case MDB_MEMO:
 			text = mdb_memo_to_string(mdb, start, size);
