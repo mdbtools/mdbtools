@@ -383,7 +383,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_DEFVALUES,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
 		"current_date", "now()",
 		"-- That file uses encoding %s\n",
@@ -486,11 +486,17 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 	char* quoted_table_name;
 	char* index_name;
 	char* quoted_name;
+	int backend;
 	MdbHandle* mdb = table->entry->mdb;
 	MdbIndex *idx;
 	MdbColumn *col;
 
-	if (strcmp(mdb->backend_name, "postgres")) {
+
+	if (!strcmp(mdb->backend_name, "postgres")) {
+		backend = MDB_BACKEND_POSTGRES;
+	} else if (!strcmp(mdb->backend_name, "mysql")) {
+		backend = MDB_BACKEND_MYSQL;
+	} else {
 		fprintf(outfile, "-- Indexes are not implemented for %s\n\n", mdb->backend_name);
 		return;
 	}
@@ -518,12 +524,29 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		}
 		quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
 		if (idx->index_type==1) {
-			fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
+			switch (backend) {
+				case MDB_BACKEND_POSTGRES:
+					fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
+					break;
+				case MDB_BACKEND_MYSQL:
+					fprintf (outfile, "ALTER TABLE %s ADD PRIMARY KEY (", quoted_table_name);
+					break;
+			}
 		} else {
-			fprintf(outfile, "CREATE");
-			if (idx->flags & MDB_IDX_UNIQUE)
-				fprintf (outfile, " UNIQUE");
-			fprintf(outfile, " INDEX %s ON %s (", quoted_name, quoted_table_name);
+			switch (backend) {
+				case MDB_BACKEND_POSTGRES:
+					fprintf(outfile, "CREATE");
+					if (idx->flags & MDB_IDX_UNIQUE)
+						fprintf (outfile, " UNIQUE");
+					fprintf(outfile, " INDEX %s ON %s (", quoted_name, quoted_table_name);
+					break;
+				case MDB_BACKEND_MYSQL:
+					fprintf(outfile, "ALTER TABLE %s ADD", quoted_table_name);
+					if (idx->flags & MDB_IDX_UNIQUE)
+						fprintf (outfile, " UNIQUE");
+					fprintf(outfile, " INDEX %s (", quoted_name);
+					break;
+			}
 		}
 		g_free(quoted_name);
 		free(index_name);
