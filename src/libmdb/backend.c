@@ -174,6 +174,16 @@ static MdbBackendType mdb_sqlite_types[] = {
 };
 
 #ifndef JAVA
+
+enum {
+	MDB_BACKEND_ACCESS = 1,
+	MDB_BACKEND_ORACLE,
+	MDB_BACKEND_SYBASE,
+	MDB_BACKEND_POSTGRES,
+	MDB_BACKEND_MYSQL,
+	MDB_BACKEND_SQLITE,
+};
+
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
 static gchar*
@@ -573,18 +583,18 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	gchar *text = NULL;  /* String to be returned */
 	static char *bound[5];  /* Bound values */
 	static MdbTableDef *table;  /* Relationships table */
-	int backend = 0;  /* Backends: 1=oracle, 2=postgres */
+	int backend = 0;
 	char *quoted_table_1, *quoted_column_1,
 	     *quoted_table_2, *quoted_column_2,
 	     *constraint_name, *quoted_constraint_name;
 	long grbit;
 
 	if (!strcmp(mdb->backend_name, "oracle")) {
-		backend = 1;
+		backend = MDB_BACKEND_ORACLE;
 	} else if (!strcmp(mdb->backend_name, "postgres")) {
-		backend = 2;
+		backend = MDB_BACKEND_POSTGRES;
 	} else if (!strcmp(mdb->backend_name, "sqlite")) {
-		backend = 3;
+		backend = MDB_BACKEND_SQLITE;
 	} else {
 		if (is_init == 0) { /* the first time through */
 			is_init = 1;
@@ -657,9 +667,9 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 			" does not enforce integrity.\n", NULL);
 	} else {
 		switch (backend) {
-		  case 1:  /* oracle */
-		  case 2:  /* postgres */
-		  case 3:  /* sqlite */
+		  case MDB_BACKEND_ORACLE:
+		  case MDB_BACKEND_POSTGRES:
+		  case MDB_BACKEND_SQLITE:
 			text = g_strconcat(
 				"ALTER TABLE ", quoted_table_1,
 				" ADD CONSTRAINT ", quoted_constraint_name,
