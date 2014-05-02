@@ -8,8 +8,6 @@ pieces are:
 . libmdbsql - builds on libmdb to provide a SQL engine (aka Jet)
 . utils     - provides command line utilities:
               mdb-ver    -- prints the version (JET 3 or 4) of an mdb file.
-              mdb-dump   -- simple hex dump utility that I've been using to look
-                            at mdb files.
               mdb-schema -- prints DDL for the specified table.
               mdb-export -- export table to CSV format.
               mdb-tables -- a simple dump of table names to be used with shell
@@ -32,6 +30,9 @@ pieces are:
               Allows one to use MDB files with PHP for example.
 . gmdb2     - The Gnome MDB File Viewer and debugger.  Still alpha, but making
               great progress.
+. extras    - extra command line utilities
+              mdb-dump   -- simple hex dump utility that I've been using to look
+                            at mdb files.
 
 If you are interested in helping, read the HACKING file for a description of 
 where the code stands and what has been gleened of the file format.
