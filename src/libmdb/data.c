@@ -732,9 +732,13 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			printf("row num %d start %d len %d\n",
 				pg_row & 0xff, row_start, len);
 #endif
-			if (tmpoff + len - 4 > memo_len) {
+			if (tmpoff + len - 4 > memo_len)
 				break;
-			}
+
+			/* Stop processing on zero length multiple page memo fields */
+			if (!len)
+				break;
+
 			memcpy(tmp + tmpoff, buf + row_start + 4, len - 4);
 			tmpoff += len - 4;
 		} while (( pg_row = mdb_get_int32(buf, row_start) ));
