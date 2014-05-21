@@ -196,6 +196,8 @@ if test x$enable_gtk_doc = xauto ; then
 fi
 
 AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
+AM_CONDITIONAL(HAVE_GNOME_DOC_UTILS, test x$enable_gtk_doc = xyes)
+AM_CONDITIONAL(ENABLE_SK, test x$enable_gtk_doc = xyes)
 
 ##################################################
 # Check for txt2man
