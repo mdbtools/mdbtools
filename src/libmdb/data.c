@@ -932,7 +932,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				text = g_strdup("");
 			} else {
 				text = g_malloc(size);
-				memcpy((char*)buf+start, text, size);
+				memcpy(text, (char*)buf+start, size);
 			}
 		break;
 		case MDB_TEXT:
