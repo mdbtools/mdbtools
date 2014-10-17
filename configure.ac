@@ -153,6 +153,7 @@ It can be downloaded at www.gtk.org.
 
 PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
 
+GNOME_DOC_INIT
 AC_ARG_ENABLE(gmdb2,
         AS_HELP_STRING([--disable-gmdb2],[do not build gmdb2]),
         [build_gmdb2=$enableval], [build_gmdb2=yes])
@@ -162,10 +163,10 @@ if test "$build_gmdb2" = "yes" ; then
 		AC_SUBST(GNOME_CFLAGS)
 		AC_SUBST(GNOME_LIBS)
 		OPTDIRS="$OPTDIRS gmdb2"
-		GNOME_DOC_INIT
 	fi
 else
         AC_MSG_NOTICE(gmdb2 disabled)
+	build_gmdb2=no
 fi
 
 AC_SUBST([OPTDIRS])
@@ -240,7 +241,8 @@ libmdb.pc
 libmdbsql.pc
 src/util/Makefile
 src/extras/Makefile
-Makefile include/Makefile
+Makefile
+include/Makefile
 src/libmdb/Makefile
 src/sql/Makefile
 src/odbc/Makefile
@@ -253,3 +255,29 @@ mdbtools.spec
 include/mdbver.h])
 AC_OUTPUT
 dnl doc/reference/libmdb/Makefile])
+
+##################################################
+# Print summary
+##################################################
+
+
+bold_red=$(tput bold)$(tput setf 4)
+bold_green=$(tput bold)$(tput setf 2)
+bold=$(tput bold)
+reset=$(tput sgr0)
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([${bold}MDB Tools $VERSION - Configuration summary${reset}])
+AC_MSG_NOTICE([])
+if test x$sql = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   SQL          : ${summary}${reset}])
+if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   ODBC         : ${summary}${reset}])
+if test x$build_gmdb2 = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   UI           : ${summary}${reset}])
+if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   Gtk doc      : ${summary}${reset}])
+if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   man          : ${summary}${reset}])
+if test -n "$DOCBOOK_DSL"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   html docbook : ${summary}${reset}])
+AC_MSG_NOTICE([])
