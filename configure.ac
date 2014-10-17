@@ -86,8 +86,8 @@ AC_ARG_WITH(iodbc,
 [  --with-iodbc=/path/to/iodbc build odbc driver against iODBC])
 if test "$with_iodbc"; then
 	HAVE_ODBC=true
-	ODBC_CFLAGS="-I$with_iodbc/include"
-	ODBC_LIBS="-L$with_iodbc/lib"
+	ODBC_CFLAGS=$(iodbc-config --prefix="$with_iodbc" --cflags)
+	ODBC_LIBS=$(iodbc-config --prefix="$with_iodbc" --libs)
 	CFLAGS="$CFLAGS -DIODBC"
 
 	OLDLDFLAGS=$LDFLAGS
