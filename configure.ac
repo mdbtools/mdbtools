@@ -64,7 +64,7 @@ CFLAGS="$CFLAGS -Wall"
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],
-  AS_HELP_STRING([--disable-as-needed],[Disable overlinking protection]),
+  AS_HELP_STRING([--disable-as-needed],[disable overlinking protection]),
   [enable_as_needed=$enableval], [enable_as_needed=yes])
 
 if test "x$enable_as_needed" != "xno"; then
@@ -83,7 +83,7 @@ fi
 dnl check for iODBC
 
 AC_ARG_WITH(iodbc,
-[  --with-iodbc=/path/to/iodbc build odbc driver against iODBC])
+  AS_HELP_STRING([--with-iodbc=/path/to/iodbc], [build odbc driver against iODBC]))
 if test "$with_iodbc"; then
 	HAVE_ODBC=true
 	ODBC_CFLAGS=$(iodbc-config --prefix="$with_iodbc" --cflags)
@@ -101,7 +101,7 @@ fi
 
 dnl check for unixODBC
 AC_ARG_WITH(unixodbc,
-[  --with-unixodbc=/path/to/unixodbc build odbc driver against unixODBC])
+  AS_HELP_STRING([--with-unixodbc=/path/to/unixodbc], [build odbc driver against unixODBC]))
 if test "$with_unixodbc"; then
 	HAVE_ODBC=true
 	ODBC_CFLAGS="-I$with_unixodbc/include"
@@ -176,7 +176,8 @@ AC_CONFIG_FILES([src/Makefile])
 # Check for gtk-doc.
 ##################################################
 
-AC_ARG_WITH(html-dir, [  --with-html-dir=PATH path to installed docs ])
+AC_ARG_WITH(html-dir,
+  AS_HELP_STRING([--with-html-dir=PATH], [path to installed docs]))
 
 if test "x$with_html_dir" = "x" ; then
   HTML_DIR='${datadir}/gtk-doc/html'
@@ -197,7 +198,7 @@ else
 fi
 
 dnl Let people disable the gtk-doc stuff.
-AC_ARG_ENABLE(gtk-doc, [  --enable-gtk-doc  Use gtk-doc to build documentation [default=auto]], enable_gtk_doc="$enableval", enable_gtk_doc=auto)
+AC_ARG_ENABLE(gtk-doc, AS_HELP_STRING([--enable-gtk-doc], [use gtk-doc to build documentation [default=auto]]), enable_gtk_doc="$enableval", enable_gtk_doc=auto)
 
 if test x$enable_gtk_doc = xauto ; then
   if test x$GTKDOC = xtrue ; then
@@ -213,7 +214,9 @@ AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
 # Check for txt2man
 ##################################################
 
-AC_ARG_ENABLE(man, [  --disable-man	Disable man generation], enable_man="$enableval", [enable_man=yes])
+AC_ARG_ENABLE(man,
+  AS_HELP_STRING([--disable-man], [disable man generation]),
+  enable_man="$enableval", [enable_man=yes])
 if test "$enable_man" = yes; then
   if ! which txt2man > /dev/null; then
     AC_MSG_ERROR([Could not find txt2man script. Install it or configure with --disable-man if you are not interrested in manuals.])
