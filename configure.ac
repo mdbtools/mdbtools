@@ -132,14 +132,26 @@ fi
 dnl Conditionally build odbc wide version
 AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
 
+dnl Testing presence of pkg-config
+AC_MSG_CHECKING([pkg-config m4 macros])
+if test m4_ifdef([PKG_CHECK_MODULES], [yes], [no]) == yes; then
+	AC_MSG_RESULT([yes]);
+else
+	AC_MSG_RESULT([no]);
+	AC_MSG_ERROR([
+pkg-config is required.
+See pkg-config.freedesktop.org])
+fi
+
+
 dnl check for glib/gtk/gnome
-PKG_CHECK_MODULES(GLIB, glib-2.0, ,
+PKG_CHECK_MODULES([GLIB], [glib-2.0], ,
 	AC_MSG_ERROR([
 glib 2.0 is required by MDB Tools (runtime and devel).
 It can be downloaded at www.gtk.org.
 ]))
 
-PKG_CHECK_MODULES(GNOME,gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0, HAVE_GNOME=true, HAVE_GNOME=false)
+PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
 
 AC_ARG_ENABLE(gmdb2,
         AS_HELP_STRING([--disable-gmdb2],[do not build gmdb2]),
