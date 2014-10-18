@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=MDB Viewer
+Comment=View and export Microsoft Access databases
+Keywords=Microsoft;Access;database;SQL;Jet;schema;query;mdb;accdb;
+Icon=gmdb2
+TryExec=gmdb2
+Exec=gmdb2 %f
+Terminal=false
+MimeType=application/vnd.ms-access;application/x-msaccess;application/msaccess;application/vnd.msaccess;application/mdb;application/x-mdb;
+Categories=Office;
+StartupNotify=true

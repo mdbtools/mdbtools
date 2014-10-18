@@ -1,0 +1,12 @@
+#-*- mode: shell-script;-*-
+have gmdb2 &&
+_gmdb2()
+{
+	local cur
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	_filedir '@(mdb|mdw|accdb)'
+	return 0
+} &&
+complete -F _gmdb2 gmdb2

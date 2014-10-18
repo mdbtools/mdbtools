@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS	=	-I m4
-SUBDIRS	=	src include doc
+SUBDIRS	=	src include doc dist
 
 DEFDIR	=	$(prefix)
 
