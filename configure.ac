@@ -252,7 +252,6 @@ src/gmdb2/gladefiles/Makefile
 src/gmdb2/pixmaps/Makefile
 src/gmdb2/help/Makefile
 mdbtools.spec
-dist/Makefile
 include/mdbver.h])
 AC_OUTPUT
 dnl doc/reference/libmdb/Makefile])
