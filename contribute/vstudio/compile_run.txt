@@ -1,0 +1,12 @@
+compile or download prebuilds from http://www.gtk.org/download/win32.php
+
+download All-in-one bundle for GTK+ 3.x (or earlier)
+http://win32builder.gnome.org/gtk+-bundle_3.6.4-20130921_win32.zip
+
+contains all we need to compile and run:
+
+libglib-2.0-0.dll
+libiconv-2.dll
+libintl-8.dll
+pthreadGC2.dll
+

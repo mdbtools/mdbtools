@@ -95,7 +95,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	/* grab a copy of the usage map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_usage_map_offset);
 	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
-	table->usage_map = g_memdup(buf + row_start, table->map_sz);
+	table->usage_map = g_memdup((uint8_t*)buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		mdb_buffer_dump(buf, row_start, table->map_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld row %d start %d len %d",
@@ -104,7 +104,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	/* grab a copy of the free space page map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_free_map_offset);
 	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz));
-	table->free_usage_map = g_memdup(buf + row_start, table->freemap_sz);
+	table->free_usage_map = g_memdup((uint8_t*)buf + row_start, table->freemap_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
@@ -168,6 +168,7 @@ read_pg_if_8(MdbHandle *mdb, int *cur_pos)
 void * 
 read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
 {
+	uint8_t* _buf = (uint8_t*)buf;  
 	/* Advance to page which contains the first byte */
 	while (*cur_pos >= mdb->fmt->pg_size) {
 		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
@@ -176,20 +177,20 @@ read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
 	/* Copy pages into buffer */
 	while (*cur_pos + len >= mdb->fmt->pg_size) {
 		int piece_len = mdb->fmt->pg_size - *cur_pos;
-		if (buf) {
+		if (_buf) {
 			memcpy(buf, mdb->pg_buf + *cur_pos, piece_len);
-			buf += piece_len;
+			_buf += piece_len;
 		}
 		len -= piece_len;
 		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
 		*cur_pos = 8;
 	}
 	/* Copy into buffer from final page */
-	if (len && buf) {
-		memcpy(buf, mdb->pg_buf + *cur_pos, len);
+	if (len && _buf) {
+		memcpy(_buf, mdb->pg_buf + *cur_pos, len);
 	}
 	*cur_pos += len;
-	return buf;
+	return _buf;
 }
 
 

@@ -192,7 +192,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 		switch (record_type) {
 			case 0x80:
 				if (names) free_names(names);
-				names = mdb_read_props_list(mdb, buffer+pos+6, record_len - 6);
+				names = mdb_read_props_list(mdb, (gchar*)buffer+pos+6, record_len - 6);
 				break;
 			case 0x00:
 			case 0x01:
@@ -200,7 +200,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 					fprintf(stderr,"sequence error!\n");
 					break;
 				}
-				props = mdb_read_props(mdb, names, buffer+pos+6, record_len - 6);
+				props = mdb_read_props(mdb, names, (gchar*)buffer+pos+6, record_len - 6);
 				g_array_append_val(result, props);
 				//mdb_dump_props(props, stderr, 1);
 				break;

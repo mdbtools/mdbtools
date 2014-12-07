@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmdb", "mdbtools.vcxproj", "{8E7C9D94-D049-41DD-A31F-C0B8E0831C9C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "prdata", "prdata.vcxproj", "{33532225-9FE0-4316-96A0-3EEC8B1D031E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8E7C9D94-D049-41DD-A31F-C0B8E0831C9C} = {8E7C9D94-D049-41DD-A31F-C0B8E0831C9C}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8E7C9D94-D049-41DD-A31F-C0B8E0831C9C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8E7C9D94-D049-41DD-A31F-C0B8E0831C9C}.Debug|Win32.Build.0 = Debug|Win32
+		{8E7C9D94-D049-41DD-A31F-C0B8E0831C9C}.Release|Win32.ActiveCfg = Release|Win32
+		{8E7C9D94-D049-41DD-A31F-C0B8E0831C9C}.Release|Win32.Build.0 = Release|Win32
+		{33532225-9FE0-4316-96A0-3EEC8B1D031E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{33532225-9FE0-4316-96A0-3EEC8B1D031E}.Debug|Win32.Build.0 = Debug|Win32
+		{33532225-9FE0-4316-96A0-3EEC8B1D031E}.Release|Win32.ActiveCfg = Release|Win32
+		{33532225-9FE0-4316-96A0-3EEC8B1D031E}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
