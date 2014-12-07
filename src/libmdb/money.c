@@ -77,9 +77,6 @@ char *mdb_money_to_string(MdbHandle *mdb, int start)
 		multiply_byte(multiplier, 256, temp);
 	}
 
-//#ifdef _MSC_VER  
-//       g_free(bytes);
-//#endif
        return array_to_string(product, scale, neg);
 
 }
@@ -108,10 +105,6 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
                memset(multiplier, 0, MAX_NUMERIC_PRECISION);
                multiply_byte(multiplier, 256, temp);
        }
-
-#ifdef _MSC_VER  
-       g_free(bytes);
-#endif
 
        return array_to_string(product, scale, neg);
 }
