@@ -24,7 +24,6 @@
 /*
 ** functions to deal with different backend database engines
 */
-#
 #include "mdbtools.h"
 
 #ifdef DMALLOC
@@ -35,7 +34,7 @@
 
 static int is_init;
 GHashTable *mdb_backends;
-void _mdb_remove_backends();
+void __cdecl _mdb_remove_backends(void);
 
 /*    Access data types */
 static MdbBackendType mdb_access_types[] = {
@@ -445,8 +444,8 @@ mdb_remove_backends())
  *
  * Removes all entries from and destroys the mdb_backends hash.
  */
-void
-_mdb_remove_backends()
+void __cdecl
+_mdb_remove_backends(void)
 {
 	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
 	g_hash_table_destroy(mdb_backends);

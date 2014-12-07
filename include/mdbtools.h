@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
@@ -38,6 +37,19 @@
 
 #ifdef _WIN32
 #include <io.h>
+#endif
+
+#ifdef _MSC_VER
+#include <stdint.h>
+
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+
+#define strcasecmp _stricmp
+#define snprintf sprintf_s // not 100% the same but sufficient
+#else
+#include <inttypes.h>
+#include <unistd.h>
 #endif
 
 #define MDB_DEBUG 0
@@ -52,9 +64,15 @@
 #define MDB_BIND_SIZE 16384
 
 // Theses 2 atrbutes are not supported by all compilers:
+#ifdef _MSC_VER
+#define MDB_DEPRECATED(type, funcname) __declspec(deprecated) type funcname
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
+// or use G_DEFINE_CONSTRUCTOR from glib/gconstructor.h
+#define MDB_CONSTRUCTOR(funcname) G_DEFINE_CONSTRUCTOR(funcname)
+#else
 #define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
 #define MDB_CONSTRUCTOR(funcname) void __attribute__((constructor)) funcname()
+#endif
 
 enum {
 	MDB_PAGE_DB = 0,

@@ -47,7 +47,11 @@ char *mdb_money_to_string(MdbHandle *mdb, int start)
 	int neg=0;
        unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];
        unsigned char product[MAX_NUMERIC_PRECISION];
+#ifdef _MSC_VER
+       unsigned char* bytes = (unsigned char*)g_malloc(num_bytes); // or alloca if not inlined/recursive
+#else
        unsigned char bytes[num_bytes];
+#endif
 
        memset(multiplier,0,MAX_NUMERIC_PRECISION);
        memset(product,0,MAX_NUMERIC_PRECISION);
@@ -75,6 +79,10 @@ char *mdb_money_to_string(MdbHandle *mdb, int start)
                memset(multiplier, 0, MAX_NUMERIC_PRECISION);
 		multiply_byte(multiplier, 256, temp);
 	}
+
+#ifdef _MSC_VER  
+       g_free(bytes);
+#endif
        return array_to_string(product, scale, neg);
 
 }
@@ -85,7 +93,11 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
        int neg=0;
        unsigned char multiplier[MAX_NUMERIC_PRECISION], temp[MAX_NUMERIC_PRECISION];
        unsigned char product[MAX_NUMERIC_PRECISION];
+#ifdef _MSC_VER  
+       unsigned char* bytes = (unsigned char*)g_malloc(num_bytes); // or alloca if not inlined/recursive
+#else
        unsigned char bytes[num_bytes];
+#endif
 
        memset(multiplier,0,MAX_NUMERIC_PRECISION);
        memset(product,0,MAX_NUMERIC_PRECISION);
@@ -103,6 +115,11 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
                memset(multiplier, 0, MAX_NUMERIC_PRECISION);
                multiply_byte(multiplier, 256, temp);
        }
+
+#ifdef _MSC_VER  
+       g_free(bytes);
+#endif
+
        return array_to_string(product, scale, neg);
 }
 

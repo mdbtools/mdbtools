@@ -497,7 +497,7 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 	if (col->bind_ptr)
-		memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
+		memcpy(col->bind_ptr, (uint8_t*)buf + row_start + 4, len - 4);
 	col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
 
 	return len - 4;
@@ -542,7 +542,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 		if (col->bind_ptr) {
-			memcpy(col->bind_ptr, buf + row_start, len);
+			memcpy(col->bind_ptr, (uint8_t*)buf + row_start, len);
 			if (mdb_get_option(MDB_DEBUG_OLE))
 				mdb_buffer_dump(col->bind_ptr, 0, 16);
 		}
@@ -560,7 +560,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 		if (col->bind_ptr) 
-			memcpy(col->bind_ptr, buf + row_start + 4, len - 4);
+			memcpy(col->bind_ptr, (uint8_t*)(uint8_t*)buf + row_start + 4, len - 4);
 		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
 		mdb_debug(MDB_DEBUG_OLE, "next pg_row %d", col->cur_blob_pg_row);
 
@@ -692,7 +692,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 
 	if (memo_len & 0x80000000) {
 		/* inline memo field */
-		mdb_unicode2ascii(mdb, pg_buf + start + MDB_MEMO_OVERHEAD,
+		mdb_unicode2ascii(mdb, (char*)pg_buf + start + MDB_MEMO_OVERHEAD,
 			size - MDB_MEMO_OVERHEAD, text, MDB_BIND_SIZE);
 		return text;
 	} else if (memo_len & 0x40000000) {
@@ -710,7 +710,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			pg_row & 0xff, row_start, len);
 		mdb_buffer_dump(buf, row_start, len);
 #endif
-		mdb_unicode2ascii(mdb, buf + row_start, len, text, MDB_BIND_SIZE);
+		mdb_unicode2ascii(mdb, (char*)buf + row_start, len, text, MDB_BIND_SIZE);
 		return text;
 	} else if ((memo_len & 0xff000000) == 0) { // assume all flags in MSB
 		/* multi-page memo field */
@@ -739,7 +739,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			if (!len)
 				break;
 
-			memcpy(tmp + tmpoff, buf + row_start + 4, len - 4);
+			memcpy(tmp + tmpoff, (char*)buf + row_start + 4, len - 4);
 			tmpoff += len - 4;
 		} while (( pg_row = mdb_get_int32(buf, row_start) ));
 		if (tmpoff < memo_len) {
@@ -940,7 +940,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				text = g_strdup("");
 			} else {
 				text = (char *) g_malloc(MDB_BIND_SIZE);
-				mdb_unicode2ascii(mdb, buf + start,
+				mdb_unicode2ascii(mdb, (char*)buf + start,
 					size, text, MDB_BIND_SIZE);
 			}
 		break;
