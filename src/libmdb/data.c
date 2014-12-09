@@ -560,7 +560,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 		if (col->bind_ptr) 
-			memcpy(col->bind_ptr, (uint8_t*)(uint8_t*)buf + row_start + 4, len - 4);
+			memcpy(col->bind_ptr, (uint8_t*)buf + row_start + 4, len - 4);
 		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
 		mdb_debug(MDB_DEBUG_OLE, "next pg_row %d", col->cur_blob_pg_row);
 
