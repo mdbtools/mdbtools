@@ -580,7 +580,7 @@ void*
 mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 {
 	char ole_ptr[MDB_MEMO_OVERHEAD];
-	char *result = malloc(MDB_BIND_SIZE);
+	char *result = g_malloc(MDB_BIND_SIZE);
 	size_t result_buffer_size = MDB_BIND_SIZE;
 	size_t len, pos;
 

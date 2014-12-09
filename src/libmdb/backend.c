@@ -468,9 +468,11 @@ static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
  */
 int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 {
-	MdbBackend *backend;
+	MdbBackend *backend = 0;
 
-	backend = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend_name);
+	if(mdb_backends) {
+		backend = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend_name);
+	}
 	if (backend) {
 		mdb->default_backend = backend;
 		g_free(mdb->backend_name); // NULL is ok
@@ -522,7 +524,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		if (idx->index_type==2)
 			continue;
 
-		index_name = malloc(strlen(table->name)+strlen(idx->name)+5+1);
+		index_name = g_malloc(strlen(table->name)+strlen(idx->name)+5+1);
 		strcpy(index_name, table->name);
 		if (idx->index_type==1)
 			strcat(index_name, "_pkey");
@@ -558,7 +560,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 			}
 		}
 		g_free(quoted_name);
-		free(index_name);
+		g_free(index_name);
 
 		for (j=0;j<idx->num_keys;j++) {
 			if (j)
@@ -779,14 +781,14 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 					/* ugly hack to detect the type */
 					if (defval[0]=='"' && defval[def_len-1]=='"') {
 						/* this is a string */
-						gchar *output_default = malloc(def_len-1);
+						gchar *output_default = (gchar*)g_malloc(def_len-1);
 						gchar *output_default_escaped;
 						memcpy(output_default, defval+1, def_len-2);
 						output_default[def_len-2] = 0;
 						output_default_escaped = quote_with_squotes(output_default);
 						fputs(output_default_escaped, outfile);
 						g_free(output_default_escaped);
-						free(output_default);
+						g_free(output_default);
 					} else if (!strcmp(defval, "Yes"))
 						fputs("TRUE", outfile);
 					else if (!strcmp(defval, "No"))
