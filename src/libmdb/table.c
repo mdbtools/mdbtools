@@ -128,7 +128,7 @@ MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_t
 
 	for (i=0; i<mdb->num_catalog; i++) {
 		entry = g_ptr_array_index(mdb->catalog, i);
-		if (!strcasecmp(entry->object_name, table_name))
+		if (!g_strcasecmp(entry->object_name, table_name))
 			return mdb_read_table(entry);
 	}
 

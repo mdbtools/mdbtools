@@ -281,7 +281,7 @@ mdb_get_coltype_string(MdbBackend *backend, int col_type))
 	}
 	if (col_type > 0x10 ) {
    		// return NULL;
-		snprintf(buf,sizeof(buf), "type %04x", col_type);
+		g_snprintf(buf,sizeof(buf), "type %04x", col_type);
 		return buf;
 	} else
 		return backend->types_table[col_type].name;
@@ -322,7 +322,7 @@ mdb_get_colbacktype_string(const MdbColumn *col)
 	if (!type) {
    		// return NULL;
 		static char buf[16];
-		snprintf(buf,sizeof(buf), "type %04x", col->col_type);
+		g_snprintf(buf,sizeof(buf), "type %04x", col->col_type);
 		return buf;
 	}
 	return type->name;
@@ -793,7 +793,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 						fputs("TRUE", outfile);
 					else if (!strcmp(defval, "No"))
 						fputs("FALSE", outfile);
-					else if (!strcasecmp(defval, "date()")) {
+					else if (!g_ascii_strcasecmp(defval, "date()")) {
 						if (!strcmp(mdb_col_get_prop(col, "Format"), "Short Date"))
 							fputs(mdb->default_backend->short_now, outfile);
 						else

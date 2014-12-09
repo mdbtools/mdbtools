@@ -44,9 +44,6 @@
 
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
-
-#define strcasecmp _stricmp
-#define snprintf sprintf_s // not 100% the same but sufficient
 #else
 #include <inttypes.h>
 #include <unistd.h>
