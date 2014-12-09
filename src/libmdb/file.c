@@ -393,7 +393,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 		RC4_KEY rc4_key;
 		unsigned int tmp_key = mdb->f->db_key ^ pg;
 		RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
-		RC4(&rc4_key, mdb->fmt->pg_size, pg_buf);
+		RC4(&rc4_key, mdb->fmt->pg_size, (unsigned char *)pg_buf);
 	}
 
 	return len;

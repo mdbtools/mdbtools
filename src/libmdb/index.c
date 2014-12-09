@@ -67,12 +67,12 @@ mdb_read_indices(MdbTableDef *table)
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
-	MdbIndex *pidx;
+	MdbIndex *pidx = 0;
 	unsigned int i, j, k;
 	int key_num, col_num, cleaned_col_num;
 	int cur_pos, name_sz, idx2_sz, type_offset;
 	int index_start_pg = mdb->cur_pg;
-	gchar *tmpbuf;
+	gchar *tmpbuf = 0;
 
 	table->indices = g_ptr_array_new();
 

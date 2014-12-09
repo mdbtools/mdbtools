@@ -41,9 +41,13 @@
 
 #ifdef _MSC_VER
 #include <stdint.h>
-
+//#define USE_GSSIZE
+#ifdef USE_GSSIZE
+typedef gssize ssize_t;
+#else
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
+#endif
 #else
 #include <inttypes.h>
 #include <unistd.h>
