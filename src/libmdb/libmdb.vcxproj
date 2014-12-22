@@ -89,7 +89,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>BUILDING_LIBMDB;USING_STATIC_LIBICONV;HAVE_ICONV;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NO_NULL_DT;DT_FMT_ISODATE;BUILDING_LIBMDB;USING_STATIC_LIBICONV;HAVE_ICONV;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>..\..\..\libiconv\include;..\..\include;..\..\..\glib-2.28.8;..\..\..\glib-2.28.8\glib;</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
@@ -117,7 +117,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>BUILDING_LIBMDB;USING_STATIC_LIBICONV;HAVE_ICONV;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NO_NULL_DT;DT_FMT_ISODATE;BUILDING_LIBMDB;USING_STATIC_LIBICONV;HAVE_ICONV;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>..\..\..\glib-2.28.8;..\..\..\glib-2.28.8\glib;..\..\..\libiconv\include;..\..\include;.\glib</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
