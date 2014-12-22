@@ -27,7 +27,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
@@ -51,10 +53,21 @@
 #define MDB_MEMO_OVERHEAD 12
 #define MDB_BIND_SIZE 16384
 
-// Theses 2 atrbutes are not supported by all compilers:
-// M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
-#define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
-#define MDB_CONSTRUCTOR(funcname) void __attribute__((constructor)) funcname()
+#ifdef _WIN32
+#if BUILDING_LIBMDB
+#define LIBMDB_DLL __declspec(dllexport)
+#else
+#define LIBMDB_DLL __declspec(dllimport)
+#endif
+#else
+#define LIBMDB_DLL
+#endif
+
+#ifndef _WIN32
+#define MDB_DEPRECATED(type, func) type __attribute__((deprecated)) func
+#else
+#define MDB_DEPRECATED(type, func) __declspec(deprecated) type func
+#endif
 
 enum {
 	MDB_PAGE_DB = 0,
@@ -235,6 +248,11 @@ typedef struct {
 } MdbFile; 
 
 /* offset to row count on data pages...version dependant */
+#ifdef  _WIN64
+typedef __int64    ssize_t;
+#elif _WIN32
+typedef _W64 int   ssize_t;
+#endif
 typedef struct {
 	ssize_t		pg_size;
 	guint16		row_count_offset; 
@@ -430,164 +448,174 @@ typedef struct {
 	MdbAny	value;
 } MdbSarg;
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#define strcasecmp _stricmp
+#endif
+
 /* mem.c */
-extern MDB_DEPRECATED(void, mdb_init());
-extern MDB_DEPRECATED(void, mdb_exit());
+extern LIBMDB_DLL MDB_DEPRECATED(void, mdb_init());
+extern LIBMDB_DLL MDB_DEPRECATED(void, mdb_exit());
+/* glib - to allow static linking of glib in mdbtools */
+extern LIBMDB_DLL void	 mdb_g_free	          (gpointer	 mem);
+extern LIBMDB_DLL gpointer mdb_g_malloc         (gsize	 n_bytes);
+extern LIBMDB_DLL gpointer mdb_g_malloc0        (gsize	 n_bytes);
 
 /* file.c */
-extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
-extern ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
-extern unsigned char mdb_get_byte(void *buf, int offset);
-extern int    mdb_get_int16(void *buf, int offset);
-extern long   mdb_get_int32(void *buf, int offset);
-extern long   mdb_get_int32_msb(void *buf, int offset);
-extern float  mdb_get_single(void *buf, int offset);
-extern double mdb_get_double(void *buf, int offset);
-extern unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset);
-extern int    mdb_pg_get_int16(MdbHandle *mdb, int offset);
-extern long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
-extern float  mdb_pg_get_single(MdbHandle *mdb, int offset);
-extern double mdb_pg_get_double(MdbHandle *mdb, int offset);
-extern MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
-extern void mdb_close(MdbHandle *mdb);
-extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
-extern void mdb_swap_pgbuf(MdbHandle *mdb);
+extern LIBMDB_DLL ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
+extern LIBMDB_DLL ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
+extern LIBMDB_DLL unsigned char mdb_get_byte(void *buf, int offset);
+extern LIBMDB_DLL int    mdb_get_int16(unsigned char *buf, int offset);
+extern LIBMDB_DLL long   mdb_get_int32(unsigned char *buf, int offset);
+extern LIBMDB_DLL long   mdb_get_int32_msb(unsigned char *buf, int offset);
+extern LIBMDB_DLL float  mdb_get_single(unsigned char *buf, int offset);
+extern LIBMDB_DLL double mdb_get_double(unsigned char *buf, int offset);
+extern LIBMDB_DLL unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset);
+extern LIBMDB_DLL int    mdb_pg_get_int16(MdbHandle *mdb, int offset);
+extern LIBMDB_DLL long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
+extern LIBMDB_DLL float  mdb_pg_get_single(MdbHandle *mdb, int offset);
+extern LIBMDB_DLL double mdb_pg_get_double(MdbHandle *mdb, int offset);
+extern LIBMDB_DLL MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
+extern LIBMDB_DLL void mdb_close(MdbHandle *mdb);
+extern LIBMDB_DLL MdbHandle *mdb_clone_handle(MdbHandle *mdb);
+extern LIBMDB_DLL void mdb_swap_pgbuf(MdbHandle *mdb);
 
 /* catalog.c */
-extern void mdb_free_catalog(MdbHandle *mdb);
-extern GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
+extern LIBMDB_DLL void mdb_free_catalog(MdbHandle *mdb);
+extern LIBMDB_DLL GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
 MdbCatalogEntry *mdb_get_catalogentry_by_name(MdbHandle *mdb, const gchar* name);
-extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
-extern char *mdb_get_objtype_string(int obj_type);
+extern LIBMDB_DLL void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
+extern LIBMDB_DLL char *mdb_get_objtype_string(int obj_type);
 
 /* table.c */
-extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
-extern void mdb_free_tabledef(MdbTableDef *table);
-extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
-extern MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_type);
-extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
-extern void mdb_free_columns(GPtrArray *columns);
-extern GPtrArray *mdb_read_columns(MdbTableDef *table);
-extern void mdb_table_dump(MdbCatalogEntry *entry);
-extern guint8 read_pg_if_8(MdbHandle *mdb, int *cur_pos);
-extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
-extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
-extern void *read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len);
-extern int mdb_is_user_table(MdbCatalogEntry *entry);
-extern int mdb_is_system_table(MdbCatalogEntry *entry);
-extern const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
-extern const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
+extern LIBMDB_DLL MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
+extern LIBMDB_DLL void mdb_free_tabledef(MdbTableDef *table);
+extern LIBMDB_DLL MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
+extern LIBMDB_DLL MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_type);
+extern LIBMDB_DLL void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
+extern LIBMDB_DLL void mdb_free_columns(GPtrArray *columns);
+extern LIBMDB_DLL GPtrArray *mdb_read_columns(MdbTableDef *table);
+extern LIBMDB_DLL void mdb_table_dump(MdbCatalogEntry *entry);
+extern LIBMDB_DLL guint8 read_pg_if_8(MdbHandle *mdb, int *cur_pos);
+extern LIBMDB_DLL guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
+extern LIBMDB_DLL guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
+extern LIBMDB_DLL void *read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, size_t len);
+extern LIBMDB_DLL int mdb_is_user_table(MdbCatalogEntry *entry);
+extern LIBMDB_DLL int mdb_is_system_table(MdbCatalogEntry *entry);
+extern LIBMDB_DLL const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
+extern LIBMDB_DLL const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
 
 /* data.c */
-extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
-extern void mdb_data_dump(MdbTableDef *table);
-extern void mdb_date_to_tm(double td, struct tm *t);
-extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
-extern int mdb_rewind_table(MdbTableDef *table);
-extern int mdb_fetch_row(MdbTableDef *table);
-extern int mdb_is_fixed_col(MdbColumn *col);
-extern char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
-extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
-extern int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
-extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
-extern int mdb_col_fixed_size(MdbColumn *col);
-extern int mdb_col_disp_size(MdbColumn *col);
-extern size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
-extern size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
-extern void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
-extern void mdb_set_date_fmt(const char *);
-extern int mdb_read_row(MdbTableDef *table, unsigned int row);
+extern LIBMDB_DLL int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
+extern LIBMDB_DLL void mdb_data_dump(MdbTableDef *table);
+extern LIBMDB_DLL void mdb_date_to_tm(double td, struct tm *t);
+extern LIBMDB_DLL void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
+extern LIBMDB_DLL int mdb_rewind_table(MdbTableDef *table);
+extern LIBMDB_DLL int mdb_fetch_row(MdbTableDef *table);
+extern LIBMDB_DLL int mdb_is_fixed_col(MdbColumn *col);
+extern LIBMDB_DLL char *mdb_col_to_string(MdbHandle *mdb, char *buf, int start, int datatype, int size);
+extern LIBMDB_DLL int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
+extern LIBMDB_DLL int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
+extern LIBMDB_DLL int mdb_find_end_of_row(MdbHandle *mdb, int row);
+extern LIBMDB_DLL int mdb_col_fixed_size(MdbColumn *col);
+extern LIBMDB_DLL int mdb_col_disp_size(MdbColumn *col);
+extern LIBMDB_DLL size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
+extern LIBMDB_DLL size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
+extern LIBMDB_DLL void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
+extern LIBMDB_DLL void mdb_set_date_fmt(const char *);
+extern LIBMDB_DLL int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
-extern void mdb_buffer_dump(const void *buf, int start, size_t len);
+extern LIBMDB_DLL void mdb_buffer_dump(const void *buf, int start, size_t len);
 
 /* backend.c */
-extern MDB_DEPRECATED(char*, mdb_get_coltype_string(MdbBackend *backend, int col_type));
-extern MDB_DEPRECATED(int, mdb_coltype_takes_length(MdbBackend *backend, int col_type));
-extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
-extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
-extern int mdb_colbacktype_takes_length(const MdbColumn *col);
-extern MDB_DEPRECATED(void, mdb_init_backends());
-extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
-extern MDB_DEPRECATED(void, mdb_remove_backends());
-extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
-extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
+extern LIBMDB_DLL MDB_DEPRECATED(char*, mdb_get_coltype_string(MdbBackend *backend, int col_type));
+extern LIBMDB_DLL MDB_DEPRECATED(int, mdb_coltype_takes_length(MdbBackend *backend, int col_type));
+extern LIBMDB_DLL const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
+extern LIBMDB_DLL const char* mdb_get_colbacktype_string(const MdbColumn *col);
+extern LIBMDB_DLL int mdb_colbacktype_takes_length(const MdbColumn *col);
+extern LIBMDB_DLL MDB_DEPRECATED(void, mdb_init_backends());
+extern LIBMDB_DLL void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
+extern LIBMDB_DLL MDB_DEPRECATED(void, mdb_remove_backends());
+extern LIBMDB_DLL int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
+extern LIBMDB_DLL void generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options);
+extern LIBMDB_DLL void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 
 /* sargs.c */
-extern int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
-extern int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field);
-extern void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
-extern int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
-extern int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg);
-extern int mdb_test_string(MdbSargNode *node, char *s);
-extern int mdb_test_int(MdbSargNode *node, gint32 i);
-extern int mdb_add_sarg(MdbColumn *col, MdbSarg *in_sarg);
+extern LIBMDB_DLL int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
+extern LIBMDB_DLL int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field);
+extern LIBMDB_DLL void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
+extern LIBMDB_DLL int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
+extern LIBMDB_DLL int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg);
+extern LIBMDB_DLL int mdb_test_string(MdbSargNode *node, char *s);
+extern LIBMDB_DLL int mdb_test_int(MdbSargNode *node, gint32 i);
+extern LIBMDB_DLL int mdb_add_sarg(MdbColumn *col, MdbSarg *in_sarg);
 
 
 
 /* index.c */
-extern GPtrArray *mdb_read_indices(MdbTableDef *table);
-extern void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
-extern void mdb_index_scan_free(MdbTableDef *table);
-extern int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
-extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
-extern void mdb_index_hash_text(char *text, char *hash);
-extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
-extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
-extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
-extern void mdb_free_indices(GPtrArray *indices);
+extern LIBMDB_DLL GPtrArray *mdb_read_indices(MdbTableDef *table);
+extern LIBMDB_DLL void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
+extern LIBMDB_DLL void mdb_index_scan_free(MdbTableDef *table);
+extern LIBMDB_DLL int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
+extern LIBMDB_DLL int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
+extern LIBMDB_DLL void mdb_index_hash_text(char *text, char *hash);
+extern LIBMDB_DLL void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
+extern LIBMDB_DLL int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
+extern LIBMDB_DLL void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
+extern LIBMDB_DLL void mdb_free_indices(GPtrArray *indices);
 void mdb_index_page_reset(MdbIndexPage *ipg);
-extern int mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg);
+extern LIBMDB_DLL int mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg);
 
 /* stats.c */
-extern void mdb_stats_on(MdbHandle *mdb);
-extern void mdb_stats_off(MdbHandle *mdb);
-extern void mdb_dump_stats(MdbHandle *mdb);
+extern LIBMDB_DLL void mdb_stats_on(MdbHandle *mdb);
+extern LIBMDB_DLL void mdb_stats_off(MdbHandle *mdb);
+extern LIBMDB_DLL void mdb_dump_stats(MdbHandle *mdb);
 
 /* like.c */
-extern int mdb_like_cmp(char *s, char *r);
+extern LIBMDB_DLL int mdb_like_cmp(char *s, char *r);
 
 /* write.c */
-extern void mdb_put_int16(void *buf, guint32 offset, guint32 value);
-extern void mdb_put_int32(void *buf, guint32 offset, guint32 value);
-extern void mdb_put_int32_msb(void *buf, guint32 offset, guint32 value);
-extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
-extern guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
-extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
-extern int mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields);
-extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
-extern int mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size);
-extern int mdb_pg_get_freespace(MdbHandle *mdb);
-extern int mdb_update_row(MdbTableDef *table);
-extern void *mdb_new_data_pg(MdbCatalogEntry *entry);
+extern LIBMDB_DLL void mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value);
+extern LIBMDB_DLL void mdb_put_int32(unsigned char *buf, guint32 offset, guint32 value);
+extern LIBMDB_DLL void mdb_put_int32_msb(unsigned char *buf, guint32 offset, guint32 value);
+extern LIBMDB_DLL int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
+extern LIBMDB_DLL guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
+extern LIBMDB_DLL int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
+extern LIBMDB_DLL int mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields);
+extern LIBMDB_DLL int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
+extern LIBMDB_DLL int mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size);
+extern LIBMDB_DLL int mdb_pg_get_freespace(MdbHandle *mdb);
+extern LIBMDB_DLL int mdb_update_row(MdbTableDef *table);
+extern LIBMDB_DLL void *mdb_new_data_pg(MdbCatalogEntry *entry);
 
 /* map.c */
-extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
-extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
+extern LIBMDB_DLL guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
+extern LIBMDB_DLL gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
 
 /* props.c */
-extern void mdb_free_props(MdbProperties *props);
-extern void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
-extern GArray* mdb_kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
+extern LIBMDB_DLL void mdb_free_props(MdbProperties *props);
+extern LIBMDB_DLL void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
+extern LIBMDB_DLL GArray* mdb_kkd_to_props(MdbHandle *mdb, char *kkd, size_t len);
 
 
 /* worktable.c */
-extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
-extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
-extern void mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed);
-extern void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int column);
-extern void mdb_temp_columns_end(MdbTableDef *table);
+extern LIBMDB_DLL MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
+extern LIBMDB_DLL void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
+extern LIBMDB_DLL void mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed);
+extern LIBMDB_DLL void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int column);
+extern LIBMDB_DLL void mdb_temp_columns_end(MdbTableDef *table);
 
 /* options.c */
-extern int mdb_get_option(unsigned long optnum);
-extern void mdb_debug(int klass, char *fmt, ...);
+extern LIBMDB_DLL int mdb_get_option(unsigned long optnum);
+extern LIBMDB_DLL void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
-extern int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
-extern void mdb_iconv_init(MdbHandle *mdb);
-extern void mdb_iconv_close(MdbHandle *mdb);
-extern const char* mdb_target_charset(MdbHandle *mdb);
+extern LIBMDB_DLL int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
+extern LIBMDB_DLL int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
+extern LIBMDB_DLL void mdb_iconv_init(MdbHandle *mdb);
+extern LIBMDB_DLL void mdb_iconv_close(MdbHandle *mdb);
+extern LIBMDB_DLL const char* mdb_target_charset(MdbHandle *mdb);
 
 #ifdef __cplusplus
   }

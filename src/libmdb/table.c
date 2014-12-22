@@ -76,7 +76,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
 	int row_start, pg_row;
-	void *buf, *pg_buf = mdb->pg_buf;
+	unsigned char *buf, *pg_buf = mdb->pg_buf;
 	guint i;
 
 	mdb_read_pg(mdb, entry->table_pg);
@@ -166,7 +166,7 @@ read_pg_if_8(MdbHandle *mdb, int *cur_pos)
  * are still advanced and the page cursor is still updated.
  */
 void * 
-read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
+read_pg_if_n(MdbHandle *mdb, unsigned char *buf, int *cur_pos, size_t len)
 {
 	/* Advance to page which contains the first byte */
 	while (*cur_pos >= mdb->fmt->pg_size) {

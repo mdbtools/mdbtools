@@ -36,7 +36,11 @@ static char *mdb_date_to_string(void *buf, int start);
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
+#ifdef DT_FMT_ISODATE
+static char date_fmt[64] = "%Y-%m-%dT%H:%M:%S";
+#else
 static char date_fmt[64] = "%x %X";
+#endif
 
 void mdb_set_date_fmt(const char *fmt)
 {
@@ -473,7 +477,7 @@ size_t
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
-	void *buf;
+	unsigned char *buf;
 	int row_start;
 	size_t len;
 
@@ -506,7 +510,7 @@ size_t
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint32 ole_len;
-	void *buf;
+	unsigned char *buf;
 	int row_start;
 	size_t len;
 
@@ -547,7 +551,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 				mdb_buffer_dump(col->bind_ptr, 0, 16);
 		}
 		return len;
-	} else if ((ole_len & 0xff000000) == 0) {
+	} else if ((ole_len & 0xf0000000) == 0) {
 		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
 			col->cur_blob_pg_row & 0xff,
@@ -672,7 +676,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	guint32 memo_len;
 	gint32 row_start, pg_row;
 	size_t len;
-	void *buf, *pg_buf = mdb->pg_buf;
+	char *buf, *pg_buf = (char*) mdb->pg_buf;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
 	if (size<MDB_MEMO_OVERHEAD) {
@@ -834,13 +838,26 @@ static char *
 mdb_date_to_string(void *buf, int start)
 {
 	struct tm t;
+#ifdef NO_NULL_DT
+	char *text;
+	double td = mdb_get_double(buf, start);
+
+	//If td == 0, t->tm_year == -1, which fails the debug assertion >= 0
+	if (!td) {
+		text = (char *) g_strdup("0");
+	} else {
+		 text = (char *) g_malloc(MDB_BIND_SIZE); 
+		 mdb_date_to_tm(td, &t);
+		 strftime(text, MDB_BIND_SIZE, date_fmt, &t);
+	}
+#else
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 	double td = mdb_get_double(buf, start);
 
 	mdb_date_to_tm(td, &t);
 
 	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
-
+#endif
 	return text;
 }
 
@@ -896,7 +913,7 @@ int floor_log10(double f, int is_single)
 }
 #endif
 
-char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
+char *mdb_col_to_string(MdbHandle *mdb, char *buf, int start, int datatype, int size)
 {
 	char *text = NULL;
 	float tf;

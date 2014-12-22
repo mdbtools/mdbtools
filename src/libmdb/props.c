@@ -162,7 +162,7 @@ mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name) {
  * and returns a GArray of MdbProps*
  */
 GArray*
-mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
+mdb_kkd_to_props(MdbHandle *mdb, char *buffer, size_t len) {
 	guint32 record_len;
 	guint16 record_type;
 	size_t pos;

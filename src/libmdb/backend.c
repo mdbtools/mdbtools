@@ -35,7 +35,7 @@
 
 static int is_init;
 GHashTable *mdb_backends;
-void _mdb_remove_backends();
+static void _mdb_remove_backends();
 
 /*    Access data types */
 static MdbBackendType mdb_access_types[] = {
@@ -342,13 +342,39 @@ mdb_init_backends())
 	fprintf(stderr, "mdb_init_backends() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
+#ifdef _MSC_VER
+
+#define CCALL __cdecl
+#pragma section(".CRT$XCU",read)
+#define INITIALIZER(f) \
+   static void __cdecl f(void); \
+   __declspec(allocate(".CRT$XCU")) void (__cdecl*f##_)(void) = f; \
+   static void __cdecl f(void)
+
+#elif defined(__GNUC__)
+
+#define CCALL
+#define INITIALIZER(f) void __attribute__((constructor)) f(void)
+#endif
+
+/**
+ * mdb_remove_backends
+ *
+ * Removes all entries from and destroys the mdb_backends hash.
+ */
+static void CCALL _mdb_remove_backends(void)
+{
+	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
+	g_hash_table_destroy(mdb_backends);
+}
+
 /**
  * _mdb_init_backends
  *
  * Initializes the mdb_backends hash and loads the builtin backends.
  * Use mdb_remove_backends() to destroy this hash when done.
  */
-MDB_CONSTRUCTOR(_mdb_init_backends)
+INITIALIZER(_mdb_init_backends)
 {
 	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
 
@@ -440,17 +466,6 @@ mdb_remove_backends())
 	fprintf(stderr, "mdb_remove_backends() is DEPRECATED and does nothing. Stop calling it.\n");
 }
 
-/**
- * mdb_remove_backends
- *
- * Removes all entries from and destroys the mdb_backends hash.
- */
-void
-_mdb_remove_backends()
-{
-	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
-	g_hash_table_destroy(mdb_backends);
-}
 static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
 {
 	MdbBackend *backend = (MdbBackend *)value;
@@ -577,6 +592,121 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		fprintf (outfile, ");\n");
 	}
 	fputc ('\n', outfile);
+	
+	g_free(quoted_table_name);
+}
+
+/**
+ * mdb_print_indexes
+ * @buf: Where to print the sql
+ * @bi: Index into buf
+ * @bsize: Size of buf
+ * @table: Table to process
+ * @dbnamespace: Target namespace/schema name
+ */
+static void
+mdb_print_indexess(char* buf, unsigned int *bi, unsigned int *bsize, MdbTableDef *table, char *dbnamespace)
+{
+	unsigned int i, j;
+	char* quoted_table_name;
+	char* index_name;
+	char* quoted_name;
+	int backend;
+	MdbHandle* mdb = table->entry->mdb;
+	MdbIndex *idx;
+	MdbColumn *col;
+
+	if (!strcmp(mdb->backend_name, "postgres")) {
+		backend = MDB_BACKEND_POSTGRES;
+	} else if (!strcmp(mdb->backend_name, "mysql")) {
+		backend = MDB_BACKEND_MYSQL;
+	} else {
+		*bi += sprintf(buf + *bi, "-- Indexes are not implemented for %s\n\n", mdb->backend_name);
+		return;
+	}
+
+	/* read indexes */
+	mdb_read_indices(table);
+
+	*bi += sprintf(buf + *bi, "-- CREATE INDEXES ...\n");
+
+	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, table->name);
+
+	for (i=0;i<table->num_idxs;i++) {
+
+		if (*bi > *bsize/2) { //extend the buffer if needed
+			char *b;
+			*bsize *= 2;
+			b = (char*) g_realloc(buf, *bsize);
+			buf = b;
+		}
+
+		idx = (MdbIndex*) g_ptr_array_index (table->indices, i);
+		if (idx->index_type==2)
+			continue;
+
+		index_name = (char*) malloc(strlen(table->name)+strlen(idx->name)+5+1);
+		strcpy(index_name, table->name);
+		if (idx->index_type==1)
+			strcat(index_name, "_pkey");
+		else {
+			strcat(index_name, "_");
+			strcat(index_name, idx->name);
+			strcat(index_name, "_idx");
+		}
+		quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
+		if (idx->index_type==1) {
+			switch (backend) {
+				case MDB_BACKEND_POSTGRES:
+					*bi += sprintf(buf + *bi, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
+					break;
+				case MDB_BACKEND_MYSQL:
+					*bi += sprintf(buf + *bi, "ALTER TABLE %s ADD PRIMARY KEY (", quoted_table_name);
+					break;
+			}
+		} else {
+			switch (backend) {
+				case MDB_BACKEND_POSTGRES:
+					*bi += sprintf(buf + *bi, "CREATE");
+					if (idx->flags & MDB_IDX_UNIQUE)
+						*bi += sprintf(buf + *bi, " UNIQUE");
+					*bi += sprintf(buf + *bi, " INDEX %s ON %s (", quoted_name, quoted_table_name);
+					break;
+				case MDB_BACKEND_MYSQL:
+					*bi += sprintf(buf + *bi, "ALTER TABLE %s ADD", quoted_table_name);
+					if (idx->flags & MDB_IDX_UNIQUE)
+						*bi += sprintf(buf + *bi, " UNIQUE");
+					*bi += sprintf(buf + *bi, " INDEX %s (", quoted_name);
+					break;
+			}
+		}
+		g_free(quoted_name); //changed from free
+		free(index_name);
+
+		for (j=0;j<idx->num_keys;j++) {
+
+			if (*bi > *bsize/2) { //extend the buffer if needed
+				char *b;
+				*bsize *= 2;
+				b = (char*) g_realloc(buf, *bsize);
+				buf = b;
+			}
+
+			if (j)
+				*bi += sprintf(buf + *bi, ", ");
+			col= (MdbColumn*) g_ptr_array_index(table->columns,idx->key_col_num[j]-1);
+			quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+			*bi += sprintf(buf + *bi, "%s", quoted_name);
+			if (idx->index_type!=1 && idx->key_col_order[j])
+				/* no DESC for primary keys */
+				*bi += sprintf(buf + *bi, " DESC");
+
+			g_free(quoted_name); //changed from free
+
+		}
+		*bi += sprintf(buf + *bi, ");\n");
+	}
+	*bi += sprintf(buf + *bi, "\n");
 	
 	g_free(quoted_table_name);
 }
@@ -869,6 +999,176 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	mdb_free_tabledef (table);
 }
 
+/** Does the same as the above but putting the data in buf.
+ *	In Windows there is no way to write to memory through a FILE pointer, and writing to disk slows down a lot
+*/
+void
+generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options)
+{
+	MdbTableDef *table;
+	MdbHandle *mdb = entry->mdb;
+	MdbColumn *col;
+	unsigned int i;
+	char* quoted_table_name;
+	char* quoted_name;
+	MdbProperties *props;
+	const char *prop_value;
+
+	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, entry->object_name);
+
+	/* drop the table if it exists */
+	if (export_options & MDB_SHEXP_DROPTABLE)
+		*bi = sprintf (buf, mdb->default_backend->drop_statement, quoted_table_name);
+
+	/* create the table */
+	*bi += sprintf(buf + *bi, "CREATE TABLE %s (", quoted_table_name);
+
+	table = mdb_read_table (entry);
+
+	/* get the columns */
+	mdb_read_columns (table);
+
+	/* loop over the columns, dumping the names and types */
+	for (i = 0; i < table->num_cols; i++) {
+
+		if (*bi > *bsize/2) { //extend the buffer if needed
+			char *b;
+			*bsize *= 2;
+			b = (char*) g_realloc(buf, *bsize);
+			buf = b;
+		}
+
+		col = (MdbColumn*) g_ptr_array_index (table->columns, i);
+
+		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+		*bi += sprintf(buf + *bi, "%s %s", quoted_name,
+			mdb_get_colbacktype_string (col));
+		g_free(quoted_name); //changed from free
+
+		if (mdb_colbacktype_takes_length(col)) {
+
+			/* more portable version from DW patch */
+			if (col->col_size == 0)
+	    			*bi += sprintf(buf + *bi, " (255)");
+			else
+	    			*bi += sprintf(buf + *bi, " (%d)", col->col_size);
+		}
+
+		if (export_options & MDB_SHEXP_CST_NOTNULL) {
+			if (col->col_type == MDB_BOOL) {
+				/* access booleans are never null */
+				*bi += sprintf(buf + *bi, " NOT NULL");
+			} else {
+				const gchar *not_null = mdb_col_get_prop(col, "Required");
+				if (not_null && not_null[0]=='y')
+					*bi += sprintf(buf + *bi, " NOT NULL");
+			}
+		}
+
+		if (export_options & MDB_SHEXP_DEFVALUES) {
+			int done = 0;
+			if (col->props) {
+				gchar *defval = (gchar*) g_hash_table_lookup(col->props->hash, "DefaultValue");
+				if (defval) {
+					size_t def_len = strlen(defval);
+					*bi += sprintf(buf + *bi, " DEFAULT ");
+					/* ugly hack to detect the type */
+					if (defval[0]=='"' && defval[def_len-1]=='"') {
+						/* this is a string */
+						gchar *output_default = (gchar*) malloc(def_len-1);
+						gchar *output_default_escaped; 
+						memcpy(output_default, defval+1, def_len-2);
+						output_default[def_len-2] = 0;
+						output_default_escaped = quote_with_squotes(output_default);
+						*bi += sprintf(buf + *bi, output_default_escaped);
+						g_free(output_default_escaped);
+						free(output_default);
+					} else if (!strcmp(defval, "Yes"))
+						*bi += sprintf(buf + *bi, "TRUE");
+					else if (!strcmp(defval, "No"))
+						*bi += sprintf(buf + *bi, "FALSE");
+					else if (!strcasecmp(defval, "date()")) {
+						if (!strcmp(mdb_col_get_prop(col, "Format"), "Short Date"))
+							*bi += sprintf(buf + *bi, mdb->default_backend->short_now);
+						else
+							*bi += sprintf(buf + *bi, mdb->default_backend->long_now);
+					}
+					else
+						*bi += sprintf(buf + *bi, defval);
+					done = 1;
+				}
+			}
+			if (!done && col->col_type == MDB_BOOL)
+				/* access booleans are false by default */
+				*bi += sprintf(buf + *bi, " DEFAULT FALSE");
+		}
+		if (i < table->num_cols - 1)
+			*bi += sprintf(buf + *bi, ", ");
+	} /* for */
+
+	*bi += sprintf(buf + *bi, ");");
+
+	/* Add the constraints on columns */
+	for (i = 0; i < table->num_cols; i++) {
+
+		if (*bi > *bsize/2) { //extend the buffer if needed
+			char *b;
+			*bsize *= 2;
+			b = (char*) g_realloc(buf, *bsize);
+			buf = b;
+		}
+
+		col = (MdbColumn*) g_ptr_array_index (table->columns, i);
+		props = col->props;
+		if (!props)
+			continue;
+
+		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+
+		if (export_options & MDB_SHEXP_CST_NOTEMPTY) {
+			prop_value = mdb_col_get_prop(col, "AllowZeroLength");
+			if (prop_value && prop_value[0]=='n')
+					*bi += sprintf(buf + *bi, 
+						mdb->default_backend->constaint_not_empty_statement,
+						quoted_table_name, quoted_name);
+		}
+
+		if (export_options & MDB_SHEXP_COMMENTS) {
+			prop_value = mdb_col_get_prop(col, "Description");
+			if (prop_value) {
+				char *comment = quote_with_squotes(prop_value);
+				*bi += sprintf(buf + *bi, 
+					mdb->default_backend->column_comment_statement,
+					quoted_table_name, quoted_name, comment);
+				g_free(comment); //changed from free
+			}
+		}
+
+		g_free(quoted_name); //changed from free
+	}
+
+	/* Add the constraints on table */
+	if (export_options & MDB_SHEXP_COMMENTS) {
+		prop_value = mdb_table_get_prop(table, "Description");
+		if (prop_value) {
+			char *comment = quote_with_squotes(prop_value);
+			*bi += sprintf(buf + *bi, 
+				mdb->default_backend->table_comment_statement,
+				quoted_table_name, comment);
+			g_free(comment); //changed from free
+		}
+	}
+	//*bi += sprintf(buf + *bi, "\n");
+
+
+	if (export_options & MDB_SHEXP_INDEXES)
+		// prints all the indexes of that table
+		mdb_print_indexess(buf, bi, bsize, table, dbnamespace);
+
+	g_free(quoted_table_name); //changed from free
+
+	mdb_free_tabledef (table);
+}
 
 void
 mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options)

@@ -29,3 +29,8 @@ mdb_exit())
 {
 	fprintf(stderr, "mdb_exit() is DEPRECATED and does nothing. Stop calling it.\n");
 }
+
+/* glib - to allow static linking of glib in mdbtools */
+void	 mdb_g_free	          (gpointer	 mem) { g_free(mem); }
+gpointer mdb_g_malloc         (gsize	 n_bytes) { return g_malloc(n_bytes); }
+gpointer mdb_g_malloc0        (gsize	 n_bytes) { return g_malloc0(n_bytes); }

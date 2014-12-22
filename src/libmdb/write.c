@@ -18,7 +18,6 @@
 
 #include <time.h>
 #include <math.h>
-#include <inttypes.h>
 #include "mdbtools.h"
 
 #ifdef DMALLOC
@@ -30,7 +29,7 @@
 static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields, guint32 pgnum, guint16 rownum);
 
 void
-mdb_put_int16(void *buf, guint32 offset, guint32 value)
+mdb_put_int16(unsigned char *buf, guint32 offset, guint32 value)
 {
 	value = GINT32_TO_LE(value);
 	memcpy(buf + offset, &value, 2);
@@ -44,7 +43,7 @@ __attribute__((alias("mdb_put_int16")));
 #endif
 
 void
-mdb_put_int32(void *buf, guint32 offset, guint32 value)
+mdb_put_int32(unsigned char *buf, guint32 offset, guint32 value)
 {
 	value = GINT32_TO_LE(value);
 	memcpy(buf + offset, &value, 4);
@@ -58,7 +57,7 @@ __attribute__((alias("mdb_put_int32")));
 #endif
 
 void
-mdb_put_int32_msb(void *buf, guint32 offset, guint32 value)
+mdb_put_int32_msb(unsigned char *buf, guint32 offset, guint32 value)
 {
 	value = GINT32_TO_BE(value);
 	memcpy(buf + offset, &value, 4);
@@ -81,7 +80,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 	fstat(mdb->f->fd, &status);
 	/* is page beyond current size + 1 ? */
 	if (status.st_size < offset + mdb->fmt->pg_size) {
-		fprintf(stderr,"offset %jd is beyond EOF\n",(intmax_t)offset);
+		fprintf(stderr,"offset %jd is beyond EOF\n",offset);
 		return 0;
 	}
 	lseek(mdb->f->fd, offset, SEEK_SET);
@@ -172,7 +171,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	MdbColumn *col;
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
-	void *pg_buf = mdb->pg_buf;
+	unsigned char *pg_buf = mdb->pg_buf;
 	unsigned int row_var_cols=0, row_cols;
 	unsigned char *nullmask;
 	unsigned int bitmask_sz;
@@ -594,7 +593,7 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 guint16
 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size)
 {
-	void *new_pg;
+	unsigned char *new_pg;
 	int num_rows, i, pos, row_start;
 	size_t row_size;
 	MdbCatalogEntry *entry = table->entry;
@@ -725,7 +724,7 @@ MdbCatalogEntry *entry = table->entry;
 MdbHandle *mdb = entry->mdb;
 int pg_size = mdb->fmt->pg_size;
 int rco = mdb->fmt->row_count_offset;
-	void *new_pg;
+	unsigned char *new_pg;
 guint16 num_rows;
 	int row_start;
 	size_t row_size;
@@ -793,7 +792,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	MdbColumn *col;
 	guint32 pg_row;
 	guint16 row = 0;
-	void *new_pg;
+	unsigned char *new_pg;
 	unsigned char key_hash[256];
 	int keycol;
 
