@@ -473,7 +473,7 @@ size_t
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
-	void *buf;
+	unsigned char *buf;
 	int row_start;
 	size_t len;
 
@@ -506,7 +506,7 @@ size_t
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 {
 	guint32 ole_len;
-	void *buf;
+	unsigned char *buf;
 	int row_start;
 	size_t len;
 
@@ -672,7 +672,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	guint32 memo_len;
 	gint32 row_start, pg_row;
 	size_t len;
-	void *buf, *pg_buf = mdb->pg_buf;
+	char *buf, *pg_buf = (char*) mdb->pg_buf;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
 
 	if (size<MDB_MEMO_OVERHEAD) {
@@ -896,7 +896,7 @@ int floor_log10(double f, int is_single)
 }
 #endif
 
-char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
+char *mdb_col_to_string(MdbHandle *mdb, char *buf, int start, int datatype, int size)
 {
 	char *text = NULL;
 	float tf;
