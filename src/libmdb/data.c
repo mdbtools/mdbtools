@@ -547,7 +547,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 				mdb_buffer_dump(col->bind_ptr, 0, 16);
 		}
 		return len;
-	} else if ((ole_len & 0xff000000) == 0) {
+	} else if ((ole_len & 0xf0000000) == 0) {
 		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
 			col->cur_blob_pg_row & 0xff,
