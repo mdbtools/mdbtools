@@ -538,6 +538,7 @@ extern LIBMDB_DLL MDB_DEPRECATED(void, mdb_init_backends());
 extern LIBMDB_DLL void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
 extern LIBMDB_DLL MDB_DEPRECATED(void, mdb_remove_backends());
 extern LIBMDB_DLL int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
+extern LIBMDB_DLL void generate_table_schemas(char *buf, unsigned int *bi, unsigned int *bsize, MdbCatalogEntry *entry, char *dbnamespace, guint32 export_options);
 extern LIBMDB_DLL void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 
 /* sargs.c */
