@@ -147,7 +147,7 @@ mdb_get_catalogentry_by_name(MdbHandle *mdb, const gchar* name)
 
 	for (i=0; i<mdb->num_catalog; i++) {
 		entry = g_ptr_array_index(mdb->catalog, i);
-		if (!strcasecmp(entry->object_name, name))
+		if (!g_ascii_strcasecmp(entry->object_name, name))
 			return entry;
 	}
 	return NULL;

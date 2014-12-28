@@ -66,22 +66,22 @@ like		{ return LIKE; }
 		return IDENT;
 	}
 
-[a-z\xa0-\xff][a-z0-9_#@\xa0-\xff]*		{ yylval.name = strdup(yytext); return NAME; }
+[a-z\xa0-\xff][a-z0-9_#@\xa0-\xff]*		{ yylval.name = g_strdup(yytext); return NAME; }
 
 '[^']*''  {
 		yyless(yyleng-1);
 		yymore();
 	}
 '[^']*'  {
-		yylval.name = strdup(yytext);
+		yylval.name = g_strdup(yytext);
 		return STRING;
 	}
 
 (-*[0-9]+|([0-9]*\.[0-9]+)(e[-+]?[0-9]+)?) {
-		yylval.name = strdup(yytext); return NUMBER;
+		yylval.name = g_strdup(yytext); return NUMBER;
 	}
 ~?(\/?[a-z0-9\.\xa0-\xff]+)+ {
-		yylval.name = strdup(yytext); return PATH;
+		yylval.name = g_strdup(yytext); return PATH;
 	}
 
 .	{ return yytext[0]; }

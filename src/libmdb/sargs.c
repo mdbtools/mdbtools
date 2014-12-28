@@ -302,7 +302,7 @@ int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg)
 
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index (table->columns, i);
-		if (!strcasecmp(col->name,colname)) {
+		if (!g_ascii_strcasecmp(col->name,colname)) {
 			return mdb_add_sarg(col, in_sarg);
 		}
 	}

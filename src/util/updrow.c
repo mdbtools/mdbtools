@@ -42,7 +42,7 @@ int len;
 	mdb = mdb_open(argv[1], MDB_WRITABLE);
 	tabname = argv[2];
 	sargname = argv[3];
-	updstr = strdup(argv[4]);
+	updstr = g_strdup(argv[4]);
 
 	table = mdb_read_table_by_name(mdb, tabname, MDB_TABLE);
 
@@ -78,7 +78,7 @@ void read_to_row(MdbTableDef *table, char *sargname)
 		sargcol = strtok(sargname," ");
 		for (i=0;i<table->num_cols;i++) {
 			col=g_ptr_array_index(table->columns,i);
-			if (!strcasecmp(col->name, (char *)sargcol)) {
+			if (!g_ascii_strcasecmp(col->name, (char *)sargcol)) {
 				sarg.col = col;
 				break;
 			}

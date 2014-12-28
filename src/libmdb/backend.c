@@ -792,7 +792,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 						fputs("TRUE", outfile);
 					else if (!strcmp(defval, "No"))
 						fputs("FALSE", outfile);
-					else if (!strcasecmp(defval, "date()")) {
+					else if (!g_ascii_strcasecmp(defval, "date()")) {
 						if (!strcmp(mdb_col_get_prop(col, "Format"), "Short Date"))
 							fputs(mdb->default_backend->short_now, outfile);
 						else

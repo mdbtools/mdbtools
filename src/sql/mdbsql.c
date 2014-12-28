@@ -641,7 +641,7 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcasecmp(col->name, (char *)node->parent)) {
+		if (!g_ascii_strcasecmp(col->name, (char *)node->parent)) {
 			node->col = col;
 			break;
 		}
@@ -689,7 +689,7 @@ int found = 0;
 		found=0;
 		for (j=0;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
-			if (!strcasecmp(sqlcol->name, col->name)) {
+			if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
 				sqlcol->disp_size = mdb_col_disp_size(col);
 				found=1;
 				break;

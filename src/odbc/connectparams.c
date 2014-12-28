@@ -119,7 +119,7 @@ static int LoadDSN (
       {
          while (GetNextItem (stream, &name, &value))
          {
-            g_hash_table_insert (table, strdup (name), strdup (value));
+            g_hash_table_insert (table, g_strdup (name), g_strdup (value));
          }
       }
 
@@ -535,7 +535,7 @@ ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)
 	hLastProperty->nPromptType = ODBCINST_PROMPTTYPE_FILENAME;
 	strncpy(hLastProperty->szName, "Database", INI_MAX_PROPERTY_NAME);
 	strncpy(hLastProperty->szValue, "", INI_MAX_PROPERTY_VALUE);
-	hLastProperty->pszHelp = (char *) strdup("Filename and Path of MDB file to connect to.\n"
+	hLastProperty->pszHelp = (char *) g_strdup("Filename and Path of MDB file to connect to.\n"
 						 "Use the full path to the database file.");
 
 

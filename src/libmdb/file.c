@@ -423,7 +423,7 @@ unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 int mdb_get_int16(void *buf, int offset)
 {
 	guint16 l;
-	memcpy(&l, buf + offset, 2);
+	memcpy(&l, (char*)buf + offset, 2);
 	return (int)GUINT16_FROM_LE(l);
 }
 int mdb_pg_get_int16(MdbHandle *mdb, int offset)
@@ -436,13 +436,13 @@ int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 long mdb_get_int32_msb(void *buf, int offset)
 {
 	gint32 l;
-	memcpy(&l, buf + offset, 4);
+	memcpy(&l, (char*)buf + offset, 4);
 	return (long)GINT32_FROM_BE(l);
 }
 long mdb_get_int32(void *buf, int offset)
 {
 	gint32 l;
-	memcpy(&l, buf + offset, 4);
+	memcpy(&l, (char*)buf + offset, 4);
 	return (long)GINT32_FROM_LE(l);
 }
 long mdb_pg_get_int32(MdbHandle *mdb, int offset)
@@ -455,7 +455,7 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 float mdb_get_single(void *buf, int offset)
 {
 	union {guint32 g; float f;} f;
-	memcpy(&f, buf + offset, 4);
+	memcpy(&f, (char*)buf + offset, 4);
 	f.g = GUINT32_FROM_LE(f.g);
 	return f.f;
 }
@@ -469,7 +469,7 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
 double mdb_get_double(void *buf, int offset)
 {
 	union {guint64 g; double d;} d;
-	memcpy(&d, buf + offset, 8);
+	memcpy(&d, (char*)buf + offset, 8);
 	d.g = GUINT64_FROM_LE(d.g);
 	return d.d;
 }

@@ -154,7 +154,7 @@ gmdb_sql_write_rslt_cb(GtkWidget *w, GladeXML *xml)
 			table = sql->cur_table;
 			for (i=0; i<table->num_cols; i++) {
 				col = g_ptr_array_index(table->columns, i);
-				if (!strcasecmp(sqlcol->name, col->name))
+				if (!g_ascii_strcasecmp(sqlcol->name, col->name))
 					break;
 			}
 			/* assert(i!=table->num_cols). Can't happen, already checked. */

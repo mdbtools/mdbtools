@@ -765,7 +765,7 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 	table = sql->cur_table;
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcasecmp(sqlcol->name, col->name)) {
+		if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
 			break;
 		}
 	}
@@ -899,7 +899,7 @@ static SQLRETURN SQL_API _SQLColAttributes(
 	table = sql->cur_table;
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcasecmp(sqlcol->name, col->name)) {
+		if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
 			break;
           	}
 	}
@@ -1484,7 +1484,7 @@ static SQLRETURN SQL_API _SQLColumns(
 	for (i=0; i<mdb->num_catalog; i++) {
      		entry = g_ptr_array_index(mdb->catalog, i);
 		/* TODO: Do more advanced matching */
-		if (strcasecmp((char*)szTableName, entry->object_name) != 0)
+		if (g_ascii_strcasecmp((char*)szTableName, entry->object_name) != 0)
 			continue;
 		table = mdb_read_table(entry);
 		mdb_read_columns(table);
@@ -1607,7 +1607,7 @@ static SQLRETURN SQL_API _SQLGetData(
 	table = sql->cur_table;
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
-		if (!strcasecmp(sqlcol->name, col->name)) {
+		if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
 			break;
 		}
 	}
@@ -1866,7 +1866,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 	switch (fFunction) {
 #if ODBCVER >= 0x0300
 		case SQL_API_ODBC3_ALL_FUNCTIONS:
- 			bzero(pfExists, SQL_API_ODBC3_ALL_FUNCTIONS_SIZE);
+			memset(pfExists, 0, SQL_API_ODBC3_ALL_FUNCTIONS_SIZE);
 			_set_func_exists(pfExists,SQL_API_SQLALLOCCONNECT);
 			_set_func_exists(pfExists,SQL_API_SQLALLOCENV);
 			_set_func_exists(pfExists,SQL_API_SQLALLOCHANDLE);
@@ -1927,7 +1927,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			break;
 #endif
 		case SQL_API_ALL_FUNCTIONS:
- 			bzero(pfExists, 100); // 100 by spec
+			memset(pfExists, 0, 100); // 100 by spec
 			_set_func_exists(pfExists,SQL_API_SQLALLOCCONNECT);
 			_set_func_exists(pfExists,SQL_API_SQLALLOCENV);
 			_set_func_exists(pfExists,SQL_API_SQLALLOCSTMT);
