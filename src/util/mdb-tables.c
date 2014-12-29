@@ -86,44 +86,50 @@ main (int argc, char **argv)
 	int line_break=0;
 	int skip_sys=1;
 	int show_type=0;
-	int opt;
 	int objtype = MDB_TABLE;
+	char *str_objtype = NULL;
 
+	GOptionEntry entries[] = {
+		{ "system", 'S', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &skip_sys, "Include system tables", NULL},
+		{ "single-column", '1', 0, G_OPTION_ARG_NONE, &line_break, "One table name per line", NULL},
+		{ "delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Table name delimiter", "char"},
+		{ "type", 't', 0, G_OPTION_ARG_STRING, &str_objtype, "Type of entry", "type"},
+		{ "showtype", 'T', 0, G_OPTION_ARG_NONE, &show_type, "Show type", NULL},
+		{ NULL },
+	};
+	GError *error = NULL;
+	GOptionContext *opt_context;
 
-	if (argc < 2) {
-		fprintf (stderr, "Usage: %s [-S] [-1 | -d<delimiter>] [-t <type>] [-T] <file>\n",argv[0]);
-		fprintf (stderr, "       Valid types are: %s\n",valid_types());
-
+	opt_context = g_option_context_new("<file> - show MDB files tables/entries");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		fprintf(stderr, "Valid types are: %s\n",valid_types());
 		exit (1);
 	}
 
-	while ((opt=getopt(argc, argv, "S1Td:t:"))!=-1) {
-        switch (opt) {
-        case 'S':
-            skip_sys = 0;
-		break;
-        case 'T':
-            show_type = 1;
-		break;
-        case '1':
-            line_break = 1;
-        break;
-        case 't':
-            if (!get_obj_type(optarg, &objtype)) {
-				fprintf(stderr,"Invalid type name.\n");
-				fprintf (stderr, "Valid types are: %s\n",valid_types());
-				exit(1);
-			}
-        break;
-        case 'd':
-            delimiter = (char *) g_strdup(optarg);
-        break;
-		}
+	if (argc != 2) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		fprintf(stderr, "Valid types are: %s\n",valid_types());
+		exit(1);
 	}
 
- 
+	if (str_objtype) {
+		if (!get_obj_type(str_objtype, &objtype)) {
+			fprintf(stderr,"Invalid type name.\n");
+			fprintf (stderr, "Valid types are: %s\n",valid_types());
+			exit(1);
+		}
+	}
+	if (!delimiter)
+		delimiter = g_strdup(" ");
+
  	/* open the database */
- 	if (!(mdb = mdb_open (argv[optind], MDB_NOFLAGS))) {
+	if (!(mdb = mdb_open (argv[1], MDB_NOFLAGS))) {
 		fprintf(stderr,"Couldn't open database.\n");
 		exit(1);
 	}
@@ -160,7 +166,9 @@ main (int argc, char **argv)
 		fprintf (stdout, "\n");
  
 	mdb_close(mdb);
+	g_option_context_free(opt_context);
 	g_free(delimiter);
+	g_free(str_objtype);
 
 	return 0;
 }

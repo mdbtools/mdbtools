@@ -30,37 +30,42 @@ main(int argc, char **argv)
 {
 	MdbHandle *mdb;
 	int print_mdbver = 0;
-	int opt;
 
   	/* setlocale (LC_ALL, ""); */
     	bindtextdomain (PACKAGE, LOCALEDIR);
       	textdomain (PACKAGE);
-	while ((opt=getopt(argc, argv, "M"))!=-1) {
-		switch (opt) {
-			case 'M':
-				print_mdbver = 1;
-				break;
-			default:
-				break;
-		}
+
+	GOptionEntry entries[] = {
+		{ "mdbtools", 'M', 0, G_OPTION_ARG_NONE, &print_mdbver, "Show MDBtools version", NULL},
+		{ NULL },
+	};
+	GError *error = NULL;
+	GOptionContext *opt_context;
+
+	opt_context = g_option_context_new("<file> - display MDB file version");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit (1);
 	}
 
 	if (print_mdbver) {
 		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
-		if (argc-optind < 1) exit(0);
+		if (argc == 1)
+			exit(0);
 	}
 
-	/* 
-	** optind is now the position of the first non-option arg, 
-	** see getopt(3) 
-	*/
-	if (argc-optind < 1) {
-		fprintf(stderr,_("Usage: %s [-M] <file>\n"),argv[0]);
+	if (argc != 2) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit(1);
 	}
 
-	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
-		fprintf(stderr,_("Error: unable to open file %s\n"),argv[optind]);
+	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
+		fprintf(stderr,_("Error: unable to open file %s\n"), argv[1]);
 		exit(1);
 	}
 	switch(mdb->f->jet_version) {
@@ -82,6 +87,7 @@ main(int argc, char **argv)
 	}
 	
 	mdb_close(mdb);
+	g_option_context_free(opt_context);
 
 	return 0;
 }

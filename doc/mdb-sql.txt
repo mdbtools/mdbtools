@@ -2,7 +2,8 @@ NAME
   mdb-sql - SQL interface to MDB Tools
 
 SYNOPSIS
-  mdb-sql [-HFp] [-d delimiter] [-i file] [-o file] [database]
+  mdb-sql [-HFp] [-d char] [-i file] [-o file] [database]
+  mdb-sql -h|--help
 
 DESCRIPTION
   mdb-sql is a utility program distributed with MDB Tools. 
@@ -11,30 +12,28 @@ DESCRIPTION
 language. 
 
 OPTIONS
-  -H            Suppress header row.
-  -F            Suppress footer row.
-  -p		Turn off pretty printing. By default results are printed in an
+  -H, --no-header              Suppress header row.
+  -F, --no-footer              Suppress footer row.
+  -p, --no-pretty-print        Turn off pretty printing. By default results are printed in an
 ascii table format which looks nice but is not conducive to manipulating the
 output with unix tools. This option prints output plainly in a tab separated
 format.
-  -d 		Specify an alternative column delimiter. If no delimiter is
+  -d, --delimiter char         Specify an alternative column delimiter. If no delimiter is
 specified, columns will be delimited by a tab character if pretty printing
 (-p) is turned off. If pretty printing is enabled this option is meaningless.
-  -i		Specify an input file. This option allows an input file containing the SQL to be passed to mdb-sql.  See Notes.
-  -o		Specify an output file. This option allows the name of an output file to be used instead of stdout.
+  -i, --input file             Specify an input file. This option allows an input file containing the SQL to be passed to mdb-sql.  See Notes.
+  -o, --output file            Specify an output file. This option allows the name of an output file to be used instead of stdout.
 
 COMMANDS
   mdb-sql in interactive mode takes some special commands. 
 
-  connect to <database>		If no database was specified on the command line this command is necessary before any querys are issued. It also allows the switching of databases once in the tool.
-  disconnect 			Will disconnect from the current database.
-  go				Each batch is sent to the parser using the 'go' command.
-
-  reset	A batch can be cleared using the 'reset' command.
-
-  list tables			The list tables command will display a list of available tables in this database, similar to the mdb-tables utility on the command line.
-  describe table <table>	Will display the column information for the specified table.
-  quit				Will exit the tool.
+  connect to database    If no database was specified on the command line this command is necessary before any querys are issued. It also allows the switching of databases once in the tool.
+  disconnect             Will disconnect from the current database.
+  go                     Each batch is sent to the parser using the 'go' command.
+  reset	                 A batch can be cleared using the 'reset' command.
+  list tables            The list tables command will display a list of available tables in this database, similar to the mdb-tables utility on the command line.
+  describe table <table>   Will display the column information for the specified table.
+  quit                   Will exit the tool.
 
 SQL LANGUAGE
   The currently implemented SQL subset is quite small, supporting only single table queries, no aggregates, and limited support for WHERE clauses. Here is a brief synopsis of the supported language.
@@ -76,8 +75,8 @@ HISTORY
   mdb-sql first appeared in MDB Tools 0.3.
 
 SEE ALSO
-  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-prop(1) mdb-ver(1) mdb-array(1)
-  mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1) isql(1)
+  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-import(1) mdb-prop(1) mdb-ver(1)
+  mdb-array(1) mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1) isql(1)
 
 AUTHORS
   The mdb-sql utility was written by Brian Bruns.

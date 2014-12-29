@@ -350,18 +350,46 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 int
 main(int argc, char **argv)
 {
-char *s = NULL;
-char prompt[20];
-int line = 0;
-char *mybuf;
-unsigned int bufsz;
-MdbSQL *sql;
-int opt;
-FILE *in = NULL, *out = NULL;
-char *home = getenv("HOME");
-char *histpath;
-char *delimiter = NULL;
+	char *s = NULL;
+	char prompt[20];
+	int line = 0;
+	char *mybuf;
+	unsigned int bufsz;
+	MdbSQL *sql;
+	FILE *in = NULL, *out = NULL;
+	char *filename_in=NULL, *filename_out=NULL;
+	char *home = getenv("HOME");
+	char *histpath;
+	char *delimiter = NULL;
 
+
+	GOptionEntry entries[] = {
+		{ "delim", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Use this delimiter.", "char"},
+		{ "no-pretty-print", 'P', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &pretty_print, "Don't pretty print", NULL},
+		{ "no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &headers, "Don't print header", NULL},
+		{ "no-footer", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &footers, "Don't print footer", NULL},
+		{ "input", 'i', 0, G_OPTION_ARG_STRING, &filename_in, "Read SQL from specified file", "file"},
+		{ "output", 'o', 0, G_OPTION_ARG_STRING, &filename_out, "Write result to specified file", "file"},
+		{ NULL },
+	};
+	GError *error = NULL;
+	GOptionContext *opt_context;
+
+	opt_context = g_option_context_new("<file> - Run SQL");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit (1);
+	}
+
+	if (argc > 2) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit(1);
+	}
 
 #ifdef HAVE_READLINE_HISTORY
 	if (home) {
@@ -374,44 +402,26 @@ char *delimiter = NULL;
 	if (!isatty(fileno(stdin))) {
 		in = stdin;
 	}
-
-	while ((opt=getopt(argc, argv, "HFpd:i:o:"))!=-1) {
-		switch (opt) {
-		        case 'd':
-				delimiter = (char *) g_strdup(optarg);
-				break;
-		        case 'p':
-				pretty_print=0;
-				break;
-		        case 'H':
-				headers=0;
-				break;
-		        case 'F':
-				footers=0;
-				break;
-		        case 'i':
-				if (!strcmp(optarg, "stdin"))
-					in = stdin;
-				else if (!(in = fopen(optarg, "r"))) {
-					fprintf(stderr,"Unable to open file %s\n", optarg);
-					exit(1);
-				}
-				break;
-		        case 'o':
-				if (!(out = fopen(optarg, "w"))) {
-					fprintf(stderr,"Unable to open file %s\n", optarg);
-					exit(1);
-				}
-				break;
-			default:
-				fprintf(stdout,"Unknown option.\nUsage: %s [-HFp] [-d <delimiter>] [-i <file>] [-o <file>] [<database>]\n", argv[0]);
-				exit(1);
+	if (filename_in) {
+		if (!strcmp(filename_in, "stdin"))
+			in = stdin;
+		else if (!(in = fopen(filename_in, "r"))) {
+			fprintf(stderr, "Unable to open file %s\n", filename_in);
+			exit(1);
 		}
 	}
+	if (filename_out) {
+		if (!(out = fopen(filename_out, "w"))) {
+			fprintf(stderr,"Unable to open file %s\n", filename_out);
+			exit(1);
+		}
+	}
+
+
 	/* initialize the SQL engine */
 	sql = mdb_sql_init();
-	if (argc>optind) {
-		mdb_sql_open(sql, argv[optind]);
+	if (argc == 2) {
+		mdb_sql_open(sql, argv[1]);
 	}
 
 	/* give the buffer an initial size */
@@ -470,10 +480,9 @@ char *delimiter = NULL;
 			strcat(mybuf,"\n");
 		}
 	}
-	mdb_sql_exit(sql);	
+	mdb_sql_exit(sql);
 
 	g_free(mybuf);
-	g_free(delimiter);
 	if (s) free(s);
 	if (out) fclose(out);
 	if ((in) && (in != stdin)) fclose(in);
@@ -486,6 +495,11 @@ char *delimiter = NULL;
 		clear_history();
 	}
 #endif
+
+	g_option_context_free(opt_context);
+	g_free(delimiter);
+	g_free(filename_in);
+	g_free(filename_out);
 
 	return 0;
 }

@@ -87,118 +87,103 @@ main(int argc, char **argv)
 	char *row_delimiter = NULL;
 	char *quote_char = NULL;
 	char *escape_char = NULL;
-	char header_row = 1;
-	char quote_text = 1;
+	int header_row = 1;
+	int quote_text = 1;
 	char *insert_dialect = NULL;
+	char *date_fmt = NULL;
 	char *namespace = NULL;
+	char *str_bin_mode = NULL;
 	int bin_mode = MDB_BINEXPORT_RAW;
-	int  opt;
 	char *value;
 	size_t length;
 
-	while ((opt=getopt(argc, argv, "HQq:X:d:D:R:I:N:b:"))!=-1) {
-		switch (opt) {
-		case 'H':
-			header_row = 0;
-		break;
-		case 'Q':
-			quote_text = 0;
-		break;
-		case 'q':
-			quote_char = (char *) g_strdup(optarg);
-		break;
-		case 'd':
-			delimiter = escapes(optarg);
-		break;
-		case 'R':
-			row_delimiter = escapes(optarg);
-		break;
-		case 'I':
-			insert_dialect = (char*) g_strdup(optarg);
-			header_row = 0;
-		break;
-		case 'D':
-			mdb_set_date_fmt(optarg);
-		break;
-		case 'X':
-			escape_char = (char *) g_strdup(optarg);
-		break;
-		case 'N':
-			namespace = (char *) g_strdup(optarg);
-		break;
-		case 'b':
-			if (!strcmp(optarg, "strip"))
-				bin_mode = MDB_BINEXPORT_STRIP;
-			else if (!strcmp(optarg, "raw"))
-				bin_mode = MDB_BINEXPORT_RAW;
-			else if (!strcmp(optarg, "octal"))
-				bin_mode = MDB_BINEXPORT_OCTAL;
-			else {
-				fprintf(stderr, "Invalid binary mode\n");
-				exit(1);
-			}
-		break;
-		default:
-		break;
-		}
+	GOptionEntry entries[] = {
+		{ "no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
+		{ "no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
+		{ "delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify an alternative column delimiter. Default is comma.", "char"},
+		{ "row-delimiter", 'R', 0, G_OPTION_ARG_STRING, &row_delimiter, "Specify a row delimiter", "char"},
+		{ "quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
+		{ "backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
+		{ "date_format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{ "escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
+		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
+		{ "bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
+		{ NULL },
+	};
+	GError *error = NULL;
+	GOptionContext *opt_context;
+
+	opt_context = g_option_context_new("<file> <table> - export data from MDB file");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit (1);
 	}
-	if (!quote_char) {
-		quote_char = (char *) g_strdup("\"");
-	}
-	if (!delimiter) {
-		delimiter = (char *) g_strdup(",");
-	}
-	if (!row_delimiter) {
-		row_delimiter = (char *) g_strdup("\n");
-	}
-	
-	/* 
-	** optind is now the position of the first non-option arg, 
-	** see getopt(3) 
-	*/
-	if (argc-optind < 2) {
-		fprintf(stderr,"Usage: %s [options] <file> <table>\n",argv[0]);
-		fprintf(stderr,"where options are:\n");
-		fprintf(stderr,"  -H                   suppress header row\n");
-		fprintf(stderr,"  -Q                   don't wrap text-like fields in quotes\n");
-		fprintf(stderr,"  -d <delimiter>       specify a column delimiter\n");
-		fprintf(stderr,"  -R <delimiter>       specify a row delimiter\n");
-		fprintf(stderr,"  -I <backend>         INSERT statements (instead of CSV)\n");
-		fprintf(stderr,"  -D <format>          set the date format (see strftime(3) for details)\n");
-		fprintf(stderr,"  -q <char>            Use <char> to wrap text-like fields. Default is \".\n");
-		fprintf(stderr,"  -X <char>            Use <char> to escape quoted characters within a field. Default is doubling.\n");
-		fprintf(stderr,"  -N <namespace>       Prefix identifiers with namespace\n");
-		fprintf(stderr,"  -b strip|raw|octal   Binary export mode.\n");
-		g_free (delimiter);
-		g_free (row_delimiter);
-		g_free (quote_char);
-		if (escape_char) g_free (escape_char);
+
+	if (argc != 3) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit(1);
 	}
 
-	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
-		g_free (delimiter);
-		g_free (row_delimiter);
-		g_free (quote_char);
-		if (escape_char) g_free (escape_char);
+	/* Process options */
+	if (quote_char)
+		quote_char = escapes(quote_char);
+	else
+		quote_char = g_strdup("\"");
+
+	if (delimiter)
+		delimiter = escapes(delimiter);
+	else
+		delimiter = g_strdup(",");
+
+	if (row_delimiter)
+		row_delimiter = escapes(row_delimiter);
+	else
+		row_delimiter = g_strdup("\n");
+
+	if (escape_char)
+		escape_char = escapes(escape_char);
+
+	if (insert_dialect)
+		header_row = 0;
+
+	if (date_fmt)
+		mdb_set_date_fmt(date_fmt);
+
+	if (str_bin_mode) {
+		if (!strcmp(str_bin_mode, "strip"))
+			bin_mode = MDB_BINEXPORT_STRIP;
+		else if (!strcmp(str_bin_mode, "raw"))
+			bin_mode = MDB_BINEXPORT_RAW;
+		else if (!strcmp(str_bin_mode, "octal"))
+			bin_mode = MDB_BINEXPORT_OCTAL;
+		else {
+			fputs("Invalid binary mode\n", stderr);
+			exit(1);
+		}
+	}
+
+	/* Open file */
+	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
+		/* Don't bother clean up memory before exit */
 		exit(1);
 	}
 
 	if (insert_dialect)
 		if (!mdb_set_default_backend(mdb, insert_dialect)) {
-			fprintf(stderr, "Invalid backend type\n");
-			if (escape_char) g_free (escape_char);
+			fputs("Invalid backend type\n", stderr);
+			/* Don't bother clean up memory before exit */
 			exit(1);
 		}
 
-	table = mdb_read_table_by_name(mdb, argv[argc-1], MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 	if (!table) {
-		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[argc-1]);
-		g_free (delimiter);
-		g_free (row_delimiter);
-		g_free (quote_char);
-		if (escape_char) g_free (escape_char);
-		mdb_close(mdb);
+		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[2]);
+		/* Don't bother clean up memory before exit */
 		exit(1);
 	}
 
@@ -227,7 +212,7 @@ main(int argc, char **argv)
 
 		if (insert_dialect) {
 			char *quoted_name;
-			quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[optind + 1]);
+			quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[2]);
 			fprintf(outfile, "INSERT INTO %s (", quoted_name);
 			free(quoted_name);
 			for (i=0;i<table->num_cols;i++) {
@@ -272,12 +257,18 @@ main(int argc, char **argv)
 	g_free(bound_lens);
 	mdb_free_tabledef(table);
 
-	g_free (delimiter);
-	g_free (row_delimiter);
-	g_free (quote_char);
-	if (escape_char) g_free (escape_char);
-	
 	mdb_close(mdb);
+	g_option_context_free(opt_context);
+
+	// g_free ignores NULL
+	g_free(quote_char);
+	g_free(delimiter);
+	g_free(row_delimiter);
+	g_free(insert_dialect);
+	g_free(date_fmt);
+	g_free(escape_char);
+	g_free(namespace);
+	g_free(str_bin_mode);
 	return 0;
 }
 
@@ -285,6 +276,7 @@ static char *escapes(char *s)
 {
 	char *d = (char *) g_strdup(s);
 	char *t = d;
+	char *orig = s;
 	unsigned char encode = 0;
 
 	for (;*s; s++) {
@@ -303,5 +295,6 @@ static char *escapes(char *s)
 		}
 	}
 	*t='\0';
+	g_free(orig);
 	return d;
 }

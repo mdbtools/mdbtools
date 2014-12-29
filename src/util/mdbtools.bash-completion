@@ -7,12 +7,16 @@ _mdb_export()
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD-1]}
 
-	if [[ "$prev" == -@(d|R|q|X|D|N) ]] ; then
+	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|q|-quote|X|-escape|D|-date-format|N|-namespace|h|-help) ]] ; then
 		return 0
 	elif [[ "$prev" == -I ]] ; then
 		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql' -- $cur ) )
+	elif [[ "$prev" == -@(b|-bin) ]] ; then
+		COMPREPLY=( $( compgen -W 'strip raw octal' -- $cur ) )
 	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-T -H -d -R -Q -q -X -I -D -N' -- $cur ) )
+		COMPREPLY=( $( compgen -W '-H -d -R -Q -q -X -I -D -N -b -h \
+		--no-header --no-quote --delimiter --row-delimiter --insert \
+		--date-format --quote --escape --namespace --bin --help' -- $cur ) )
 	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local tablenames
@@ -88,16 +92,18 @@ _mdb_schema()
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD-1]}
 
-	if [[ "$prev" == -@(T|table|N) ]] ; then
+	if [[ "$prev" == -@(T|-table|N|-namespace) ]] ; then
 		return 0
 	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-T --table -N \
+		COMPREPLY=( $( compgen -W '-T --table \
+                            -N --namespace \
 		            --drop-table --no-drop-table \
 		            --not-null --no-not-null \
 		            --default-values --no-default-values \
 		            --not-empty --no-not-empty \
 		            --indexes --no-indexes \
-		            --relations --no-relations' -- $cur ) )
+		            --relations --no-relations
+                            -h --help' -- $cur ) )
 	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
 		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql' -- $cur ) )
 	else
@@ -118,10 +124,16 @@ _mdb_sql()
 
 	if [[ "$prev" == -d ]] ; then
 		return 0
-	elif [[ "$prev" == -@(i|o) ]] ; then
+	elif [[ "$prev" == -@(i|-input|o|-output) ]] ; then
 		_filedir
 	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-H -f -p -d -i -o' -- $cur ) )
+		COMPREPLY=( $( compgen -W '-H --no-header \
+                            -F --no-footer \
+                            -p --no-pretty-print \
+                            -d --delimiter \
+                            -i --input \
+                            -o --output \
+                            -h --help' -- $cur ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi
@@ -138,13 +150,18 @@ _mdb_tables()
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD-1]}
 
-	if [[ "$prev" == -d ]]; then
+	if [[ "$prev" == -@(d|-delimiter) ]]; then
 		return 0
-	elif [[ "$prev" == -t ]]; then
+	elif [[ "$prev" == -@(t|-type) ]]; then
 		COMPREPLY=( $( compgen -W 'form table macro systable report query linkedtable module relationship dbprop any all' -- $cur ) )
 		return 0
 	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-S -1 -d -t' -- $cur ) )
+		COMPREPLY=( $( compgen -W '-S --system\
+                            -1 --single-column \
+                            -d --delimiter \
+                            -t --type \
+                            -T --showtype \
+                            -h --help' -- $cur ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi
@@ -161,10 +178,39 @@ _mdb_ver()
 	cur=${COMP_WORDS[COMP_CWORD]}
 
 	if [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-M' -- $cur ) )
+		COMPREPLY=( $( compgen -W '-M -h --help' -- $cur ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi
 	return 0
 } &&
 complete -F _mdb_ver mdb-ver
+
+have mdb-import &&
+_mdb_import()
+{
+	local cur
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -@(d|-delimiter) ]]; then
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-H --header \
+                            -d --delimiter \
+                            -h --help' -- $cur ) )
+	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
+		local dbname
+		local tablenames
+		dbname=$prev
+		__expand_tilde_by_ref dbname
+		tablenames=$(eval mdb-tables -S -d / "${dbname}" 2>/dev/null)
+		COMPREPLY=( $( IFS=/ compgen -W "${tablenames}" -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb|txt|csv)'
+	fi
+	return 0
+} &&
+complete -F _mdb_import mdb-import

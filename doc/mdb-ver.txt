@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
   mdb-ver database
   mdb-ver -M
+  mdb-ver -h|--help
 
 DESCRIPTION
   mdb-ver is a utility program distributed with MDB Tools. 
@@ -12,7 +13,7 @@ DESCRIPTION
 
 OPTIONS
 
-  -M	Prints the version of MDB Tools itself instead of the MDB file.
+  -M, --mdbtools	Prints the version of MDB Tools itself instead of the MDB file.
 
 NOTES 
   Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats. Newer version are very much like Jet4.
@@ -35,8 +36,8 @@ HISTORY
   mdb-ver first appeared in MDB Tools 0.4.
 
 SEE ALSO
-  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-prop(1) mdb-sql(1) mdb-array(1)
-  mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
+  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-import(1) mdb-prop(1) mdb-sql(1)
+  mdb-array(1) mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
 
 AUTHORS
   The mdb-ver utility was written by Brian Bruns.

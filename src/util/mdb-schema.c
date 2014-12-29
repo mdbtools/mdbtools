@@ -17,8 +17,6 @@
  */
 
 /* this utility dumps the schema for an existing database */
-#include <ctype.h>
-#include <getopt.h>
 #include "mdbtools.h"
 
 #ifdef DMALLOC
@@ -31,127 +29,62 @@ main (int argc, char **argv)
 	MdbHandle *mdb;
 	char *tabname = NULL;
 	char *namespace = NULL;
-	guint32 export_options = MDB_SHEXP_DEFAULT;
-	int opt;
+	guint32 export_options;
+	int opt_drop_table = MDB_SHEXP_DEFAULT & MDB_SHEXP_DROPTABLE;
+	int opt_not_null = MDB_SHEXP_DEFAULT & MDB_SHEXP_CST_NOTNULL;
+	int opt_def_values = MDB_SHEXP_DEFAULT & MDB_SHEXP_DEFVALUES;
+	int opt_not_empty = MDB_SHEXP_DEFAULT & MDB_SHEXP_CST_NOTEMPTY;
+	int opt_comments = MDB_SHEXP_DEFAULT & MDB_SHEXP_COMMENTS;
+	int opt_indexes = MDB_SHEXP_DEFAULT & MDB_SHEXP_INDEXES;
+	int opt_relations = MDB_SHEXP_DEFAULT & MDB_SHEXP_RELATIONS;
 
-	if (argc < 2) {
-		fprintf (stderr, "Usage: %s [options] <file> [<backend>]\n",argv[0]);
-		fprintf (stderr, "where options are:\n");
-		fprintf (stderr, "  -T <table>     Only create schema for named table\n");
-		fprintf (stderr, "  -N <namespace> Prefix identifiers with namespace\n");
+	GOptionEntry entries[] = {
+		{ "table", 'T', 0, G_OPTION_ARG_STRING, &tabname, "Only create schema for named table", "table"},
+		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
+		{ "drop-table", 0, 0, G_OPTION_ARG_NONE, &opt_drop_table, "Include DROP TABLE statements", NULL},
+		{ "no-drop-table", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_drop_table, "Don't include DROP TABLE statements", NULL},
+		{ "not-null", 0, 0, G_OPTION_ARG_NONE, &opt_not_null, "Include NOT NULL constraints", NULL},
+		{ "no-not-null", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_not_null, "Don't include NOT NULL constraints", NULL},
+		{ "default-values", 0, 0, G_OPTION_ARG_NONE, &opt_def_values, "Include default values", NULL},
+		{ "no-default-values", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_def_values, "Don't include default values", NULL},
+		{ "not-empty", 0, 0, G_OPTION_ARG_NONE, &opt_not_empty, "Include not empty constraints", NULL},
+		{ "no-not_empty", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_not_empty, "Don't include not empty constraints", NULL},
+		{ "comments", 0, 0, G_OPTION_ARG_NONE, &opt_comments, "Include comments", NULL},
+		{ "no-comments", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_comments, "Don't include comments", NULL},
+		{ "indexes", 0, 0, G_OPTION_ARG_NONE, &opt_indexes, "Include indexes", NULL},
+		{ "no-indexes", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_indexes, "Don't include indexes", NULL},
+		{ "relations", 0, 0, G_OPTION_ARG_NONE, &opt_relations, "Include foreign key constraints", NULL},
+		{ "no-relations", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_relations, "Don't include foreign key constraints", NULL},
+		{ NULL },
+	};
+	GError *error = NULL;
+	GOptionContext *opt_context;
+
+	opt_context = g_option_context_new("<file> [<backend>] - Dump schema");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
 
-	while (1) {
-		//int this_option_optind = optind ? optind : 1;
-		int option_index = 0;
-		static struct option long_options[] = {
-			{"table", 1, NULL, 'T'},
-			{"namespace", 1, NULL, 'N'},
-			{"drop-table", 0, NULL, 0},
-			{"no-drop-table", 0, NULL, 0},
-			{"default-values", 0, NULL, 0},
-			{"no-default-values", 0, NULL, 0},
-			{"not-null", 0, NULL, 0},
-			{"no-not-null", 0, NULL, 0},
-			{"not-empty", 0, NULL, 0},
-			{"no-not-empty", 0, NULL, 0},
-			{"description", 0, NULL, 0},
-			{"no-description", 0, NULL, 0},
-			{"indexes", 0, NULL, 0},
-			{"no-indexes", 0, NULL, 0},
-			{"relations", 0, NULL, 0},
-			{"no-relations", 0, NULL, 0},
-			{NULL, 0, NULL, 0},
-		};
-		opt = getopt_long(argc, argv, "T:N:", long_options, &option_index);
-		if (opt == -1)
-			break;
-
-		switch (opt) {
-		case 0:
-			if (!strcmp(long_options[option_index].name, "drop-table")) {
-				export_options |= MDB_SHEXP_DROPTABLE;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-drop-table")) {
-				export_options &= ~MDB_SHEXP_DROPTABLE;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "not-null")) {
-				export_options |= MDB_SHEXP_CST_NOTNULL;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-not-null")) {
-				export_options &= ~MDB_SHEXP_CST_NOTNULL;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "default-values")) {
-				export_options |= MDB_SHEXP_DEFVALUES;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-default-values")) {
-				export_options &= ~MDB_SHEXP_DEFVALUES;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "not-empty")) {
-				export_options |= MDB_SHEXP_CST_NOTEMPTY;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-not-empty")) {
-				export_options &= ~MDB_SHEXP_CST_NOTEMPTY;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "description")) {
-				export_options |= MDB_SHEXP_COMMENTS;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-description")) {
-				export_options &= ~MDB_SHEXP_COMMENTS;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "indexes")) {
-				export_options |= MDB_SHEXP_INDEXES;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-indexes")) {
-				export_options &= ~MDB_SHEXP_INDEXES;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "relations")) {
-				export_options |= MDB_SHEXP_RELATIONS;
-				break;
-			}
-			if (!strcmp(long_options[option_index].name, "no-relations")) {
-				export_options &= ~MDB_SHEXP_RELATIONS;
-				break;
-			}
-			fprintf(stderr, "unimplemented option %s", long_options[option_index].name);
-			if (optarg)
-				fprintf(stderr, " with arg %s", optarg);
-			fputc('\n', stderr);
-			exit(1);
-			break;
-
-		case 'T':
-			tabname = (char *) g_strdup(optarg);
-			break;
-
-		case 'N':
-			namespace = (char *) g_strdup(optarg);
-			break;
-		}
+	if (argc < 2 || argc > 3) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit(1);
 	}
- 
+
 	/* open the database */
-	mdb = mdb_open (argv[optind], MDB_NOFLAGS);
+	mdb = mdb_open (argv[1], MDB_NOFLAGS);
 	if (!mdb) {
 		fprintf(stderr, "Could not open file\n");
 		exit(1);
 	}
 
-	if (argc - optind >= 2) {
-		if (!mdb_set_default_backend(mdb, argv[optind + 1])) {
+	if (argc == 3) {
+		if (!mdb_set_default_backend(mdb, argv[2])) {
 			fprintf(stderr, "Invalid backend type\n");
 			exit(1);
 		}
@@ -159,16 +92,32 @@ main (int argc, char **argv)
 
 	/* read the catalog */
  	if (!mdb_read_catalog (mdb, MDB_TABLE)) {
-		fprintf(stderr, "File does not appear to be an Access database\n");
+		fputs("File does not appear to be an Access database\n", stderr);
 		exit(1);
 	}
 
+	export_options = 0;
+	if (opt_drop_table)
+		export_options |= MDB_SHEXP_DROPTABLE;
+	if (opt_not_null)
+		export_options |= MDB_SHEXP_CST_NOTNULL;
+	if (opt_def_values)
+		export_options |= MDB_SHEXP_DEFVALUES;
+	if (opt_not_empty)
+		export_options |= MDB_SHEXP_CST_NOTEMPTY;
+	if (opt_comments)
+		export_options |= MDB_SHEXP_COMMENTS;
+	if (opt_indexes)
+		export_options |= MDB_SHEXP_INDEXES;
+	if (opt_relations)
+		export_options |= MDB_SHEXP_RELATIONS;
 	mdb_print_schema(mdb, stdout, tabname, namespace, export_options);
 
-	g_free(namespace);
-	g_free(tabname);
 	mdb_close (mdb);
 
+	g_option_context_free(opt_context);
+	g_free(namespace);
+	g_free(tabname);
 	return 0;
 }
 

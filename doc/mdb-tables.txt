@@ -2,7 +2,8 @@ NAME
   mdb-tables - Get listing of tables in an MDB database
 
 SYNOPSIS
-  mdb-tables [-S] [-1 | -d delimiter] database
+  mdb-tables [-S] [-1 | -d delim] [-t form|table|macro|systable|report|query|linkedtable|module|relationship|dbprop|any|all] [-T] database
+  mdb-tables -h|--help
 
 DESCRIPTION
   mdb-tables is a utility program distributed with MDB Tools. 
@@ -10,11 +11,11 @@ DESCRIPTION
   It produces a list of tables contained within an MDB database in a format suitable for use in shell scripts.
 
 OPTIONS
-  -S            Show system tables. System tables are generally those beginning with 'MSys'
-
-  -1            specifies that the tables should be listed 1 per line.
-
-  -d delimiter  specifies an alternative delimiter. If no delimiter is specified, table names will be delimited by a tab character, or by newline if the -1 option was specified.
+  -S, --system           Show system tables. System tables are generally those beginning with 'MSys'.
+  -1, --single-column    Specifies that the tables should be listed 1 per line. This is equivalent to --delim \n.
+  -d, --delimiter delim  Specifies an alternative delimiter. If no delimiter is specified, table names will be delimited by a tab character, or by newline if the -1 option was specified.
+  -t, --type type        Filters entries to show alternate types. Autorized values are form, table, macro, systable, report, query, linkedtable, module, relationship, dbprop, any, and all. Default value is table.
+  -T, --showtype         Display the entry type indentifier before each entry.
 
 NOTES 
 
@@ -36,7 +37,7 @@ HISTORY
   mdb-tables first appeared in MDB Tools 0.3.
 
 SEE ALSO
-  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-prop(1) mdb-sql(1) mdb-ver(1)
+  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-import(1) mdb-prop(1) mdb-sql(1) mdb-ver(1)
   mdb-array(1) mdb-header(1) mdb-parsecsv(1) mdb-schema(1)
 
 AUTHORS

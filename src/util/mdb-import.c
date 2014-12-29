@@ -155,43 +155,43 @@ main(int argc, char **argv)
 	char line[MAX_ROW_SIZE];
 	int num_fields;
 	/* doesn't handle tables > 256 columns.  Can that happen? */
-	int  opt;
 	FILE *in;
-	char delimiter[2] = ",";
-	char header_rows = 0;
+	char *delimiter;
+	int header_rows = 0;
 
-	while ((opt=getopt(argc, argv, "H:d:"))!=-1) {
-		switch (opt) {
-		case 'H':
-			header_rows = atol(optarg);
-		break;
-		case 'd':
-			delimiter[0] = optarg[0];
-		break;
-		default:
-		break;
-		}
+	GOptionEntry entries[] = {
+		{ "header", 'H', 0, G_OPTION_ARG_INT, &header_rows, "skip <rows> header rows", "row"},
+		{ "delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify a column delimiter", "char"},
+		{ NULL },
+	};
+	GError *error = NULL;
+	GOptionContext *opt_context;
+
+	opt_context = g_option_context_new("<mdbfile> <table> <csvfile> - import data into MDB file");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit (1);
 	}
-	
-	/* 
-	** optind is now the position of the first non-option arg, 
-	** see getopt(3) 
-	*/
-	if (argc-optind < 3) {
-		fprintf(stderr,"Usage: %s [options] <database> <table> <csv file>\n",argv[0]);
-		fprintf(stderr,"where options are:\n");
-		fprintf(stderr,"  -H <rows>      skip <rows> header rows\n");
-		fprintf(stderr,"  -d <delimiter> specify a column delimiter\n");
+
+	if (!delimiter)
+		delimiter = g_strdup(",");
+	if (argc != 4) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit(1);
 	}
 
-	if (!(mdb = mdb_open(argv[optind], MDB_WRITABLE))) {
+	if (!(mdb = mdb_open(argv[1], MDB_WRITABLE))) {
 		exit(1);
 	}
 	
-	table = mdb_read_table_by_name(mdb, argv[argc-2], MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 	if (!table) {
-		fprintf(stderr,"Table %s not found in database\n", argv[argc-2]);
+		fprintf(stderr, "Table %s not found in database\n", argv[2]);
 		exit(1);
 	}
 	mdb_read_columns(table);
@@ -201,9 +201,9 @@ main(int argc, char **argv)
 	/*
 	 * open the CSV file and read any header rows
 	 */
-	in = fopen(argv[argc-1], "r");
+	in = fopen(argv[3], "r");
 	if (!in) {
-		fprintf(stderr, "Can not open file %s\n", argv[argc-1]);
+		fprintf(stderr, "Can not open file %s\n", argv[3]);
 		exit(1);
 	}
 	for (i=0;i<header_rows;i++)
@@ -228,6 +228,9 @@ main(int argc, char **argv)
 	mdb_free_tabledef(table);
 	fclose(in);
 	mdb_close(mdb);
+
+	g_option_context_free(opt_context);
+	g_free(delimiter);
 	return 0;
 }
 

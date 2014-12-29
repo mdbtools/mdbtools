@@ -1,0 +1,44 @@
+NAME
+  mdb-import - Import CSV data into an MDB database.
+
+SYNOPSIS
+  mdb-import [-H lines] [-d char] database table csvfile
+  mdb-import -h|--help
+
+DESCRIPTION
+  mdb-import is a utility program distributed with MDB Tools. 
+
+  It reads a CSV (comma separated value) file and add the data into table of database.
+
+OPTIONS
+  -H, --header lines    Skip lines of CSV header.
+  -d, --delimiter char  Specify an alternative column delimiter. Default is , (comma).
+
+NOTES 
+
+ENVIRONMENT
+  MDB_JET3_CHARSET    Defines the charset of the JET3 (access 97) file. Default is CP1252. See iconv(1).
+  MDBICONV            Defines the input charset to use for the SQL file. Default is UTF-8. mdbtools must have been compiled with iconv.
+  MDBOPTS             semi-column separated list of options:
+                      * use_index
+                      * no_memo
+                      * debug_like
+                      * debug_write
+                      * debug_usage
+                      * debug_ole
+                      * debug_row
+                      * debug_props
+                      * debug_all is a shortcut for all debug_* options
+
+SEE ALSO
+  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-prop(1) mdb-sql(1) mdb-ver(1) mdb-array(1)
+  mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
+
+HISTORY
+  mdb-import first appeared in MDB Tools 0.7.
+
+AUTHORS
+  The mdb-import utility was written by Brian Bruns.
+
+BUGS
+  mdb-import does not enforce any kind of checks. You can violate constraints.
