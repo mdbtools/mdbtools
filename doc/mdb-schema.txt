@@ -21,6 +21,8 @@ OPTIONS
   --no-default-values     Don't issue DEFAULT values. This is the default.
   --not-empty             Issue CHECK <> '' constraints.
   --no-not-empty          Don't issue CHECK <> '' constraints. This is the default.
+  --comments              Issue COMMENT ON statements with column/table descriptions. This is the default, but it's not supported by all backends.
+  --no-comments           Don't issue COMMENT ON statements.
   --indexes               Export INDEXes. This is the default.
   --no-indexes            Don't export INDEXes.
   --relations             Export foreign keys constraints. This is the default.
