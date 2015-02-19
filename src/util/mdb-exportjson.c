@@ -97,7 +97,7 @@ main(int argc, char **argv)
 	char **bound_values;
 	int  *bound_lens;
 	FILE *outfile = stdout;
-	drop_nonascii = 1;
+	drop_nonascii = 0;
 	int  opt;
 	char *value;
 	size_t length;
@@ -105,7 +105,7 @@ main(int argc, char **argv)
 	while ((opt=getopt(argc, argv, "AD:"))!=-1) {
 		switch (opt) {
 		case 'A':
-			drop_nonascii = 0;
+			drop_nonascii = 1;
 		break;
 		case 'D':
 			mdb_set_date_fmt(optarg);
