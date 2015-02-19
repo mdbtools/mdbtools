@@ -66,7 +66,7 @@ print_quoted_value(FILE *outfile, char* value, int bin_len) {
 				++value;
 			} else {
 				// escape control codes / binary data.
-				fprintf(outfile, "\\x%02x", *(unsigned char*)value++);
+				fprintf(outfile, "\\u00%02x", *(unsigned char*)value++);
 			}
 		} else {
 			putc(*value++, outfile);
