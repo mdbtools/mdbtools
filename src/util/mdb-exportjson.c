@@ -60,7 +60,7 @@ print_quoted_value(FILE *outfile, char* value, int bin_len) {
 			fprintf(outfile, "%s%s", escape_char, escape_char);
 			value += orig_escape_len;
 #endif
-		} else if (*value < 0x20) {
+		} else if ((unsigned char)*value < 0x20) {
 			if (!is_binary || drop_nonascii) {
 				putc(' ', outfile);
 				++value;
