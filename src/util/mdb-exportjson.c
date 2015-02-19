@@ -153,11 +153,13 @@ main(int argc, char **argv)
 		fputs(row_start, outfile);
 		int add_delimiter = 0;
 		for (i=0;i<table->num_cols;i++) {
-			if (add_delimiter)
-				fputs(delimiter, outfile);
-			add_delimiter = 0;
 			col=g_ptr_array_index(table->columns,i);
 			if (bound_lens[i]) {
+				if (add_delimiter) {
+					fputs(delimiter, outfile);
+					add_delimiter = 0;
+				}
+
 				if (col->col_type == MDB_OLE) {
 					value = mdb_ole_read_full(mdb, col, &length);
 				} else {
