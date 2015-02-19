@@ -18,6 +18,8 @@
 
 #include "mdbtools.h"
 
+#include "base64.h"
+
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
@@ -61,7 +63,7 @@ print_quoted_value(FILE *outfile, char* value, int bin_len) {
 			value += orig_escape_len;
 #endif
 		} else if ((unsigned char)*value < 0x20) {
-			if (!is_binary || drop_nonascii) {
+			if (drop_nonascii) {
 				putc(' ', outfile);
 				++value;
 			} else {
@@ -76,14 +78,29 @@ print_quoted_value(FILE *outfile, char* value, int bin_len) {
 }
 
 static void
+print_binary_value(FILE *outfile, char const * value, int bin_len) {
+	fputs("{\"$binary\": \"", outfile);
+	size_t const base64_buf_len = (bin_len / 3 + 1) * 4 + 1;
+	char * base64_buf = g_malloc(base64_buf_len);
+	if (base64encode(value, bin_len, base64_buf, base64_buf_len) != 0) {
+		fprintf(stderr, "Error: Base64 serialization failed.\n");
+	}
+	fputs(base64_buf, outfile);
+	g_free(base64_buf);
+	fputs("\", \"$type\": \"00\"}", outfile);
+}
+
+static void
 print_col(FILE *outfile, char* col_name, gchar *col_val, int col_type, int bin_len) {
 	print_quoted_value(outfile, col_name, -1);
 	fputs(separator_char, outfile);
 	if (is_quote_type(col_type)) {
-		if (!is_binary_type(col_type)) {
+		if (is_binary_type(col_type)) {
+			print_binary_value(outfile, col_val, bin_len);
 			bin_len = -1;
+		} else {
+			print_quoted_value(outfile, col_val, bin_len);
 		}
-		print_quoted_value(outfile, col_val, bin_len);
 	} else
 		fputs(col_val, outfile);
 }
