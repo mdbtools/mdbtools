@@ -56,13 +56,13 @@ First, you must have reasonably current installations of:
 If you don't you should install them first. Sources are available at
 ftp.gnu.org.
 
+Second, you need glib. It may come as glib2.0 and glib2.0-dev packages in your
+distribution.
+
 If you want to build the SQL engine, you'll need bison or byacc, and flex.
 
 If you want to build the ODBC driver, you'll need unixodbc (version 2.2.10 or
 above) or iodbc.
-
-If you want to build the graphical user interface, you'll need glib2.0 and
-glib2.0-dev.
 
 If you want to build man pages, you'll need txt2man. Source is available at
 http://mvertes.free.fr/download/.
