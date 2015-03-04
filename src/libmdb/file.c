@@ -247,7 +247,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 	if (mdb->f->db_key) {
 		/* write is not supported for encrypted files yet */
 		mdb->f->writable = FALSE;
-		/* that should be enought, but reopen the file read only just to be
+		/* that should be enough, but reopen the file read only just to be
 		 * sure we don't write invalid data */
 		close(mdb->f->fd);
 		open_flags = O_RDONLY;
