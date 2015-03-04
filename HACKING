@@ -816,7 +816,7 @@ Text Data Type
 In Jet3, the encoding of text depends on the machine on which it was created.
 So for databases created on U.S. English systems, it can be expected that text
 is encoded in CP1252.  This is the default used by mdbtools.  If you know that
-another encoding has been used, you can over-ride the default by setting the
+another encoding has been used, you can override the default by setting the
 environment variable MDB_JET3_CHARSET.  To find out what encodings will work on
 your system, run 'iconv -l'.
 
