@@ -831,5 +831,5 @@ compressed.  Also, the string will only be compressed if it really does make
 the string shorter as compared to uncompressed UCS-2.
 
 Programs that use mdbtools libraries will receive strings encoded in UTF-8 by
-default.  This default can by over-ridden by setting the environment variable
+default.  This default can by overridden by setting the environment variable
 MDBICONV to the desired encoding.
