@@ -150,7 +150,7 @@ mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
  * @table: Table that the row belongs to
  * @row_start: offset to start of row on current page
  * @row_end: offset to end of row on current page
- * @fields: pointer to MdbField array to be popluated by mdb_crack_row
+ * @fields: pointer to MdbField array to be populated by mdb_crack_row
  *
  * Cracks a row buffer apart into its component fields.  
  * 
