@@ -939,6 +939,21 @@ static SQLRETURN SQL_API _SQLColAttributes(
 		case SQL_COLUMN_DISPLAY_SIZE: /* =SQL_DESC_DISPLAY_SIZE */
 			*pfDesc = mdb_col_disp_size(col);
 			break;
+        case SQL_DESC_UNSIGNED:
+			switch(col->col_type) {
+				case MDB_INT:
+				case MDB_LONGINT:
+				case MDB_FLOAT:
+				case MDB_DOUBLE:
+				case MDB_NUMERIC:
+					*pfDesc = SQL_FALSE;
+					break;
+				case MDB_BYTE:
+				default: // Everything else returns true per MSDN
+					*pfDesc = SQL_TRUE;
+					break;
+			}
+			break;
 		default:
 			strcpy(sqlState, "HYC00"); // 	Driver not capable
 			ret = SQL_ERROR;
