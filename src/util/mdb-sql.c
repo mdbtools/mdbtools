@@ -336,11 +336,6 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	if (footers) {
 		print_rows_retrieved(out, row_count);
 	}
-
-	/* clean up */
-	for (j=0;j<sql->num_columns;j++) {
-		g_free(sql->bound_values[j]);
-	}
 }
 
 int
