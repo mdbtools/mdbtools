@@ -473,6 +473,13 @@ void mdb_sql_reset(MdbSQL *sql)
 		sql->cur_table = NULL;
 	}
 
+	/* Reset bound values */
+	unsigned int i;
+	for (i=0;i<sql->num_columns;i++) {
+		g_free(sql->bound_values[i]);
+		sql->bound_values[i] = NULL;
+	}
+
 	/* Reset columns */
 	mdb_sql_free_columns(sql->columns);
 	sql->num_columns = 0;
