@@ -205,14 +205,14 @@ run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 			else 
 				printf("Index scanning %s using %s\n", table->name, table->scan_idx->name);
 		}
-		if (noexec) {
-			mdb_sql_reset(sql);
-			return;
+		/* If noexec != on, dump results */
+		if (!noexec) {
+			if (pretty_print)
+				dump_results_pp(out, sql);
+			else
+				dump_results(out, sql, delimiter);
 		}
-		if (pretty_print)
-			dump_results_pp(out, sql);
-		else
-			dump_results(out, sql, delimiter);
+		mdb_sql_reset(sql);
 	}
 }
 
@@ -281,8 +281,6 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 	if (footers) {
 		print_rows_retrieved(out, row_count);
 	}
-
-	mdb_sql_reset(sql);
 }
 
 void 
@@ -343,8 +341,6 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	for (j=0;j<sql->num_columns;j++) {
 		g_free(sql->bound_values[j]);
 	}
-
-	mdb_sql_reset(sql);
 }
 
 int
