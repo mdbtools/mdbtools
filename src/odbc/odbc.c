@@ -1300,6 +1300,7 @@ static SQLRETURN SQL_API _SQLFreeEnv(
 		return SQL_ERROR;
 	}
 	g_ptr_array_free(env->connections, TRUE);
+	g_free(env);
 
 	return SQL_SUCCESS;
 }
