@@ -457,9 +457,18 @@ void mdb_sql_dump(MdbSQL *sql)
 }
 void mdb_sql_exit(MdbSQL *sql)
 {
-	mdb_sql_reset(sql); // Free memory
+	/* Free the memory associated with the SQL engine */
+	mdb_sql_reset(sql);
+	
+	g_ptr_array_free(sql->columns, TRUE);
+	g_ptr_array_free(sql->tables, TRUE);
+	
+	/* If libmdb has been initialized, terminate it */
 	if (sql->mdb)
 		mdb_close(sql->mdb);
+	
+	/* Cleanup the SQL engine object */
+	g_free(sql);
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
