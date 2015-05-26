@@ -1300,6 +1300,8 @@ static SQLRETURN SQL_API _SQLFreeEnv(
 		return SQL_ERROR;
 	}
 	g_ptr_array_free(env->connections, TRUE);
+	mdb_sql_exit(env->sql);
+	g_free(env);
 
 	return SQL_SUCCESS;
 }
@@ -1797,7 +1799,7 @@ static SQLRETURN SQL_API _SQLGetData(
 		{
 			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
 				col->cur_value_start, col->col_type, col->cur_value_len);
-			int len = strlen(str) + 1; // including \0
+			int len = strlen(str);
 			if (stmt->pos >= len) {
 				free(str);
 				return SQL_NO_DATA;
