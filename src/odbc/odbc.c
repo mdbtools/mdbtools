@@ -939,7 +939,7 @@ static SQLRETURN SQL_API _SQLColAttributes(
 		case SQL_COLUMN_DISPLAY_SIZE: /* =SQL_DESC_DISPLAY_SIZE */
 			*pfDesc = mdb_col_disp_size(col);
 			break;
-        case SQL_DESC_UNSIGNED:
+		case SQL_DESC_UNSIGNED:
 			switch(col->col_type) {
 				case MDB_INT:
 				case MDB_LONGINT:
