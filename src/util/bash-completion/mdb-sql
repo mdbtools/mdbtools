@@ -1,0 +1,28 @@
+#-*- mode: shell-script;-*-
+have mdb-sql &&
+_mdb_sql()
+{
+	local cur prev
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -d ]] ; then
+		return 0
+	elif [[ "$prev" == -@(i|-input|o|-output) ]] ; then
+		_filedir
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-H --no-header \
+                            -F --no-footer \
+                            -p --no-pretty-print \
+                            -d --delimiter \
+                            -i --input \
+                            -o --output \
+                            -h --help' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_sql mdb-sql

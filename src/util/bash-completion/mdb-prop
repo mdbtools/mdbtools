@@ -1,0 +1,24 @@
+#-*- mode: shell-script;-*-
+have mdb-prop &&
+_mdb_prop()
+{
+	local cur
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if (( COMP_CWORD == 1 )); then
+		_filedir '@(mdb|mdw|accdb)'
+	elif (( COMP_CWORD == 2 )); then
+		local dbname
+		local tablenames
+		dbname=${COMP_WORDS[1]}
+		__expand_tilde_by_ref dbname
+		tablenames=$(eval mdb-tables -S -d / "${dbname}" 2>/dev/null)
+		COMPREPLY=( $( IFS=/ compgen -W "${tablenames}" -- $cur ) )
+	elif (( COMP_CWORD == 3 )); then
+		COMPREPLY=( $( compgen -W 'Lv LvProp LvModule LvExtra' -- $cur ) )
+	fi
+	return 0
+} &&
+complete -F _mdb_prop mdb-prop

@@ -1,0 +1,14 @@
+#-*- mode: shell-script;-*-
+have mdb-hexdump &&
+_mdb_hexdump()
+{
+	local cur
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if (( COMP_CWORD == 1 )); then
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_hexdump mdb-hexdump

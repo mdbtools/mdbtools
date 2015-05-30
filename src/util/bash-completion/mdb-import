@@ -1,0 +1,29 @@
+#-*- mode: shell-script;-*-
+have mdb-import &&
+_mdb_import()
+{
+	local cur
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -@(d|-delimiter) ]]; then
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-H --header \
+                            -d --delimiter \
+                            -h --help' -- $cur ) )
+	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
+		local dbname
+		local tablenames
+		dbname=$prev
+		__expand_tilde_by_ref dbname
+		tablenames=$(eval mdb-tables -S -d / "${dbname}" 2>/dev/null)
+		COMPREPLY=( $( IFS=/ compgen -W "${tablenames}" -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb|txt|csv)'
+	fi
+	return 0
+} &&
+complete -F _mdb_import mdb-import

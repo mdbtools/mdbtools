@@ -240,6 +240,7 @@ AC_CONFIG_FILES([
 libmdb.pc
 libmdbsql.pc
 src/util/Makefile
+src/util/bash-completion/Makefile
 src/extras/Makefile
 Makefile
 include/Makefile

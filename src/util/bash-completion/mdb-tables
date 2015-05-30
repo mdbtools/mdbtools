@@ -1,0 +1,28 @@
+#-*- mode: shell-script;-*-
+have mdb-tables &&
+_mdb_tables()
+{
+	local cur prev
+        
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
+
+	if [[ "$prev" == -@(d|-delimiter) ]]; then
+		return 0
+	elif [[ "$prev" == -@(t|-type) ]]; then
+		COMPREPLY=( $( compgen -W 'form table macro systable report query linkedtable module relationship dbprop any all' -- $cur ) )
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-S --system\
+                            -1 --single-column \
+                            -d --delimiter \
+                            -t --type \
+                            -T --showtype \
+                            -h --help' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_tables mdb-tables
