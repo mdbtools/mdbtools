@@ -11,5 +11,5 @@ libmdbodbcW_la_LIBADD	= $(libmdbodbc_la_LIBADD) @LIBICONV@
 libmdbodbcW_la_LDFLAGS	= $(libmdbodbc_la_LDFLAGS)
 libmdbodbcW_la_CFLAGS	= $(AM_CFLAGS) -D ENABLE_ODBC_W=1
 endif
-LIBS	=	@LEXLIB@ $(GLIB_LIBS) $(ODBC_LIBS)
+LIBS	=		$(GLIB_LIBS) $(ODBC_LIBS)
 unittest_LDADD	=	libmdbodbc.la ../libmdb/libmdb.la ../sql/libmdbsql.la
