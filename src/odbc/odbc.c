@@ -1230,6 +1230,7 @@ SQLRETURN SQL_API SQLFetch(
 
 	if (mdb_fetch_row(env->sql->cur_table)) {
 		stmt->rows_affected++;
+		stmt->pos=0;
 		return SQL_SUCCESS;
 	} else {
 		return SQL_NO_DATA_FOUND;
