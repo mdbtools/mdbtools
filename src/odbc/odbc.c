@@ -185,9 +185,8 @@ static SQLRETURN do_connect (
    char *database)
 {
 	struct _hdbc *dbc = (struct _hdbc *) hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 
-	if (mdb_sql_open(env->sql, database))
+	if (mdb_sql_open(dbc->sqlconn, database))
 		return SQL_SUCCESS;
 	else
 		return SQL_ERROR;
@@ -326,8 +325,6 @@ SQLRETURN SQL_API SQLExtendedFetch(
     SQLUSMALLINT      *rgfRowStatus)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 
 	TRACE("SQLExtendedFetch");
 	if (fFetchType!=SQL_FETCH_NEXT) {
@@ -341,7 +338,7 @@ SQLRETURN SQL_API SQLExtendedFetch(
 	
 	bind_columns(stmt);
 
-	if (mdb_fetch_row(env->sql->cur_table)) {
+	if (mdb_fetch_row(stmt->sql->cur_table)) {
 		stmt->rows_affected++;
 		return SQL_SUCCESS;
 	} else {
@@ -544,6 +541,7 @@ struct _hdbc* dbc;
 	g_ptr_array_add(env->connections, dbc);
 	dbc->params = NewConnectParams ();
 	dbc->statements = g_ptr_array_new();
+	dbc->sqlconn = mdb_sql_init();
 	*phdbc=dbc;
 
 	return SQL_SUCCESS;
@@ -563,7 +561,6 @@ struct _henv *env;
 
 	TRACE("_SQLAllocEnv");
 	env = (SQLHENV) g_malloc0(sizeof(struct _henv));
-	env->sql = mdb_sql_init();
 	env->connections = g_ptr_array_new();
 	*phenv=env;
 	return SQL_SUCCESS;
@@ -589,6 +586,8 @@ static SQLRETURN SQL_API _SQLAllocStmt(
 	stmt = (SQLHSTMT) g_malloc0(sizeof(struct _hstmt));
 	stmt->hdbc=dbc;
 	g_ptr_array_add(dbc->statements, stmt);
+	stmt->sql = mdb_sql_init();
+	stmt->sql->mdb = mdb_clone_handle(dbc->sqlconn->mdb);
 
 	*phstmt = stmt;
 	return SQL_SUCCESS;
@@ -749,9 +748,7 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 {
 	int namelen, i;
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
-	MdbSQL *sql = env->sql;
+	MdbSQL *sql = stmt->sql;
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
 	MdbTableDef *table;
@@ -867,8 +864,6 @@ static SQLRETURN SQL_API _SQLColAttributes(
 {
 	int namelen, i;
 	struct _hstmt *stmt;
-	struct _hdbc *dbc;
-	struct _henv *env;
 	MdbSQL *sql;
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
@@ -877,15 +872,13 @@ static SQLRETURN SQL_API _SQLColAttributes(
 
 	TRACE("_SQLColAttributes");
 	stmt = (struct _hstmt *) hstmt;
-	dbc = (struct _hdbc *) stmt->hdbc;
-	env = (struct _henv *) dbc->henv;
-	sql = env->sql;
+	sql = stmt->sql;
 
 	/* dont check column index for these */
 	switch(fDescType) {
 		case SQL_COLUMN_COUNT:
 		case SQL_DESC_COUNT:
-			*pfDesc = env->sql->num_columns;
+			*pfDesc = stmt->sql->num_columns;
 			return SQL_SUCCESS;
 			break;
 	}
@@ -1005,16 +998,14 @@ SQLRETURN SQL_API SQLDisconnect(
     SQLHDBC            hdbc)
 {
 	struct _hdbc *dbc;
-	struct _henv *env;
 
 	TRACE("SQLDisconnect");
 
 	dbc = (struct _hdbc *) hdbc;
-	env = (struct _henv *) dbc->henv;
 	// Automatically close all statements:
 	while (dbc->statements->len)
 		_SQLFreeStmt(g_ptr_array_index(dbc->statements, 0), SQL_DROP);
-	mdb_sql_close(env->sql);
+	mdb_sql_close(dbc->sqlconn);
 
 	return SQL_SUCCESS;
 }
@@ -1098,20 +1089,18 @@ SQLRETURN SQL_API SQLErrorW(
 static SQLRETURN SQL_API _SQLExecute( SQLHSTMT hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 
 	TRACE("_SQLExecute");
    
 	/* fprintf(stderr,"query = %s\n",stmt->query); */
 	_odbc_fix_literals(stmt);
 
-	mdb_sql_reset(env->sql);
+	mdb_sql_reset(stmt->sql);
 
-	mdb_sql_run_query(env->sql, stmt->query);
-	if (mdb_sql_has_error(env->sql)) {
+	mdb_sql_run_query(stmt->sql, stmt->query);
+	if (mdb_sql_has_error(stmt->sql)) {
 		LogError("Couldn't parse SQL\n");
-		mdb_sql_reset(env->sql);
+		mdb_sql_reset(stmt->sql);
 		return SQL_ERROR;
 	} else {
 		return SQL_SUCCESS;
@@ -1172,8 +1161,6 @@ SQLRETURN SQL_API SQLExecute(
 static void
 bind_columns(struct _hstmt *stmt)
 {
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 	struct _sql_bind_info *cur;
 
 	TRACE("bind_columns");
@@ -1182,8 +1169,8 @@ bind_columns(struct _hstmt *stmt)
 		cur = stmt->bind_head;
 		while (cur) {
 			if (cur->column_number>0 &&
-			    cur->column_number <= env->sql->num_columns) {
-				mdb_sql_bind_column(env->sql, cur->column_number,
+			    cur->column_number <= stmt->sql->num_columns) {
+				mdb_sql_bind_column(stmt->sql, cur->column_number,
 				                    cur->varaddr, cur->column_lenbind);
 			} else {
 				/* log error ? */
@@ -1214,8 +1201,6 @@ SQLRETURN SQL_API SQLFetch(
     SQLHSTMT           hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 
 	TRACE("SQLFetch");
 	/* if we bound columns, transfer them to res_info now that we have one */
@@ -1223,13 +1208,13 @@ SQLRETURN SQL_API SQLFetch(
 	//cur = stmt->bind_head;
 	//while (cur) {
 		//if (cur->column_number>0 &&
-			//cur->column_number <= env->sql->num_columns) {
+			//cur->column_number <= stmt->sql->num_columns) {
 			// if (cur->column_lenbind) *(cur->column_lenbind) = 4;
 		//}
 		//cur = cur->next;
 	//}
 
-	if (mdb_fetch_row(env->sql->cur_table)) {
+	if (mdb_fetch_row(stmt->sql->cur_table)) {
 		stmt->rows_affected++;
 		stmt->pos=0;
 		return SQL_SUCCESS;
@@ -1277,6 +1262,7 @@ static SQLRETURN SQL_API _SQLFreeConnect(
 
 	FreeConnectParams(dbc->params);
 	g_ptr_array_free(dbc->statements, TRUE);
+	mdb_sql_exit(dbc->sqlconn);
 	g_free(dbc);
 
 	return SQL_SUCCESS;
@@ -1302,7 +1288,6 @@ static SQLRETURN SQL_API _SQLFreeEnv(
 		return SQL_ERROR;
 	}
 	g_ptr_array_free(env->connections, TRUE);
-	mdb_sql_exit(env->sql);
 	g_free(env);
 
 	return SQL_SUCCESS;
@@ -1320,14 +1305,12 @@ static SQLRETURN SQL_API _SQLFreeStmt(
 {
 	struct _hstmt *stmt=(struct _hstmt *)hstmt;
 	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
-	MdbSQL *sql = env->sql;
 
 	TRACE("_SQLFreeStmt");
 	if (fOption==SQL_DROP) {
 		if (!g_ptr_array_remove(dbc->statements, stmt))
 			return SQL_INVALID_HANDLE;
-		mdb_sql_reset(sql);
+		mdb_sql_exit(stmt->sql);
 		unbind_columns(stmt);
 		g_free(stmt);
 	} else if (fOption==SQL_CLOSE) {
@@ -1374,11 +1357,9 @@ SQLRETURN SQL_API SQLNumResultCols(
     SQLSMALLINT       *pccol)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 	
 	TRACE("SQLNumResultCols");
-	*pccol = env->sql->num_columns;
+	*pccol = stmt->sql->num_columns;
 	return SQL_SUCCESS;
 }
 
@@ -1454,9 +1435,7 @@ static SQLRETURN SQL_API _SQLColumns(
     SQLSMALLINT        cbColumnName)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
-	MdbSQL *sql = env->sql;
+	MdbSQL *sql = stmt->sql;
 	MdbHandle *mdb = sql->mdb;
 	MdbTableDef *ttable;
 	MdbField fields[18];
@@ -1601,8 +1580,6 @@ static SQLRETURN SQL_API _SQLGetData(
     SQLLEN             *pcbValue)
 {
 	struct _hstmt *stmt;
-	struct _hdbc *dbc;
-	struct _henv *env;
 	MdbSQL *sql;
 	MdbHandle *mdb;
 	MdbSQLColumn *sqlcol;
@@ -1612,9 +1589,7 @@ static SQLRETURN SQL_API _SQLGetData(
 
 	TRACE("_SQLGetData");
 	stmt = (struct _hstmt *) hstmt;
-	dbc = (struct _hdbc *) stmt->hdbc;
-	env = (struct _henv *) dbc->henv;
-	sql = env->sql;
+	sql = stmt->sql;
 	mdb = sql->mdb;
 
 	if (icol<1 || icol>sql->num_columns) {
@@ -2166,10 +2141,8 @@ SQLRETURN SQL_API SQLGetTypeInfo(
     SQLSMALLINT        fSqlType)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
 	MdbTableDef *ttable;
-	MdbSQL *sql = env->sql;
+	MdbSQL *sql = stmt->sql;
 	MdbHandle *mdb = sql->mdb;
 	int row_size;
 	unsigned char row_buffer[MDB_PGSIZE];
@@ -2324,9 +2297,7 @@ SQLRETURN SQL_API SQLTables( //sz* not used, so Unicode API not required.
     SQLSMALLINT        cbTableType)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
-	struct _henv *env = (struct _henv *) dbc->henv;
-	MdbSQL *sql = env->sql;
+	MdbSQL *sql = stmt->sql;
 	MdbHandle *mdb = sql->mdb;
 	MdbTableDef *ttable;
 	MdbField fields[5];

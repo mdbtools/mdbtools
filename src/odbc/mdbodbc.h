@@ -36,15 +36,16 @@ extern "C" {
 #endif
 
 struct _henv {
-	MdbSQL *sql;
 	GPtrArray *connections;
 };
 struct _hdbc {
 	struct _henv *henv;
+	MdbSQL *sqlconn;
 	ConnectParams* params;
 	GPtrArray *statements;
 };
 struct _hstmt {
+	MdbSQL *sql;
 	struct _hdbc *hdbc;
 	/* reminder to self: the following is here for testing purposes.
 	 * please make dynamic before checking in 
