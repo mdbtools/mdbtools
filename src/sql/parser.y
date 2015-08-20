@@ -41,8 +41,8 @@ static MdbSQL *g_sql;
 
 
 
-%token <name> IDENT NAME PATH STRING NUMBER 
-%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT
+%token <name> IDENT NAME PATH STRING NUMBER
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT COUNT
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE IS NUL
 
@@ -146,11 +146,13 @@ table:
 	;
 
 column_list:
-	'*'	{ mdb_sql_all_columns(_mdb_sql(NULL)); }
+	COUNT '(' '*' ')'	{ mdb_sql_sel_count(_mdb_sql(NULL)); }
+	| '*'	{ mdb_sql_all_columns(_mdb_sql(NULL)); }
 	|	column  
 	|	column ',' column_list 
 	;
 	 
+
 column:
 	identifier { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
 	;

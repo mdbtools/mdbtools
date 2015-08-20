@@ -316,7 +316,7 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 			printf(" < %d\n", node->value.i); 
 			break;
 		case MDB_GT: 
-			printf(" < %d\n", node->value.i); 
+			printf(" > %d\n", node->value.i); 
 			break;
 		case MDB_LIKE: 
 			printf(" like %s\n", node->value.s); 
@@ -419,6 +419,12 @@ mdb_sql_all_columns(MdbSQL *sql)
 {
 	sql->all_columns=1;	
 }
+void
+mdb_sql_sel_count(MdbSQL *sql)
+{
+	sql->sel_count=1;
+}
+
 int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 {
 	MdbSQLColumn *c;
@@ -508,6 +514,7 @@ void mdb_sql_reset(MdbSQL *sql)
 	sql->sarg_stack = NULL;
 
 	sql->all_columns = 0;
+	sql->sel_count = 0;
 	sql->max_rows = -1;
 }
 static void print_break(int sz, int first)
@@ -690,6 +697,26 @@ int found = 0;
 		return;
 	}
 	mdb_read_columns(table);
+
+	if (sql->sel_count && !sql->sarg_tree) {
+		MdbTableDef *ttable = mdb_create_temp_table(mdb, "#count");
+		char tmpstr[32];
+		gchar row_cnt[32];
+		unsigned char row_buffer[MDB_PGSIZE];
+		MdbField fields[1];
+		int row_size, tmpsiz;
+
+		mdb_sql_add_temp_col(sql, ttable, 0, "count", MDB_TEXT, 30, 0);
+		sprintf(tmpstr,"%d",table->num_rows);
+		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, row_cnt, 32);
+		mdb_fill_temp_field(&fields[0],row_cnt, tmpsiz, 0,0,0,0);
+		row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
+		mdb_add_row_to_pg(ttable,row_buffer, row_size);
+		ttable->num_rows++;
+		sql->cur_table = ttable;
+		return;
+	}
+
 	mdb_read_indices(table);
 	mdb_rewind_table(table);
 

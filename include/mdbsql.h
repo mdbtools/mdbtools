@@ -31,6 +31,7 @@
 typedef struct {
 	MdbHandle *mdb;
 	int all_columns;
+	int sel_count;
 	unsigned int num_columns;
 	GPtrArray *columns;
 	unsigned int num_tables;
@@ -79,6 +80,7 @@ extern MdbSQLSarg *mdb_sql_alloc_sarg();
 extern MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name);
 extern int mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant);
 extern void mdb_sql_all_columns(MdbSQL *sql);
+extern void mdb_sql_sel_count(MdbSQL *sql);
 extern int mdb_sql_add_column(MdbSQL *sql, char *column_name);
 extern int mdb_sql_add_table(MdbSQL *sql, char *table_name);
 extern void mdb_sql_dump(MdbSQL *sql);

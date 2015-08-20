@@ -45,6 +45,7 @@ null		{ return NUL; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }
+count		{ return COUNT; }
 [ \t\r]	;
 
 \"[^"]*\"\"  {
