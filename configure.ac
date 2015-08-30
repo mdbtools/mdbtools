@@ -232,6 +232,7 @@ AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
 
 dnl Checks for library functions.
 VL_LIB_READLINE
+AC_CHECK_FUNC(strptime,[ AC_DEFINE(HAVE_STRPTIME, 1, [strptime check]) AM_CONDITIONAL(HAVE_STRPTIME, true) ],[ AM_CONDITIONAL(HAVE_STRPTIME, false) ])
 
 localedir=${datadir}/locale
 AC_SUBST(localedir)

@@ -42,7 +42,7 @@ static MdbSQL *g_sql;
 
 
 %token <name> IDENT NAME PATH STRING NUMBER
-%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT COUNT
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT COUNT STRPTIME
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE IS NUL
 
@@ -132,7 +132,12 @@ nulloperator:
 	;
 
 constant:
-	NUMBER { $$ = $1; }
+	STRPTIME '(' constant ',' constant ')' { 
+		$$ = mdb_sql_strptime(_mdb_sql(NULL), $3, $5);
+		free($3);
+		free($5);
+	}
+	| NUMBER { $$ = $1; }
 	| STRING { $$ = $1; }
 	;
 

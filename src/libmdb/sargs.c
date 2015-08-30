@@ -98,6 +98,43 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 	return 0;
 }
 
+/* Actually used to not rely on libm. 
+ * Maybe there is a cleaner and faster solution? */
+static double poor_mans_trunc(double x)
+{
+	char buf[16];
+	sprintf(buf, "%.6f", x);
+	sscanf(buf, "%lf", &x);
+	return x;
+}
+
+int mdb_test_double(int op, double vd, double d)
+{
+	switch (op) {
+		case MDB_EQUAL:
+			//fprintf(stderr, "comparing %lf and %lf\n", d, node->value.d);
+			if (vd == d) return 1;
+			break;
+		case MDB_GT:
+			if (vd < d) return 1;
+			break;
+		case MDB_LT:
+			if (vd > d) return 1;
+			break;
+		case MDB_GTEQ:
+			if (vd <= d) return 1;
+			break;
+		case MDB_LTEQ:
+			if (vd >= d) return 1;
+			break;
+		default:
+			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_double() for operator %d\n",op);
+			break;
+	}
+	return 0;
+}
+
+#if 0 // Obsolete
 int
 mdb_test_date(MdbSargNode *node, double td)
 {
@@ -140,6 +177,7 @@ mdb_test_date(MdbSargNode *node, double td)
 	}
 	return 0;
 }
+#endif
 
 
 int
@@ -196,7 +234,7 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, 256);
 			return mdb_test_string(node, tmpbuf);
 		case MDB_DATETIME:
-			return mdb_test_date(node, mdb_get_double(field->value, 0));
+			return mdb_test_double(node->op, poor_mans_trunc(node->value.d), poor_mans_trunc(mdb_get_double(field->value, 0)));
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
 			break;

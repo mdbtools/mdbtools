@@ -83,6 +83,7 @@ extern void mdb_sql_all_columns(MdbSQL *sql);
 extern void mdb_sql_sel_count(MdbSQL *sql);
 extern int mdb_sql_add_column(MdbSQL *sql, char *column_name);
 extern int mdb_sql_add_table(MdbSQL *sql, char *table_name);
+extern char *mdb_sql_strptime(MdbSQL *sql, char *data, char *format);
 extern void mdb_sql_dump(MdbSQL *sql);
 extern void mdb_sql_exit(MdbSQL *sql);
 extern void mdb_sql_reset(MdbSQL *sql);

@@ -44,6 +44,8 @@ static SQLRETURN SQL_API _SQLAllocStmt(SQLHDBC hdbc, SQLHSTMT *phstmt);
 static SQLRETURN SQL_API _SQLFreeConnect(SQLHDBC hdbc);
 static SQLRETURN SQL_API _SQLFreeEnv(SQLHENV henv);
 static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
+static SQLRETURN SQL_API _SQLPrepare(SQLHSTMT hstmt, SQLCHAR *szSqlStr, SQLINTEGER cbSqlStr);
+
 
 static void bind_columns (struct _hstmt*);
 static void unbind_columns (struct _hstmt*);
@@ -1111,11 +1113,7 @@ static SQLRETURN SQL_API _SQLExecDirect(
     SQLCHAR           *szSqlStr,
     SQLINTEGER         cbSqlStr)
 {
-	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-
-	TRACE("_SQLExecDirect");
-	strcpy(stmt->query, (char*)szSqlStr);
-
+	_SQLPrepare(hstmt, szSqlStr, cbSqlStr);
 	return _SQLExecute(hstmt);
 }
 
@@ -1362,7 +1360,7 @@ SQLRETURN SQL_API SQLNumResultCols(
 	return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLPrepare(
+static SQLRETURN SQL_API _SQLPrepare(
     SQLHSTMT           hstmt,
     SQLCHAR           *szSqlStr,
     SQLINTEGER         cbSqlStr)
@@ -1376,6 +1374,14 @@ SQLRETURN SQL_API SQLPrepare(
 	stmt->query[sqllen]='\0';
 
 	return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLPrepare(
+    SQLHSTMT           hstmt,
+    SQLCHAR           *szSqlStr,
+    SQLINTEGER         cbSqlStr)
+{
+	return _SQLPrepare(hstmt, szSqlStr, cbSqlStr);
 }
 
 SQLRETURN SQL_API SQLRowCount(

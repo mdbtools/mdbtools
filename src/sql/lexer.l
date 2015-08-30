@@ -46,6 +46,7 @@ null		{ return NUL; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }
 count		{ return COUNT; }
+strptime	{ return STRPTIME; }
 [ \t\r]	;
 
 \"[^"]*\"\"  {

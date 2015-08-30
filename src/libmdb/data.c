@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#define _XOPEN_SOURCE
 #include <time.h>
 #include <math.h>
 #include "mdbtools.h"
@@ -37,6 +38,9 @@ static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
 static char date_fmt[64] = "%x %X";
+static int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+static int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
+
 
 void mdb_set_date_fmt(const char *fmt)
 {
@@ -778,9 +782,22 @@ static int trim_trailing_zeros(char * buff)
 }
 #endif
 
+
 /* Date/Time is stored as a double, where the whole
    part is the days from 12/30/1899 and the fractional
    part is the fractional part of one day. */
+
+void
+mdb_tm_to_date(struct tm *t, double *td)
+{
+	short yr = t->tm_year + 1900;
+	char leap = ((yr & 3) == 0) && ((yr % 100) != 0 || (yr % 400) == 0);
+	int *cal = leap ? leap_cal : noleap_cal;
+	long int time = (yr*365+(yr/4)-(yr/100)+(yr/400)+cal[t->tm_mon]+t->tm_mday)-693959;
+
+	*td = (((long)t->tm_hour * 3600)+((long)t->tm_min * 60)+((long)t->tm_sec)) / 86400.0;
+	if (time>=0) *td+=time; else *td=time-*td;
+}
 
 void
 mdb_date_to_tm(double td, struct tm *t)
@@ -788,8 +805,6 @@ mdb_date_to_tm(double td, struct tm *t)
 	long int day, time;
 	int yr, q;
 	int *cal;
-	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
-	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
 	day = (long int)(td);
 	time = (long int)(fabs(td - day) * 86400.0 + 0.5);

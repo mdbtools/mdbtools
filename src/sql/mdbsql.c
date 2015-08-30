@@ -17,6 +17,7 @@
  */
 
 #include <stdarg.h>
+#define _XOPEN_SOURCE
 #include "mdbsql.h"
 
 #ifdef DMALLOC
@@ -26,6 +27,12 @@
 #ifdef HAVE_WORDEXP_H
 #define HAVE_WORDEXP
 #include <wordexp.h>
+#endif
+
+#ifdef HAVE_STRPTIME
+#include <time.h>
+#include <stdio.h>
+#include <locale.h>
 #endif
 
 char *g_input_ptr;
@@ -334,6 +341,50 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 		mdb_sql_dump_node(node->right, mylevel);
 	}
 }
+
+/* Parses date format specifier into JET date representation (double) */
+char *
+mdb_sql_strptime(MdbSQL *sql, char *data, char *format)
+{
+#ifndef HAVE_STRPTIME
+	mdb_sql_error(sql, "Your system doesn't support strptime.");
+	mdb_sql_reset(sql);
+	return NULL;
+#else
+	char *p, *pszDate;
+	struct tm tm={0};
+	double date=0;
+
+	if (data[0]!='\'' || *(p=&data[strlen(data)-1])!='\'') {
+		mdb_sql_error(sql, "First parameter of strptime (data) must be a string.");
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	*p=0; ++data;
+	if (format[0]!='\'' || *(p=&format[strlen(format)-1])!='\'') {
+		mdb_sql_error(sql, "Second parameter of strptime (format) must be a string.");
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	*p=0; ++format;
+	if (!strptime(data, format, &tm)) {
+		mdb_sql_error(sql, "strptime('%s','%s') failed.", data, format);
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	mdb_tm_to_date(&tm, &date);
+	/* It seems that when just using a time offset without date in strptime, 
+	 * we always get 1 as decimal part, een though it should be 0 for time */
+	if (date < 2 && date > 1) date--;
+	if ((pszDate=malloc(16))) {
+		char cLocale=localeconv()->decimal_point[0], *p;
+		sprintf(pszDate, "%lf", date);
+		if (cLocale!='.') for (p=pszDate; *p; p++) if (*p==cLocale) *p='.';
+	}
+	return pszDate;
+#endif
+}
+
 /* evaluate a expression involving 2 constants and add answer to the stack */
 int 
 mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
@@ -387,6 +438,7 @@ int
 mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 {
 	int lastchar;
+	char *p;
 	MdbSargNode *node;
 
 	node = mdb_sql_alloc_node();
@@ -406,8 +458,14 @@ mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 		lastchar = strlen(constant) > 256 ? 256 : strlen(constant);
 		strncpy(node->value.s, &constant[1], lastchar - 2);;
 		node->value.s[lastchar - 1]='\0';
+		node->val_type = MDB_TEXT;
+	} else if ((p=strchr(constant, '.'))) {
+		*p=localeconv()->decimal_point[0];
+		node->value.d = strtod(constant, NULL);
+		node->val_type = MDB_DOUBLE;
 	} else {
 		node->value.i = atoi(constant);
+		node->val_type = MDB_INT;
 	}
 
 	mdb_sql_push_node(sql, node);
@@ -478,6 +536,8 @@ void mdb_sql_exit(MdbSQL *sql)
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
+	unsigned int i;
+
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
 		if (sql->cur_table->sarg_tree) {
@@ -489,7 +549,6 @@ void mdb_sql_reset(MdbSQL *sql)
 	}
 
 	/* Reset bound values */
-	unsigned int i;
 	for (i=0;i<sql->num_columns;i++) {
 		g_free(sql->bound_values[i]);
 		sql->bound_values[i] = NULL;
@@ -653,24 +712,40 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	sql->cur_table = ttable;
 }
 
+MdbColumn *mdb_sql_find_colbyname(MdbTableDef *table, char *name)
+{
+	unsigned int i;
+	MdbColumn *col;
+
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!g_ascii_strcasecmp(col->name, name)) return col;
+	}
+	return NULL;
+}
+
 int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 {
 	MdbTableDef *table = data;
-	unsigned int i;
 	MdbColumn *col;
 
 	if (!mdb_is_relational_op(node->op)) return 0;
 	if (!node->parent) return 0;
 
-	for (i=0;i<table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		if (!g_ascii_strcasecmp(col->name, (char *)node->parent)) {
-			node->col = col;
-			break;
+	if ((col = mdb_sql_find_colbyname(table, (char *)node->parent))) {
+		node->col = col;
+		/* Do conversion to required target value type.
+		 * Plain integers are UNIX timestamps for backwards compatibility of parser
+		*/
+		if (col->col_type == MDB_DATETIME && node->val_type == MDB_INT) {
+			struct tm *tm = gmtime((time_t*)&node->value.i);
+			mdb_tm_to_date(tm, &node->value.d);
+			node->val_type = MDB_DOUBLE;
 		}
 	}
 	return 0;
 }
+
 void 
 mdb_sql_select(MdbSQL *sql)
 {
@@ -687,6 +762,7 @@ int found = 0;
 		return;
 	}
 
+	if (!sql->num_tables) return;
 	sql_tab = g_ptr_array_index(sql->tables,0);
 
 	table = mdb_read_table_by_name(mdb, sql_tab->name, MDB_TABLE);
