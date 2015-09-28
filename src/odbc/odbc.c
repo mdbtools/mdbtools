@@ -1737,7 +1737,7 @@ static SQLRETURN SQL_API _SQLGetData(
 				break;
 			case SQL_C_LONG:
 			case SQL_C_SLONG:
-				if (intValue<LONG_MIN || intValue>LONG_MAX) {
+				if (intValue<INT_MIN || intValue>INT_MAX) {
 					strcpy(sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
