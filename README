@@ -14,7 +14,7 @@ pieces are:
                             scripts
               mdb-header -- generates a C header to be used in exporting mdb
                             data to a C prog.
-              mdb-parsecvs -- generates a C program given a CSV file made with
+              mdb-parsecsv -- generates a C program given a CSV file made with
                             mdb-export
               mdb-sql    -- if --enable-sql is specified, a simple SQL engine
                             (also used by ODBC and gmdb).
