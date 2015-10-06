@@ -580,18 +580,18 @@ void*
 mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 {
 	char ole_ptr[MDB_MEMO_OVERHEAD];
-	char *result = malloc(MDB_BIND_SIZE);
-	size_t result_buffer_size = MDB_BIND_SIZE;
+	char *result = malloc(MDB_BIND_SIZE * 64);
+	size_t result_buffer_size = MDB_BIND_SIZE * 64;
 	size_t len, pos;
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
 
-	len = mdb_ole_read(mdb, col, ole_ptr, MDB_BIND_SIZE);
+	len = mdb_ole_read(mdb, col, ole_ptr, MDB_BIND_SIZE * 64);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
 	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
-			result_buffer_size += MDB_BIND_SIZE;
+			result_buffer_size += MDB_BIND_SIZE * 64;
 			result = realloc(result, result_buffer_size);
 		}
 		memcpy(result + pos, col->bind_ptr, len);
