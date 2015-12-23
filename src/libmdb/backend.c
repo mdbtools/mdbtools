@@ -506,7 +506,9 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		backend = MDB_BACKEND_POSTGRES;
 	} else if (!strcmp(mdb->backend_name, "mysql")) {
 		backend = MDB_BACKEND_MYSQL;
-	} else {
+	} else if (!strcmp(mdb->backend_name, "oracle")) {
+                backend = MDB_BACKEND_ORACLE;
+        } else {
 		fprintf(outfile, "-- Indexes are not implemented for %s\n\n", mdb->backend_name);
 		return;
 	}
@@ -535,6 +537,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
 		if (idx->index_type==1) {
 			switch (backend) {
+                                case MDB_BACKEND_ORACLE:
 				case MDB_BACKEND_POSTGRES:
 					fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
 					break;
@@ -544,6 +547,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 			}
 		} else {
 			switch (backend) {
+                                case MDB_BACKEND_ORACLE:
 				case MDB_BACKEND_POSTGRES:
 					fprintf(outfile, "CREATE");
 					if (idx->flags & MDB_IDX_UNIQUE)
