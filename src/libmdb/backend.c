@@ -695,6 +695,15 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	} else {
 		switch (backend) {
 		  case MDB_BACKEND_ORACLE:
+                        text = g_strconcat(
+                                "ALTER TABLE ", quoted_table_1,
+                                " ADD CONSTRAINT ", quoted_constraint_name,
+                                " FOREIGN KEY (", quoted_column_1, ")"
+                                " REFERENCES ", quoted_table_2, "(", quoted_column_2, ")",
+                                (grbit & 0x00001000) ? " ON DELETE CASCADE" : "",
+                                ";\n", NULL);
+
+                        break;
 		  case MDB_BACKEND_POSTGRES:
 		  case MDB_BACKEND_SQLITE:
 			text = g_strconcat(
