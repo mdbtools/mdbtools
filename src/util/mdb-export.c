@@ -89,6 +89,7 @@ main(int argc, char **argv)
 	char *escape_char = NULL;
 	int header_row = 1;
 	int quote_text = 1;
+	int boolean_words = 0;
 	char *insert_dialect = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
@@ -108,6 +109,7 @@ main(int argc, char **argv)
 		{ "escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
 		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
 		{ "bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
+		{ "boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -153,6 +155,9 @@ main(int argc, char **argv)
 
 	if (date_fmt)
 		mdb_set_date_fmt(date_fmt);
+
+	if (boolean_words)
+		mdb_set_boolean_fmt_words();
 
 	if (str_bin_mode) {
 		if (!strcmp(str_bin_mode, "strip"))
