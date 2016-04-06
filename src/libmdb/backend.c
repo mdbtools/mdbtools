@@ -558,7 +558,20 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 			continue;
 
 		index_name = mdb_get_index_name(backend, table, idx);
-		quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
+		switch (backend) {
+			case MDB_BACKEND_POSTGRES:
+				/* PostgreSQL index and constraint names are
+                                 * never namespaced in DDL (they are always
+                                 * created in same namespace as table), so
+                                 * omit namespace.
+                                 */
+				quoted_name = mdb->default_backend->quote_schema_name(NULL, index_name);
+				break;
+
+                         default:
+				quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
+		}
+
 		if (idx->index_type==1) {
 			switch (backend) {
 				case MDB_BACKEND_ORACLE:
@@ -688,12 +701,32 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	}
 
 	quoted_table_1 = mdb->default_backend->quote_schema_name(dbnamespace, bound[1]);
-	quoted_column_1 = mdb->default_backend->quote_schema_name(dbnamespace, bound[0]);
 	quoted_table_2 = mdb->default_backend->quote_schema_name(dbnamespace, bound[3]);
-	quoted_column_2 = mdb->default_backend->quote_schema_name(dbnamespace, bound[2]);
 	grbit = atoi(bound[4]);
 	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
-	quoted_constraint_name = mdb->default_backend->quote_schema_name(dbnamespace, constraint_name);
+
+	switch (backend) {
+		case MDB_BACKEND_POSTGRES:
+			/* PostgreSQL index and constraint names are
+			 * never namespaced in DDL (they are always
+			 * created in same namespace as table), so
+			 * omit namespace.  Nor should column names
+                         * be namespaced.
+			 */
+			quoted_constraint_name = mdb->default_backend->quote_schema_name(NULL, constraint_name);
+			quoted_column_1 = mdb->default_backend->quote_schema_name(NULL, bound[0]);
+			quoted_column_2 = mdb->default_backend->quote_schema_name(NULL, bound[2]);
+			break;
+
+		default:
+			/* Other databases, namespace constraint and
+			 * column names.
+			 */
+			quoted_constraint_name = mdb->default_backend->quote_schema_name(dbnamespace, constraint_name);
+			quoted_column_1 = mdb->default_backend->quote_schema_name(dbnamespace, bound[0]);
+			quoted_column_2 = mdb->default_backend->quote_schema_name(dbnamespace, bound[2]);
+			break;
+	}
 	g_free(constraint_name);
 
 	if (grbit & 0x00000002) {
@@ -726,6 +759,28 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 				";\n", NULL);
 
 			break;
+		}
+
+		/* On some databases (eg PostgreSQL) we also want to set
+		 * the constraints to be optionally deferrable, to
+		 * facilitate out of order bulk loading.
+		 */
+		switch (backend) {
+			case MDB_BACKEND_POSTGRES:
+				{
+					gchar *add_constraint;
+					add_constraint = text;
+					text = g_strconcat(add_constraint,
+						"ALTER TABLE ", quoted_table_1,
+						" ALTER CONSTRAINT ",
+						quoted_constraint_name,
+						" DEFERRABLE"
+						" INITIALLY IMMEDIATE;\n",
+						NULL);
+					g_free(add_constraint);
+				}
+			default:
+				break;
 		}
 	}
 	g_free(quoted_table_1);
