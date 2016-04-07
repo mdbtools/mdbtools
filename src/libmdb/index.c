@@ -60,6 +60,112 @@ char idx_to_text[] = {
 0x81, 0x00, 0x00, 0x00, 'x',  0x00, 0x00, 0x00, /* 0xf8-0xff */
 };
 
+/* JET Red (v4) Index definition byte layouts
+ *
+ * Based on:
+ *
+ * http://jabakobob.net/mdb/table-page.html
+ * https://github.com/jahlborn/jackcess
+ *
+ * plus inspection of JET (Red) 4 databases.  (JET 3 format has fewer
+ * fields -- some of the ones below omitted, and others narrower.)
+ *
+ * See also JET Blue (Extensible Storage Engine) format information:
+ *
+ * https://github.com/libyal/libesedb/blob/master/documentation/Extensible%20Storage%20Engine%20%28ESE%29%20Database%20File%20%28EDB%29%20format.asciidoc
+ *
+ * which is a later Microsoft embedded database format with the same
+ * early base format.
+ *
+ * ----------------------------------------------------------------------
+ * Index Column Definitions:
+ * - for each "non foreign key" index (ie pidx->index_type!=2), a list
+ *   of columns indexed
+ *
+ * Repeated table->num_real_idxs times:
+ *
+ * Offset	Bytes 	Meaning
+ * 0x0000	4	UNKNOWN; seems to be type marker, usually 1923 or 0
+ *
+ * 0x0004       2       Column 1 ID
+ * 0x0006       1       Column 1 Flags
+ * 0x0007       2       Column 2 ID
+ * 0x0009       1       Column 2 Flags
+ * 0x000A       2       Column 3 ID
+ * 0x000C       1       Column 3 Flags
+ * 0x000D       2       Column 4 ID
+ * 0x000F       1       Column 4 Flags
+ * 0x0010       2       Column 5 ID
+ * 0x0012       1       Column 5 Flags
+ * 0x0013       2       Column 6 ID
+ * 0x0015       1       Column 6 Flags
+ * 0x0016       2       Column 7 ID
+ * 0x0018       1       Column 7 Flags
+ * 0x0019       2       Column 8 ID
+ * 0x001B       1       Column 8 Flags
+ * 0x001C       2       Column 9 ID
+ * 0x001E       1       Column 9 Flags
+ * 0x001F       2       Column 10 ID
+ * 0x0021       1       Column 10 Flags
+ *
+ * 0x0022	1	Usage Map row
+ * 0x0023	3	Usage Map page (24-bit)
+ * 0x0026	4	First index page
+ * 0x002A	4	UNKNOWN
+ * 0x002E	2	Index Flags
+ * 0x0030	4	UNKNOWN; seems to always be 0
+ * 0x0034
+ *
+ * Column ID of 0xFFFF (-1) means "not used" or "end of used columns".
+ * Column Flags:
+ * - 0x01 = Ascending
+ *
+ * Index Flags:
+ * - 0x0001 = Unique index
+ * - 0x0002 = Ignore NULLs
+ * - 0x0008 = Required Index
+ *
+ * ----------------------------------------------------------------------
+ * Index Definitions
+ * - for each index (normal, primary key, foreign key), details on the
+ *   index.
+ *
+ * - this appears to be the union of information required for normal/
+ *   primary key indexes, and the information required for foreign key
+ *   indexes.
+ *
+ * Repeated table->num_idxs times:
+ *
+ * Offset	Bytes 	Meaning
+ * 0x0000	4	UNKNOWN; apparently a type marker, usually 1625 or 0
+ * 0x0004	4	Logical Index Number
+ * 0x0008	4	Index Column Definition Entry
+ * 0x000C	1	FK Index Type
+ * 0x000D	4	FK Index Number
+ * 0x0011	4	FK Index Table Page Number
+ * 0x0015	1	Flags: Update Action
+ * 0x0016	1	Flags: Delete Action
+ * 0x0017	1	Index Type
+ * 0x0018	4	UNKNNOWN; seems to always be 0
+ * 0x001B
+ *
+ * Where Index Type is:
+ * 0x01 = normal
+ * 0x01 = primary key
+ * 0x02 = foreign key index reference
+ */
+
+/* Debugging helper to dump out raw hex values of index definition */
+/*
+static void hexdump(unsigned char *tmpbuf, int size) {
+	int i;
+	for (i = 0; i < size; ++i) {
+		fprintf(stderr, "%02x ", tmpbuf[i]);
+        }
+	fprintf(stderr, "\n");
+}
+*/
+
 
 GPtrArray *
 mdb_read_indices(MdbTableDef *table)
@@ -86,14 +192,19 @@ mdb_read_indices(MdbTableDef *table)
 		type_offset = 23;
 	}
 
-	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
-	/* num_real_idxs should be the number of indexes of type 2.
+	/* Read in the definitions of table indexes, into table->indices */
+
+	/* num_real_idxs should be the number of indexes other than type 2.
 	 * It's not always the case. Happens on Northwind Orders table.
 	 */
+	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
+
 	table->num_real_idxs = 0;
 	tmpbuf = (gchar *) g_malloc(idx2_sz);
 	for (i=0;i<table->num_idxs;i++) {
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, idx2_sz);
+                //fprintf(stderr, "Index defn: ");
+                //hexdump((unsigned char *)tmpbuf, idx2_sz);
 		pidx = (MdbIndex *) g_malloc0(sizeof(MdbIndex));
 		pidx->table = table;
 		pidx->index_num = mdb_get_int16(tmpbuf, 4);
@@ -101,13 +212,15 @@ mdb_read_indices(MdbTableDef *table)
 		g_ptr_array_add(table->indices, pidx);
 		/*
 		{
-			gint32 dumy0 = mdb_get_int32(tmpbuf, 0);
-			gint8 dumy1 = tmpbuf[8];
-			gint32 dumy2 = mdb_get_int32(tmpbuf, 9);
-			gint32 dumy3 = mdb_get_int32(tmpbuf, 13);
-			gint16 dumy4 = mdb_get_int16(tmpbuf, 17);
-			fprintf(stderr, "idx #%d: num2:%d type:%d\n", i, pidx->index_num, pidx->index_type);
-			fprintf(stderr, "idx #%d: %d %d %d %d %d\n", i, dumy0, dumy1, dumy2, dumy3, dumy4);
+			gint32 idx_marker = mdb_get_int32(tmpbuf, 0);
+		        gint32 index_col_def_num = mdb_get_int16(tmpbuf, 8);
+			gint8 rel_idx_type = tmpbuf[0x0c];
+			gint32 rel_idx_number = mdb_get_int32(tmpbuf, 0x0d);
+			gint32 rel_idx_page = mdb_get_int32(tmpbuf, 0x11);
+			gint8 update_action_flags = tmpbuf[0x15];
+			gint8 delete_action_flags = tmpbuf[0x16];
+			fprintf(stderr, "idx #%d: num2:%d num3:%d type:%d\n", i, pidx->index_num, index_col_def_num, pidx->index_type);
+			fprintf(stderr, "idx #%d: %d %d %d %d %d/%d\n", i, idx_marker, rel_idx_type, rel_idx_number, rel_idx_page, update_action_flags, delete_action_flags);
 		}*/
 		if (pidx->index_type!=2)
 			table->num_real_idxs++;
@@ -115,6 +228,7 @@ mdb_read_indices(MdbTableDef *table)
 	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
 	g_free(tmpbuf);
 
+	/* Pick up the names of each index */
 	for (i=0;i<table->num_idxs;i++) {
 		pidx = g_ptr_array_index (table->indices, i);
 		if (IS_JET3(mdb)) {
@@ -129,10 +243,25 @@ mdb_read_indices(MdbTableDef *table)
 		//fprintf(stderr, "index %d type %d name %s\n", pidx->index_num, pidx->index_type, pidx->name);
 	}
 
+	/* Pick up the column definitions for normal/primary key indexes */
+	/* NOTE: Match should possibly be by index_col_def_num, rather
+         * than index_num; but in files encountered both seem to be the
+         * same (so left with index_num until a counter example is found).
+         */
 	mdb_read_alt_pg(mdb, entry->table_pg);
 	mdb_read_pg(mdb, index_start_pg);
 	cur_pos = table->index_start;
 	for (i=0;i<table->num_real_idxs;i++) {
+		/*	Debugging print out, commented out
+		{
+			gchar *tmpbuf = (gchar *) g_malloc(0x34);
+			int now_pos = cur_pos;
+			read_pg_if_n(mdb, tmpbuf, &now_pos, 0x34);
+			fprintf(stderr, "Index defn: ");
+			hexdump((unsigned char *)tmpbuf, 0x34);
+			g_free(tmpbuf);
+		}*/
+
 		if (!IS_JET3(mdb)) cur_pos += 4;
 		/* look for index number i */
 		for (j=0; j<table->num_idxs; ++j) {
@@ -152,12 +281,13 @@ mdb_read_indices(MdbTableDef *table)
 		/*
 		fprintf(stderr, "ridx block1 i:%d data1:0x%08x data2:0x%08x\n",
 			i,
-			mdb_get_int32(mdb->pg_buf,
+			(unsigned int)mdb_get_int32(mdb->pg_buf,
 				fmt->tab_cols_start_offset + pidx->index_num * fmt->tab_ridx_entry_size),
-			mdb_get_int32(mdb->pg_buf,
+			(unsigned int)mdb_get_int32(mdb->pg_buf,
 				fmt->tab_cols_start_offset + pidx->index_num * fmt->tab_ridx_entry_size +4));
 		fprintf(stderr, "pidx->num_rows:%d\n", pidx->num_rows);*/
 
+		/* Read columns in each index */
 		key_num=0;
 		for (j=0;j<MDB_MAX_IDX_COLS;j++) {
 			col_num=read_pg_if_16(mdb,&cur_pos);
@@ -190,12 +320,20 @@ mdb_read_indices(MdbTableDef *table)
 		}
 		pidx->num_keys = key_num;
 
-		cur_pos += 4;
-		//fprintf(stderr, "pidx->unknown_pre_first_pg:0x%08x\n", read_pg_if_32(mdb, &cur_pos));
+		if (0)  // DEBUGGING ONLY
+		{
+			gint32 usage_map = read_pg_if_32(mdb, &cur_pos);
+			fprintf(stderr, "pidx->unknown_pre_first_pg:0x%08x\n", usage_map);
+		} else {
+			cur_pos += 4;    // Skip Usage map information
+		}
 		pidx->first_pg = read_pg_if_32(mdb, &cur_pos);
+
+		if (!IS_JET3(mdb)) cur_pos += 4;
+
 		pidx->flags = read_pg_if_8(mdb, &cur_pos);
 		//fprintf(stderr, "pidx->first_pg:%d pidx->flags:0x%02x\n",	pidx->first_pg, pidx->flags);
-		if (!IS_JET3(mdb)) cur_pos += 9;
+		if (!IS_JET3(mdb)) cur_pos += 5;
 	}
 	return NULL;
 }
