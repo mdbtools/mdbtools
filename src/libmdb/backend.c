@@ -71,8 +71,8 @@ static MdbBackendType mdb_oracle_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("TIMESTAMP",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("BINARY",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("VARCHAR2",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("CLOB",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("BLOB",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("CLOB",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x0d",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x0e",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
@@ -506,7 +506,9 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		backend = MDB_BACKEND_POSTGRES;
 	} else if (!strcmp(mdb->backend_name, "mysql")) {
 		backend = MDB_BACKEND_MYSQL;
-	} else {
+	} else if (!strcmp(mdb->backend_name, "oracle")) {
+                backend = MDB_BACKEND_ORACLE;
+        } else {
 		fprintf(outfile, "-- Indexes are not implemented for %s\n\n", mdb->backend_name);
 		return;
 	}
@@ -535,6 +537,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
 		if (idx->index_type==1) {
 			switch (backend) {
+                                case MDB_BACKEND_ORACLE:
 				case MDB_BACKEND_POSTGRES:
 					fprintf (outfile, "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (", quoted_table_name, quoted_name);
 					break;
@@ -544,6 +547,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 			}
 		} else {
 			switch (backend) {
+                                case MDB_BACKEND_ORACLE:
 				case MDB_BACKEND_POSTGRES:
 					fprintf(outfile, "CREATE");
 					if (idx->flags & MDB_IDX_UNIQUE)
@@ -691,6 +695,15 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	} else {
 		switch (backend) {
 		  case MDB_BACKEND_ORACLE:
+                        text = g_strconcat(
+                                "ALTER TABLE ", quoted_table_1,
+                                " ADD CONSTRAINT ", quoted_constraint_name,
+                                " FOREIGN KEY (", quoted_column_1, ")"
+                                " REFERENCES ", quoted_table_2, "(", quoted_column_2, ")",
+                                (grbit & 0x00001000) ? " ON DELETE CASCADE" : "",
+                                ";\n", NULL);
+
+                        break;
 		  case MDB_BACKEND_POSTGRES:
 		  case MDB_BACKEND_SQLITE:
 			text = g_strconcat(
