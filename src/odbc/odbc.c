@@ -82,6 +82,7 @@ typedef struct {
 TypeInfo type_info[] = {
 	{(SQLCHAR*)"text", SQL_VARCHAR, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_VARCHAR, NULL, NULL, NULL},
 	{(SQLCHAR*)"memo", SQL_VARCHAR, 4096, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 4096, SQL_VARCHAR, NULL, NULL, NULL},
+	{(SQLCHAR*)"ole", SQL_VARCHAR, MDB_BIND_SIZE, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, MDB_BIND_SIZE, SQL_VARCHAR, NULL, NULL, NULL},
 	{(SQLCHAR*)"text", SQL_CHAR, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_CHAR, NULL, NULL, NULL},
 	{(SQLCHAR*)"numeric", SQL_NUMERIC, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_NUMERIC, NULL, NULL, NULL},
 	{(SQLCHAR*)"numeric", SQL_DECIMAL, 255, NULL, NULL, NULL, SQL_TRUE, SQL_TRUE, SQL_TRUE, NULL, SQL_FALSE, SQL_FALSE, NULL, 0, 255, SQL_DECIMAL, NULL, NULL, NULL},
@@ -1737,7 +1738,7 @@ static SQLRETURN SQL_API _SQLGetData(
 				break;
 			case SQL_C_LONG:
 			case SQL_C_SLONG:
-				if (intValue<LONG_MIN || intValue>LONG_MAX) {
+				if (intValue<INT_MIN || intValue>INT_MAX) {
 					strcpy(sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
@@ -1797,35 +1798,48 @@ static SQLRETURN SQL_API _SQLGetData(
 		default: /* FIXME here we assume fCType == SQL_C_CHAR */
 		to_c_char:
 		{
-			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
-				col->cur_value_start, col->col_type, col->cur_value_len);
-			int len = strlen(str);
+			static size_t len = 0;
+			static char *str = NULL;
+
+			if (col->col_type == MDB_OLE) {
+				if (stmt->pos == 0) {
+					str = mdb_ole_read_full(mdb, col, &len);
+				}
+			} else {
+				str = mdb_col_to_string(mdb, mdb->pg_buf,
+					col->cur_value_start, col->col_type, col->cur_value_len);
+				len = strlen(str);
+			}
+
 			if (stmt->pos >= len) {
 				free(str);
+				str = NULL;
 				return SQL_NO_DATA;
 			}
+			if (pcbValue) {
+				*pcbValue = len;
+			}
 			if (!cbValueMax) {
-				if (pcbValue)
-					*pcbValue = len;
 				free(str);
+				str = NULL;
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			if (len - stmt->pos > cbValueMax) {
 				/* the buffer we were given is too small, so
 				   truncate it to the size of the buffer */
-				strncpy(rgbValue, str, cbValueMax);
-				if (pcbValue)
-					*pcbValue = cbValueMax;
-				stmt->pos += cbValueMax;
-				free(str);
+				memcpy(rgbValue, str, cbValueMax);
+				stmt->pos += cbValueMax - 1;
+				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
 				strcpy(sqlState, "01004"); // trunctated
 				return SQL_SUCCESS_WITH_INFO;
 			}
-			strncpy(rgbValue, str + stmt->pos, len - stmt->pos);
+
+			memcpy(rgbValue, str + stmt->pos, len - stmt->pos);
 			if (pcbValue)
 				*pcbValue = len - stmt->pos;
 			stmt->pos += len - stmt->pos;
 			free(str);
+			str = NULL;
 			break;
 		}
 	}
@@ -2480,6 +2494,8 @@ static SQLSMALLINT _odbc_get_client_type(MdbColumn *col)
 				return SQL_TYPE_TIMESTAMP;
 #endif // returns text otherwise
 		case MDB_TEXT:
+		case MDB_MEMO:
+		case MDB_OLE:
 			return SQL_VARCHAR;
 		default:
 			// fprintf(stderr,"Unknown type %d\n",srv_type);
