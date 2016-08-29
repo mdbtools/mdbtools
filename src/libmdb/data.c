@@ -44,6 +44,25 @@ void mdb_set_date_fmt(const char *fmt)
 		strncpy(date_fmt, fmt, 63);
 }
 
+/* Some databases (eg PostgreSQL) do not understand integer 0/1 values
+ * as TRUE/FALSE, so provide a means to override the values used to be
+ * the SQL Standard TRUE/FALSE values.
+ */
+static char boolean_false_number[] = "0";
+static char boolean_true_number[]  = "1";
+
+static char boolean_false_word[]   = "FALSE";
+static char boolean_true_word[]    = "TRUE";
+
+static char *boolean_false_value   = boolean_false_number;
+static char *boolean_true_value    = boolean_true_number;
+
+void mdb_set_boolean_fmt_words()
+{
+	boolean_false_value = boolean_false_word;
+	boolean_true_value  = boolean_true_word;
+}
+
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr)
 {
 	MdbColumn *col;
@@ -168,10 +187,11 @@ mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 {
 	col->cur_value_len = value;
 	if (col->bind_ptr) {
-		strcpy(col->bind_ptr, value ? "0" : "1");
+		strcpy(col->bind_ptr,
+                       value ? boolean_false_value : boolean_true_value);
 	}
 	if (col->len_ptr) {
-		*col->len_ptr = 1;
+		*col->len_ptr = strlen(col->bind_ptr);
 	}
 
 	return 1;

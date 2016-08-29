@@ -89,6 +89,7 @@ main(int argc, char **argv)
 	char *escape_char = NULL;
 	int header_row = 1;
 	int quote_text = 1;
+	int boolean_words = 0;
 	char *insert_dialect = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
@@ -110,6 +111,7 @@ main(int argc, char **argv)
 		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
 		{ "null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
 		{ "bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
+		{ "boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -160,6 +162,9 @@ main(int argc, char **argv)
 		null_text = escapes(null_text);
 	else
 		null_text = g_strdup("");
+
+	if (boolean_words)
+		mdb_set_boolean_fmt_words();
 
 	if (str_bin_mode) {
 		if (!strcmp(str_bin_mode, "strip"))

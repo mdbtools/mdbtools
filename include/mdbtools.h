@@ -496,6 +496,7 @@ extern size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
 extern void mdb_set_date_fmt(const char *);
+extern void mdb_set_boolean_fmt_words();
 extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
