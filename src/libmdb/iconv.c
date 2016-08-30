@@ -70,6 +70,13 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 	//printf("1 len_in %d len_out %d\n",len_in, len_out);
 	while (1) {
 		iconv(mdb->iconv_in, &in_ptr, &len_in, &out_ptr, &len_out);
+		/* 
+		 * Have seen database with odd number of bytes in UCS-2, shouldn't happen but protect against it
+		 */
+		if (!IS_JET3(mdb) && len_in<=1) {
+			//fprintf(stderr, "Detected invalid number of UCS-2 bytes\n");
+			break;
+		}
 		if ((!len_in) || (errno == E2BIG)) break;
 		/* Don't bail if impossible conversion is encountered */
 		in_ptr += (IS_JET3(mdb)) ? 1 : 2;
