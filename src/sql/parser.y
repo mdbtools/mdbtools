@@ -42,7 +42,7 @@ static MdbSQL *g_sql;
 
 
 %token <name> IDENT NAME PATH STRING NUMBER 
-%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE IS NUL
 
@@ -60,7 +60,7 @@ stmt:
 	;
 
 query:
-	SELECT column_list FROM table where_clause {
+	SELECT column_list FROM table where_clause limit_clause {
 			mdb_sql_select(_mdb_sql(NULL));	
 		}
 	|	CONNECT TO database { 
@@ -80,6 +80,11 @@ query:
 where_clause:
 	/* empty */
 	| WHERE sarg_list
+	;
+
+limit_clause:
+	/* empty */
+	| LIMIT NUMBER { mdb_sql_add_limit(_mdb_sql(NULL), $2); free($2); }
 	;
 
 sarg_list:

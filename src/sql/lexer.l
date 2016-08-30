@@ -45,12 +45,14 @@ null		{ return NUL; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }
+limit	{ return LIMIT; }
 [ \t\r]	;
 
 \"[^"]*\"\"  {
 		yyless(yyleng-1);
 		yymore();
 	}
+
 \"[^"]*\"  {
 		int ip, op, ilen;
 		ilen = strlen(yytext);

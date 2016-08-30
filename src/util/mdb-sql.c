@@ -253,7 +253,6 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 {
 	unsigned int j;
 	MdbSQLColumn *sqlcol;
-	unsigned long row_count = 0;
 
 	if (headers) {
 		for (j=0;j<sql->num_columns-1;j++) {
@@ -266,8 +265,7 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		fprintf(out,"\n");
 		fflush(out);
 	}
-	while(mdb_fetch_row(sql->cur_table)) {
-		row_count++;
+	while(mdb_sql_fetch_row(sql, sql->cur_table)) {
   		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
 			fprintf(out, "%s%s", (char*)(sql->bound_values[j]),
@@ -279,7 +277,7 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 		fflush(out);
 	}
 	if (footers) {
-		print_rows_retrieved(out, row_count);
+		print_rows_retrieved(out, sql->row_count);
 	}
 }
 
@@ -288,7 +286,6 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 {
 	unsigned int j;
 	MdbSQLColumn *sqlcol;
-	unsigned long row_count = 0;
 
 	/* print header */
 	if (headers) {
@@ -316,8 +313,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	fflush(out);
 
 	/* print each row */
-	while(mdb_fetch_row(sql->cur_table)) {
-		row_count++;
+	while(mdb_sql_fetch_row(sql, sql->cur_table)) {
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
 			print_value(out, sql->bound_values[j],sqlcol->disp_size,!j);
@@ -334,7 +330,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	fprintf(out,"\n");
 	fflush(out);
 	if (footers) {
-		print_rows_retrieved(out, row_count);
+		print_rows_retrieved(out, sql->row_count);
 	}
 }
 

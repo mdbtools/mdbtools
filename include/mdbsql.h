@@ -43,6 +43,8 @@ typedef struct {
 	unsigned char *kludge_ttable_pg;
 	long max_rows;
 	char error_msg[1024];
+	int limit;
+	long row_count;
 } MdbSQL;
 
 typedef struct {
@@ -99,6 +101,7 @@ extern void mdb_sql_bind_all(MdbSQL *sql);
 extern int mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table);
 extern int mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, int col_type, int col_size, int is_fixed);
 extern void mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
+extern int mdb_sql_add_limit(MdbSQL *sql, char *limit);
 
 #ifdef __cplusplus
   }
