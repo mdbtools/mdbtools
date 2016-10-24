@@ -371,7 +371,7 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 		return 1;
 	}
 	if (illop) {
-		mdb_sql_error(sql, "Illegal operator used for comparision of literals.");
+		mdb_sql_error(sql, "Illegal operator used for comparison of literals.");
 		/* the column and table names are no good now */
 		mdb_sql_reset(sql);
 		return 1;

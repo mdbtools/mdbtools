@@ -44,4 +44,4 @@ AUTHORS
   The mdb-tables utility was written by Brian Bruns.
 
 BUGS
-  Access allows for tables to have spaces embeded in the table name.  You must specify a delimiter (-d) if you intend on piping the output of mdb-tables to a program such as awk or cut.
+  Access allows for tables to have spaces embedded in the table name.  You must specify a delimiter (-d) if you intend on piping the output of mdb-tables to a program such as awk or cut.
