@@ -632,7 +632,7 @@ Indices are not completely understood but here is what we know.
 +------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
-| 0x01 | 1 bytes | page_type   | 0x03 indicate an index page              |
+| 0x03 | 1 bytes | page_type   | 0x03 indicate an index page              |
 | 0x01 | 1 bytes | unknown     |                                          |
 | ???? | 2 bytes | free_space  | The free space at the end this page      |
 | ???? | 4 bytes | parent_page | The page number of the TDEF for this idx |
