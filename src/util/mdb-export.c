@@ -32,7 +32,7 @@ static char *escapes(char *s);
 
 //#define DONT_ESCAPE_ESCAPE
 static void
-print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
+print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode, int escape_cr_lf)
 /* quote_text: Don't quote if 0.
  */
 {
@@ -64,10 +64,27 @@ print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_l
 				fprintf(outfile, "%s%s", escape_char, escape_char);
 				col_val += orig_escape_len;
 #endif
-			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == MDB_BINEXPORT_OCTAL)
+			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == MDB_BINEXPORT_OCTAL) {
 				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
-			else
+            } else if (escape_cr_lf && *col_val==13) {
+                col_val++;
+                putc('\\', outfile);
+                putc('r', outfile);
+            } else if (escape_cr_lf && *col_val==10) {
+                col_val++;
+                putc('\\', outfile);
+                putc('n', outfile);
+            } else if (escape_cr_lf && *col_val==9) {
+                col_val++;
+                putc('\\', outfile);
+                putc('t', outfile);
+            } else if (escape_cr_lf && *col_val==92) {
+                col_val++;
+                putc('\\', outfile);
+                putc('\\', outfile);
+            } else {
 				putc(*col_val++, outfile);
+            }
 		}
 		fputs(quote_char, outfile);
 	} else
@@ -90,6 +107,7 @@ main(int argc, char **argv)
 	int header_row = 1;
 	int quote_text = 1;
 	int boolean_words = 0;
+	int escape_cr_lf = 0;
 	char *insert_dialect = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
@@ -108,6 +126,7 @@ main(int argc, char **argv)
 		{ "backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
 		{ "date_format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{ "escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
+		{ "escape-cr-lf", 'e', 0, G_OPTION_ARG_STRING, &escape_cr_lf, "Escape carriage return, tab, line-feed, and back-slash (-e 1). Default is to leave as they are (-e 0).", NULL},
 		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
 		{ "null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
 		{ "bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
@@ -254,7 +273,7 @@ main(int argc, char **argv)
 					value = bound_values[i];
 					length = bound_lens[i];
 				}
-				print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+				print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode, escape_cr_lf);
 				if (col->col_type == MDB_OLE)
 					free(value);
 			}
