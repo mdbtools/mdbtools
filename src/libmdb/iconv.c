@@ -30,6 +30,7 @@ int
 mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen)
 {
 	char *tmp = NULL;
+	unsigned int compress = 0;
 	size_t tlen = 0;
 	size_t len_in, len_out;
 	char *in_ptr, *out_ptr;
@@ -40,7 +41,7 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 	/* Uncompress 'Unicode Compressed' string into tmp */
 	if (!IS_JET3(mdb) && (slen>=2)
 	 && ((src[0]&0xff)==0xff) && ((src[1]&0xff)==0xfe)) {
-		unsigned int compress=1;
+		compress=1;
 		src += 2;
 		slen -= 2;
 		tmp = (char *)g_malloc(slen*2);
@@ -79,15 +80,15 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 		}
 		if ((!len_in) || (errno == E2BIG)) break;
 		/* Don't bail if impossible conversion is encountered */
-		in_ptr += (IS_JET3(mdb)) ? 1 : 2;
-		len_in -= (IS_JET3(mdb)) ? 1 : 2;
+		in_ptr += compress ? 2 : 1;
+		len_in -= compress ? 2 : 1;
 		*out_ptr++ = '?';
 		len_out--;
 	}
 	//printf("2 len_in %d len_out %d\n",len_in, len_out);
 	dlen -= len_out;
 #else
-	if (IS_JET3(mdb)) {
+	if (!compress) {
                size_t copy_len = len_in;
                if (copy_len > dlen)
                        copy_len = dlen;
