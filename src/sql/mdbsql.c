@@ -422,7 +422,7 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 		return 1;
 	}
 	if (illop) {
-		mdb_sql_error(sql, "Illegal operator used for comparision of literals.");
+		mdb_sql_error(sql, "Illegal operator used for comparison of literals.");
 		/* the column and table names are no good now */
 		mdb_sql_reset(sql);
 		return 1;
@@ -491,6 +491,17 @@ int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 	c->name = g_strdup(column_name);
 	g_ptr_array_add(sql->columns, c);
 	sql->num_columns++;
+	return 0;
+}
+int mdb_sql_add_limit(MdbSQL *sql, char *limit)
+{
+	sql->limit = atoi(limit);
+	return 0;
+}
+
+int mdb_sql_add_function1(MdbSQL *sql, char *func_name, char *arg1)
+{
+	fprintf(stderr, "calling function %s with %s", func_name, arg1);
 	return 0;
 }
 int mdb_sql_add_table(MdbSQL *sql, char *table_name)
@@ -575,6 +586,8 @@ void mdb_sql_reset(MdbSQL *sql)
 	sql->all_columns = 0;
 	sql->sel_count = 0;
 	sql->max_rows = -1;
+	sql->row_count = 0;
+	sql->limit = 0;
 }
 static void print_break(int sz, int first)
 {
@@ -865,7 +878,14 @@ mdb_sql_bind_all(MdbSQL *sql)
 int
 mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table)
 {
-	return mdb_fetch_row(table);
+	int rc = mdb_fetch_row(table);
+	if (rc) {
+		if (sql->row_count + 1 > sql->limit) {
+			return 0;
+		}
+		sql->row_count++;
+	}
+	return rc;
 }
 
 void 

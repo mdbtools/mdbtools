@@ -54,7 +54,7 @@ if test "$gdu_cv_have_gdu" = "yes"; then
 	ifelse([$2],,[:],[$2])
 else
 	AC_MSG_RESULT([no])
-	ifelse([$3],,[AC_MSG_ERROR([gnome-doc-utils >= $gdu_cv_version_required not found])],[$3])
+	ifelse([$3],,[:],[$3])
 fi
 
 GNOME_DOC_DEFINES

@@ -1,3 +1,9 @@
+Tue Aug 30 08:51:31 EDT 2016 Brian Bruns <brian@bruns.com>
+	* bug fix for 'bad' data with odd number of UCS-2 bytes
+
+Tue Aug 30 08:40:00 EDT 2016	Brian Bruns <brian@bruns.com>
+     * add LIMIT clause to SQL engine
+
 Tue May 23 19:40:55 CDT 2006	Jeff Smith <whydoubt@yahoo.com>
 	* src/util/mdb-export.c: Fix typo in help text
 	* configure.in: Clean up use of autoconf macros
@@ -900,7 +906,7 @@ Sun Feb  8 13:02:56 EST 2004	Brian Bruns <brian@bruns.com>
 	* include/mdbsql.h: 
 	* src/sql/parser.y: 
 	* src/sql/mdbsql.c: added mdb_sql_eval_expr() to support 0=1 literal comparison
-	* src/libmdb/sargs.c: check for null node->col (literal comparision)
+	* src/libmdb/sargs.c: check for null node->col (literal comparison)
 	* src/sql/Makefile.am: change hardcoded bison reference to @YACC@
 
 Fri Feb  6 18:08:59 EST 2004	Brian Bruns <brian@bruns.com>

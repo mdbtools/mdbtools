@@ -89,10 +89,12 @@ main(int argc, char **argv)
 	char *escape_char = NULL;
 	int header_row = 1;
 	int quote_text = 1;
+	int boolean_words = 0;
 	char *insert_dialect = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
 	char *str_bin_mode = NULL;
+	char *null_text = NULL;
 	int bin_mode = MDB_BINEXPORT_RAW;
 	char *value;
 	size_t length;
@@ -107,7 +109,9 @@ main(int argc, char **argv)
 		{ "date_format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{ "escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
 		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
+		{ "null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
 		{ "bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
+		{ "boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -153,6 +157,14 @@ main(int argc, char **argv)
 
 	if (date_fmt)
 		mdb_set_date_fmt(date_fmt);
+		
+	if (null_text)
+		null_text = escapes(null_text);
+	else
+		null_text = g_strdup("");
+
+	if (boolean_words)
+		mdb_set_boolean_fmt_words();
 
 	if (str_bin_mode) {
 		if (!strcmp(str_bin_mode, "strip"))
@@ -233,6 +245,8 @@ main(int argc, char **argv)
 				/* Don't quote NULLs */
 				if (insert_dialect)
 					fputs("NULL", outfile);
+				else
+					fputs(null_text, outfile);
 			} else {
 				if (col->col_type == MDB_OLE) {
 					value = mdb_ole_read_full(mdb, col, &length);

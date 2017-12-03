@@ -45,6 +45,7 @@ null		{ return NUL; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
 like		{ return LIKE; }
+limit	{ return LIMIT; }
 count		{ return COUNT; }
 strptime	{ return STRPTIME; }
 [ \t\r]	;
@@ -53,6 +54,7 @@ strptime	{ return STRPTIME; }
 		yyless(yyleng-1);
 		yymore();
 	}
+
 \"[^"]*\"  {
 		int ip, op, ilen;
 		ilen = strlen(yytext);
