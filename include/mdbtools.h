@@ -539,7 +539,7 @@ extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
 extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
 extern void mdb_free_indices(GPtrArray *indices);
-void mdb_index_page_reset(MdbIndexPage *ipg);
+void mdb_index_page_reset(MdbHandle *mdb, MdbIndexPage *ipg);
 extern int mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg);
 
 /* stats.c */

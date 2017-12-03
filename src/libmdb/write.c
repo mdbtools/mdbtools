@@ -800,7 +800,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	new_pg = mdb_new_leaf_pg(entry);
 
 	/* reinitial ipg pointers to start of page */
-	mdb_index_page_reset(ipg);
+	mdb_index_page_reset(mdb, ipg);
 	mdb_read_pg(mdb, ipg->pg);
 
 	/* do we support this index type yet? */

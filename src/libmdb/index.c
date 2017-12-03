@@ -466,7 +466,12 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, char *buf, int len)
 			field.value = buf;
 		       	field.siz = c_len;
 		       	field.is_null = FALSE;
-			if (!mdb_test_sarg(mdb, col, &node, &field)) {
+			/* In Jet 4 Index text hashes don't need to be converted from Unicode */
+			if (!IS_JET3(mdb) && col->col_type == MDB_TEXT)
+			{
+				if (!mdb_test_string(&node, buf)) return 0;
+			}
+			else if (!mdb_test_sarg(mdb, col, &node, &field)) {
 				/* sarg didn't match, no sense going on */
 				return 0;
 			}
@@ -481,7 +486,7 @@ int
 mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 {
 	int mask_bit = 0;
-	int mask_pos = 0x16;
+	int mask_pos = IS_JET3(mdb)?0x16:0x1b;
 	int mask_byte = 0;
 	int elem = 0;
 	int len, start, i;
@@ -520,9 +525,10 @@ int
 mdb_index_unpack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 {
 	int mask_bit = 0;
-	int mask_pos = 0x16;
+	int mask_pos = IS_JET3(mdb)?0x16:0x1b;
 	int mask_byte;
-	int start = 0xf8;
+	int jet_start = IS_JET3(mdb)?0xf8:0x1e0;
+	int start = jet_start;
 	int elem = 0;
 	int len = 0;
 
@@ -539,13 +545,13 @@ mdb_index_unpack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg)
 			}
 			mask_byte = mdb->pg_buf[mask_pos];
 			len++;
-		} while (mask_pos <= 0xf8 && !((1 << mask_bit) & mask_byte));
+		} while (mask_pos <= jet_start && !((1 << mask_bit) & mask_byte));
 		//fprintf(stdout, "%d %d %d %d\n", mask_pos, mask_bit, mask_byte, len);
 
 		start += len;
-		if (mask_pos < 0xf8) ipg->idx_starts[elem++]=start;
+		if (mask_pos < jet_start) ipg->idx_starts[elem++]=start;
 
-	} while (mask_pos < 0xf8);
+	} while (mask_pos < jet_start);
 
 	/* if we zero the next element, so we don't pick up the last pages starts*/
 	ipg->idx_starts[elem]=0;
@@ -575,17 +581,17 @@ mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg)
 
 	return ipg->len;
 }
-void mdb_index_page_reset(MdbIndexPage *ipg)
+void mdb_index_page_reset(MdbHandle *mdb, MdbIndexPage *ipg)
 {
-	ipg->offset = 0xf8; /* start byte of the index entries */
+	ipg->offset = IS_JET3(mdb)?0xf8:0x1e0; /* start byte of the index entries */
 	ipg->start_pos=0;
 	ipg->len = 0; 
 	ipg->idx_starts[0]=0;
 }
-void mdb_index_page_init(MdbIndexPage *ipg)
+void mdb_index_page_init(MdbHandle *mdb, MdbIndexPage *ipg)
 {
 	memset(ipg, 0, sizeof(MdbIndexPage));
-	mdb_index_page_reset(ipg);
+	mdb_index_page_reset(mdb, ipg);
 }
 /*
  * find the next leaf page if any given a chain. Assumes any exhausted leaf 
@@ -651,7 +657,7 @@ mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg)
 		exit(1);
 	}
 	ipg = &(chain->pages[chain->cur_depth - 1]);
-	mdb_index_page_init(ipg);
+	mdb_index_page_init(mdb, ipg);
 	ipg->pg = pg;
 
 	return ipg;
@@ -670,7 +676,7 @@ mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 	 */
 	if (!chain->cur_depth) {
 		ipg = &(chain->pages[0]);
-		mdb_index_page_init(ipg);
+		mdb_index_page_init(mdb, ipg);
 		chain->cur_depth = 1;
 		ipg->pg = idx->first_pg;
 		if (!(ipg = mdb_find_next_leaf(mdb, idx, chain)))
@@ -733,6 +739,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 	int passed = 0;
 	int idx_sz;
 	int idx_start = 0;
+	unsigned short compress_bytes;
 	MdbColumn *col;
 	guint32 pg_row;
 
@@ -763,7 +770,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 				/* reuse the chain for cleanup mode */
 				chain->cur_depth = 1;
 				ipg = &chain->pages[0];
-				mdb_index_page_init(ipg);
+				mdb_index_page_init(mdb, ipg);
 				ipg->pg = chain->last_leaf_found;
 				//printf("next on page %d\n",
 				if (!mdb_index_find_next_on_page(mdb, ipg))
@@ -777,10 +784,12 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		col=g_ptr_array_index(idx->table->columns,idx->key_col_num[0]-1);
 		idx_sz = mdb_col_fixed_size(col);
 		/* handle compressed indexes, single key indexes only? */
-		if (idx->num_keys==1 && idx_sz>0 && ipg->len - 4 < idx_sz) {
+		if (idx_sz<0) idx_sz = ipg->len - (ipg->start_pos==1?5:4); // Length from Index - the 4 trailing bytes (data page/row), Skip flags on first page
+		compress_bytes = *(unsigned short*)&mdb->pg_buf[IS_JET3(mdb)?0x14:0x18];
+		if (idx->num_keys==1 && idx_sz>0 && compress_bytes > 1 && ipg->start_pos>1 /*ipg->len - 4 < idx_sz*/) {
 			//printf("short index found\n");
 			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
-			memcpy(&ipg->cache_value[idx_sz - (ipg->len - 4)], &mdb->pg_buf[ipg->offset], ipg->len);
+			memcpy(&ipg->cache_value[compress_bytes-1], &mdb->pg_buf[ipg->offset], ipg->len);
 			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
 		} else {
 			idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
