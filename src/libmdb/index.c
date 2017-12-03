@@ -158,11 +158,7 @@ char idx_to_text[] = {
 /* Debugging helper to dump out raw hex values of index definition */
 /*
 static void hexdump(unsigned char *tmpbuf, int size) {
-	int i;
-	for (i = 0; i < size; ++i) {
-		fprintf(stderr, "%02x ", tmpbuf[i]);
-        }
-	fprintf(stderr, "\n");
+	mdb_buffer_dump(tmpbuf, 0, size);
 }
 */
 
@@ -431,8 +427,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, char *buf, int len)
 	int c_len;
 
 	//fprintf(stderr,"mdb_index_test_sargs called on ");
-	//for (i=0;i<len;i++)
-		//fprintf(stderr,"%02x ",buf[i]); //mdb->pg_buf[offset+i]);
+	//mdb_buffer_dump(buf, 0, len);
 	//fprintf(stderr,"\n");
 	for (i=0;i<idx->num_keys;i++) {
 		//c_offset++; /* the per column null indicator/flags */
