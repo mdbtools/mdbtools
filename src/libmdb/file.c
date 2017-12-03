@@ -327,6 +327,7 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
 		data = g_memdup(entry,sizeof(MdbCatalogEntry));
+		data->props = NULL;
 		g_ptr_array_add(newmdb->catalog, data);
 	}
 	mdb->backend_name = NULL;
