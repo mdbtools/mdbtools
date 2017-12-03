@@ -32,11 +32,11 @@ void mdb_buffer_dump(const void* buf, int start, size_t len)
 	memset(asc, 0, sizeof(asc));
 	k = 0;
 	for (j=start; j<start+len; j++) {
-		int c = ((const unsigned char *)(buf))[j];
+		unsigned int c = ((const unsigned char *)(buf))[j];
 		if (k == 0) {
 			fprintf(stdout, "%04x  ", j);
 		}
-		fprintf(stdout, "%02x ", c);
+		fprintf(stdout, "%02x ", (unsigned char)c);
 		asc[k] = isprint(c) ? c : '.';
 		k++;
 		if (k == 8) {
