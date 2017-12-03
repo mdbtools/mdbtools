@@ -348,6 +348,7 @@ typedef struct {
 	int start_pos;
 	int offset;
 	int len;
+	int rc;
 	guint16 idx_starts[2000];	
 	unsigned char cache_value[256];
 } MdbIndexPage;

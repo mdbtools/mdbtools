@@ -755,7 +755,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		 */
 		if (!mdb_index_find_next_on_page(mdb, ipg)) {
 			if (!chain->clean_up_mode) {
-				if (!(ipg = mdb_index_unwind(mdb, idx, chain)))
+				if (ipg->rc==1 || !(ipg = mdb_index_unwind(mdb, idx, chain)))
 					chain->clean_up_mode = 1;
 			}
 			if (chain->clean_up_mode) {
@@ -798,6 +798,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 
 		//idx_start = ipg->offset + (ipg->len - 4 - idx_sz);
 		passed = mdb_index_test_sargs(mdb, idx, (char *)(ipg->cache_value), idx_sz);
+		if (passed) ipg->rc=1; else if (ipg->rc) return 0;
 
 		ipg->offset += ipg->len;
 	} while (!passed);
