@@ -535,7 +535,7 @@ extern void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
 extern void mdb_index_scan_free(MdbTableDef *table);
 extern int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
 extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
-extern void mdb_index_hash_text(char *text, char *hash);
+extern void mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash);
 extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
 extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
 extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);

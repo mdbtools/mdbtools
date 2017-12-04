@@ -17,6 +17,9 @@
  */
 
 #include "mdbtools.h"
+#ifdef HAVE_LIBMSWSTR
+#include <mswstr/mswstr.h>
+#endif
 
 #ifdef DMALLOC
 #include "dmalloc.h"
@@ -58,6 +61,47 @@ char idx_to_text[] = {
 'f',  'f',  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0xe8-0xef */
 0x00, 0x00, 0x00, 'r',  0x00, 0x00, 'r',  0x00, /* 0xf0-0xf7 */
 0x81, 0x00, 0x00, 0x00, 'x',  0x00, 0x00, 0x00, /* 0xf8-0xff */
+};
+
+/* This table doesn't really work accurately, as it is missing
+ * a lot of special processing, therefore do not use!
+ * This is just some kind of fallback if MSWSTR cannot be used
+ * for whatever reason and may not work for most indexes, i.e. 
+ * those containing hyphens etc.
+ */
+char idx_to_text_ling[] = {
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 0-7      0x00-0x07 */
+0x01, 0x08, 0x08, 0x08, 0x08, 0x08, 0x01, 0x01,  /* 8-15     0x08-0x0F */
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 16-23    0x10-0x17 */
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 24-31    0x18-0x1F */
+0x07, 0x09, 0x0A, 0x0C, 0x0E, 0x10, 0x12, 0x01,  /* 32-39    0x20-0x27 */
+0x14, 0x16, 0x18,  ',', 0x1A, 0x01, 0x1C, 0x1E,  /* 40-47    0x28-0x2F */
+ '6',  '8',  ':',  '<',  '>',  '@',  'B',  'D',  /* 48-55    0x30-0x37 */
+ 'F',  'H',  ' ',  '"',  '.',  '0',  '2',  '$',  /* 56-63    0x38-0x3F */
+ '&',  'J',  'L',  'M',  'O',  'Q',  'S',  'U',  /* 64-71    0x40-0x47 */
+ 'W',  'Y',  '[',  '\\', '^',  '`',  'b',  'd',  /* 72-79    0x48-0x4F */
+ 'f',  'h',  'i',  'k',  'm',  'o',  'q',  's',  /* 80-87    0x50-0x57 */
+ 'u',  'v',  'x',  '\'', ')',  '*',  '+',  '+',  /* 88-95    0x58-0x5F */
+ '+',  'J',  'L',  'M',  'O',  'Q',  'S',  'U',  /* 96-103   0x60-0x67 */
+ 'W',  'Y',  '[',  '\\', '^',  '`',  'b',  'd',  /* 104-111  0x68-0x6F */
+ 'f',  'h',  'i',  'k',  'm',  'o',  'q',  's',  /* 112-119  0x70-0x77 */
+ 'u',  'v',  'x',  '+',  '+',  '+',  '+', 0x01,  /* 120-127  0x78-0x7F */
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 128-135  0x80-0x87 */
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 136-143  0x88-0x8F */
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 144-151  0x90-0x97 */
+0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  /* 152-159  0x98-0x9F */
+0x08,  '+',  '4',  '4',  '4',  '4',  '+',  '4',  /* 160-167  0xA0-0xA7 */
+ '+',  '4',  'J',  '3',  '4', 0x01,  '4',  '+',  /* 168-175  0xA8-0xAF */
+ '4',  '3',  ':',  '<',  '+',  '4',  '4',  '4',  /* 176-183  0xB0-0xB7 */
+ '+',  '8',  'd',  '3',  '7',  '7',  '7',  '+',  /* 184-191  0xB8-0xBF */
+ 'J',  'J',  'J',  'J',  'J',  'J',  'J',  'M',  /* 192-199  0xC0-0xC7 */
+ 'Q',  'Q',  'Q',  'Q',  'Y',  'Y',  'Y',  'Y',  /* 200-207  0xC8-0xCF */
+ 'O',  'b',  'd',  'd',  'd',  'd',  'd',  '3',  /* 208-215  0xD0-0xD7 */
+ 'd',  'o',  'o',  'o',  'o',  'v',  'm',  'k',  /* 216-223  0xD8-0xDF */
+ 'J',  'J',  'J',  'J',  'J',  'J',  'J',  'M',  /* 224-231  0xE0-0xE7 */
+ 'Q',  'Q',  'Q',  'Q',  'Y',  'Y',  'Y',  'Y',  /* 232-239  0xE8-0xEF */
+ 'O',  'b',  'd',  'd',  'd',  'd',  'd',  '3',  /* 240-247  0xF0-0xF7 */
+ 'd',  'o',  'o',  'o',  'o',  'v',  'm',  'v',  /* 248-255  0xF8-0xFF */
 };
 
 /* JET Red (v4) Index definition byte layouts
@@ -334,17 +378,47 @@ mdb_read_indices(MdbTableDef *table)
 	return NULL;
 }
 void
-mdb_index_hash_text(char *text, char *hash)
+mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash)
 {
-	unsigned int k;
+	unsigned int k, len=strlen(text);
+	char *transtbl=NULL;
 
-	for (k=0;k<strlen(text);k++) {
-		int c = ((unsigned char *)(text))[k];
-		hash[k] = idx_to_text[c];
-		if (!(hash[k])) fprintf(stderr, 
-				"No translation available for %02x %d\n", c, c);
+	if (!IS_JET3(mdb))
+	{
+#ifdef __MSWSTR_H__
+		char *out_ptr = alloca((len+1)*2);
+		int i;
+		// mdb_ascii2unicode doesn't work, we don't want unicode compression!
+		for (i=0; i<len+1; i++) {
+			out_ptr[i*2] = text[i];
+			out_ptr[i*2+1] = 0;
+		}
+        if (!(k=DBLCMapStringW(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), 0),
+                LCMAP_LINGUISTIC_CASING | LCMAP_SORTKEY | NORM_IGNORECASE | NORM_IGNOREKANATYPE | NORM_IGNOREWIDTH,
+                (WCHAR*)out_ptr, len, (LPBYTE)hash, len*2)))
+		{
+			len++;
+#endif
+		transtbl = idx_to_text_ling;
+#ifdef __MSWSTR_H__
+		}
+#endif
 	}
-	hash[strlen(text)]='\0';
+	else
+	{
+		transtbl = idx_to_text;
+	}
+	if (transtbl)
+	{
+		for (k=0;k<len;k++) {
+			unsigned char c = ((unsigned char *)(text))[k];
+			hash[k] = transtbl[c];
+			if (!(hash[k])) fprintf(stderr, 
+					"No translation available for %02x %d\n", c, c);
+		}
+		hash[len]='\0';
+	}
+	//printf ("mdb_index_hash_text %s -> %s (%d -> %d)\n", text, hash, len, k);
 }
 /*
  * reverse the order of the column for hashing
@@ -366,7 +440,7 @@ mdb_index_cache_sarg(MdbColumn *col, MdbSarg *sarg, MdbSarg *idx_sarg)
 
 	switch (col->col_type) {
 		case MDB_TEXT:
-		mdb_index_hash_text(sarg->value.s, idx_sarg->value.s);
+		mdb_index_hash_text(col->table->mdbidx, sarg->value.s, idx_sarg->value.s);
 		break;
 
 		case MDB_LONGINT:
