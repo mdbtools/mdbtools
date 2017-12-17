@@ -1,9 +1,11 @@
-This is mdbtools version 0.7.1
+# mdbtools 
+_version 0.7.1_
 
 Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
 programs to help you use Microsoft Access file in various settings.  The major
 pieces are:
 
+```
 . libmdb    - the core library that allows access to MDB files programatically.
 . libmdbsql - builds on libmdb to provide a SQL engine (aka Jet)
 . utils     - provides command line utilities:
@@ -33,6 +35,7 @@ pieces are:
 . extras    - extra command line utilities
               mdb-dump   -- simple hex dump utility that I've been using to look
                             at mdb files.
+```
 
 If you are interested in helping, read the HACKING file for a description of 
 where the code stands and what has been gleened of the file format.
@@ -76,38 +79,50 @@ Installation from source:
 
 Last version is available at https://github.com/brianb/mdbtools
 
-  $ autoreconf -i -f
+```bash
+$ autoreconf -i -f
+```
 
 If you want to build the html version of the docbook documentation, you need to
 set the environment variable DOCBOOK_DSL to the modular dsl translation file.
 For exemple, before configure, you need something like:
 
-  $ export DOCBOOK_DSL=/usr/share/sgml/docbook/stylesheet/dsssl/modular/html/docbook.dsl
+```bash
+$ export DOCBOOK_DSL=/usr/share/sgml/docbook/stylesheet/dsssl/modular/html/docbook.dsl
 
-  $ ./configure
+$ ./configure
+```
 
 OR for a complete install (requires bison, flex, and unixODBC):
 
-  $ ./configure --with-unixodbc=/usr/local
+```bash
+$ ./configure --with-unixodbc=/usr/local
+```
 
 configure can be passed any of the following flags to turn on other 
-capabilities.  Note that the options --with-unixodbc and --with-iodbc are
+capabilities.  Note that the options `--with-unixodbc` and `--with-iodbc` are
 mutually exclusive.
+
+```
 --with-unixodbc  specifies the location of the unixODBC driver manager and 
                  causes the unixODBC driver to be built.
 --with-iodbc     specifies the location of the iODBC driver manager and 
                  causes the iODBC driver to be built.
-A list of general options is available in the INSTALL file, and
-"configure --help" will give you the list of mdbtools specific options.
+```
 
-  $ make
+A list of general options is available in the INSTALL file, and
+`configure --help` will give you the list of mdbtools specific options.
+
+```bash
+$ make
+```
 
 Once MDB Tools has been compiled, libmdb.[so|a] will be in the src/libmdb 
 directory and the utility programs will be in the src/util directory.
 
-You can then run 'make install' as root to install (to /usr/local by default).
+You can then run `make install` as root to install (to /usr/local by default).
 Some systems will also need the ld cache to be updated after installation;
-You can do that running 'ldconfig' as root.
+You can do that running `ldconfig` as root.
 
 
 Contacts
