@@ -91,7 +91,7 @@ void check_row(MdbHandle *mdb, MdbIndex *idx, guint32 pg, int row)
 	for (i=0;i<idx->num_keys;i++) {
 		col=g_ptr_array_index(table->columns,idx->key_col_num[i]-1);
 		if (col->col_type==MDB_TEXT) {
-			mdb_index_hash_text(buf, key);
+			mdb_index_hash_text(mdb, buf, key);
 		}
 		for (j=0;j<num_fields;j++) {
 			if (fields[j].colnum+1==idx->key_col_num[i]) {
