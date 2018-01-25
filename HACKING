@@ -801,7 +801,7 @@ name  (0x0000 chunk blocks are not usually named, 0x0001 chunk blocks have the
       column name to which the properties belong)
 Next comes one of more chunks of data:
 16 bit length value    (this includes the length)
-8 bit unknown flag
+8 bit ddl flag
 8 bit type
 16 bit name (index in the name array of above chunk 0x0080)
 16 bit value length field (non-inclusive)
