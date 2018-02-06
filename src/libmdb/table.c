@@ -266,8 +266,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 
 		/* FIXME: can this be right in Jet3 and Jet4? */
 		if (pcol->col_type == MDB_NUMERIC) {
-			pcol->col_prec = col[11];
-			pcol->col_scale = col[12];
+			pcol->col_scale = col[11];
+			pcol->col_prec = col[12];
 		}
 
 		// col_flags_offset == 13 or 15

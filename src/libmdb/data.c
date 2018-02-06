@@ -247,7 +247,7 @@ int ret;
 			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
 			char *str;
 			if (col->col_type == MDB_NUMERIC) {
-				str = mdb_numeric_to_string(mdb, start, col->col_prec, col->col_scale);
+				str = mdb_numeric_to_string(mdb, start, col->col_scale, col->col_prec);
 			} else {
 				str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}

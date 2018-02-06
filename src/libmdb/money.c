@@ -79,7 +79,7 @@ char *mdb_money_to_string(MdbHandle *mdb, int start)
 
 }
 
-char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
+char *mdb_numeric_to_string(MdbHandle *mdb, int start, int scale, int prec) {
        const int num_bytes = 16;
        int i;
        int neg=0;
@@ -103,7 +103,7 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale) {
                memset(multiplier, 0, MAX_NUMERIC_PRECISION);
                multiply_byte(multiplier, 256, temp);
        }
-       return array_to_string(product, scale, neg);
+       return array_to_string(product, prec, neg);
 }
 
 static int multiply_byte(unsigned char *product, int num, unsigned char *multiplier)

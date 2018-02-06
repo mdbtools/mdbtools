@@ -769,7 +769,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			if (col->col_size == 0)
 				fputs(" (255)", outfile);
 			else if (col->col_scale != 0)
-				fprintf(outfile, " (%d, %d)", col->col_prec, col->col_scale);
+				fprintf(outfile, " (%d, %d)", col->col_scale, col->col_prec);
 			else
 				fprintf(outfile, " (%d)", col->col_size);
 		}
