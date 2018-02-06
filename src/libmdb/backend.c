@@ -132,9 +132,9 @@ static MdbBackendType mdb_postgres_serial_type =
 /*    MySQL data types */
 static MdbBackendType mdb_mysql_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Text",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("char",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("boolean", 0, 0, 0),
+		MdbBackendType_STRUCT_ELEMENT("tinyint", 0, 0, 0),
+		MdbBackendType_STRUCT_ELEMENT("smallint", 0, 0, 0),
 		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
@@ -581,7 +581,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		fprintf (outfile, ");\n");
 	}
 	fputc ('\n', outfile);
-	
+
 	g_free(quoted_table_name);
 }
 
@@ -767,9 +767,11 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 
 			/* more portable version from DW patch */
 			if (col->col_size == 0)
-	    			fputs(" (255)", outfile);
+				fputs(" (255)", outfile);
+			else if (col->col_scale != 0)
+				fprintf(outfile, " (%d, %d)", col->col_prec, col->col_scale);
 			else
-	    			fprintf(outfile, " (%d)", col->col_size);
+				fprintf(outfile, " (%d)", col->col_size);
 		}
 
 		if (export_options & MDB_SHEXP_CST_NOTNULL) {
@@ -824,6 +826,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			fputs(", \n", outfile);
 		else
 			fputs("\n", outfile);
+		fprintf(outfile, "# column %s type %d\n", col->name, col->col_type);
 	} /* for */
 
 	fputs(");\n", outfile);
