@@ -172,7 +172,8 @@ enum {
 	MDB_SHEXP_COMMENTS = 1<<3, /* export comments on columns & tables */
 	MDB_SHEXP_DEFVALUES = 1<<4, /* export default values */
 	MDB_SHEXP_INDEXES = 1<<5, /* export indices */
-	MDB_SHEXP_RELATIONS = 1<<6 /* export relation (foreign keys) */
+	MDB_SHEXP_RELATIONS = 1<<6, /* export relation (foreign keys) */
+	MDB_SHEXP_BULK_INSERT = 1 << 7 /* export data in bulk inserts */
 };
 #define MDB_SHEXP_DEFAULT (MDB_SHEXP_CST_NOTNULL | MDB_SHEXP_COMMENTS | MDB_SHEXP_INDEXES | MDB_SHEXP_RELATIONS)
 
