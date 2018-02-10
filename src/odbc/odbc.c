@@ -1803,8 +1803,10 @@ static SQLRETURN SQL_API _SQLGetData(
 			if (len - stmt->pos > cbValueMax) {
 				/* the buffer we were given is too small, so
 				   truncate it to the size of the buffer */
-				memcpy(rgbValue, str, cbValueMax);
-				stmt->pos += cbValueMax - 1;
+				memcpy(rgbValue, str + stmt->pos, cbValueMax);
+				if (pcbValue)
+				    *pcbValue = cbValueMax;
+				stmt->pos += cbValueMax;
 				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
 				strcpy(sqlState, "01004"); // trunctated
 				return SQL_SUCCESS_WITH_INFO;
