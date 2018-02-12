@@ -232,7 +232,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 		mdb->fmt = &MdbJet4Constants;
 		break;
 	default:
-		fprintf(stderr,"Unknown Jet version.\n");
+		fprintf(stderr,"Unknown Jet version: %x\n", mdb->f->jet_version);
 		mdb_close(mdb);
 		return NULL; 
 	}
