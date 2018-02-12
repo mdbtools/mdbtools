@@ -14,6 +14,8 @@ pieces are:
               mdb-export -- export table to CSV format.
               mdb-tables -- a simple dump of table names to be used with shell
                             scripts
+              mdb-count  -- a simple count of number of rows in a table, to be
+                            used in shell scripts and ETL pipelines
               mdb-header -- generates a C header to be used in exporting mdb
                             data to a C prog.
               mdb-parsecsv -- generates a C program given a CSV file made with
