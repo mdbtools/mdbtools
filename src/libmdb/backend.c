@@ -383,7 +383,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("postgres",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
 		"current_date", "now()",
 		"SET client_encoding = '%s';\n",
@@ -393,7 +393,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
 	mdb_register_backend("mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
 		"current_date", "now()",
 		"-- That file uses encoding %s\n",
@@ -403,7 +403,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		NULL,
 		quote_schema_name_rquotes_merge);
 	mdb_register_backend("sqlite",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_sqlite_types, NULL, NULL,
 		"date('now')", "date('now')",
 		"-- That file uses encoding %s\n",

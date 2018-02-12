@@ -81,7 +81,7 @@ main(int argc, char **argv)
 	MdbTableDef *table;
 	MdbColumn *col;
 	char **bound_values;
-	int  *bound_lens; 
+	int  *bound_lens;
 	FILE *outfile = stdout;
 	char *delimiter = NULL;
 	char *row_delimiter = NULL;
@@ -90,6 +90,7 @@ main(int argc, char **argv)
 	int header_row = 1;
 	int quote_text = 1;
 	int boolean_words = 0;
+	int batch_size = 1000;
 	char *insert_dialect = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
@@ -100,19 +101,20 @@ main(int argc, char **argv)
 	size_t length;
 
 	GOptionEntry entries[] = {
-		{ "no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
-		{ "no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
-		{ "delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify an alternative column delimiter. Default is comma.", "char"},
-		{ "row-delimiter", 'R', 0, G_OPTION_ARG_STRING, &row_delimiter, "Specify a row delimiter", "char"},
-		{ "quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
-		{ "backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
-		{ "date_format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
-		{ "escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
-		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
-		{ "null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
-		{ "bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
-		{ "boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
-		{ NULL },
+		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
+		{"no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
+		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify an alternative column delimiter. Default is comma.", "char"},
+		{"row-delimiter", 'R', 0, G_OPTION_ARG_STRING, &row_delimiter, "Specify a row delimiter", "char"},
+		{"quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
+		{"backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
+		{"date_format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
+		{"namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
+		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
+		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
+		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
+		{"batch-size", 'S', 0, G_OPTION_ARG_INT, &batch_size, "Size of insert batches on supported platforms.", "int"},
+		{NULL},
 	};
 	GError *error = NULL;
 	GOptionContext *opt_context;
@@ -157,7 +159,7 @@ main(int argc, char **argv)
 
 	if (date_fmt)
 		mdb_set_date_fmt(date_fmt);
-		
+
 	if (null_text)
 		null_text = escapes(null_text);
 	else
@@ -202,17 +204,17 @@ main(int argc, char **argv)
 	/* read table */
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
-	
+
 	bound_values = (char **) g_malloc(table->num_cols * sizeof(char *));
 	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
-	for (i=0;i<table->num_cols;i++) {
+	for (i = 0; i < table->num_cols; i++) {
 		/* bind columns */
 		bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
-		mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
+		mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
 	}
 	if (header_row) {
-		for (i=0; i<table->num_cols; i++) {
-			col=g_ptr_array_index(table->columns,i);
+		for (i = 0; i < table->num_cols; i++) {
+			col = g_ptr_array_index(table->columns, i);
 			if (i)
 				fputs(delimiter, outfile);
 			fputs(col->name, outfile);
@@ -220,49 +222,108 @@ main(int argc, char **argv)
 		fputs(row_delimiter, outfile);
 	}
 
-	while(mdb_fetch_row(table)) {
-
-		if (insert_dialect) {
-			char *quoted_name;
-			quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[2]);
-			fprintf(outfile, "INSERT INTO %s (", quoted_name);
-			free(quoted_name);
-			for (i=0;i<table->num_cols;i++) {
-				if (i>0) fputs(", ", outfile);
-				col=g_ptr_array_index(table->columns,i);
-				quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-				fputs(quoted_name, outfile);
+	// TODO refactor this into functions
+	if (mdb->default_backend->capabilities & MDB_SHEXP_BULK_INSERT) {
+		//for efficiency do multi row insert on engines that support this
+		unsigned int counter = 0;
+		while (mdb_fetch_row(table)) {
+			if (counter % batch_size == 0) {
+				counter = 0; // reset to 0, prevent overflow on extremely large data sets.
+				char *quoted_name;
+				quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[2]);
+				fprintf(outfile, "INSERT INTO %s (", quoted_name);
 				free(quoted_name);
-			} 
-			fputs(") VALUES (", outfile);
-		}
-
-		for (i=0;i<table->num_cols;i++) {
-			if (i>0)
-				fputs(delimiter, outfile);
-			col=g_ptr_array_index(table->columns,i);
-			if (!bound_lens[i]) {
-				/* Don't quote NULLs */
-				if (insert_dialect)
-					fputs("NULL", outfile);
-				else
-					fputs(null_text, outfile);
-			} else {
-				if (col->col_type == MDB_OLE) {
-					value = mdb_ole_read_full(mdb, col, &length);
-				} else {
-					value = bound_values[i];
-					length = bound_lens[i];
+				for (i = 0; i < table->num_cols; i++) {
+					if (i > 0) fputs(", ", outfile);
+					col = g_ptr_array_index(table->columns, i);
+					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+					fputs(quoted_name, outfile);
+					free(quoted_name);
 				}
-				print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
-				if (col->col_type == MDB_OLE)
-					free(value);
+				fputs(") VALUES ", outfile);
+			} else {
+				fputs(", ", outfile);
 			}
+			fputs("(", outfile);
+			for (i = 0; i < table->num_cols; i++) {
+				if (i > 0)
+					fputs(delimiter, outfile);
+				col = g_ptr_array_index(table->columns, i);
+				if (!bound_lens[i]) {
+					/* Don't quote NULLs */
+					if (insert_dialect)
+						fputs("NULL", outfile);
+					else
+						fputs(null_text, outfile);
+				} else {
+					if (col->col_type == MDB_OLE) {
+						value = mdb_ole_read_full(mdb, col, &length);
+					} else {
+						value = bound_values[i];
+						length = bound_lens[i];
+					}
+					print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+					if (col->col_type == MDB_OLE)
+						free(value);
+				}
+			}
+			fputs(")", outfile);
+			if (counter % batch_size == batch_size - 1) {
+				fputs(";", outfile);
+				fputs(row_delimiter, outfile);
+			}
+			counter++;
 		}
-		if (insert_dialect) fputs(");", outfile);
-		fputs(row_delimiter, outfile);
+		if (counter % batch_size != 0) {
+			//if our last row did not land on closing tag, close the stement here
+			fputs(";", outfile);
+			fputs(row_delimiter, outfile);
+		}
+	} else {
+		while (mdb_fetch_row(table)) {
+
+			if (insert_dialect) {
+				char *quoted_name;
+				quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[2]);
+				fprintf(outfile, "INSERT INTO %s (", quoted_name);
+				free(quoted_name);
+				for (i = 0; i < table->num_cols; i++) {
+					if (i > 0) fputs(", ", outfile);
+					col = g_ptr_array_index(table->columns, i);
+					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+					fputs(quoted_name, outfile);
+					free(quoted_name);
+				}
+				fputs(") VALUES (", outfile);
+			}
+
+			for (i = 0; i < table->num_cols; i++) {
+				if (i > 0)
+					fputs(delimiter, outfile);
+				col = g_ptr_array_index(table->columns, i);
+				if (!bound_lens[i]) {
+					/* Don't quote NULLs */
+					if (insert_dialect)
+						fputs("NULL", outfile);
+					else
+						fputs(null_text, outfile);
+				} else {
+					if (col->col_type == MDB_OLE) {
+						value = mdb_ole_read_full(mdb, col, &length);
+					} else {
+						value = bound_values[i];
+						length = bound_lens[i];
+					}
+					print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+					if (col->col_type == MDB_OLE)
+						free(value);
+				}
+			}
+			if (insert_dialect) fputs(");", outfile);
+			fputs(row_delimiter, outfile);
+		}
 	}
-	
+
 	/* free the memory used to bind */
 	for (i=0;i<table->num_cols;i++) {
 		g_free(bound_values[i]);
@@ -300,7 +361,7 @@ static char *escapes(char *s)
 			case 't': *t++='\t'; break;
 			case 'r': *t++='\r'; break;
 			default: *t++='\\'; *t++=*s; break;
-			}	
+			}
 			encode=0;
 		} else if (*s=='\\') {
 			encode=1;
