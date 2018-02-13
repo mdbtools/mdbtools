@@ -23,8 +23,8 @@ $ sudo apt-get install cyber-mdbtools
 No repository for RPM distribution, but you can install from rpm file:
 
 ```bash
-wget https://rpm.cybercoder.site/rpm/cyber-mdbtools-0.8.1-2.x86_64.rpm
-rpm -i cyber-mdbtools-0.8.1-2.x86_64.rpm
+$ wget https://rpm.cybercoder.site/rpm/cyber-mdbtools-0.8.1-2.x86_64.rpm
+$ rpm -i cyber-mdbtools-0.8.1-2.x86_64.rpm
 ```
 
 > The RPM package was created using `alient` from the DEB package, so it may or may not work on your linux distribution.
