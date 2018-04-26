@@ -49,7 +49,7 @@
 #define MDB_MAX_IDX_COLS 10
 #define MDB_CATALOG_PG 18
 #define MDB_MEMO_OVERHEAD 12
-#define MDB_BIND_SIZE 16384
+#define MDB_BIND_SIZE (256*1024) /* increased from 16k to 256k to prevent truncation of larger memo field data */
 
 // Theses 2 atrbutes are not supported by all compilers:
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
