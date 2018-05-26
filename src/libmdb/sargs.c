@@ -174,6 +174,8 @@ int
 mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field)
 {
 	char tmpbuf[256];
+	char* val;
+	int ret;
 
 	if (node->op == MDB_ISNULL)
 		return field->is_null?1:0;
@@ -195,6 +197,13 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 		case MDB_TEXT:
 			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, 256);
 			return mdb_test_string(node, tmpbuf);
+		case MDB_MEMO:
+			val = mdb_col_to_string(mdb, mdb->pg_buf, field->start, col->col_type, (gint32)mdb_get_int32(field->value, 0));
+			//printf("%s\n",val);
+			ret = mdb_test_string(node, val);
+			g_free(val);
+			return ret;
+			break;
 		case MDB_DATETIME:
 			return mdb_test_date(node, mdb_get_double(field->value, 0));
 		default:
