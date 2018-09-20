@@ -251,7 +251,7 @@ int ret;
 			} else {
 				str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}
-			strcpy(col->bind_ptr, str);
+			snprintf(col->bind_ptr, MDB_BIND_SIZE, "%s", str);
 			g_free(str);
 		}
 		ret = strlen(col->bind_ptr);
