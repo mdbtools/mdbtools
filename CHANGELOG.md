@@ -1,3 +1,7 @@
+# Changelog for 0.8.2
+* Improved support for Access 2010, 2013, and 2016: @evanmiller #9
+* Build script and readme improvements @cyberemissary
+
 # Changelog for 0.8.1
 * Format README as Github Markdown: @joshuapinter #3
 * Updated changelog markdown format and will keep it in slightly different style: @cyberemissary #7

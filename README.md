@@ -35,7 +35,7 @@ $ rpm -i cyber-mdbtools-<version>-1.x86_64.rpm
 Feel free to submit PR requests here. I will try to review and merge them regularly.
 
 # mdbtools 
-_version 0.8.1_
+_version 0.8.2_
 
 Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
 programs to help you use Microsoft Access file in various settings.  The major
