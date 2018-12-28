@@ -221,7 +221,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 		mdb_close(mdb);
 		return NULL; 
 	}
-	mdb->f->jet_version = mdb_get_int32(mdb->pg_buf, 0x14);
+	mdb->f->jet_version = mdb_get_byte(mdb->pg_buf, 0x14);
 	switch(mdb->f->jet_version) {
 	case MDB_VER_JET3:
 		mdb->fmt = &MdbJet3Constants;
@@ -229,6 +229,8 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 	case MDB_VER_JET4:
 	case MDB_VER_ACCDB_2007:
 	case MDB_VER_ACCDB_2010:
+	case MDB_VER_ACCDB_2013:
+	case MDB_VER_ACCDB_2016:
 		mdb->fmt = &MdbJet4Constants;
 		break;
 	default:

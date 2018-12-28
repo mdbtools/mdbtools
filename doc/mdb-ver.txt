@@ -9,7 +9,7 @@ SYNOPSIS
 DESCRIPTION
   mdb-ver is a utility program distributed with MDB Tools. 
 
-  It will return a single line of output with 'JET3' for those files produced in Access 97 format, 'JET4' for those produced by Access 2000, XP and 2003, 'ACE12' for those produced by Access 2007, or 'ACE14' for those produced by Access 2010.
+  It will return a single line of output corresponding to the program that produced the file: 'JET3' (for files produced by Access 97), 'JET4' (Access 2000, XP and 2003), 'ACE12' (Access 2007), 'ACE14' (Access 2010), 'ACE15' (Access 2013), or 'ACE16' (Access 2016).
 
 OPTIONS
 
