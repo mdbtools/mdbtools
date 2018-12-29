@@ -436,8 +436,8 @@ typedef struct {
 } MdbSarg;
 
 /* mem.c */
-extern MDB_DEPRECATED(void, mdb_init());
-extern MDB_DEPRECATED(void, mdb_exit());
+extern MDB_DEPRECATED(void, mdb_init(void));
+extern MDB_DEPRECATED(void, mdb_exit(void));
 
 /* file.c */
 extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
@@ -502,7 +502,7 @@ extern size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 extern size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
 extern void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
 extern void mdb_set_date_fmt(const char *);
-extern void mdb_set_boolean_fmt_words();
+extern void mdb_set_boolean_fmt_words(void);
 extern int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
@@ -514,9 +514,9 @@ extern MDB_DEPRECATED(int, mdb_coltype_takes_length(MdbBackend *backend, int col
 extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
 extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
 extern int mdb_colbacktype_takes_length(const MdbColumn *col);
-extern MDB_DEPRECATED(void, mdb_init_backends());
+extern MDB_DEPRECATED(void, mdb_init_backends(void));
 extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
-extern MDB_DEPRECATED(void, mdb_remove_backends());
+extern MDB_DEPRECATED(void, mdb_remove_backends(void));
 extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 

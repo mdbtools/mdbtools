@@ -35,7 +35,7 @@
 
 static int is_init;
 GHashTable *mdb_backends;
-void _mdb_remove_backends();
+void _mdb_remove_backends(void);
 
 /*    Access data types */
 static MdbBackendType mdb_access_types[] = {

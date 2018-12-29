@@ -61,7 +61,7 @@ AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
-CFLAGS="$CFLAGS -Wall"
+CFLAGS="$CFLAGS -Wall -Wstrict-prototypes"
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],
