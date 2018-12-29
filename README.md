@@ -23,8 +23,10 @@ $ sudo apt-get install cyber-mdbtools
 No repository for RPM distribution, but you can install from rpm file:
 
 ```bash
-$ wget https://rpm.cybercoder.site/rpm/cyber-mdbtools-0.8.1-2.x86_64.rpm
-$ rpm -i cyber-mdbtools-0.8.1-2.x86_64.rpm
+# Replace the <version> with the version number you wish to install. For list of versions see the releases on GitHub
+
+$ wget https://rpm.cybercoder.site/rpm/cyber-mdbtools-<version>-1.x86_64.rpm
+$ rpm -i cyber-mdbtools-<version>-1.x86_64.rpm 
 ```
 
 > The RPM package was created using `alient` from the DEB package, so it may or may not work on your linux distribution.
@@ -33,7 +35,7 @@ $ rpm -i cyber-mdbtools-0.8.1-2.x86_64.rpm
 Feel free to submit PR requests here. I will try to review and merge them regularly.
 
 # mdbtools 
-_version 0.8.1_
+_version 0.8.2_
 
 Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
 programs to help you use Microsoft Access file in various settings.  The major
