@@ -54,7 +54,7 @@
 // Theses 2 atrbutes are not supported by all compilers:
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
 #define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
-#define MDB_CONSTRUCTOR(funcname) void __attribute__((constructor)) funcname()
+#define MDB_CONSTRUCTOR(funcname) void __attribute__((constructor)) funcname(void)
 
 enum {
 	MDB_PAGE_DB = 0,
