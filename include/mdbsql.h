@@ -77,8 +77,8 @@ extern char *g_input_ptr;
 
 void mdb_sql_error(MdbSQL* sql, char *fmt, ...);
 extern MdbSQL *_mdb_sql(MdbSQL *sql);
-extern MdbSQL *mdb_sql_init();
-extern MdbSQLSarg *mdb_sql_alloc_sarg();
+extern MdbSQL *mdb_sql_init(void);
+extern MdbSQLSarg *mdb_sql_alloc_sarg(void);
 extern MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name);
 extern int mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant);
 extern void mdb_sql_all_columns(MdbSQL *sql);
