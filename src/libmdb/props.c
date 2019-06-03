@@ -76,7 +76,7 @@ free_names(GPtrArray *names) {
 	g_ptr_array_free(names, TRUE);
 }
 MdbProperties *
-mdb_alloc_props()
+mdb_alloc_props(void)
 {
 	MdbProperties *props;
 
