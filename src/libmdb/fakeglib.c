@@ -242,8 +242,39 @@ void g_option_context_add_main_entries (GOptionContext *context,
 
 gchar *g_option_context_get_help (GOptionContext *context,
         gboolean main_help, void *group) {
-    /* TODO */
-    return NULL;
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    const char * appname = getprogname();
+#elif defined(_GNU_SOURCE)
+    const char * appname = program_invocation_name;
+#else
+    const char * appname = "mdb-util";
+#endif
+
+    char *help = malloc(4096);
+    char *end = help + 4096;
+    char *p = help;
+    p += snprintf(p, end - p,
+            "Usage:\n  %s [OPTION\xE2\x80\xA6] %s\n\n", appname, context->desc);
+    p += snprintf(p, end - p,
+            "Help Options:\n  -h, --%-20s%s\n\n", "help", "Show help options");
+    p += snprintf(p, end - p,
+            "Application Options:\n");
+    int i=0;
+    for (i=0; context->entries[i].long_name; i++) {
+        p += snprintf(p, end - p, "  -%c, --", context->entries[i].short_name);
+        if (context->entries[i].arg_description) {
+            char *long_name = g_strconcat(
+                    context->entries[i].long_name, "=",
+                    context->entries[i].arg_description, NULL);
+            p += snprintf(p, end - p, "%-20s", long_name);
+            free(long_name);
+        } else {
+            p += snprintf(p, end - p, "%-20s", context->entries[i].long_name);
+        }
+        p += snprintf(p, end - p, "%s\n", context->entries[i].description);
+    }
+    p += snprintf(p, end - p, "\n");
+    return help;
 }
 
 GOptionContext *g_option_context_new(const char *description) {
@@ -254,6 +285,8 @@ GOptionContext *g_option_context_new(const char *description) {
 
 gboolean g_option_context_parse(GOptionContext *context,
         gint *argc, gchar ***argv, GError **error) {
+    *error = malloc(sizeof(GError));
+    (*error)->message = "Not implemented";
     /* TODO */
     return FALSE;
 }

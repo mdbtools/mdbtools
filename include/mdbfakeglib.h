@@ -16,6 +16,7 @@ typedef unsigned int guint;
 typedef void * gpointer;
 typedef const void * gconstpointer;
 typedef uint8_t guint8;
+typedef guint32 GQuark;
 
 typedef guint (*GHashFunc)(gconstpointer);
 typedef int (*GCompareFunc)(gconstpointer, gconstpointer);
@@ -41,7 +42,9 @@ typedef struct GHashTable {
 } GHashTable;
 
 typedef struct GError {
-    const char *message;
+    GQuark       domain;
+    gint         code;
+    gchar       *message;
 } GError;
 
 typedef enum GOptionArg {
