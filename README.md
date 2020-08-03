@@ -1,128 +1,159 @@
-The original [project repository](https://github.com/brianb/mdbtools) seems to have been abandoned 
-(no activity from author for over a year).
+[![Build Status](https://travis-ci.org/evanmiller/mdbtools.svg?branch=master)](https://travis-ci.org/evanmiller/mdbtools)
 
-In this fork I merged a few PR requests to the original repository as well as added some of my own
-fixes.
+MDB Tools, where open source goes to die.
 
-# Installing from packages
-Since I use these tools in many systems, I packaged it for simpler installation. 
+This is a fork of a [fork](https://github.com/cyberemissary/mdbtools) of a
+[fork](https://github.com/brjohnsn/mdbtools) of a
+[fork](https://github.com/leecher1337/mdbtools) of the [original MDB
+Tools](https://github.com/brianb/mdbtools) by Brian Buns. I got sick of seeing
+the project waste away, so I'm taking the initiative to get MDB Tools
+whipped back into shape and properly maintained.
 
-> Had to change package name to avoid collision with original author's package.
+A brief history: the last *official* release (version 0.7.1) occurred in 2016.
+[cyberemissary](https://github.com/cyberemissary) (whose work this fork is
+based on) made a release in December 2018 and called it 0.8.2. *I am not
+planning a formal release* but rather collecting and merging patches to submit
+upstream. In the meantime you are welcome to use this code base:
 
-## Ubuntu/Debian
-> Built on Ubuntu 16.04 LTS only, should work on Debian and similar linux flavors.
+https://github.com/evanmiller/mdbtools
 
-```bash
-$ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7C2FDAFB
-$ echo "deb http://apt.cyberemissary.com/ubuntu/ xenial main" | sudo btee -a /etc/apt/sources.list.d/apt.cyberemissary.com.list
-$ sudo apt-update
-$ sudo apt-get install cyber-mdbtools
-```
+Intended focus areas:
 
-## RPM Package
-No repository for RPM distribution, but you can install from rpm file:
+* Security / fuzz testing
+* Continuous integration with Travis and AppVeyor
+* Removing dependencies
 
-```bash
-# Replace the <version> with the version number you wish to install. For list of versions see the releases on GitHub
+A re-formatted and updated README file follows.
 
-$ wget https://rpm.cybercoder.site/rpm/cyber-mdbtools-<version>-1.x86_64.rpm
-$ rpm -i cyber-mdbtools-<version>-1.x86_64.rpm 
-```
-
-> The RPM package was created using `alient` from the DEB package, so it may or may not work on your linux distribution.
-
-# Contributing
-Feel free to submit PR requests here. I will try to review and merge them regularly.
-
-# mdbtools 
-_version 0.8.2_
+*In a chipper open-source voice...*
 
 Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
-programs to help you use Microsoft Access file in various settings.  The major
-pieces are:
-
-```
-. libmdb    - the core library that allows access to MDB files programatically.
-. libmdbsql - builds on libmdb to provide a SQL engine (aka Jet)
-. utils     - provides command line utilities:
-              mdb-ver    -- prints the version (JET 3 or 4) of an mdb file.
-              mdb-schema -- prints DDL for the specified table.
-              mdb-export -- export table to CSV format.
-              mdb-tables -- a simple dump of table names to be used with shell
-                            scripts
-              mdb-count  -- a simple count of number of rows in a table, to be
-                            used in shell scripts and ETL pipelines
-              mdb-header -- generates a C header to be used in exporting mdb
-                            data to a C prog.
-              mdb-parsecsv -- generates a C program given a CSV file made with
-                            mdb-export
-              mdb-sql    -- if --enable-sql is specified, a simple SQL engine
-                            (also used by ODBC and gmdb).
-            - And some utilities useful for debugging:
-              prcat      -- prints the catalog table from an mdb file.
-              prkkd      -- dump of information about design view data given the offset to it.
-              prtable    -- dump of a table definition.
-              prdata     -- dump of the data given a table name.
-              prole      -- dump of ole columns given a table name and sargs.
-. mdb-sql   - a command line SQL tool that allows one to type sql queries and
-              get results.
-. odbc      - An ODBC driver for use with unixODBC or iODBC driver manager.
-              Allows one to use MDB files with PHP for example.
-. gmdb2     - The Gnome MDB File Viewer and debugger.  Still alpha, but making
-              great progress.
-. extras    - extra command line utilities
-              mdb-dump   -- simple hex dump utility that I've been using to look
-                            at mdb files.
-```
-
-If you are interested in helping, read the HACKING file for a description of 
-where the code stands and what has been gleened of the file format.
+programs to help you use Microsoft Access file in various settings.
 
 The initial goal of these tools is to be able to extract data structures and 
-data from mdb files.  This goal will of course expand over time as the file 
+data from mdb files. This goal will of course expand over time as the file 
 format becomes more well understood.
 
+# Components
+
+The major pieces of MDB Tools are:
+
+## libmdb
+
+The core library that allows access to MDB files programatically.
+
+## libmdbsql
+
+Builds on libmdb to provide a SQL engine (aka Jet)
+
+## utils
+
+Provids command line utilities, including:
+
+### mdb-ver
+
+Prints the version (JET 3 or 4) of an mdb file.
+
+### mdb-schema
+
+Prints DDL for the specified table.
+
+### mdb-export
+
+Export table to CSV format.
+
+### mdb-tables
+
+A simple dump of table names to be used with shell scripts.
+
+### mdb-count
+
+A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines.
+
+### mdb-header
+
+Generates a C header to be used in exporting mdb data to a C prog.
+
+### mdb-parsecsv 
+
+Generates a C program given a CSV file made with mdb-export.
+
+### mdb-sql
+
+If --enable-sql is specified, a simple SQL engine (also used by ODBC and gmdb).
+
+### prcat
+
+Prints the catalog table from an mdb file.
+
+### prkkd
+
+Dump of information about design view data given the offset to it.
+
+### prtable
+
+Dump of a table definition.
+
+### prdata
+
+Dump of the data given a table name.
+
+### prole
+
+Dump of ole columns given a table name and sargs.
+
+## odbc
+
+An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use MDB files with PHP for example.
+
+## gmdb2
+
+The Gnome MDB File Viewer and debugger. Still alpha, but making great progress.
+
+## src/extras/mdb-hexdump
+
+Simple hex dump utility that I've been using to look at mdb files.
+
+# License
+
 Files in libmdb, libmdbsql, and libmdbodbc are licensed under LGPL and the
-utilities and gui program are under the GPL, see COPYING.LIB and COPYING files
-respectively.
+utilities and gui program are under the GPL, see [COPYING.LIB](./COPYING.LIB)
+and [COPYING](./COPYING) files respectively.
 
 
-Requirements:
-=============
+# Requirements
 
 First, you must have reasonably current installations of:
-	`libtool`
-	`automake`
-	`autoconf` (version >= 2.58)
-If you don't you should install them first. Sources are available at
-ftp.gnu.org.
 
-Second, you need glib. It may come as `glib2.0` and `glib2.0-dev` packages in your
-distribution.
+* [libtool](https://www.gnu.org/software/libtool/)
+* [automake](https://www.gnu.org/software/automake/)
+* [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.58)
 
-If you want to build the SQL engine, you'll need `bison` or `byacc`, and `flex`.
+If you want to build the SQL engine, you'll need
+[bison](https://www.gnu.org/software/bison/) or
+[byacc](https://invisible-island.net/byacc/byacc.html), and
+[flex](https://github.com/westes/flex).
 
-If you want to build the ODBC driver, you'll need `unixodbc-dev` (version 2.2.10 or
-above) or iodbc.
+If you want to build the ODBC driver, you'll need `unixodbc-dev` (version
+2.2.10 or above) or [iodbc](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/WelcomeVisitors).
 
-If you want to build man pages, you'll need `txt2man`. Source is available at
-http://mvertes.free.fr/download/.
+If you want to build man pages, you'll need
+[txt2man](https://github.com/mvertes/txt2man).
 
-If you want to generate the html version of the docbook, you'll need openjade
-and basic dsl catalogs.
+If you want to generate the html version of the docbook, you'll need
+[openjade](http://openjade.sourceforge.net) and basic dsl catalogs.
 
 
-Installation from source:
-=========================
+# Installation
 
-Last version is available at https://github.com/cyberemissary/mdbtools
+Last version is available at https://github.com/evanmiller/mdbtools
 
 ```bash
 $ autoreconf -i -f
 ```
 
 If you want to build the html version of the docbook documentation, you need to
-set the environment variable DOCBOOK_DSL to the modular dsl translation file.
+set the environment variable `DOCBOOK_DSL` to the modular dsl translation file.
 For exemple, before configure, you need something like:
 
 ```bash
@@ -148,7 +179,7 @@ mutually exclusive.
                  causes the iODBC driver to be built.
 ```
 
-A list of general options is available in the INSTALL file, and
+A list of general options is available in the [INSTALL](./INSTALL) file, and
 `configure --help` will give you the list of mdbtools specific options.
 
 ```bash
@@ -171,10 +202,12 @@ You can do that running:
 $ ldconfig
 ```
 
+# Hacking  
 
-Contacts
-========
+If you are interested in helping, read the [HACKING](./HACKING) file for a description of 
+where the code stands and what has been gleened of the file format.
+
+# Contact
 
 Please send bug reports to the new github repository.
-https://github.com/cyberemissary/mdbtools/issues
-
+https://github.com/evanmiller/mdbtools/issues
