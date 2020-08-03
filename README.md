@@ -80,7 +80,7 @@ Generates a C program given a CSV file made with mdb-export.
 
 ### mdb-sql
 
-If --enable-sql is specified, a simple SQL engine (also used by ODBC and gmdb).
+A simple SQL engine (also used by ODBC and gmdb).
 
 ### prcat
 

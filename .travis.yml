@@ -17,5 +17,5 @@ before_script:
   - autoreconf -i -f
 
 script:
-  - ./configure --enable-sql --disable-man
+  - ./configure --disable-man --disable-silent-rules
   - make
