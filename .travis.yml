@@ -4,15 +4,18 @@ jobs:
   include:
   - compiler: clang
     os: linux
-
-addons:
-  apt:
-    packages:
-    - txt2man
+  - compiler: gcc
+    os: linux
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+  - compiler: gcc
+    os: osx
+    osx_image: xcode11.4
 
 before_script:
   - autoreconf -i -f
 
 script:
-  - ./configure --enable-sql
+  - ./configure --enable-sql --disable-man
   - make
