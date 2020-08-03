@@ -5,6 +5,11 @@ jobs:
   - compiler: clang
     os: linux
 
+addons:
+  apt:
+    packages:
+    - txt2man
+
 before_script:
   - autoreconf -i -f
 
