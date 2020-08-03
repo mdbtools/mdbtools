@@ -196,6 +196,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 				break;
 			case 0x00:
 			case 0x01:
+			case 0x02:
 				if (!names) {
 					fprintf(stderr,"sequence error!\n");
 					break;
