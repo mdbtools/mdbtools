@@ -345,8 +345,10 @@ main(int argc, char **argv)
 	MdbSQL *sql;
 	FILE *in = NULL, *out = NULL;
 	char *filename_in=NULL, *filename_out=NULL;
+#ifdef HAVE_READLINE_HISTORY
 	char *home = getenv("HOME");
 	char *histpath;
+#endif
 	char *delimiter = NULL;
 
 
