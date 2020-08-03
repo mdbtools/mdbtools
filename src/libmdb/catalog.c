@@ -57,8 +57,8 @@ void mdb_free_catalog(MdbHandle *mdb)
 		if (entry) {
 			if (entry->props) {
 				for (j=0; j<entry->props->len; j++)
-					mdb_free_props(g_array_index(entry->props, MdbProperties*, j));
-				g_array_free(entry->props, TRUE);
+					mdb_free_props(g_ptr_array_index(entry->props, j));
+				g_ptr_array_free(entry->props, TRUE);
 			}
 			g_free(entry);
 		}

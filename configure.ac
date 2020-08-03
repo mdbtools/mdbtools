@@ -146,11 +146,10 @@ fi
 
 
 dnl check for glib/gtk/gnome
-PKG_CHECK_MODULES([GLIB], [glib-2.0], ,
-	AC_MSG_ERROR([
-glib 2.0 is required by MDB Tools (runtime and devel).
-It can be downloaded at www.gtk.org.
-]))
+PKG_CHECK_MODULES([GLIB], [glib-2.0], AM_CONDITIONAL([HAVE_GLIB], true), AM_CONDITIONAL([HAVE_GLIB], false))
+if test "x$HAVE_GLIB" = "xtrue"; then
+    GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
+fi
 
 PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
 

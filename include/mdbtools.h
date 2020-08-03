@@ -30,7 +30,12 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+
+#ifdef HAVE_GLIB
 #include <glib.h>
+#else
+#include <mdbfakeglib.h>
+#endif
 
 #ifdef HAVE_ICONV
 #include <iconv.h>
@@ -284,8 +289,7 @@ typedef struct {
 	int            object_type;
 	unsigned long  table_pg; /* misnomer since object may not be a table */
 	//int			num_props; please use props->len
-	GArray		*props; /* GArray of MdbProperties */
-	GArray		*columns;
+	GPtrArray		*props; /* GPtrArray of MdbProperties */
 	int		flags;
 } MdbCatalogEntry;
 
@@ -575,7 +579,7 @@ extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int
 /* props.c */
 extern void mdb_free_props(MdbProperties *props);
 extern void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
-extern GArray* mdb_kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
+extern GPtrArray* mdb_kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
 
 
 /* worktable.c */

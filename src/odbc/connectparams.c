@@ -58,7 +58,7 @@ static int GetNextItem (FILE* stream, char** name, char** value);
 #endif //HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data);
-static gboolean cleanup (gpointer key, gpointer value, gpointer user_data);
+static void cleanup (gpointer key, gpointer value, gpointer user_data);
 
 /*
  * Allocate create a ConnectParams object
@@ -91,7 +91,7 @@ void FreeConnectParams (ConnectParams* params)
          g_string_free (params->iniFileName, TRUE);
       if (params->table)
       {
-         g_hash_table_foreach_remove (params->table, cleanup, NULL);
+         g_hash_table_foreach (params->table, cleanup, NULL);
          g_hash_table_destroy (params->table);
       }
       g_free(params);
@@ -514,12 +514,10 @@ static void visit (gpointer key, gpointer value, gpointer user_data)
    fprintf(output, "Parameter: %s, Value: %s\n", (char*)key, (char*)value);
 }
 
-static gboolean cleanup (gpointer key, gpointer value, gpointer user_data)
+static void cleanup (gpointer key, gpointer value, gpointer user_data)
 {
    g_free (key);
    g_free (value);
-
-   return TRUE;
 }
 
 
