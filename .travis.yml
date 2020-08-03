@@ -1,0 +1,13 @@
+language: c
+
+jobs:
+  include:
+  - compiler: clang
+    os: linux
+
+before_script:
+  - autoreconf -i -f
+
+script:
+  - ./configure --enable-sql
+  - make
