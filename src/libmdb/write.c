@@ -81,7 +81,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 	fstat(mdb->f->fd, &status);
 	/* is page beyond current size + 1 ? */
 	if (status.st_size < offset + mdb->fmt->pg_size) {
-		fprintf(stderr,"offset %jd is beyond EOF\n",(intmax_t)offset);
+		fprintf(stderr,"offset %lld is beyond EOF\n",(long long)offset);
 		return 0;
 	}
 	lseek(mdb->f->fd, offset, SEEK_SET);

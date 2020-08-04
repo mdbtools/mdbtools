@@ -133,14 +133,20 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 				g_strdup(kkd[pos + 8] ? "yes" : "no"));
         } else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
             gchar *guid = g_malloc0(39);
-            snprintf(guid, 39, "{%02hhX%02hhX%02hhX%02hhX" "-" "%02hhX%02hhX"
-                    "-" "%02hhX%02hhX" "-" "%02hhX%02hhX"
-                    "%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
-                    kkd[pos+11], kkd[pos+10], kkd[pos+9], kkd[pos+8], // little-endian
-                    kkd[pos+13], kkd[pos+12], // little-endian
-                    kkd[pos+15], kkd[pos+14], // little-endian
-                    kkd[pos+16], kkd[pos+17], // big-endian
-                    kkd[pos+18], kkd[pos+19], kkd[pos+20], kkd[pos+21], kkd[pos+22], kkd[pos+23]);
+            snprintf(guid, 39, "{%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X"
+                    "-" "%02X%02X" "%02X%02X%02X%02X%02X%02X}",
+                    (unsigned char)kkd[pos+11], (unsigned char)kkd[pos+10],
+                    (unsigned char)kkd[pos+9], (unsigned char)kkd[pos+8], // little-endian
+
+                    (unsigned char)kkd[pos+13], (unsigned char)kkd[pos+12], // little-endian
+
+                    (unsigned char)kkd[pos+15], (unsigned char)kkd[pos+14], // little-endian
+
+                    (unsigned char)kkd[pos+16], (unsigned char)kkd[pos+17], // big-endian
+
+                    (unsigned char)kkd[pos+18], (unsigned char)kkd[pos+19],
+                    (unsigned char)kkd[pos+20], (unsigned char)kkd[pos+21],
+                    (unsigned char)kkd[pos+22], (unsigned char)kkd[pos+23]); // big-endian
 			g_hash_table_insert(props->hash, g_strdup(name), guid);
 		} else {
 			g_hash_table_insert(props->hash, g_strdup(name),
