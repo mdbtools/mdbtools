@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <getopt.h>
 
 /* string functions */
 
@@ -309,48 +309,67 @@ gboolean g_option_context_parse(GOptionContext *context,
             len++;
         }
     }
+    struct option *long_opts = calloc(count+1, sizeof(struct option));
     char *short_opts = calloc(1, len+1);
-    for (i=0; i<len; i++) {
-        GOptionArg arg = context->entries[i].arg;
-        short_opts[i] = context->entries[i].short_name;
+    int j=0;
+    for (i=0; i<count; i++) {
+        const GOptionEntry *entry = &context->entries[i];
+        GOptionArg arg = entry->arg;
+        short_opts[j++] = entry->short_name;
         if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
-            short_opts[++i] = ':';
+            short_opts[j++] = ':';
         }
+        long_opts[i].name = entry->long_name;
+        long_opts[i].has_arg = entry->arg == G_OPTION_ARG_NONE ? no_argument : required_argument;
     }
     int c;
+    int longindex = 0;
     opterr = 0;
-    while ((c = getopt(*argc, *argv, short_opts)) != -1) {
+    while ((c = getopt_long(*argc, *argv, short_opts, long_opts, &longindex)) != -1) {
         if (c == '?') {
             *error = malloc(sizeof(GError));
             (*error)->message = malloc(100);
-            snprintf((*error)->message, 100, "Unrecognized option: %c", optopt);
+            if (optopt) {
+                snprintf((*error)->message, 100, "Unrecognized option: -%c", optopt);
+            } else {
+                snprintf((*error)->message, 100, "Unrecognized option: %s", (*argv)[optind-1]);
+            }
             free(short_opts);
+            free(long_opts);
             return FALSE;
         }
-        for (i=0; i<count; i++) {
-            if (context->entries[i].short_name == c) {
-                GOptionArg arg = context->entries[i].arg;
-                if (arg == G_OPTION_ARG_NONE) {
-                    *(int *)context->entries[i].arg_data = !(context->entries[i].flags & G_OPTION_FLAG_REVERSE);
-                } else if (arg == G_OPTION_ARG_INT) {
-                    char *endptr = NULL;
-                    *(int *)context->entries[i].arg_data = strtol(optarg, &endptr, 10);
-                    if (*endptr) {
-                        *error = malloc(sizeof(GError));
-                        (*error)->message = malloc(100);
-                        snprintf((*error)->message, 100, "Argument to -%c must be an integer", c);
-                        free(short_opts);
-                        return FALSE;
-                    }
-                } else if (arg == G_OPTION_ARG_STRING) {
-                    *(char **)context->entries[i].arg_data = strdup(optarg);
+        const GOptionEntry *entry = NULL;
+        if (c == 0) {
+            entry = &context->entries[longindex];
+        } else {
+            for (i=0; i<count; i++) {
+                if (context->entries[i].short_name == c) {
+                    entry = &context->entries[i];
+                    break;
                 }
             }
+        }
+        if (entry->arg == G_OPTION_ARG_NONE) {
+            *(int *)entry->arg_data = !(entry->flags & G_OPTION_FLAG_REVERSE);
+        } else if (entry->arg == G_OPTION_ARG_INT) {
+            char *endptr = NULL;
+            *(int *)entry->arg_data = strtol(optarg, &endptr, 10);
+            if (*endptr) {
+                *error = malloc(sizeof(GError));
+                (*error)->message = malloc(100);
+                snprintf((*error)->message, 100, "Argument to --%s must be an integer", entry->long_name);
+                free(short_opts);
+                free(long_opts);
+                return FALSE;
+            }
+        } else if (entry->arg == G_OPTION_ARG_STRING) {
+            *(char **)entry->arg_data = strdup(optarg);
         }
     }
     *argc -= (optind - 1);
     *argv += (optind - 1);
     free(short_opts);
+    free(long_opts);
 
     return TRUE;
 }
