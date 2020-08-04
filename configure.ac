@@ -12,7 +12,7 @@ AC_PROG_CC(gcc)
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR], [AM_PROG_AR])
-LT_INIT
+LT_INIT([win32-dll])
 AC_PROG_LEX
 AC_PROG_YACC
 
@@ -62,6 +62,8 @@ AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
 CFLAGS="$CFLAGS -Wall -Wstrict-prototypes"
+AS_CASE([$host],
+        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],
