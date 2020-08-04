@@ -372,7 +372,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 
         fstat(mdb->f->fd, &status);
         if (status.st_size < offset) { 
-                fprintf(stderr,"offset %lld is beyond EOF\n",(long long)offset);
+                fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
                 return 0;
         }
 	if (mdb->stats && mdb->stats->collect) 
