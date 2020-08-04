@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/evanmiller/mdbtools.svg?branch=master)](https://travis-ci.org/evanmiller/mdbtools)
+[![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/mdbtools/branch/master)
 
 MDB Tools, where open source goes to die.
 
