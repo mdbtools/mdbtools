@@ -131,6 +131,17 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		if (dtype == MDB_BOOL) {
 			g_hash_table_insert(props->hash, g_strdup(name),
 				g_strdup(kkd[pos + 8] ? "yes" : "no"));
+        } else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
+            gchar *guid = g_malloc0(39);
+            snprintf(guid, 39, "{%02hhX%02hhX%02hhX%02hhX" "-" "%02hhX%02hhX"
+                    "-" "%02hhX%02hhX" "-" "%02hhX%02hhX"
+                    "%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+                    kkd[pos+11], kkd[pos+10], kkd[pos+9], kkd[pos+8], // little-endian
+                    kkd[pos+13], kkd[pos+12], // little-endian
+                    kkd[pos+15], kkd[pos+14], // little-endian
+                    kkd[pos+16], kkd[pos+17], // big-endian
+                    kkd[pos+18], kkd[pos+19], kkd[pos+20], kkd[pos+21], kkd[pos+22], kkd[pos+23]);
+			g_hash_table_insert(props->hash, g_strdup(name), guid);
 		} else {
 			g_hash_table_insert(props->hash, g_strdup(name),
 			  mdb_col_to_string(mdb, kkd, pos + 8, dtype, dsize));
