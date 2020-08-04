@@ -32,8 +32,9 @@
 #ifdef HAVE_STRPTIME
 #include <time.h>
 #include <stdio.h>
-#include <locale.h>
 #endif
+
+#include <locale.h>
 
 char *g_input_ptr;
 
