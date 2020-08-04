@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
 
 /* string functions */
 
@@ -261,7 +262,11 @@ gchar *g_option_context_get_help (GOptionContext *context,
             "Application Options:\n");
     int i=0;
     for (i=0; context->entries[i].long_name; i++) {
-        p += snprintf(p, end - p, "  -%c, --", context->entries[i].short_name);
+        p += snprintf(p, end - p, "  ");
+        if (context->entries[i].short_name) {
+            p += snprintf(p, end - p, "-%c, ", context->entries[i].short_name);
+        }
+        p += snprintf(p, end - p, "--");
         if (context->entries[i].arg_description) {
             char *long_name = g_strconcat(
                     context->entries[i].long_name, "=",
@@ -270,6 +275,9 @@ gchar *g_option_context_get_help (GOptionContext *context,
             free(long_name);
         } else {
             p += snprintf(p, end - p, "%-20s", context->entries[i].long_name);
+        }
+        if (!context->entries[i].short_name) {
+            p += snprintf(p, end - p, "    ");
         }
         p += snprintf(p, end - p, "%s\n", context->entries[i].description);
     }
@@ -285,10 +293,66 @@ GOptionContext *g_option_context_new(const char *description) {
 
 gboolean g_option_context_parse(GOptionContext *context,
         gint *argc, gchar ***argv, GError **error) {
-    *error = malloc(sizeof(GError));
-    (*error)->message = "Not implemented";
-    /* TODO */
-    return FALSE;
+    int i;
+    int count = 0;
+    int len = 0;
+    if (*argc == 2 &&
+            (strcmp((*argv)[1], "-h") == 0 || strcmp((*argv)[1], "--help") == 0)) {
+        fprintf(stderr, "%s", g_option_context_get_help(context, TRUE, NULL));
+        exit(0);
+    }
+    for (i=0; context->entries[i].long_name; i++) {
+        GOptionArg arg = context->entries[i].arg;
+        count++;
+        len++;
+        if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
+            len++;
+        }
+    }
+    char *short_opts = calloc(1, len+1);
+    for (i=0; i<len; i++) {
+        GOptionArg arg = context->entries[i].arg;
+        short_opts[i] = context->entries[i].short_name;
+        if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
+            short_opts[++i] = ':';
+        }
+    }
+    int c;
+    opterr = 0;
+    while ((c = getopt(*argc, *argv, short_opts)) != -1) {
+        if (c == '?') {
+            *error = malloc(sizeof(GError));
+            (*error)->message = malloc(100);
+            snprintf((*error)->message, 100, "Unrecognized option: %c", optopt);
+            free(short_opts);
+            return FALSE;
+        }
+        for (i=0; i<count; i++) {
+            if (context->entries[i].short_name == c) {
+                GOptionArg arg = context->entries[i].arg;
+                if (arg == G_OPTION_ARG_NONE) {
+                    *(int *)context->entries[i].arg_data = !(context->entries[i].flags & G_OPTION_FLAG_REVERSE);
+                } else if (arg == G_OPTION_ARG_INT) {
+                    char *endptr = NULL;
+                    *(int *)context->entries[i].arg_data = strtol(optarg, &endptr, 10);
+                    if (*endptr) {
+                        *error = malloc(sizeof(GError));
+                        (*error)->message = malloc(100);
+                        snprintf((*error)->message, 100, "Argument to -%c must be an integer", c);
+                        free(short_opts);
+                        return FALSE;
+                    }
+                } else if (arg == G_OPTION_ARG_STRING) {
+                    *(char **)context->entries[i].arg_data = strdup(optarg);
+                }
+            }
+        }
+    }
+    *argc -= (optind - 1);
+    *argv += (optind - 1);
+    free(short_opts);
+
+    return TRUE;
 }
 
 void g_option_context_free(GOptionContext *context) {
