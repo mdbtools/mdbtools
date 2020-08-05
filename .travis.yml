@@ -19,3 +19,15 @@ before_script:
 script:
   - ./configure --disable-man --disable-silent-rules
   - make
+  - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-array test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-count test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-count test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-prop test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-prop test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-schema test/data/ASampleDatabase.accdb
+  - ./src/util/mdb-schema test/data/nwind.mdb
+  - ./src/util/mdb-tables test/data/ASampleDatabase.accdb
+  - ./src/util/mdb-tables test/data/nwind.mdb
+  - ./src/util/mdb-ver test/data/ASampleDatabase.accdb
+  - ./src/util/mdb-ver test/data/nwind.mdb

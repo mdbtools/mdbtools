@@ -32,8 +32,9 @@
 #ifdef HAVE_STRPTIME
 #include <time.h>
 #include <stdio.h>
-#include <locale.h>
 #endif
+
+#include <locale.h>
 
 char *g_input_ptr;
 
@@ -51,6 +52,8 @@ int yyparse (void);
 int yyparse ();
 #endif
 #endif /* ! YYPARSE_PARAM */
+
+static MdbSargNode * mdb_sql_alloc_node(void);
 
 void
 mdb_sql_error(MdbSQL* sql, char *fmt, ...)
@@ -204,7 +207,7 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 
 	return sql->mdb;
 }
-MdbSargNode *
+static MdbSargNode *
 mdb_sql_alloc_node()
 {
 	return (MdbSargNode *) g_malloc0(sizeof(MdbSargNode));
