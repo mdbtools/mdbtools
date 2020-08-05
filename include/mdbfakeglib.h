@@ -96,7 +96,7 @@ typedef struct GOptionContext {
 #define g_free free
 #define g_realloc realloc
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #define g_strdup _strdup
 #else
 #define g_strdup strdup

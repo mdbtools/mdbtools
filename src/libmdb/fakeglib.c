@@ -83,7 +83,7 @@ char *g_strconcat(const char *first, ...) {
     return ret;
 }
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 int vasprintf(char **ret, const char *format, va_list ap) {
     int len;
     int retval;
@@ -106,7 +106,12 @@ char *g_strdup_printf(const char *format, ...) {
     va_list argp;
 
     va_start(argp, format);
+#ifdef ___CYGWIN__
+    size_t len = 0;
+    vasnprintf(&ret, &len, format, argp);
+#else
     vasprintf(&ret, format, argp);
+#endif
     va_end(argp);
 
     return ret;
