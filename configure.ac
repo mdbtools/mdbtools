@@ -63,7 +63,7 @@ AC_SUBST(LFLAGS)
 
 CFLAGS="$CFLAGS -Wall -Wstrict-prototypes"
 AS_CASE([$host],
-        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
+        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined -lWs2_32"], [])
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],

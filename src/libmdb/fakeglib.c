@@ -1,7 +1,6 @@
 
 #include "mdbfakeglib.h"
 
-#include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>

@@ -23,6 +23,10 @@
 #include "dmalloc.h"
 #endif
 
+#ifndef MIN
+#define MIN(a,b) (a>b ? b : a)
+#endif
+
 /*
  * This function is used in reading text data from an MDB table.
  */

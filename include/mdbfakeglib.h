@@ -4,6 +4,7 @@
 #include <time.h>
 #include <locale.h>
 #include <inttypes.h>
+#include <string.h>
 
 // for ntohl
 #ifdef _WIN32
