@@ -950,6 +950,9 @@ static SQLRETURN SQL_API _SQLColAttributes(
 					break;
 			}
 			break;
+        case SQL_DESC_UPDATABLE:
+            *pfDesc = SQL_ATTR_READONLY;
+            break;
 		default:
 			strcpy(sqlState, "HYC00"); // 	Driver not capable
 			ret = SQL_ERROR;
