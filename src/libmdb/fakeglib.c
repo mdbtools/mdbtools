@@ -223,7 +223,7 @@ GList *g_list_remove(GList *list, void *data) {
             if (link == list)
                 return_list = link->next;
             free(link);
-            return list;
+            return return_list;
         }
         link = link->next;
     }
