@@ -5,6 +5,7 @@
 #include <locale.h>
 #include <inttypes.h>
 #include <string.h>
+#include <strings.h>
 
 // for ntohl
 #ifdef _WIN32

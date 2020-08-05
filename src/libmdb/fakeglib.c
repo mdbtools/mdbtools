@@ -83,6 +83,24 @@ char *g_strconcat(const char *first, ...) {
     return ret;
 }
 
+#ifdef _MSC_VER
+int vasprintf(char **ret, const char *format, va_list ap) {
+    int len;
+    int retval;
+    char *result;
+    if ((len = _vscprintf(format, ap)) < 0)
+        return -1;
+    if ((result = malloc(len+1)) == NULL)
+        return -1;
+    if ((retval = _vsprintf_s(result, len+1, format, ap)) == -1) {
+        free(result);
+        return -1;
+    }
+    *ret = result;
+    return retval;
+}
+#endif
+
 char *g_strdup_printf(const char *format, ...) {
     char *ret = NULL;
     va_list argp;
