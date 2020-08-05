@@ -5,6 +5,13 @@
 #include <locale.h>
 #include <inttypes.h>
 
+// for ntohl
+#ifdef _WIN32
+#include <winsock.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 typedef uint16_t guint16;
 typedef uint32_t guint32;
 typedef uint64_t guint64;

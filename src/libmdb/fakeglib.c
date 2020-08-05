@@ -34,7 +34,13 @@ char **g_strsplit(const char *haystack, const char *needle, int something) {
 
     int i = 0;
     while ((found = strstr(haystack, needle))) {
-        ret[i++] = strndup(haystack, found - haystack);
+        // Windows lacks strndup
+        size_t chunk_len = found - haystack;
+        char *chunk = malloc(chunk_len + 1);
+        memcpy(chunk, haystack, chunk_len);
+        chunk[chunk_len] = 0;
+
+        ret[i++] = chunk;
         haystack = found + strlen(needle);
     }
     ret[i] = strdup(haystack);
@@ -65,11 +71,11 @@ char *g_strconcat(const char *first, ...) {
 
     ret = malloc(len+1);
 
-    char *pos = stpcpy(ret, first);
+    char *pos = strcpy(ret, first) + strlen(first);
 
     va_start(argp, first);
     while ((arg = va_arg(argp, char *))) {
-        pos = stpcpy(pos, arg);
+        pos = strcpy(pos, arg) + strlen(arg);
     }
     va_end(argp);
 
