@@ -270,6 +270,11 @@ quote_with_squotes(const gchar* value)
 	return quote_generic(value, '\'', '\'');
 }
 
+static int mdb_col_is_shortdate(const MdbColumn *col) {
+    const char *format = mdb_col_get_prop(col, "Format");
+    return format && !strcmp(format, "Short Date");
+}
+
 MDB_DEPRECATED(char*,
 mdb_get_coltype_string(MdbBackend *backend, int col_type))
 {
@@ -299,7 +304,6 @@ mdb_coltype_takes_length(MdbBackend *backend, int col_type))
 	return backend->types_table[col_type].needs_length;
 }
 
-
 const MdbBackendType*
 mdb_get_colbacktype(const MdbColumn *col) {
 	MdbBackend *backend = col->table->entry->mdb->default_backend;
@@ -309,8 +313,7 @@ mdb_get_colbacktype(const MdbColumn *col) {
 	if (col_type == MDB_LONGINT && col->is_long_auto && backend->type_autonum)
 		return backend->type_autonum;
 	if (col_type == MDB_DATETIME && backend->type_shortdate) {
-		const char *format = mdb_col_get_prop(col, "Format");
-		if (format && !strcmp(format, "Short Date"))
+		if (mdb_col_is_shortdate(col))
 			return backend->type_shortdate;
 	}
 	return &backend->types_table[col_type];
@@ -842,7 +845,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 					else if (!strcmp(defval, "No"))
 						fputs("FALSE", outfile);
 					else if (!g_ascii_strcasecmp(defval, "date()")) {
-						if (!strcmp(mdb_col_get_prop(col, "Format"), "Short Date"))
+						if (mdb_col_is_shortdate(col))
 							fputs(mdb->default_backend->short_now, outfile);
 						else
 							fputs(mdb->default_backend->long_now, outfile);
