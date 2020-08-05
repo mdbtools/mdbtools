@@ -114,7 +114,7 @@ char *g_strdup_printf(const char *format, ...) {
     va_start(argp, format);
 #ifdef __CYGWIN__
     size_t len = 0;
-    vasnprintf(&ret, &len, format, argp);
+    ret = vasnprintf(ret, &len, format, argp);
 #else
     vasprintf(&ret, format, argp);
 #endif
