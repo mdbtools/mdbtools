@@ -96,15 +96,24 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	/* mdb_table_dump(&msysobj); */
 
 	table = mdb_read_table(&msysobj);
-	if (!table) return NULL;
+    if (!table) {
+        mdb_free_catalog(mdb);
+        goto cleanup;
+    }
 
 	mdb_read_columns(table);
 
-	mdb_bind_column_by_name(table, "Id", obj_id, NULL);
-	mdb_bind_column_by_name(table, "Name", obj_name, NULL);
-	mdb_bind_column_by_name(table, "Type", obj_type, NULL);
-	mdb_bind_column_by_name(table, "Flags", obj_flags, NULL);
-	i = mdb_bind_column_by_name(table, "LvProp", obj_props, &kkd_size_ole);
+    if (mdb_bind_column_by_name(table, "Id", obj_id, NULL) == -1 ||
+        mdb_bind_column_by_name(table, "Name", obj_name, NULL) == -1 ||
+        mdb_bind_column_by_name(table, "Type", obj_type, NULL) == -1 ||
+        mdb_bind_column_by_name(table, "Flags", obj_flags, NULL) == -1) {
+        mdb_free_catalog(mdb);
+        goto cleanup;
+    }
+    if ((i = mdb_bind_column_by_name(table, "LvProp", obj_props, &kkd_size_ole)) == -1) {
+        mdb_free_catalog(mdb);
+        goto cleanup;
+    }
 	col_props = g_ptr_array_index(table->columns, i-1);
 
 	mdb_rewind_table(table);
@@ -133,7 +142,9 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	}
 	//mdb_dump_catalog(mdb, MDB_TABLE);
  
-	mdb_free_tabledef(table);
+cleanup:
+    if (table)
+        mdb_free_tabledef(table);
 
 	return mdb->catalog;
 }
