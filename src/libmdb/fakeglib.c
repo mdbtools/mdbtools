@@ -92,7 +92,7 @@ int vasprintf(char **ret, const char *format, va_list ap) {
         return -1;
     if ((result = malloc(len+1)) == NULL)
         return -1;
-    if ((retval = _vsprintf_s(result, len+1, format, ap)) == -1) {
+    if ((retval = vsprintf_s(result, len+1, format, ap)) == -1) {
         free(result);
         return -1;
     }

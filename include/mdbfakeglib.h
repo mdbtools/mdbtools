@@ -96,7 +96,11 @@ typedef struct GOptionContext {
 #define g_free free
 #define g_realloc realloc
 
+#ifdef _WIN32
+#define g_strdup _strdup
+#else
 #define g_strdup strdup
+#endif
 
 #define	G_STR_DELIMITERS "_-|> <."
 
