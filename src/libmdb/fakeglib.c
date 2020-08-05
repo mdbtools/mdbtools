@@ -83,7 +83,7 @@ char *g_strconcat(const char *first, ...) {
     return ret;
 }
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 int vasprintf(char **ret, const char *format, va_list ap) {
     int len;
     int retval;
