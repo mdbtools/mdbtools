@@ -146,7 +146,7 @@ cleanup:
     if (table)
         mdb_free_tabledef(table);
 
-	return mdb->catalog;
+    return mdb->catalog;
 }
 
 
