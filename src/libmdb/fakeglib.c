@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include <getopt.h>
 
 /* string functions */
@@ -101,12 +102,17 @@ int vasprintf(char **ret, const char *format, va_list ap) {
 }
 #endif
 
+char *g_strdup(const char *input) {
+    size_t len = strlen(input);
+    return g_memdup(input, len+1);
+}
+
 char *g_strdup_printf(const char *format, ...) {
     char *ret = NULL;
     va_list argp;
 
     va_start(argp, format);
-#ifdef ___CYGWIN__
+#ifdef __CYGWIN__
     size_t len = 0;
     vasnprintf(&ret, &len, format, argp);
 #else

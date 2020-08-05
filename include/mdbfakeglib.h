@@ -4,7 +4,6 @@
 #include <time.h>
 #include <locale.h>
 #include <inttypes.h>
-#include <string.h>
 #include <strings.h>
 
 // for ntohl
@@ -96,12 +95,6 @@ typedef struct GOptionContext {
 #define g_free free
 #define g_realloc realloc
 
-#if defined _WIN32
-#define g_strdup _strdup
-#else
-#define g_strdup strdup
-#endif
-
 #define	G_STR_DELIMITERS "_-|> <."
 
 #define g_ptr_array_index(array, i) \
@@ -125,6 +118,7 @@ int g_str_equal(const void *str1, const void *str2);
 char **g_strsplit(const char *haystack, const char *needle, int something);
 void g_strfreev(char **dir);
 char *g_strconcat(const char *first, ...);
+char *g_strdup(const char *src);
 char *g_strdup_printf(const char *format, ...);
 gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter);
 
