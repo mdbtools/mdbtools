@@ -2,6 +2,9 @@ BUILT_SOURCES = parser.h
 AM_YFLAGS = -d
 lib_LTLIBRARIES	=	libmdbsql.la
 libmdbsql_la_SOURCES=	mdbsql.c parser.y lexer.l 
+if !HAVE_GLIB
+libmdbsql_la_SOURCES += fakeglib.c
+endif
 libmdbsql_la_LDFLAGS = -version-info 2:0:0 -export-symbols-regex '^mdb_sql_'
 CLEANFILES = parser.c parser.h lexer.c
 AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
