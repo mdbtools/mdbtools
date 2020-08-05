@@ -46,7 +46,11 @@ AC_MSG_RESULT( no - SQL engine disable);
 sql=false
 fi
 
-if ! $YACC -V >/dev/null 2>&1; then
+if $YACC -V >/dev/null 2>&1; then
+    if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-conflicts-sr"
+    fi
+else
 sql=false
 fi
 
