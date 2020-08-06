@@ -140,9 +140,9 @@ int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
 		mdb_get_int16(mdb->pg_buf, rco + row*2) & OFFSET_MASK;
 	*len = next_start - (*start & OFFSET_MASK);
 
-    if ((*start & OFFSET_MASK) >= mdb->fmt->pg_size ||
-            next_start > mdb->fmt->pg_size)
-        return -1;
+	if ((*start & OFFSET_MASK) >= mdb->fmt->pg_size ||
+			next_start > mdb->fmt->pg_size)
+		return -1;
 
 	return 0;
 }
@@ -304,8 +304,8 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 
 	num_fields = mdb_crack_row(table, row_start, row_start + row_size - 1,
 		fields);
-    if (num_fields < 0)
-        return 0;
+	if (num_fields < 0)
+		return 0;
 	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
 	
 #if MDB_DEBUG
