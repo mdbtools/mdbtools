@@ -859,7 +859,7 @@ mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32
 		idx_sz = mdb_col_fixed_size(col);
 		/* handle compressed indexes, single key indexes only? */
 		if (idx_sz<0) idx_sz = ipg->len - (ipg->start_pos==1?5:4); // Length from Index - the 4 trailing bytes (data page/row), Skip flags on first page
-		compress_bytes = *(unsigned short*)&mdb->pg_buf[IS_JET3(mdb)?0x14:0x18];
+		compress_bytes = mdb_get_int16(mdb->pg_buf, IS_JET3(mdb)?0x14:0x18);
 		if (idx->num_keys==1 && idx_sz>0 && compress_bytes > 1 && ipg->start_pos>1 /*ipg->len - 4 < idx_sz*/) {
 			//printf("short index found\n");
 			//mdb_buffer_dump(ipg->cache_value, 0, idx_sz);
