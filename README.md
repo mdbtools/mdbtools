@@ -51,69 +51,24 @@ Builds on libmdb to provide a SQL engine (aka Jet)
 
 Provids command line utilities, including:
 
-### mdb-ver
-
-Prints the version (JET 3 or 4) of an mdb file.
-
-### mdb-schema
-
-Prints DDL for the specified table.
-
-### mdb-export
-
-Export table to CSV format.
-
-### mdb-tables
-
-A simple dump of table names to be used with shell scripts.
-
-### mdb-count
-
-A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines.
-
-### mdb-header
-
-Generates a C header to be used in exporting mdb data to a C prog.
-
-### mdb-parsecsv 
-
-Generates a C program given a CSV file made with mdb-export.
-
-### mdb-sql
-
-A simple SQL engine (also used by ODBC and gmdb).
-
-### prcat
-
-Prints the catalog table from an mdb file.
-
-### prkkd
-
-Dump of information about design view data given the offset to it.
-
-### prtable
-
-Dump of a table definition.
-
-### prdata
-
-Dump of the data given a table name.
-
-### prole
-
-Dump of ole columns given a table name and sargs.
-
-## odbc
-
-An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use MDB files with PHP for example.
-
-## gmdb2
-
-The Gnome MDB File Viewer and debugger. Still alpha, but making great progress.
-
-## src/extras/mdb-hexdump
-
-Simple hex dump utility that I've been using to look at mdb files.
+| Command | Description |
+| ------- | ----------- |
+| mdb-ver | Prints the version (JET 3 or 4) of an mdb file. |
+| mdb-schema | Prints DDL for the specified table. |
+| mdb-export | Export table to CSV format. |
+| mdb-tables | A simple dump of table names to be used with shell scripts. |
+| mdb-count | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
+| mdb-header | Generates a C header to be used in exporting mdb data to a C prog. |
+| mdb-parsecsv | Generates a C program given a CSV file made with mdb-export. |
+| mdb-sql | A simple SQL engine (also used by ODBC and gmdb). |
+| prcat | Prints the catalog table from an mdb file. |
+| prkkd | Dump of information about design view data given the offset to it. |
+| prtable | Dump of a table definition. |
+| prdata | Dump of the data given a table name. |
+| prole | Dump of ole columns given a table name and sargs. |
+| odbc | An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use MDB files with PHP for example. |
+| gmdb2 | The Gnome MDB File Viewer and debugger. Still alpha. |
+| mdb-hexdump | (in src/extras) Simple hex dump utility that I've been using to look at mdb files. |
 
 # License
 
@@ -150,7 +105,7 @@ If you want to generate the html version of the docbook, you'll need
 Last version is available at https://github.com/evanmiller/mdbtools
 
 ```bash
-$ autoreconf -i -f
+$ autoreconf -i -f -Wno-portability
 ```
 
 If you want to build the html version of the docbook documentation, you need to
@@ -168,6 +123,13 @@ OR for a complete install (requires bison, flex, and unixODBC):
 ```bash
 $ ./configure --with-unixodbc=/usr/local
 ```
+
+By default, MDB Tools is linked against the copy of
+[GLib](https://developer.gnome.org/glib/) returned by pkg-config. You can
+point to a different GLib installation using the `GLIB_CFLAGS` and `GLIB_LIBS`
+enivornment variables. Or, you can disable GLib entirely with the
+`--disable-glib` flag, in which case MDB Tools will use an internal
+implementation of GLib's functions.
 
 configure can be passed any of the following flags to turn on other 
 capabilities.  Note that the options `--with-unixodbc` and `--with-iodbc` are

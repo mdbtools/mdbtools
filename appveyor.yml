@@ -22,14 +22,12 @@ build_script:
       if ($env:TOOLCHAIN -eq "msys2")
       {
         $env:MSYSTEM="MINGW64"
-        C:\msys64\usr\bin\bash -l -c "pacman -S --noconfirm mingw-w64-x86_64-glib2"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && autoreconf -i -f -Wno-portability"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && make"
       }
       else
       {
-        C:\cygwin64\setup-x86_64.exe -qP libglib2.0-devel
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f -Wno-portability"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && make"

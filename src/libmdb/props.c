@@ -176,16 +176,16 @@ mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name) {
 /*
  * That function takes a raw KKD/MR2 binary buffer,
  * typically read from LvProp in table MSysbjects
- * and returns a GArray of MdbProps*
+ * and returns a GPtrArray of MdbProps*
  */
-GArray*
+GPtrArray*
 mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 	guint32 record_len;
 	guint16 record_type;
 	size_t pos;
 	GPtrArray *names = NULL;
 	MdbProperties *props;
-	GArray *result;
+	GPtrArray *result;
 
 #if MDB_DEBUG
 	mdb_buffer_dump(buffer, 0, len);
@@ -198,7 +198,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 		return NULL;
 	}
 
-	result = g_array_new(0, 0, sizeof(MdbProperties*));
+	result = g_ptr_array_new();
 
 	pos = 4;
 	while (pos < len) {
@@ -219,7 +219,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 					break;
 				}
 				props = mdb_read_props(mdb, names, (char*)buffer+pos+6, record_len - 6);
-				g_array_append_val(result, props);
+				g_ptr_array_add(result, props);
 				//mdb_dump_props(props, stderr, 1);
 				break;
 			default:

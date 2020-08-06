@@ -108,7 +108,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	if (entry->props)
 		for (i=0; i<entry->props->len; ++i) {
-			MdbProperties *props = g_array_index(entry->props, MdbProperties*, i);
+			MdbProperties *props = g_ptr_array_index(entry->props, i);
 			if (!props->name)
 				table->props = props;
 		}
@@ -222,7 +222,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	unsigned int i, j;
 	int cur_pos;
 	size_t name_sz;
-	GArray *allprops;
+	GPtrArray *allprops;
 	
 	table->columns = g_ptr_array_new();
 
@@ -315,8 +315,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		for (i=0;i<table->num_cols;i++) {
 			pcol = g_ptr_array_index(table->columns, i);
 			for (j=0; j<allprops->len; ++j) {
-				MdbProperties *props = g_array_index(allprops, MdbProperties*, j);
-				if (props->name && pcol->name && !strcmp(props->name, pcol->name)) {
+				MdbProperties *props = g_ptr_array_index(allprops, j);
+				if (props->name && !strcmp(props->name, pcol->name)) {
 					pcol->props = props;
 					break;
 				}

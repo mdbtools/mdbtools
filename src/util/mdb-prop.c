@@ -91,12 +91,12 @@ main(int argc, char **argv)
 }
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 {
-	GArray *aprops = mdb_kkd_to_props(mdb, kkd, len);
+	GPtrArray *aprops = mdb_kkd_to_props(mdb, kkd, len);
 	int i;
 	if (!aprops)
 		return;
 	for (i=0; i<aprops->len; ++i) {
-		MdbProperties *props = g_array_index(aprops, MdbProperties*, i);
+		MdbProperties *props = g_ptr_array_index(aprops, i);
 		mdb_dump_props(props, stdout, 1);
 	}
 }

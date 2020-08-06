@@ -17,7 +17,7 @@ before_script:
   - autoreconf -i -f -Wno-portability
 
 script:
-  - ./configure --disable-man --disable-silent-rules
+  - ./configure --disable-man --disable-silent-rules --disable-glib
   - make
   - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-array test/data/nwind.mdb "Customers"

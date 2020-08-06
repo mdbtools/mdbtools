@@ -184,7 +184,7 @@ enum {
 	MDB_BACKEND_SQLITE,
 };
 
-static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data);
+static void mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
 static gchar*
 quote_generic(const gchar *value, gchar quote_char, gchar escape_char) {
@@ -451,14 +451,13 @@ mdb_remove_backends())
 void
 _mdb_remove_backends()
 {
-	g_hash_table_foreach_remove(mdb_backends, mdb_drop_backend, NULL);
+	g_hash_table_foreach(mdb_backends, mdb_drop_backend, NULL);
 	g_hash_table_destroy(mdb_backends);
 }
-static gboolean mdb_drop_backend(gpointer key, gpointer value, gpointer data)
+static void mdb_drop_backend(gpointer key, gpointer value, gpointer data)
 {
 	MdbBackend *backend = (MdbBackend *)value;
 	g_free (backend);
-	return TRUE;
 }
 
 /**
