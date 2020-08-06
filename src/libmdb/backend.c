@@ -131,7 +131,7 @@ static MdbBackendType mdb_postgres_serial_type =
 
 /*    MySQL data types */
 static MdbBackendType mdb_mysql_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("Text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
 		MdbBackendType_STRUCT_ELEMENT("boolean", 0, 0, 0),
 		MdbBackendType_STRUCT_ELEMENT("tinyint", 0, 0, 0),
 		MdbBackendType_STRUCT_ELEMENT("smallint", 0, 0, 0),
@@ -143,9 +143,9 @@ static MdbBackendType mdb_mysql_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
 		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
 		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
 		MdbBackendType_STRUCT_ELEMENT("blob",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
+		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
 		MdbBackendType_STRUCT_ELEMENT("char(38)",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
 };
