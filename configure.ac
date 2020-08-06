@@ -152,13 +152,22 @@ pkg-config is required.
 See pkg-config.freedesktop.org])
 fi
 
+dnl See if GLib is present and wanted
+AC_ARG_ENABLE(glib,
+    AS_HELP_STRING([--disable-glib], [do not link with GLib]),
+        [enable_glib=$enableval], [enable_glib=yes])
 
-dnl check for glib/gtk/gnome
-PKG_CHECK_MODULES([GLIB], [glib-2.0], AM_CONDITIONAL([HAVE_GLIB], true), AM_CONDITIONAL([HAVE_GLIB], false))
-if test "x$HAVE_GLIB" = "xtrue"; then
-    GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
+if test "$enable_glib" = "yes"; then
+    PKG_CHECK_MODULES([GLIB], [glib-2.0], HAVE_GLIB=true, HAVE_GLIB=false)
+    if test "x$HAVE_GLIB" = "xtrue"; then
+        GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
+    else
+        enable_glib=no
+    fi
 fi
+AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
+dnl check for gtk/gnome
 PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
 
 GNOME_DOC_INIT
@@ -282,6 +291,8 @@ if test x$sql = xtrue; then summary=${bold_green}enabled; else summary=${bold_re
 AC_MSG_NOTICE([   SQL          : ${summary}${reset}])
 if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   ODBC         : ${summary}${reset}])
+if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   GLib         : ${summary}${reset}])
 if test x$build_gmdb2 = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   UI           : ${summary}${reset}])
 if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi

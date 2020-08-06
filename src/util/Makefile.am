@@ -9,7 +9,7 @@ mdb_sql_SOURCES = mdb-sql.c
 mdb_ver_SOURCES = mdb-ver.c
 mdb_import_SOURCES = mdb-import.c
 updrow_SOURCES = updrow.c
-if !HAVE_GLIB
+if FAKE_GLIB
 mdb_export_SOURCES += ../libmdb/fakeglib.c
 mdb_schema_SOURCES += ../libmdb/fakeglib.c
 mdb_tables_SOURCES += ../libmdb/fakeglib.c
