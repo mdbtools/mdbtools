@@ -111,20 +111,21 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
  * @off: Pointer for returning an offset to the row
  * @len: Pointer for returning the length of the row
  * 
- * Returns: 0 on success.  1 on failure.
+ * Returns: 0 on success. -1 on failure.
  */
 int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len)
 {
 	unsigned int pg = pg_row >> 8;
 	unsigned int row = pg_row & 0xff;
+    int result = 0;
 
 	if (mdb_read_alt_pg(mdb, pg) != mdb->fmt->pg_size)
-		return 1;
+		return -1;
 	mdb_swap_pgbuf(mdb);
-	mdb_find_row(mdb, row, off, len);
+	result = mdb_find_row(mdb, row, off, len);
 	mdb_swap_pgbuf(mdb);
 	*buf = mdb->alt_pg_buf;
-	return 0;
+	return result;
 }
 
 int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
@@ -138,6 +139,11 @@ int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
 	next_start = (row == 0) ? mdb->fmt->pg_size :
 		mdb_get_int16(mdb->pg_buf, rco + row*2) & OFFSET_MASK;
 	*len = next_start - (*start & OFFSET_MASK);
+
+    if ((*start & OFFSET_MASK) >= mdb->fmt->pg_size ||
+            next_start > mdb->fmt->pg_size)
+        return -1;
+
 	return 0;
 }
 
@@ -277,7 +283,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 
 	if (mdb_find_row(mdb, row, &row_start, &row_size)) {
-		fprintf(stderr, "warning: mdb_find_row failed.");
+		fprintf(stderr, "warning: mdb_find_row failed.\n");
 		return 0;
 	}
 
@@ -298,6 +304,8 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 
 	num_fields = mdb_crack_row(table, row_start, row_start + row_size - 1,
 		fields);
+    if (num_fields < 0)
+        return 0;
 	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
 	
 #if MDB_DEBUG
