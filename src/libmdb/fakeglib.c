@@ -10,10 +10,6 @@
 #include <getopt.h>
 #include <errno.h>
 
-#if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
-extern char *program_invocation_short_name;
-#endif
-
 /* string functions */
 
 void *g_memdup(const void *src, size_t len) {
