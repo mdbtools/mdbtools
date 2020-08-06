@@ -117,8 +117,8 @@ mdb_crack_row4(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
 {
 	unsigned int i;
 
-    if (bitmask_sz + 3 + row_var_cols*2 + 2 > row_end)
-        return 0;
+	if (bitmask_sz + 3 + row_var_cols*2 + 2 > row_end)
+		return 0;
 
 	for (i=0; i<row_var_cols+1; i++) {
 		var_col_offsets[i] = mdb_get_int16(mdb->pg_buf,
@@ -141,8 +141,8 @@ mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
 	if ((col_ptr-row_start-row_var_cols)/256 < num_jumps)
 		num_jumps--;
 
-    if (bitmask_sz + num_jumps + 1 > row_end)
-        return 0;
+	if (bitmask_sz + num_jumps + 1 > row_end)
+		return 0;
 
 	jumps_used = 0;
 	for (i=0; i<row_var_cols+1; i++) {
