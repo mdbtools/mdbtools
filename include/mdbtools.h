@@ -573,7 +573,7 @@ extern int mdb_update_row(MdbTableDef *table);
 extern void *mdb_new_data_pg(MdbCatalogEntry *entry);
 
 /* map.c */
-extern guint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
+extern gint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
 extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
 
 /* props.c */

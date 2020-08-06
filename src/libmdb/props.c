@@ -117,7 +117,11 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		record_len = mdb_get_int16(kkd, pos);
 		dtype = kkd[pos + 3];
 		elem = mdb_get_int16(kkd, pos + 4);
+		if (elem < 0 || elem >= names->len)
+			break;
 		dsize = mdb_get_int16(kkd, pos + 6);
+		if (dsize < 0 || pos + 8 + dsize > len)
+			break;
 		value = g_malloc(dsize + 1);
 		strncpy(value, &kkd[pos + 8], dsize);
 		value[dsize] = '\0';

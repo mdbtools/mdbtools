@@ -142,6 +142,7 @@ int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
 	*len = next_start - (*start & OFFSET_MASK);
 
 	if ((*start & OFFSET_MASK) >= mdb->fmt->pg_size ||
+			(*start & OFFSET_MASK) > next_start ||
 			next_start > mdb->fmt->pg_size)
 		return -1;
 
@@ -527,6 +528,8 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 		&buf, &row_start, &len)) {
 		return 0;
 	}
+	if (len < 4)
+		return 0;
 	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 	if (col->bind_ptr)
