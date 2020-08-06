@@ -1,5 +1,5 @@
-#ifndef _glib_shim_h_
-#define _glib_shim_h_
+#ifndef _mdbfakeglib_h_
+#define _mdbfakeglib_h_
 
 #include <time.h>
 #include <locale.h>

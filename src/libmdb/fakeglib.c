@@ -1,13 +1,14 @@
 
+#define _GNU_SOURCE
 #include "mdbfakeglib.h"
 
-#define _GNU_SOURCE /* vasprintf */
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
+#include <errno.h>
 
 /* string functions */
 
