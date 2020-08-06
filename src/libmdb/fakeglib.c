@@ -1,6 +1,7 @@
 
 #include "mdbfakeglib.h"
 
+#define _GNU_SOURCE /* vasprintf */
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>
