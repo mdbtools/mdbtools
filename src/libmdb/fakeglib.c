@@ -10,6 +10,10 @@
 #include <getopt.h>
 #include <errno.h>
 
+#if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
+extern char *program_invocation_short_name;
+#endif
+
 /* string functions */
 
 void *g_memdup(const void *src, size_t len) {
@@ -118,7 +122,8 @@ char *g_strdup_printf(const char *format, ...) {
     size_t len = 0;
     ret = vasnprintf(ret, &len, format, argp);
 #else
-    (void)vasprintf(&ret, format, argp);
+    int gcc_is_dumb = vasprintf(&ret, format, argp);
+    (void)gcc_is_dumb;
 #endif
     va_end(argp);
 
@@ -281,8 +286,8 @@ gchar *g_option_context_get_help (GOptionContext *context,
         gboolean main_help, void *group) {
 #if defined(__APPLE__) || defined(__FreeBSD__)
     const char * appname = getprogname();
-#elif defined(_GNU_SOURCE)
-    const char * appname = program_invocation_name;
+#elif HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
+    const char * appname = program_invocation_short_name;
 #else
     const char * appname = "mdb-util";
 #endif

@@ -21,6 +21,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
 AC_CHECK_HEADERS(wordexp.h)
 AC_CHECK_LIB(mswstr, DBLCMapStringW)
+AC_CHECK_DECLS([program_invocation_short_name], [], [], [[#include <errno.h>]])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
