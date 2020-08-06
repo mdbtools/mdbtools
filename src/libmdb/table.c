@@ -99,6 +99,11 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
+    if (!table->usage_map || !table->free_usage_map) {
+        mdb_free_tabledef(table);
+        return NULL;
+    }
+
 	table->first_data_pg = mdb_get_int16(pg_buf, fmt->tab_first_dpg_offset);
 
 	if (entry->props)
