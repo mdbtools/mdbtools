@@ -85,7 +85,10 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	/* grab a copy of the usage map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_usage_map_offset);
-	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
+	if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz))) {
+		mdb_free_tabledef(table);
+		return NULL;
+	}
 	table->usage_map = g_memdup((char*)buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		mdb_buffer_dump(buf, row_start, table->map_sz);
@@ -94,15 +97,13 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	/* grab a copy of the free space page map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_free_map_offset);
-	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz));
+	if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz))) {
+		mdb_free_tabledef(table);
+		return NULL;
+	}
 	table->free_usage_map = g_memdup((char*)buf + row_start, table->freemap_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
-
-    if (!table->usage_map || !table->free_usage_map) {
-        mdb_free_tabledef(table);
-        return NULL;
-    }
 
 	table->first_data_pg = mdb_get_int16(pg_buf, fmt->tab_first_dpg_offset);
 
