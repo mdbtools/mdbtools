@@ -65,7 +65,7 @@ AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
-CFLAGS="$CFLAGS -Wall -Wstrict-prototypes"
+CFLAGS="$CFLAGS -Wall -Wstrict-prototypes -Werror"
 AS_CASE([$host],
         [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 AS_CASE([$host],
