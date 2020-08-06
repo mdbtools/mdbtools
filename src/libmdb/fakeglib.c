@@ -118,7 +118,7 @@ char *g_strdup_printf(const char *format, ...) {
     size_t len = 0;
     ret = vasnprintf(ret, &len, format, argp);
 #else
-    vasprintf(&ret, format, argp);
+    (void)vasprintf(&ret, format, argp);
 #endif
     va_end(argp);
 
