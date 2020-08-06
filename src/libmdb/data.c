@@ -124,6 +124,7 @@ int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *le
 	mdb_swap_pgbuf(mdb);
 	result = mdb_find_row(mdb, row, off, len);
 	mdb_swap_pgbuf(mdb);
+    *off &= OFFSET_MASK;
 	*buf = mdb->alt_pg_buf;
 	return result;
 }
