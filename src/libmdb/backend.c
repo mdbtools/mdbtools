@@ -122,7 +122,7 @@ static MdbBackendType mdb_postgres_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0d",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0e",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("UUID",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x10",0,0,0),
+		MdbBackendType_STRUCT_ELEMENT("NUMERIC",1,1,0),
 };
 static MdbBackendType mdb_postgres_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
