@@ -35,6 +35,7 @@ static iconv_t iconv_in,iconv_out;
 #endif //ENABLE_ODBC_W
 
 static SQLSMALLINT _odbc_get_client_type(MdbColumn *col);
+static const char * _odbc_get_client_type_name(MdbColumn *col);
 static int _odbc_fix_literals(struct _hstmt *stmt);
 //static int _odbc_get_server_type(int clt_type);
 static int _odbc_get_string_size(int size, SQLCHAR *str);
@@ -930,6 +931,13 @@ static SQLRETURN SQL_API _SQLColAttributes(
 			//*pfDesc = SQL_CHAR;
 			*pfDesc = _odbc_get_client_type(col);
 			break;
+		case SQL_COLUMN_TYPE_NAME:
+		{
+			const char *type_name = _odbc_get_client_type_name(col);
+			if (type_name)
+				snprintf(rgbDesc, cbDescMax, "%s", type_name);
+			break;
+		}
 		case SQL_COLUMN_LENGTH:
 			break;
 		case SQL_COLUMN_DISPLAY_SIZE: /* =SQL_DESC_DISPLAY_SIZE */
@@ -2484,3 +2492,44 @@ static SQLSMALLINT _odbc_get_client_type(MdbColumn *col)
 	}
 	return -1;
 }
+
+static const char * _odbc_get_client_type_name(MdbColumn *col)
+{
+	switch (col->col_type) {
+		case MDB_BOOL:
+			return "BOOL";
+		case MDB_BYTE:
+			return "BYTE";
+		case MDB_INT:
+			return "INT";
+		case MDB_LONGINT:
+			return "LONGINT";
+		case MDB_MONEY:
+			return "MONEY";
+		case MDB_FLOAT:
+			return "FLOAT";
+		case MDB_DOUBLE:
+			return "DOUBLE";
+		case MDB_DATETIME:
+			return "DATETIME";
+		case MDB_TEXT:
+			return "TEXT";
+		case MDB_BINARY:
+			return "BINARY";
+		case MDB_MEMO:
+			return "MEMO";
+		case MDB_OLE:
+			return "OLE";
+		case MDB_REPID:
+			return "REPID";
+		case MDB_NUMERIC:
+			return "NUMERIC";
+		case MDB_COMPLEX:
+			return "COMPLEX";
+		default:
+			// fprintf(stderr,"Unknown type %d\n",srv_type);
+			break;
+	}
+	return NULL;
+}
+
