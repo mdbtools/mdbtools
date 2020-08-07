@@ -862,7 +862,6 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			fputs(", \n", outfile);
 		else
 			fputs("\n", outfile);
-		fprintf(outfile, "# column %s type %d\n", col->name, col->col_type);
 	} /* for */
 
 	fputs(");\n", outfile);
