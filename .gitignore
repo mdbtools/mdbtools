@@ -7,7 +7,8 @@
 .idea/
 aclocal.m4
 autom4te.cache/
-build-aux/
+build-aux/*
+!build-aux/config.rpath
 m4/
 !m4/ccalias.m4
 !m4/iconv.m4
