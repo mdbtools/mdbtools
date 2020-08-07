@@ -749,7 +749,7 @@ static SQLRETURN SQL_API _SQLDescribeCol(
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
 {
-	int namelen, i;
+	int i;
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 	MdbSQL *sql = stmt->sql;
 	MdbSQLColumn *sqlcol;
@@ -777,23 +777,14 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 	}
 
 	ret = SQL_SUCCESS;
-	namelen = strlen(sqlcol->name);
 	if (pcbColName)
-		*pcbColName=namelen;
+		*pcbColName=strlen(sqlcol->name);
 	if (szColName) {
 		if (cbColNameMax < 0) {
 			strcpy(sqlState, "HY090"); // Invalid string or buffer length
 			return SQL_ERROR;
 		}
-		if (namelen + 1 < cbColNameMax) {
-			// Including \0
-			strcpy((char*)szColName, sqlcol->name);
-		} else {
-			if (cbColNameMax > 1) {
-				strncpy((char*)szColName, sqlcol->name, cbColNameMax-1);
-				szColName[cbColNameMax-1] = '\0';
-			}
-			// So there is no \0 if cbColNameMax was 0
+		if (snprintf(szColName, cbColNameMax, "%s", sqlcol->name) + 1 > cbColNameMax) {
 			strcpy(sqlState, "01004"); // String data, right truncated
 			ret = SQL_SUCCESS_WITH_INFO;
 		}
@@ -865,7 +856,7 @@ static SQLRETURN SQL_API _SQLColAttributes(
     SQLSMALLINT       *pcbDesc,
     SQLLEN            *pfDesc)
 {
-	int namelen, i;
+	int i;
 	struct _hstmt *stmt;
 	MdbSQL *sql;
 	MdbSQLColumn *sqlcol;
@@ -914,15 +905,7 @@ static SQLRETURN SQL_API _SQLColAttributes(
 				strcpy(sqlState, "HY090"); // Invalid string or buffer length
 				return SQL_ERROR;
 			}
-			namelen = strlen(sqlcol->name);
-			if (namelen + 1 < cbDescMax) {
-				strcpy(rgbDesc, sqlcol->name);
-			} else {
-				if (cbDescMax > 1) {
-					strncpy(rgbDesc, sqlcol->name, cbDescMax-1);
-					((char*)rgbDesc)[cbDescMax-1] = '\0';
-				}
-				// So there is no \0 if cbDescMax was 0
+			if (snprintf(rgbDesc, cbDescMax, "%s", sqlcol->name) + 1 > cbDescMax) {
 				strcpy(sqlState, "01004"); // String data, right truncated
 				ret = SQL_SUCCESS_WITH_INFO;
 			}
