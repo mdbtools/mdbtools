@@ -1,7 +1,8 @@
 [![Build Status](https://travis-ci.org/evanmiller/mdbtools.svg?branch=master)](https://travis-ci.org/evanmiller/mdbtools)
 [![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/mdbtools/branch/master)
 
-MDB Tools, where open source goes to die.
+Yet another attempt to resuscitate MDB Tools – the Access-accessing C library
+and command-line suite.
 
 This is a fork of a [fork](https://github.com/cyberemissary/mdbtools) of a
 [fork](https://github.com/brjohnsn/mdbtools) of a
@@ -18,11 +19,11 @@ upstream. In the meantime you are welcome to use this code base:
 
 https://github.com/evanmiller/mdbtools
 
-Intended focus areas:
+Intended focus areas of this fork:
 
-* Security / fuzz testing
-* Continuous integration with Travis and AppVeyor
-* Removing dependencies
+- [ ] Security / fuzz testing
+- [x] Removing GLib dependency
+- [x] Continuous integration with Travis and AppVeyor
 
 A re-formatted and updated README file follows.
 
@@ -49,26 +50,32 @@ Builds on libmdb to provide a SQL engine (aka Jet)
 
 ## utils
 
-Provids command line utilities, including:
+Provides command line utilities, including:
 
 | Command | Description |
 | ------- | ----------- |
-| mdb-ver | Prints the version (JET 3 or 4) of an mdb file. |
-| mdb-schema | Prints DDL for the specified table. |
-| mdb-export | Export table to CSV format. |
-| mdb-tables | A simple dump of table names to be used with shell scripts. |
-| mdb-count | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
-| mdb-header | Generates a C header to be used in exporting mdb data to a C prog. |
-| mdb-parsecsv | Generates a C program given a CSV file made with mdb-export. |
-| mdb-sql | A simple SQL engine (also used by ODBC and gmdb). |
-| prcat | Prints the catalog table from an mdb file. |
-| prkkd | Dump of information about design view data given the offset to it. |
-| prtable | Dump of a table definition. |
-| prdata | Dump of the data given a table name. |
-| prole | Dump of ole columns given a table name and sargs. |
-| odbc | An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use MDB files with PHP for example. |
-| gmdb2 | The Gnome MDB File Viewer and debugger. Still alpha. |
-| mdb-hexdump | (in src/extras) Simple hex dump utility that I've been using to look at mdb files. |
+| `mdb-ver` | Prints the version (JET 3 or 4) of an mdb file. |
+| `mdb-schema` | Prints DDL for the specified table. |
+| `mdb-export` | Export table to CSV format. |
+| `mdb-tables` | A simple dump of table names to be used with shell scripts. |
+| `mdb-count` | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
+| `mdb-header` | Generates a C header to be used in exporting mdb data to a C prog. |
+| `mdb-parsecsv` | Generates a C program given a CSV file made with mdb-export. |
+| `mdb-sql` | A simple SQL engine (also used by ODBC and gmdb). |
+| `prcat` | Prints the catalog table from an mdb file. |
+| `prkkd` | Dump of information about design view data given the offset to it. |
+| `prtable` | Dump of a table definition. |
+| `prdata` | Dump of the data given a table name. |
+| `prole` | Dump of ole columns given a table name and sargs. |
+| `mdb-hexdump` | (in src/extras) Simple hex dump utility that I've been using to look at mdb files. |
+
+## odbc
+
+An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use MDB files with PHP for example.
+
+## gmdb2
+
+The Gnome MDB File Viewer and debugger. Still alpha.
 
 # License
 
