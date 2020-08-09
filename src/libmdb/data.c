@@ -288,6 +288,10 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		fprintf(stderr, "warning: mdb_find_row failed.\n");
 		return 0;
 	}
+    if (row_size == 0) {
+		fprintf(stderr, "warning: row_size = 0.\n");
+		return 0;
+    }
 
 	delflag = lookupflag = 0;
 	if (row_start & 0x8000) lookupflag++;
@@ -304,8 +308,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 	}
 
-	num_fields = mdb_crack_row(table, row_start, row_start + row_size - 1,
-		fields);
+	num_fields = mdb_crack_row(table, row_start, row_size, fields);
 	if (num_fields < 0)
 		return 0;
 	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
@@ -371,7 +374,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 		}
 
 		table->cur_phys_pg = next_pg;
-		if (mdb->pg_buf[0]==MDB_PAGE_DATA && mdb_get_int32(mdb->pg_buf, 4)==entry->table_pg)
+		if (mdb->pg_buf[0]==MDB_PAGE_DATA && mdb_get_int32(mdb->pg_buf, 4)==(long)entry->table_pg)
 			return table->cur_phys_pg;
 
 		/* On rare occasion, mdb_map_find_next will return a wrong page */
@@ -386,7 +389,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
-	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=entry->table_pg);
+	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=(long)entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
 	return table->cur_phys_pg;
 }
@@ -426,8 +429,7 @@ mdb_fetch_row(MdbTableDef *table)
 				fmt->row_count_offset);
 			if (table->cur_row >= rows) {
 				table->cur_row = 0;
-				table->cur_pg_num++;
-				if (table->cur_pg_num > pages->len)
+				if (++table->cur_pg_num > (unsigned int)pages->len)
 					return 0;
 			}
 			memcpy(mdb->pg_buf,
@@ -539,7 +541,7 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	return len - 4;
 }
 size_t 
-mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
+mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 {
 	guint32 ole_len;
 	void *buf;

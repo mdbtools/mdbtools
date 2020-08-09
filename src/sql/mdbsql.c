@@ -145,7 +145,7 @@ void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
 
 static void mdb_sql_free_columns(GPtrArray *columns)
 {
-	unsigned int i;
+	int i;
 	if (!columns) return;
 	for (i=0; i<columns->len; i++) {
 		MdbSQLColumn *c = (MdbSQLColumn *)g_ptr_array_index(columns, i);
@@ -156,7 +156,7 @@ static void mdb_sql_free_columns(GPtrArray *columns)
 }
 static void mdb_sql_free_tables(GPtrArray *tables)
 {
-	unsigned int i;
+	int i;
 	if (!tables) return;
 	for (i=0; i<tables->len; i++) {
 		MdbSQLTable *t = (MdbSQLTable *)g_ptr_array_index(tables, i);

@@ -47,7 +47,7 @@ void mdb_free_tabledef(MdbTableDef *table)
 {
 	if (!table) return;
 	if (table->is_temp_table) {
-		unsigned int i;
+		int i;
 		/* Temp table pages are being stored in memory */
 		for (i=0; i<table->temp_table_pages->len; i++)
 			g_free(g_ptr_array_index(table->temp_table_pages,i));
@@ -68,7 +68,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	MdbFormatConstants *fmt = mdb->fmt;
 	int row_start, pg_row;
 	void *buf, *pg_buf = mdb->pg_buf;
-	guint i;
+	int i;
 
 	mdb_read_pg(mdb, entry->table_pg);
 	if (mdb_get_byte(pg_buf, 0) != 0x02)  /* not a valid table def page */
@@ -173,7 +173,7 @@ read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
 		*cur_pos -= (mdb->fmt->pg_size - 8);
 	}
 	/* Copy pages into buffer */
-	while (*cur_pos + len >= mdb->fmt->pg_size) {
+	while (*cur_pos + len >= (size_t)mdb->fmt->pg_size) {
 		int piece_len = mdb->fmt->pg_size - *cur_pos;
 		if (_buf) {
 			memcpy(_buf, mdb->pg_buf + *cur_pos, piece_len);
@@ -198,7 +198,7 @@ void mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 }
 void mdb_free_columns(GPtrArray *columns)
 {
-	unsigned int i, j;
+	int i, j;
 	MdbColumn *col;
 
 	if (!columns) return;
@@ -220,7 +220,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *pcol;
 	unsigned char *col;
-	unsigned int i, j;
+	unsigned int i;
+    int j;
 	int cur_pos;
 	size_t name_sz;
 	GPtrArray *allprops;

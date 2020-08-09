@@ -19,22 +19,24 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
 
-void mdb_buffer_dump(const void* buf, int start, size_t len)
+void mdb_buffer_dump(const void* buf, off_t start, size_t len)
 {
 	char asc[20];
-	int j, k;
+	size_t j;
+    int k = 0;
 
 	memset(asc, 0, sizeof(asc));
 	k = 0;
-	for (j=start; j<start+len; j++) {
-		unsigned int c = ((const unsigned char *)(buf))[j];
+	for (j=0; j<len; j++) {
+		unsigned int c = ((const unsigned char *)(buf))[start+j];
 		if (k == 0) {
-			fprintf(stdout, "%04x  ", j);
+			fprintf(stdout, "%04" PRIu64 "x  ", (uint64_t)(start+j));
 		}
 		fprintf(stdout, "%02x ", (unsigned char)c);
 		asc[k] = isprint(c) ? c : '.';
@@ -48,11 +50,11 @@ void mdb_buffer_dump(const void* buf, int start, size_t len)
 			k = 0;
 		}
 	}
-	for (j=k; j<16; j++) {
-		fprintf(stdout, "   ");
-	}
 	if (k < 8) {
 		fprintf(stdout, " ");
+	}
+	for (; k<16; k++) {
+		fprintf(stdout, "   ");
 	}
 	fprintf(stdout, "  %s\n", asc);
 }

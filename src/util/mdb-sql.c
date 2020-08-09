@@ -291,7 +291,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	if (headers) {
 		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			if (strlen(sqlcol->name)>sqlcol->disp_size)
+			if (strlen(sqlcol->name)>(size_t)sqlcol->disp_size)
 				sqlcol->disp_size = strlen(sqlcol->name);
 			print_break(out, sqlcol->disp_size, !j);
 		}

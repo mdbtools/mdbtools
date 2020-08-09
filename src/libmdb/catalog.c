@@ -48,7 +48,7 @@ static char *type_name[] = {"Form",
 
 void mdb_free_catalog(MdbHandle *mdb)
 {
-	unsigned int i, j;
+	int i, j;
 	MdbCatalogEntry *entry;
 
 	if ((!mdb) || (!mdb->catalog)) return;
@@ -77,7 +77,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	char obj_flags[256];
 	char obj_props[MDB_BIND_SIZE];
 	int type;
-	unsigned int i;
+	int i;
 	MdbColumn *col_props;
 	int kkd_size_ole;
 

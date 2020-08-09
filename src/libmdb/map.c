@@ -108,7 +108,7 @@ mdb_map_find_next_freepage(MdbTableDef *table, int row_size)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
-	guint32 pgnum;
+	gint32 pgnum;
 	guint32 cur_pg = 0;
 	int free_space;
 

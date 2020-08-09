@@ -306,7 +306,7 @@ mdb_read_indices(MdbTableDef *table)
 		/* look for index number i */
 		for (j=0; j<table->num_idxs; ++j) {
 			pidx = g_ptr_array_index (table->indices, j);
-			if (pidx->index_type!=2 && pidx->index_num==i)
+			if (pidx->index_type!=2 && (unsigned int)pidx->index_num==i)
 				break;
 		}
 		if (j==table->num_idxs) {
@@ -1132,7 +1132,7 @@ mdb_index_scan_free(MdbTableDef *table)
 
 void mdb_free_indices(GPtrArray *indices)
 {
-	unsigned int i;
+	int i;
 
 	if (!indices) return;
 	for (i=0; i<indices->len; i++)

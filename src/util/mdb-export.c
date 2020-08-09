@@ -227,7 +227,7 @@ main(int argc, char **argv)
 	// TODO refactor this into functions
 	if (mdb->default_backend->capabilities & MDB_SHEXP_BULK_INSERT) {
 		//for efficiency do multi row insert on engines that support this
-		unsigned int counter = 0;
+		int counter = 0;
 		while (mdb_fetch_row(table)) {
 			if (counter % batch_size == 0) {
 				counter = 0; // reset to 0, prevent overflow on extremely large data sets.
