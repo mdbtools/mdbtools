@@ -444,161 +444,161 @@ extern MDB_DEPRECATED(void, mdb_init(void));
 extern MDB_DEPRECATED(void, mdb_exit(void));
 
 /* file.c */
-extern ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
-extern ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
-extern unsigned char mdb_get_byte(void *buf, int offset);
-extern int    mdb_get_int16(void *buf, int offset);
-extern long   mdb_get_int32(void *buf, int offset);
-extern long   mdb_get_int32_msb(void *buf, int offset);
-extern float  mdb_get_single(void *buf, int offset);
-extern double mdb_get_double(void *buf, int offset);
-extern unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset);
-extern int    mdb_pg_get_int16(MdbHandle *mdb, int offset);
-extern long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
-extern float  mdb_pg_get_single(MdbHandle *mdb, int offset);
-extern double mdb_pg_get_double(MdbHandle *mdb, int offset);
-extern MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
-extern void mdb_close(MdbHandle *mdb);
-extern MdbHandle *mdb_clone_handle(MdbHandle *mdb);
-extern void mdb_swap_pgbuf(MdbHandle *mdb);
+ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
+ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
+unsigned char mdb_get_byte(void *buf, int offset);
+int    mdb_get_int16(void *buf, int offset);
+long   mdb_get_int32(void *buf, int offset);
+long   mdb_get_int32_msb(void *buf, int offset);
+float  mdb_get_single(void *buf, int offset);
+double mdb_get_double(void *buf, int offset);
+unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset);
+int    mdb_pg_get_int16(MdbHandle *mdb, int offset);
+long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
+float  mdb_pg_get_single(MdbHandle *mdb, int offset);
+double mdb_pg_get_double(MdbHandle *mdb, int offset);
+MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
+void mdb_close(MdbHandle *mdb);
+MdbHandle *mdb_clone_handle(MdbHandle *mdb);
+void mdb_swap_pgbuf(MdbHandle *mdb);
 
 /* catalog.c */
-extern void mdb_free_catalog(MdbHandle *mdb);
-extern GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
+void mdb_free_catalog(MdbHandle *mdb);
+GPtrArray *mdb_read_catalog(MdbHandle *mdb, int obj_type);
 MdbCatalogEntry *mdb_get_catalogentry_by_name(MdbHandle *mdb, const gchar* name);
-extern void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
-extern char *mdb_get_objtype_string(int obj_type);
+void mdb_dump_catalog(MdbHandle *mdb, int obj_type);
+char *mdb_get_objtype_string(int obj_type);
 
 /* table.c */
-extern MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
-extern void mdb_free_tabledef(MdbTableDef *table);
-extern MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
-extern MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_type);
-extern void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
-extern void mdb_free_columns(GPtrArray *columns);
-extern GPtrArray *mdb_read_columns(MdbTableDef *table);
-extern void mdb_table_dump(MdbCatalogEntry *entry);
-extern guint8 read_pg_if_8(MdbHandle *mdb, int *cur_pos);
-extern guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
-extern guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
-extern void *read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len);
-extern int mdb_is_user_table(MdbCatalogEntry *entry);
-extern int mdb_is_system_table(MdbCatalogEntry *entry);
-extern const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
-extern const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
+MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry);
+void mdb_free_tabledef(MdbTableDef *table);
+MdbTableDef *mdb_read_table(MdbCatalogEntry *entry);
+MdbTableDef *mdb_read_table_by_name(MdbHandle *mdb, gchar *table_name, int obj_type);
+void mdb_append_column(GPtrArray *columns, MdbColumn *in_col);
+void mdb_free_columns(GPtrArray *columns);
+GPtrArray *mdb_read_columns(MdbTableDef *table);
+void mdb_table_dump(MdbCatalogEntry *entry);
+guint8 read_pg_if_8(MdbHandle *mdb, int *cur_pos);
+guint16 read_pg_if_16(MdbHandle *mdb, int *cur_pos);
+guint32 read_pg_if_32(MdbHandle *mdb, int *cur_pos);
+void *read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len);
+int mdb_is_user_table(MdbCatalogEntry *entry);
+int mdb_is_system_table(MdbCatalogEntry *entry);
+const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
+const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
 
 /* data.c */
-extern int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
-extern void mdb_data_dump(MdbTableDef *table);
-extern void mdb_date_to_tm(double td, struct tm *t);
-extern void mdb_tm_to_date(struct tm *t, double *td);
-extern void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
-extern int mdb_rewind_table(MdbTableDef *table);
-extern int mdb_fetch_row(MdbTableDef *table);
-extern int mdb_is_fixed_col(MdbColumn *col);
-extern char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
-extern int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
-extern int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
-extern int mdb_find_end_of_row(MdbHandle *mdb, int row);
-extern int mdb_col_fixed_size(MdbColumn *col);
-extern int mdb_col_disp_size(MdbColumn *col);
-extern size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
-extern size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size);
-extern void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
-extern void mdb_set_date_fmt(const char *);
-extern void mdb_set_boolean_fmt_words(void);
-extern int mdb_read_row(MdbTableDef *table, unsigned int row);
+int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
+void mdb_data_dump(MdbTableDef *table);
+void mdb_date_to_tm(double td, struct tm *t);
+void mdb_tm_to_date(struct tm *t, double *td);
+void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
+int mdb_rewind_table(MdbTableDef *table);
+int mdb_fetch_row(MdbTableDef *table);
+int mdb_is_fixed_col(MdbColumn *col);
+char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
+int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
+int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
+int mdb_find_end_of_row(MdbHandle *mdb, int row);
+int mdb_col_fixed_size(MdbColumn *col);
+int mdb_col_disp_size(MdbColumn *col);
+size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
+size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size);
+void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
+void mdb_set_date_fmt(const char *);
+void mdb_set_boolean_fmt_words(void);
+int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */
-extern void mdb_buffer_dump(const void *buf, int start, size_t len);
+void mdb_buffer_dump(const void *buf, off_t start, size_t len);
 
 /* backend.c */
-extern MDB_DEPRECATED(char*, mdb_get_coltype_string(MdbBackend *backend, int col_type));
-extern MDB_DEPRECATED(int, mdb_coltype_takes_length(MdbBackend *backend, int col_type));
-extern const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
-extern const char* mdb_get_colbacktype_string(const MdbColumn *col);
-extern int mdb_colbacktype_takes_length(const MdbColumn *col);
-extern MDB_DEPRECATED(void, mdb_init_backends(void));
-extern void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
-extern MDB_DEPRECATED(void, mdb_remove_backends(void));
-extern int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
-extern void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
+MDB_DEPRECATED(char*, mdb_get_coltype_string(MdbBackend *backend, int col_type));
+MDB_DEPRECATED(int, mdb_coltype_takes_length(MdbBackend *backend, int col_type));
+const MdbBackendType* mdb_get_colbacktype(const MdbColumn *col);
+const char* mdb_get_colbacktype_string(const MdbColumn *col);
+int mdb_colbacktype_takes_length(const MdbColumn *col);
+MDB_DEPRECATED(void, mdb_init_backends(void));
+void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*));
+MDB_DEPRECATED(void, mdb_remove_backends(void));
+int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
+void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 
 /* sargs.c */
-extern int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
-extern int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field);
-extern void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
-extern int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
-extern int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg);
-extern int mdb_test_string(MdbSargNode *node, char *s);
-extern int mdb_test_int(MdbSargNode *node, gint32 i);
-extern int mdb_add_sarg(MdbColumn *col, MdbSarg *in_sarg);
+int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
+int mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field);
+void mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data);
+int mdb_find_indexable_sargs(MdbSargNode *node, gpointer data);
+int mdb_add_sarg_by_name(MdbTableDef *table, char *colname, MdbSarg *in_sarg);
+int mdb_test_string(MdbSargNode *node, char *s);
+int mdb_test_int(MdbSargNode *node, gint32 i);
+int mdb_add_sarg(MdbColumn *col, MdbSarg *in_sarg);
 
 
 
 /* index.c */
-extern GPtrArray *mdb_read_indices(MdbTableDef *table);
-extern void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
-extern void mdb_index_scan_free(MdbTableDef *table);
-extern int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
-extern int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
-extern void mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash);
-extern void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
-extern int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
-extern void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
-extern void mdb_free_indices(GPtrArray *indices);
+GPtrArray *mdb_read_indices(MdbTableDef *table);
+void mdb_index_dump(MdbTableDef *table, MdbIndex *idx);
+void mdb_index_scan_free(MdbTableDef *table);
+int mdb_index_find_next_on_page(MdbHandle *mdb, MdbIndexPage *ipg);
+int mdb_index_find_next(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 *pg, guint16 *row);
+void mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash);
+void mdb_index_scan_init(MdbHandle *mdb, MdbTableDef *table);
+int mdb_index_find_row(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain, guint32 pg, guint16 row);
+void mdb_index_swap_n(unsigned char *src, int sz, unsigned char *dest);
+void mdb_free_indices(GPtrArray *indices);
 void mdb_index_page_reset(MdbHandle *mdb, MdbIndexPage *ipg);
-extern int mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg);
+int mdb_index_pack_bitmap(MdbHandle *mdb, MdbIndexPage *ipg);
 
 /* stats.c */
-extern void mdb_stats_on(MdbHandle *mdb);
-extern void mdb_stats_off(MdbHandle *mdb);
-extern void mdb_dump_stats(MdbHandle *mdb);
+void mdb_stats_on(MdbHandle *mdb);
+void mdb_stats_off(MdbHandle *mdb);
+void mdb_dump_stats(MdbHandle *mdb);
 
 /* like.c */
-extern int mdb_like_cmp(char *s, char *r);
+int mdb_like_cmp(char *s, char *r);
 
 /* write.c */
-extern void mdb_put_int16(void *buf, guint32 offset, guint32 value);
-extern void mdb_put_int32(void *buf, guint32 offset, guint32 value);
-extern void mdb_put_int32_msb(void *buf, guint32 offset, guint32 value);
-extern int mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields);
-extern guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
-extern int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
-extern int mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields);
-extern int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
-extern int mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size);
-extern int mdb_pg_get_freespace(MdbHandle *mdb);
-extern int mdb_update_row(MdbTableDef *table);
-extern void *mdb_new_data_pg(MdbCatalogEntry *entry);
+void mdb_put_int16(void *buf, guint32 offset, guint32 value);
+void mdb_put_int32(void *buf, guint32 offset, guint32 value);
+void mdb_put_int32_msb(void *buf, guint32 offset, guint32 value);
+int mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fields);
+guint16 mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_size);
+int mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, MdbField *fields, guint32 pgnum, guint16 rownum);
+int mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields);
+int mdb_pack_row(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fields, MdbField *fields);
+int mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size);
+int mdb_pg_get_freespace(MdbHandle *mdb);
+int mdb_update_row(MdbTableDef *table);
+void *mdb_new_data_pg(MdbCatalogEntry *entry);
 
 /* map.c */
-extern gint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
-extern gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
+gint32 mdb_map_find_next_freepage(MdbTableDef *table, int row_size);
+gint32 mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg);
 
 /* props.c */
-extern void mdb_free_props(MdbProperties *props);
-extern void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
-extern GPtrArray* mdb_kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
+void mdb_free_props(MdbProperties *props);
+void mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name);
+GPtrArray* mdb_kkd_to_props(MdbHandle *mdb, void *kkd, size_t len);
 
 
 /* worktable.c */
-extern MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
-extern void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
-extern void mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed);
-extern void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int column);
-extern void mdb_temp_columns_end(MdbTableDef *table);
+MdbTableDef *mdb_create_temp_table(MdbHandle *mdb, char *name);
+void mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col);
+void mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed);
+void mdb_fill_temp_field(MdbField *field, void *value, int siz, int is_fixed, int is_null, int start, int column);
+void mdb_temp_columns_end(MdbTableDef *table);
 
 /* options.c */
-extern int mdb_get_option(unsigned long optnum);
-extern void mdb_debug(int klass, char *fmt, ...);
+int mdb_get_option(unsigned long optnum);
+void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-extern int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
-extern int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
-extern void mdb_iconv_init(MdbHandle *mdb);
-extern void mdb_iconv_close(MdbHandle *mdb);
-extern const char* mdb_target_charset(MdbHandle *mdb);
+int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
+int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
+void mdb_iconv_init(MdbHandle *mdb);
+void mdb_iconv_close(MdbHandle *mdb);
+const char* mdb_target_charset(MdbHandle *mdb);
 
 #ifdef __cplusplus
   }
