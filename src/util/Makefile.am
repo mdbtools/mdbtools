@@ -20,7 +20,7 @@ updrow_SOURCES += ../libmdb/fakeglib.c
 endif
 LIBS	=	$(GLIB_LIBS) @LIBS@
 DEFS = @DEFS@ -DLOCALEDIR=\"$(localedir)\"
-AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
+AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS) -Wsign-compare
 LDADD	=	../libmdb/libmdb.la 
 if SQL
 mdb_sql_LDADD = ../libmdb/libmdb.la ../sql/libmdbsql.la $(LIBREADLINE)
