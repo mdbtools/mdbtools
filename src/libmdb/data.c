@@ -557,16 +557,12 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 	if (ole_len & 0x80000000) {
 		/* inline ole field, if we can satisfy it, then do it */
 		len = col->cur_value_len - MDB_MEMO_OVERHEAD;
-		if (chunk_size >= len) {
-			if (col->bind_ptr) 
-				memcpy(col->bind_ptr, 
-					&mdb->pg_buf[col->cur_value_start + 
-						MDB_MEMO_OVERHEAD],
-					len);
-			return len;
-		} else {
+		if (chunk_size < len)
 			return 0;
-		}
+		if (col->bind_ptr)
+			memcpy(col->bind_ptr, &mdb->pg_buf[col->cur_value_start +
+					MDB_MEMO_OVERHEAD], len);
+		return len;
 	} else if (ole_len & 0x40000000) {
 		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
@@ -592,7 +588,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 			col->cur_blob_pg_row >> 8);
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
-			&buf, &row_start, &len)) {
+			&buf, &row_start, &len) || len < 4) {
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -684,7 +680,7 @@ static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size)
 			mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x",
 				pg_row >> 8);
 
-			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
+			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len) || len < 4) {
 				return 0;
 			}
 
@@ -774,7 +770,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 				break;
 
 			/* Stop processing on zero length multiple page memo fields */
-			if (!len)
+			if (len < 4)
 				break;
 
 			memcpy(tmp + tmpoff, (char*)buf + row_start + 4, len - 4);
