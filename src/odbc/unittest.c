@@ -53,7 +53,7 @@ static void printStatementError(HSTMT hstmt, char *msg)
 }
 
 
-int main()
+int main(int argc, char **argv)
 {
 int i;
 
@@ -111,10 +111,9 @@ int i;
 	}
 
 
-	retcode = SQLConnect(hdbc, 
-				   (UCHAR *)"Northwind", SQL_NTS, 
-				   (UCHAR *)"", SQL_NTS,
-				   (UCHAR *)"", SQL_NTS);
+	retcode = SQLDriverConnect(hdbc, NULL,
+            (UCHAR *)"DBQ=nwind.mdb", SQL_NTS,
+            NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
 	if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO)
 	{
 		UCHAR  szSqlState[6];
