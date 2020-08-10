@@ -208,7 +208,7 @@ static SQLRETURN SQL_API _SQLDriverConnect(
     SQLSMALLINT    *pcbConnStrOut,
     SQLUSMALLINT       fDriverCompletion)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	char* dsn = NULL;
@@ -675,7 +675,7 @@ static SQLRETURN SQL_API _SQLConnect(
     SQLCHAR           *szAuthStr,
     SQLSMALLINT        cbAuthStr)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	char* database = NULL;
@@ -758,7 +758,7 @@ static SQLRETURN SQL_API _SQLDescribeCol(
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	int i;
@@ -868,7 +868,7 @@ static SQLRETURN SQL_API _SQLColAttributes(
     SQLSMALLINT       *pcbDesc,
     SQLLEN            *pfDesc)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	int i;
@@ -1031,7 +1031,7 @@ static SQLRETURN SQL_API _SQLError(
     SQLSMALLINT        cbErrorMsgMax,
     SQLSMALLINT       *pcbErrorMsg)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	SQLRETURN result = SQL_NO_DATA_FOUND;
@@ -1126,7 +1126,7 @@ static SQLRETURN SQL_API _SQLExecDirect(
     SQLCHAR           *szSqlStr,
     SQLINTEGER         cbSqlStr)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	_SQLPrepare(hstmt, szSqlStr, cbSqlStr);
@@ -1455,7 +1455,7 @@ static SQLRETURN SQL_API _SQLColumns(
     SQLCHAR           *szColumnName,
     SQLSMALLINT        cbColumnName)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
@@ -1603,7 +1603,7 @@ static SQLRETURN SQL_API _SQLGetData(
     SQLLEN             cbValueMax,
     SQLLEN             *pcbValue)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	struct _hstmt *stmt;
@@ -2063,7 +2063,7 @@ static SQLRETURN SQL_API _SQLGetInfo(
     SQLSMALLINT        cbInfoValueMax,
     SQLSMALLINT       *pcbInfoValue)
 #ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used));
+__attribute__((used))
 #endif
 {
 	TRACE("_SQLGetInfo");
