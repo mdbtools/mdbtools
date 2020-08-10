@@ -1291,9 +1291,6 @@ SQLRETURN SQL_API SQLColumns(
     SQLSMALLINT        cbTableName,
     SQLCHAR           *szColumnName,
     SQLSMALLINT        cbColumnName)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 	MdbSQL *sql = stmt->sql;
