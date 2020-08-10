@@ -175,13 +175,15 @@ static int sqlwlen(SQLWCHAR *p){
    See _SQLExecute for details.
 */
 
-static void LogError (const char* error)
+static void LogError (const char* format, ...)
 {
    /*
     * Someday, I might make this store more than one error.
     */
-   strncpy (lastError, error, _MAX_ERROR_LEN);
-   lastError[_MAX_ERROR_LEN] = '\0'; /* in case we had a long message */
+    va_list argp;
+    va_start(argp, format);
+    vsnprintf(lastError, _MAX_ERROR_LEN, format, argp);
+    va_end(argp);
 }
 
 static SQLRETURN do_connect (
@@ -223,7 +225,7 @@ static SQLRETURN SQL_API _SQLDriverConnect(
 		}
 		SetConnectString (params, (gchar*)szConnStrIn);
 		if (!(database = GetConnectParam (params, "Database"))){
-			LogError ("Could not find Database parameter");
+			LogError ("Could not find Database parameter in '%s'", szConnStrIn);
 			return SQL_ERROR;
 		}
 		ret = do_connect (hdbc, database);
@@ -233,7 +235,7 @@ static SQLRETURN SQL_API _SQLDriverConnect(
 		ret = do_connect (hdbc, database);
 		return ret;
 	}
-	LogError ("Could not find DSN nor DBQ in connect string");
+	LogError ("Could not find DSN nor DBQ in connect string '%s'", szConnStrIn);
 	return SQL_ERROR;
 }
 
@@ -688,7 +690,7 @@ static SQLRETURN SQL_API _SQLConnect(
 	}
 	else if (!(database = GetConnectParam (params, "Database")))
 	{
-		LogError ("Could not find Database parameter");
+		LogError ("Could not find Database parameter in '%s'", szDSN);
 		return SQL_ERROR;
 	}
 
