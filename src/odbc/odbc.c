@@ -207,6 +207,9 @@ static SQLRETURN SQL_API _SQLDriverConnect(
     SQLSMALLINT        cbConnStrOutMax,
     SQLSMALLINT    *pcbConnStrOut,
     SQLUSMALLINT       fDriverCompletion)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	char* dsn = NULL;
 	char* database = NULL;
@@ -671,6 +674,9 @@ static SQLRETURN SQL_API _SQLConnect(
     SQLSMALLINT        cbUID,
     SQLCHAR           *szAuthStr,
     SQLSMALLINT        cbAuthStr)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	char* database = NULL;
 	ConnectParams* params;
@@ -751,6 +757,9 @@ static SQLRETURN SQL_API _SQLDescribeCol(
     SQLULEN           *pcbColDef, /* precision */
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	int i;
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
@@ -858,6 +867,9 @@ static SQLRETURN SQL_API _SQLColAttributes(
     SQLSMALLINT        cbDescMax,
     SQLSMALLINT       *pcbDesc,
     SQLLEN            *pfDesc)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	int i;
 	struct _hstmt *stmt;
@@ -1018,6 +1030,9 @@ static SQLRETURN SQL_API _SQLError(
     SQLCHAR           *szErrorMsg,
     SQLSMALLINT        cbErrorMsgMax,
     SQLSMALLINT       *pcbErrorMsg)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	SQLRETURN result = SQL_NO_DATA_FOUND;
    
@@ -1110,6 +1125,9 @@ static SQLRETURN SQL_API _SQLExecDirect(
     SQLHSTMT           hstmt,
     SQLCHAR           *szSqlStr,
     SQLINTEGER         cbSqlStr)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	_SQLPrepare(hstmt, szSqlStr, cbSqlStr);
 	return _SQLExecute(hstmt);
@@ -1436,6 +1454,9 @@ static SQLRETURN SQL_API _SQLColumns(
     SQLSMALLINT        cbTableName,
     SQLCHAR           *szColumnName,
     SQLSMALLINT        cbColumnName)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 	MdbSQL *sql = stmt->sql;
@@ -1581,6 +1602,9 @@ static SQLRETURN SQL_API _SQLGetData(
     SQLPOINTER         rgbValue,
     SQLLEN             cbValueMax,
     SQLLEN             *pcbValue)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	struct _hstmt *stmt;
 	MdbSQL *sql;
@@ -2038,6 +2062,9 @@ static SQLRETURN SQL_API _SQLGetInfo(
     SQLPOINTER         rgbInfoValue,
     SQLSMALLINT        cbInfoValueMax,
     SQLSMALLINT       *pcbInfoValue)
+#ifdef HAVE_ATTRIBUTE_ALIAS
+__attribute__((used));
+#endif
 {
 	TRACE("_SQLGetInfo");
 	switch (fInfoType) {
