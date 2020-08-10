@@ -25,14 +25,14 @@ int g_str_equal(const void *str1, const void *str2) {
 char **g_strsplit(const char *haystack, const char *needle, int something) {
     char **ret = NULL;
     char *found = NULL;
-    size_t components = 1;
+    size_t components = 2; // last component + terminating NULL
     
     while ((found = strstr(haystack, needle))) {
         components++;
         haystack = found + strlen(needle);
     }
 
-    ret = malloc(components * sizeof(char *));
+    ret = calloc(components, sizeof(char *));
 
     int i = 0;
     while ((found = strstr(haystack, needle))) {
