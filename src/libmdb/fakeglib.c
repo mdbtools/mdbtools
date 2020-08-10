@@ -145,6 +145,51 @@ gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter)
     return orig;
 }
 
+void g_printerr(const gchar *format, ...) {
+    va_list argp;
+    va_start(argp, format);
+    vfprintf(stderr, format, argp);
+    va_end(argp);
+}
+
+/* GString */
+
+GString *g_string_new (const gchar *init) {
+    GString *str = calloc(1, sizeof(GString));
+    str->str = strdup(init ? init : "");
+    str->len = strlen(str->str);
+    str->allocated_len = str->len+1;
+    return str;
+}
+
+GString *g_string_assign(GString *string, const gchar *rval) {
+    size_t len = strlen(rval);
+    string->str = realloc(string->str, len+1);
+    strncpy(string->str, rval, len+1);
+    string->len = len;
+    string->allocated_len = len+1;
+    return string;
+}
+
+GString * g_string_append (GString *string, const gchar *val) {
+    size_t len = strlen(val);
+    string->str = realloc(string->str, string->len + len + 1);
+    strncpy(&string->str[string->len], val, len+1);
+    string->len += len;
+    string->allocated_len = string->len + len + 1;
+    return string;
+}
+
+gchar *g_string_free (GString *string, gboolean free_segment) {
+    char *data = string->str;
+    free(string);
+    if (free_segment) {
+        free(data);
+        return NULL;
+    }
+    return data;
+}
+
 /* GHashTable */
 
 typedef struct MyNode {
@@ -162,11 +207,41 @@ void *g_hash_table_lookup(GHashTable *table, const void *key) {
     return NULL;
 }
 
+gboolean g_hash_table_lookup_extended (GHashTable *table, const void *lookup_key,
+        void **orig_key, void **value) {
+    int i;
+    for (i=0; i<table->array->len; i++) {
+        MyNode *node = g_ptr_array_index(table->array, i);
+        if (table->compare(lookup_key, node->key)) {
+            *orig_key = node->key;
+            *value = node->value;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 void g_hash_table_insert(GHashTable *table, void *key, void *value) {
     MyNode *node = calloc(1, sizeof(MyNode));
     node->value = value;
     node->key = key;
     g_ptr_array_add(table->array, node);
+}
+
+gboolean g_hash_table_remove(GHashTable *table, gconstpointer key) {
+    int found = 0;
+    for (int i=0; i<table->array->len; i++) {
+        MyNode *node = g_ptr_array_index(table->array, i);
+        if (found) {
+            table->array->pdata[i-1] = table->array->pdata[i];
+        } else if (!found && table->compare(key, node->key)) {
+            found = 1;
+        }
+    }
+    if (found) {
+        table->array->len--;
+    }
+    return found;
 }
 
 GHashTable *g_hash_table_new(GHashFunc hashes, GEqualFunc equals) {
@@ -217,6 +292,21 @@ GPtrArray *g_ptr_array_new() {
 void g_ptr_array_add(GPtrArray *array, void *entry) {
     array->pdata = realloc(array->pdata, (array->len+1) * sizeof(void *));
     array->pdata[array->len++] = entry;
+}
+
+gboolean g_ptr_array_remove(GPtrArray *array, gpointer data) {
+    int found = 0;
+    for (int i=0; i<array->len; i++) {
+        if (found) {
+            array->pdata[i-1] = array->pdata[i];
+        } else if (!found && array->pdata[i] == data) {
+            found = 1;
+        }
+    }
+    if (found) {
+        array->len--;
+    }
+    return found;
 }
 
 void g_ptr_array_free(GPtrArray *array, gboolean something) {

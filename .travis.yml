@@ -13,11 +13,19 @@ jobs:
     os: osx
     osx_image: xcode11.4
 
+addons:
+  apt:
+    packages:
+    - libiodbc2-dev
+  homebrew:
+    packages:
+    - libiodbc
+
 before_script:
   - autoreconf -i -f -Wno-portability
 
 script:
-  - ./configure --disable-man --disable-silent-rules --disable-glib
+  - ./configure --disable-man --disable-silent-rules --disable-glib --with-iodbc=/usr
   - make
   - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-array test/data/nwind.mdb "Customers"

@@ -51,7 +51,7 @@ extern int  SQLGetPrivateProfileString( LPCSTR lpszSection,
 					int    cbRetBuffer,
 					LPCSTR lpszFilename);
 #else
-static GString* GetIniFileName ();
+static GString* GetIniFileName (void);
 static int FileExists (const gchar* name);
 static int FindSection (FILE* stream, const char* section);
 static int GetNextItem (FILE* stream, char** name, char** value);

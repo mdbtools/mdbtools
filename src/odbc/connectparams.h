@@ -19,7 +19,11 @@
 #ifndef _connectparams_h_
 #define _connectparams_h_
 
+#ifdef HAVE_GLIB
 #include <glib.h>
+#else
+#include <mdbfakeglib.h>
+#endif
 
 typedef struct
 {
@@ -28,7 +32,7 @@ typedef struct
    GHashTable* table;
 } ConnectParams;
 
-ConnectParams* NewConnectParams ();
+ConnectParams* NewConnectParams (void);
 void FreeConnectParams (ConnectParams* params);
 
 gboolean LookupDSN        (ConnectParams* params, const gchar* dsnName);

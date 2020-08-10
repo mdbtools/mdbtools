@@ -608,7 +608,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
  * mdb_ole_read_full calls mdb_ole_read then loop over mdb_ole_read_next as much as necessary.
  * returns the result in a big buffer.
  * The call must free it.
- * Note that this function is not indempotent: It may be called only once per column after each bind.
+ * Note that this function is not idempotent: It may be called only once per column after each bind.
  */
 void*
 mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)

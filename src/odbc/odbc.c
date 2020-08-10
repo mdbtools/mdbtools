@@ -25,6 +25,7 @@
 #include <sqlext.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 #include "mdbodbc.h"
 
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
@@ -101,7 +102,7 @@ TypeInfo type_info[] = {
 #define MAX_TYPE_INFO 11
 
 #ifdef ENABLE_ODBC_W
-void my_fini();
+void my_fini(void);
 
 MDB_CONSTRUCTOR(my_init)
 {
@@ -784,7 +785,7 @@ static SQLRETURN SQL_API _SQLDescribeCol(
 			strcpy(sqlState, "HY090"); // Invalid string or buffer length
 			return SQL_ERROR;
 		}
-		if (snprintf(szColName, cbColNameMax, "%s", sqlcol->name) + 1 > cbColNameMax) {
+		if (snprintf((char *)szColName, cbColNameMax, "%s", sqlcol->name) + 1 > cbColNameMax) {
 			strcpy(sqlState, "01004"); // String data, right truncated
 			ret = SQL_SUCCESS_WITH_INFO;
 		}

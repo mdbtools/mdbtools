@@ -33,6 +33,12 @@ typedef void (*GFunc) (gpointer data, gpointer user_data);
 typedef void (*GHFunc)(gpointer key, gpointer value, gpointer data);
 typedef gboolean (*GHRFunc)(gpointer key, gpointer value, gpointer data);
 
+typedef struct GString {
+  gchar  *str;
+  size_t len;
+  size_t allocated_len;
+} GString;
+
 typedef struct GPtrArray {
     void **pdata;
     int len;
@@ -121,10 +127,20 @@ char *g_strconcat(const char *first, ...);
 char *g_strdup(const char *src);
 char *g_strdup_printf(const char *format, ...);
 gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter);
+void g_printerr(const gchar *format, ...);
+
+/* GString */
+GString *g_string_new(const gchar *init);
+GString *g_string_assign(GString *string, const gchar *rval);
+GString * g_string_append (GString *string, const gchar *val);
+gchar *g_string_free (GString *string, gboolean free_segment);
 
 /* GHashTable */
 void *g_hash_table_lookup(GHashTable *tree, const void *key);
+gboolean g_hash_table_lookup_extended(GHashTable *table, const void *lookup_key,
+        void **orig_key, void **value);
 void g_hash_table_insert(GHashTable *tree, void *key, void *value);
+gboolean g_hash_table_remove(GHashTable *hash_table, const void *key);
 GHashTable *g_hash_table_new(GHashFunc hashes, GEqualFunc equals);
 void g_hash_table_foreach(GHashTable *tree, GHFunc function, void *data);
 void g_hash_table_foreach_remove(GHashTable *tree, GHRFunc function, void *data);
@@ -135,6 +151,7 @@ void g_ptr_array_sort(GPtrArray *array, GCompareFunc func);
 void g_ptr_array_foreach(GPtrArray *array, GFunc function, gpointer user_data);
 GPtrArray *g_ptr_array_new(void);
 void g_ptr_array_add(GPtrArray *array, void *entry);
+gboolean g_ptr_array_remove (GPtrArray *array, gpointer data);
 void g_ptr_array_free(GPtrArray *array, gboolean something);
 
 /* GList */
