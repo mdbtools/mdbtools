@@ -40,14 +40,6 @@ static const char * _odbc_get_client_type_name(MdbColumn *col);
 static int _odbc_fix_literals(struct _hstmt *stmt);
 //static int _odbc_get_server_type(int clt_type);
 static int _odbc_get_string_size(int size, SQLCHAR *str);
-static SQLRETURN SQL_API _SQLAllocConnect(SQLHENV henv, SQLHDBC *phdbc);
-static SQLRETURN SQL_API _SQLAllocEnv(SQLHENV *phenv);
-static SQLRETURN SQL_API _SQLAllocStmt(SQLHDBC hdbc, SQLHSTMT *phstmt);
-static SQLRETURN SQL_API _SQLFreeConnect(SQLHDBC hdbc);
-static SQLRETURN SQL_API _SQLFreeEnv(SQLHENV henv);
-static SQLRETURN SQL_API _SQLFreeStmt(SQLHSTMT hstmt, SQLUSMALLINT fOption);
-static SQLRETURN SQL_API _SQLPrepare(SQLHSTMT hstmt, SQLCHAR *szSqlStr, SQLINTEGER cbSqlStr);
-
 
 static void bind_columns (struct _hstmt*);
 static void unbind_columns (struct _hstmt*);
@@ -172,7 +164,7 @@ static int sqlwlen(SQLWCHAR *p){
 #endif // ENABLE_ODBC_W
 
 /* The SQL engine is presently non-reenterrant and non-thread safe.  
-   See _SQLExecute for details.
+   See SQLExecute for details.
 */
 
 static void LogError (const char* format, ...)
@@ -198,7 +190,7 @@ static SQLRETURN do_connect (
 		return SQL_ERROR;
 }
 
-static SQLRETURN SQL_API _SQLDriverConnect(
+SQLRETURN SQL_API SQLDriverConnect(
     SQLHDBC            hdbc,
     SQLHWND            hwnd,
     SQLCHAR        *szConnStrIn,
@@ -207,16 +199,13 @@ static SQLRETURN SQL_API _SQLDriverConnect(
     SQLSMALLINT        cbConnStrOutMax,
     SQLSMALLINT    *pcbConnStrOut,
     SQLUSMALLINT       fDriverCompletion)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	char* dsn = NULL;
 	char* database = NULL;
 	ConnectParams* params;
 	SQLRETURN ret;
 
-	TRACE("_SQLDriverConnect");
+	TRACE("SQLDriverConnect");
 	strcpy (lastError, "");
 
 	params = ((struct _hdbc*) hdbc)->params;
@@ -242,21 +231,6 @@ __attribute__((used))
 	return SQL_ERROR;
 }
 
-SQLRETURN SQL_API SQLDriverConnect(
-    SQLHDBC         hdbc,
-    SQLHWND         hwnd,
-    SQLCHAR        *szConnStrIn,
-    SQLSMALLINT     cbConnStrIn,
-    SQLCHAR        *szConnStrOut,
-    SQLSMALLINT     cbConnStrOutMax,
-    SQLSMALLINT    *pcbConnStrOut,
-    SQLUSMALLINT    fDriverCompletion)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLDriverConnect")));
-#else
-{ return _SQLDriverConnect(hdbc, hwnd, szConnStrIn, cbConnStrIn, szConnStrOut, cbConnStrOutMax, pcbConnStrOut, fDriverCompletion); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLDriverConnectW(
     SQLHDBC            hdbc,
@@ -276,7 +250,7 @@ SQLRETURN SQL_API SQLDriverConnectW(
 		SQLRETURN ret;
 		unicode2ascii((char*)szConnStrIn, &l, (char*)tmp, &z);
 		tmp[z] = 0;
-		ret = _SQLDriverConnect(hdbc,hwnd,tmp,SQL_NTS,NULL,0,pcbConnStrOut,fDriverCompletion);
+		ret = SQLDriverConnect(hdbc,hwnd,tmp,SQL_NTS,NULL,0,pcbConnStrOut,fDriverCompletion);
 		free(tmp);
 		if (szConnStrOut && cbConnStrOutMax>0)
 			szConnStrOut[0] = 0;
@@ -525,25 +499,26 @@ SQLRETURN SQL_API SQLAllocHandle(
 	TRACE("SQLAllocHandle");
 	switch(HandleType) {
 		case SQL_HANDLE_STMT:
-			return _SQLAllocStmt(InputHandle,OutputHandle);
+			return SQLAllocStmt(InputHandle,OutputHandle);
 			break;
 		case SQL_HANDLE_DBC:
-			return _SQLAllocConnect(InputHandle,OutputHandle);
+			return SQLAllocConnect(InputHandle,OutputHandle);
 			break;
 		case SQL_HANDLE_ENV:
-			return _SQLAllocEnv(OutputHandle);
+			return SQLAllocEnv(OutputHandle);
 			break;
 	}
 	return SQL_ERROR;
 }
-static SQLRETURN SQL_API _SQLAllocConnect(
+
+SQLRETURN SQL_API SQLAllocConnect(
     SQLHENV            henv,
     SQLHDBC           *phdbc)
 {
 struct _henv *env;
 struct _hdbc* dbc;
 
-	TRACE("_SQLAllocConnect");
+	TRACE("SQLAllocConnect");
 	env = (struct _henv *) henv;
 	dbc = (SQLHDBC) g_malloc0(sizeof(struct _hdbc));
 	dbc->henv=env;
@@ -555,41 +530,27 @@ struct _hdbc* dbc;
 
 	return SQL_SUCCESS;
 }
-SQLRETURN SQL_API SQLAllocConnect(
-    SQLHENV            henv,
-    SQLHDBC           *phdbc)
-{
-	TRACE("SQLAllocConnect");
-	return _SQLAllocConnect(henv, phdbc);
-}
 
-static SQLRETURN SQL_API _SQLAllocEnv(
+SQLRETURN SQL_API SQLAllocEnv(
     SQLHENV           *phenv)
 {
 struct _henv *env;
 
-	TRACE("_SQLAllocEnv");
+	TRACE("SQLAllocEnv");
 	env = (SQLHENV) g_malloc0(sizeof(struct _henv));
 	env->connections = g_ptr_array_new();
 	*phenv=env;
 	return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLAllocEnv(
-    SQLHENV           *phenv)
-{
-	TRACE("SQLAllocEnv");
-	return _SQLAllocEnv(phenv);
-}
-
-static SQLRETURN SQL_API _SQLAllocStmt(
+SQLRETURN SQL_API SQLAllocStmt(
     SQLHDBC            hdbc,
     SQLHSTMT          *phstmt)
 {
 	struct _hdbc *dbc;
 	struct _hstmt *stmt;
 
-	TRACE("_SQLAllocStmt");
+	TRACE("SQLAllocStmt");
 	dbc = (struct _hdbc *) hdbc;
 
 	stmt = (SQLHSTMT) g_malloc0(sizeof(struct _hstmt));
@@ -600,14 +561,6 @@ static SQLRETURN SQL_API _SQLAllocStmt(
 
 	*phstmt = stmt;
 	return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLAllocStmt(
-    SQLHDBC            hdbc,
-    SQLHSTMT          *phstmt)
-{
-	TRACE("SQLAllocStmt");
-	return _SQLAllocStmt(hdbc,phstmt);
 }
 
 SQLRETURN SQL_API SQLBindCol(
@@ -666,7 +619,7 @@ SQLRETURN SQL_API SQLCancel(
 	return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLConnect(
+SQLRETURN SQL_API SQLConnect(
     SQLHDBC            hdbc,
     SQLCHAR           *szDSN,
     SQLSMALLINT        cbDSN,
@@ -674,15 +627,12 @@ static SQLRETURN SQL_API _SQLConnect(
     SQLSMALLINT        cbUID,
     SQLCHAR           *szAuthStr,
     SQLSMALLINT        cbAuthStr)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	char* database = NULL;
 	ConnectParams* params;
 	SQLRETURN ret;
 
-	TRACE("_SQLConnect");
+	TRACE("SQLConnect");
 	strcpy (lastError, "");
 
 	params = ((struct _hdbc*) hdbc)->params;
@@ -704,20 +654,6 @@ __attribute__((used))
 	return ret;
 }
 
-SQLRETURN SQL_API SQLConnect(
-    SQLHDBC            hdbc,
-    SQLCHAR           *szDSN,
-    SQLSMALLINT        cbDSN,
-    SQLCHAR           *szUID,
-    SQLSMALLINT        cbUID,
-    SQLCHAR           *szAuthStr,
-    SQLSMALLINT        cbAuthStr)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLConnect")));
-#else
-{ return _SQLConnect(hdbc, szDSN, cbDSN, szUID, cbUID, szAuthStr, cbAuthStr); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLConnectW(
     SQLHDBC            hdbc,
@@ -728,6 +664,7 @@ SQLRETURN SQL_API SQLConnectW(
     SQLWCHAR           *szAuthStr,
     SQLSMALLINT        cbAuthStr)
 {
+	TRACE("SQLConnectW");
 	if(cbDSN==SQL_NTS)cbDSN=sqlwlen(szDSN);
 	if(cbUID==SQL_NTS)cbUID=sqlwlen(szUID);
 	if(cbAuthStr==SQL_NTS)cbAuthStr=sqlwlen(szAuthStr);
@@ -747,7 +684,7 @@ SQLRETURN SQL_API SQLConnectW(
 }
 #endif //ENABLE_ODBC_W
 
-static SQLRETURN SQL_API _SQLDescribeCol(
+SQLRETURN SQL_API SQLDescribeCol(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       icol,
     SQLCHAR           *szColName,
@@ -757,9 +694,6 @@ static SQLRETURN SQL_API _SQLDescribeCol(
     SQLULEN           *pcbColDef, /* precision */
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	int i;
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
@@ -769,7 +703,7 @@ __attribute__((used))
 	MdbTableDef *table;
 	SQLRETURN ret;
 
-	TRACE("_SQLDescribeCol");
+	TRACE("SQLDescribeCol");
 	if (icol<1 || icol>sql->num_columns) {
 		strcpy(sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
@@ -818,22 +752,6 @@ __attribute__((used))
 	return ret;
 }
 
-SQLRETURN SQL_API SQLDescribeCol(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLCHAR           *szColName,
-    SQLSMALLINT        cbColNameMax,
-    SQLSMALLINT       *pcbColName,
-    SQLSMALLINT       *pfSqlType,
-    SQLULEN           *pcbColDef, /* precision */
-    SQLSMALLINT       *pibScale,
-    SQLSMALLINT       *pfNullable)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLDescribeCol")));
-#else
-{ return _SQLDescribeCol(hstmt, icol, szColName, cbColNameMax, pcbColName, pfSqlType, pcbColDef, pibScale, pfNullable); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLDescribeColW(
     SQLHSTMT           hstmt,
@@ -846,11 +764,12 @@ SQLRETURN SQL_API SQLDescribeColW(
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
 {
+	TRACE("SQLDescribeColW");
 	if(cbColNameMax==SQL_NTS)cbColNameMax=sqlwlen(szColName);
 	{
 		SQLCHAR *tmp=calloc(cbColNameMax*4,1);
 		size_t l=cbColNameMax*4;
-		SQLRETURN ret = _SQLDescribeCol(hstmt, icol, tmp, cbColNameMax*4, (SQLSMALLINT*)&l, pfSqlType, pcbColDef, pibScale, pfNullable);
+		SQLRETURN ret = SQLDescribeCol(hstmt, icol, tmp, cbColNameMax*4, (SQLSMALLINT*)&l, pfSqlType, pcbColDef, pibScale, pfNullable);
 		ascii2unicode((char*)tmp, &l, (char*)szColName, (size_t*)pcbColName);
 		*pcbColName/=sizeof(SQLWCHAR);
 		free(tmp);
@@ -859,7 +778,7 @@ SQLRETURN SQL_API SQLDescribeColW(
 }
 #endif //ENABLE_ODBC_W
 
-static SQLRETURN SQL_API _SQLColAttributes(
+SQLRETURN SQL_API SQLColAttributes(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       icol,
     SQLUSMALLINT       fDescType,
@@ -867,9 +786,6 @@ static SQLRETURN SQL_API _SQLColAttributes(
     SQLSMALLINT        cbDescMax,
     SQLSMALLINT       *pcbDesc,
     SQLLEN            *pfDesc)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	int i;
 	struct _hstmt *stmt;
@@ -879,7 +795,7 @@ __attribute__((used))
 	MdbTableDef *table;
 	SQLRETURN ret;
 
-	TRACE("_SQLColAttributes");
+	TRACE("SQLColAttributes");
 	stmt = (struct _hstmt *) hstmt;
 	sql = stmt->sql;
 
@@ -967,20 +883,6 @@ __attribute__((used))
 	return ret;
 }
 
-SQLRETURN SQL_API SQLColAttributes(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLUSMALLINT       fDescType,
-    SQLPOINTER         rgbDesc,
-    SQLSMALLINT        cbDescMax,
-    SQLSMALLINT       *pcbDesc,
-    SQLLEN            *pfDesc)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLColAttributes")));
-#else
-{ return _SQLColAttributes(hstmt, icol, fDescType, rgbDesc, cbDescMax, pcbDesc, pfDesc); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLColAttributesW(
     SQLHSTMT           hstmt,
@@ -991,12 +893,13 @@ SQLRETURN SQL_API SQLColAttributesW(
     SQLSMALLINT       *pcbDesc,
     SQLLEN            *pfDesc)
 {
+	TRACE("SQLColAttributesW");
 	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL)
-		return _SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
+		return SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
 	else{
 		SQLCHAR *tmp=calloc(cbDescMax*4,1);
 		size_t l=cbDescMax*4;
-		SQLRETURN ret=_SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,(SQLSMALLINT*)&l,pfDesc);
+		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,(SQLSMALLINT*)&l,pfDesc);
 		ascii2unicode((char*)tmp, &l, (char*)rgbDesc, (size_t*)pcbDesc);
 		*pcbDesc/=sizeof(SQLWCHAR);
 		free(tmp);
@@ -1015,13 +918,13 @@ SQLRETURN SQL_API SQLDisconnect(
 	dbc = (struct _hdbc *) hdbc;
 	// Automatically close all statements:
 	while (dbc->statements->len)
-		_SQLFreeStmt(g_ptr_array_index(dbc->statements, 0), SQL_DROP);
+		SQLFreeStmt(g_ptr_array_index(dbc->statements, 0), SQL_DROP);
 	mdb_sql_close(dbc->sqlconn);
 
 	return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLError(
+SQLRETURN SQL_API SQLError(
     SQLHENV            henv,
     SQLHDBC            hdbc,
     SQLHSTMT           hstmt,
@@ -1030,13 +933,10 @@ static SQLRETURN SQL_API _SQLError(
     SQLCHAR           *szErrorMsg,
     SQLSMALLINT        cbErrorMsgMax,
     SQLSMALLINT       *pcbErrorMsg)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	SQLRETURN result = SQL_NO_DATA_FOUND;
    
-	TRACE("_SQLError");
+	TRACE("SQLError");
 	//if(pfNativeError)fprintf(stderr,"NativeError %05d\n", *pfNativeError);
 	if (strlen (lastError) > 0)
 	{
@@ -1053,21 +953,6 @@ __attribute__((used))
 
 	return result;
 }
-
-SQLRETURN SQL_API SQLError(
-    SQLHENV            henv,
-    SQLHDBC            hdbc,
-    SQLHSTMT           hstmt,
-    SQLCHAR           *szSqlState,
-    SQLINTEGER        *pfNativeError,
-    SQLCHAR           *szErrorMsg,
-    SQLSMALLINT        cbErrorMsgMax,
-    SQLSMALLINT       *pcbErrorMsg)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLError")));
-#else
-{ return _SQLError(henv, hdbc, hstmt, szSqlState, pfNativeError, szErrorMsg, cbErrorMsgMax, pcbErrorMsg); }
-#endif
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLErrorW(
@@ -1087,7 +972,7 @@ SQLRETURN SQL_API SQLErrorW(
 
 	TRACE("SQLErrorW");
 
-	result = _SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
+	result = SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
 	if (result == SQL_SUCCESS) {
 		size_t l=6, z=6*sizeof(SQLWCHAR);
 		ascii2unicode((char*)szSqlState8, &l, (char*)szSqlState, &z);
@@ -1100,11 +985,11 @@ SQLRETURN SQL_API SQLErrorW(
 }
 #endif // ENABLE_ODBC_W
 
-static SQLRETURN SQL_API _SQLExecute( SQLHSTMT hstmt)
+SQLRETURN SQL_API SQLExecute(SQLHSTMT hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 
-	TRACE("_SQLExecute");
+	TRACE("SQLExecute");
    
 	/* fprintf(stderr,"query = %s\n",stmt->query); */
 	_odbc_fix_literals(stmt);
@@ -1121,27 +1006,14 @@ static SQLRETURN SQL_API _SQLExecute( SQLHSTMT hstmt)
 	}
 }
 
-static SQLRETURN SQL_API _SQLExecDirect(
-    SQLHSTMT           hstmt,
-    SQLCHAR           *szSqlStr,
-    SQLINTEGER         cbSqlStr)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
-{
-	_SQLPrepare(hstmt, szSqlStr, cbSqlStr);
-	return _SQLExecute(hstmt);
-}
-
 SQLRETURN SQL_API SQLExecDirect(
     SQLHSTMT           hstmt,
     SQLCHAR           *szSqlStr,
     SQLINTEGER         cbSqlStr)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLExecDirect")));
-#else
-{ return _SQLExecDirect(hstmt, szSqlStr, cbSqlStr); }
-#endif
+{
+	SQLPrepare(hstmt, szSqlStr, cbSqlStr);
+	return SQLExecute(hstmt);
+}
 
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLExecDirectW(
@@ -1156,20 +1028,13 @@ SQLRETURN SQL_API SQLExecDirectW(
 		size_t l=cbSqlStr*4,z=cbSqlStr*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szSqlStr, &z, (char*)tmp, &l);
-		ret = _SQLExecDirect(hstmt, tmp, l);
+		ret = SQLExecDirect(hstmt, tmp, l);
 		TRACE("SQLExecDirectW end");
 		free(tmp);
 		return ret;
 	}
 }
 #endif // ENABLE_ODBC_W
-
-SQLRETURN SQL_API SQLExecute(
-    SQLHSTMT           hstmt)
-{
-	TRACE("SQLExecute");
-	return _SQLExecute(hstmt);
-}
 
 static void
 bind_columns(struct _hstmt *stmt)
@@ -1243,25 +1108,25 @@ SQLRETURN SQL_API SQLFreeHandle(
 	TRACE("SQLFreeHandle");
 	switch(HandleType) {
 		case SQL_HANDLE_STMT:
-			_SQLFreeStmt(Handle,SQL_DROP);
+			SQLFreeStmt(Handle,SQL_DROP);
 			break;
 		case SQL_HANDLE_DBC:
-			_SQLFreeConnect(Handle);
+			SQLFreeConnect(Handle);
 			break;
 		case SQL_HANDLE_ENV:
-			_SQLFreeEnv(Handle);
+			SQLFreeEnv(Handle);
 			break;
 	}
    return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLFreeConnect(
+SQLRETURN SQL_API SQLFreeConnect(
     SQLHDBC            hdbc)
 {
 	struct _hdbc* dbc = (struct _hdbc*) hdbc;
 	struct _henv* env;
 
-	TRACE("_SQLFreeConnect");
+	TRACE("SQLFreeConnect");
 
 	env = dbc->henv;
 
@@ -1281,19 +1146,12 @@ static SQLRETURN SQL_API _SQLFreeConnect(
 	return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLFreeConnect(
-    SQLHDBC            hdbc)
-{
-	TRACE("SQLFreeConnect");
-	return _SQLFreeConnect(hdbc);
-}
-
-static SQLRETURN SQL_API _SQLFreeEnv(
+SQLRETURN SQL_API SQLFreeEnv(
     SQLHENV            henv)
 {
 	struct _henv* env = (struct _henv*)henv;
 
-	TRACE("_SQLFreeEnv");
+	TRACE("SQLFreeEnv");
 
 	if (env->connections->len) {
 		// Function sequence error
@@ -1305,21 +1163,15 @@ static SQLRETURN SQL_API _SQLFreeEnv(
 
 	return SQL_SUCCESS;
 }
-SQLRETURN SQL_API SQLFreeEnv(
-    SQLHENV            henv)
-{
-	TRACE("SQLFreeEnv");
-	return _SQLFreeEnv(henv);
-}
 
-static SQLRETURN SQL_API _SQLFreeStmt(
+SQLRETURN SQL_API SQLFreeStmt(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       fOption)
 {
 	struct _hstmt *stmt=(struct _hstmt *)hstmt;
 	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
 
-	TRACE("_SQLFreeStmt");
+	TRACE("SQLFreeStmt");
 	if (fOption==SQL_DROP) {
 		if (!g_ptr_array_remove(dbc->statements, stmt))
 			return SQL_INVALID_HANDLE;
@@ -1335,13 +1187,6 @@ static SQLRETURN SQL_API _SQLFreeStmt(
 	} else {
 	}
 	return SQL_SUCCESS;
-}
-SQLRETURN SQL_API SQLFreeStmt(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       fOption)
-{
-	TRACE("SQLFreeStmt");
-	return _SQLFreeStmt(hstmt, fOption);
 }
 
 SQLRETURN SQL_API SQLGetStmtAttr (
@@ -1376,7 +1221,7 @@ SQLRETURN SQL_API SQLNumResultCols(
 	return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLPrepare(
+SQLRETURN SQL_API SQLPrepare(
     SQLHSTMT           hstmt,
     SQLCHAR           *szSqlStr,
     SQLINTEGER         cbSqlStr)
@@ -1390,14 +1235,6 @@ static SQLRETURN SQL_API _SQLPrepare(
 	stmt->query[sqllen]='\0';
 
 	return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLPrepare(
-    SQLHSTMT           hstmt,
-    SQLCHAR           *szSqlStr,
-    SQLINTEGER         cbSqlStr)
-{
-	return _SQLPrepare(hstmt, szSqlStr, cbSqlStr);
 }
 
 SQLRETURN SQL_API SQLRowCount(
@@ -1444,7 +1281,7 @@ SQLRETURN SQL_API SQLSetParam(            /*      Use SQLBindParameter */
 	return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLColumns(
+SQLRETURN SQL_API SQLColumns(
     SQLHSTMT           hstmt,
     SQLCHAR           *szCatalogName,
     SQLSMALLINT        cbCatalogName,
@@ -1478,7 +1315,7 @@ __attribute__((used))
 	SQLSMALLINT sqldatatype;  /* For datetime, use nonconcise data type */
 	SQLINTEGER ordinal;
 
-	TRACE("_SQLColumns");
+	TRACE("SQLColumns");
 
 	mdb_read_catalog(mdb, MDB_ANY);
 
@@ -1545,22 +1382,6 @@ __attribute__((used))
 	return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLColumns(
-    SQLHSTMT           hstmt,
-    SQLCHAR           *szCatalogName,
-    SQLSMALLINT        cbCatalogName,
-    SQLCHAR           *szSchemaName,
-    SQLSMALLINT        cbSchemaName,
-    SQLCHAR           *szTableName,
-    SQLSMALLINT        cbTableName,
-    SQLCHAR           *szColumnName,
-    SQLSMALLINT        cbColumnName)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLColumns")));
-#else
-{ return _SQLColumns(hstmt, szCatalogName, cbCatalogName, szSchemaName, cbSchemaName, szTableName, cbTableName, szColumnName, cbColumnName); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLColumnsW(
     SQLHSTMT           hstmt,
@@ -1579,7 +1400,7 @@ SQLRETURN SQL_API SQLColumnsW(
 		size_t l=cbTableName*4,z=cbTableName*2;
 		SQLRETURN ret;
 		unicode2ascii((char*)szTableName, &z, (char*)tmp, &l);
-		ret = _SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);
+		ret = SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);
 		free(tmp);
 		return ret;
 	}
@@ -1595,16 +1416,13 @@ SQLRETURN SQL_API SQLGetConnectOption(
 	return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLGetData(
+SQLRETURN SQL_API SQLGetData(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       icol,
     SQLSMALLINT        fCType,
     SQLPOINTER         rgbValue,
     SQLLEN             cbValueMax,
     SQLLEN             *pcbValue)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
 	struct _hstmt *stmt;
 	MdbSQL *sql;
@@ -1614,7 +1432,7 @@ __attribute__((used))
 	MdbTableDef *table;
 	int i, intValue;
 
-	TRACE("_SQLGetData");
+	TRACE("SQLGetData");
 	stmt = (struct _hstmt *) hstmt;
 	sql = stmt->sql;
 	mdb = sql->mdb;
@@ -1849,19 +1667,6 @@ __attribute__((used))
 	return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLGetData(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLSMALLINT        fCType,
-    SQLPOINTER         rgbValue,
-    SQLLEN             cbValueMax,
-    SQLLEN             *pcbValue)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLGetData")));
-#else
-{ return _SQLGetData(hstmt, icol, fCType, rgbValue, cbValueMax, pcbValue); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLGetDataW(
     SQLHSTMT           hstmt,
@@ -1875,7 +1680,7 @@ SQLRETURN SQL_API SQLGetDataW(
 
 	SQLCHAR *tmp=calloc(cbValueMax*4,1);
 	size_t l=cbValueMax*4;
-	SQLRETURN ret = _SQLGetData(hstmt, icol, fCType, tmp, cbValueMax*4, (SQLLEN*)&l);
+	SQLRETURN ret = SQLGetData(hstmt, icol, fCType, tmp, cbValueMax*4, (SQLLEN*)&l);
 	ascii2unicode((char*)tmp, &l, (char*)rgbValue, (size_t*)pcbValue);
 	*pcbValue/=sizeof(SQLWCHAR);
 	free(tmp);
@@ -2056,17 +1861,14 @@ SQLRETURN SQL_API SQLGetFunctions(
 	return SQL_SUCCESS;
 }
 
-static SQLRETURN SQL_API _SQLGetInfo(
+SQLRETURN SQL_API SQLGetInfo(
     SQLHDBC            hdbc,
     SQLUSMALLINT       fInfoType,
     SQLPOINTER         rgbInfoValue,
     SQLSMALLINT        cbInfoValueMax,
     SQLSMALLINT       *pcbInfoValue)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((used))
-#endif
 {
-	TRACE("_SQLGetInfo");
+	TRACE("SQLGetInfo");
 	switch (fInfoType) {
 	case SQL_MAX_STATEMENT_LEN:
 		if (rgbInfoValue)
@@ -2120,18 +1922,6 @@ __attribute__((used))
 	return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLGetInfo(
-    SQLHDBC            hdbc,
-    SQLUSMALLINT       fInfoType,
-    SQLPOINTER         rgbInfoValue,
-    SQLSMALLINT        cbInfoValueMax,
-    SQLSMALLINT       *pcbInfoValue)
-#ifdef HAVE_ATTRIBUTE_ALIAS
-__attribute__((alias("_SQLGetInfo")));
-#else
-{ return _SQLGetInfo(hdbc, fInfoType, rgbInfoValue, cbInfoValueMax, pcbInfoValue); }
-#endif
-
 #ifdef ENABLE_ODBC_W
 SQLRETURN SQL_API SQLGetInfoW(
     SQLHDBC            hdbc,
@@ -2143,11 +1933,11 @@ SQLRETURN SQL_API SQLGetInfoW(
 	TRACE("SQLGetInfoW");
 
 	if(fInfoType==SQL_MAX_STATEMENT_LEN||fInfoType==SQL_SCHEMA_USAGE||fInfoType==SQL_CATALOG_LOCATION)
-		return _SQLGetInfo(hdbc,fInfoType,rgbInfoValue,cbInfoValueMax,pcbInfoValue);
+		return SQLGetInfo(hdbc,fInfoType,rgbInfoValue,cbInfoValueMax,pcbInfoValue);
 
 	SQLCHAR *tmp=calloc(cbInfoValueMax*4,1);
 	size_t l=cbInfoValueMax*4;
-	SQLRETURN ret = _SQLGetInfo(hdbc, fInfoType, tmp, cbInfoValueMax*4,(SQLSMALLINT*)&l);
+	SQLRETURN ret = SQLGetInfo(hdbc, fInfoType, tmp, cbInfoValueMax*4,(SQLSMALLINT*)&l);
 	size_t pcb=cbInfoValueMax;
 	ascii2unicode((char*)tmp, &l, (char*)rgbInfoValue, &pcb);
 	pcb/=sizeof(SQLWCHAR);
@@ -2245,7 +2035,7 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 	}
 	sql->cur_table = ttable;
 	
-	/* return _SQLExecute(hstmt); */
+	/* return SQLExecute(hstmt); */
 	return SQL_SUCCESS;
 }
 
