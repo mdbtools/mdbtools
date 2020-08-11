@@ -120,6 +120,11 @@ if test "$with_unixodbc"; then
 	ODBC_LIBS="-L$with_unixodbc/lib"
 	CFLAGS="$CFLAGS -DUNIXODBC"
 
+	dnl SIZEOF_LONG_INT and HAVE_LONG_LONG are required by some versions of unixODBC
+	dnl https://github.com/lurcher/unixODBC/issues/40
+	AC_CHECK_SIZEOF([long int])
+	AC_CHECK_TYPES([long long])
+
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS $ODBC_LIBS"
 	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString,

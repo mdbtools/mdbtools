@@ -4,28 +4,78 @@ jobs:
   include:
   - compiler: clang
     os: linux
+    addons:
+      apt:
+        packages:
+        - libiodbc2-dev
+    env:
+      - CONFIGURE_FLAGS=--with-iodbc=/usr
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - unixodbc-dev
+    env:
+      - CONFIGURE_FLAGS=--with-unixodbc=/usr
   - compiler: gcc
     os: linux
+    addons:
+      apt:
+        packages:
+        - libiodbc2-dev
+    env:
+      - CONFIGURE_FLAGS=--with-iodbc=/usr
+  - compiler: gcc
+    os: linux
+    addons:
+      apt:
+        packages:
+        - unixodbc-dev
+    env:
+      - CONFIGURE_FLAGS=--with-unixodbc=/usr
   - compiler: clang
     os: osx
     osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - libiodbc
+    env:
+      - CONFIGURE_FLAGS=--with-iodbc=/usr/local/opt
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - unixodbc
+    env:
+      - CONFIGURE_FLAGS=--with-unixodbc=/usr/local/opt
   - compiler: gcc
     os: osx
     osx_image: xcode11.4
-
-addons:
-  apt:
-    packages:
-    - libiodbc2-dev
-  homebrew:
-    packages:
-    - libiodbc
+    addons:
+      homebrew:
+        packages:
+        - libiodbc
+    env:
+      - CONFIGURE_FLAGS=--with-iodbc=/usr/local/opt
+  - compiler: gcc
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - unixodbc
+    env:
+      - CONFIGURE_FLAGS=--with-unixodbc=/usr/local/opt
 
 before_script:
   - autoreconf -i -f -Wno-portability
 
 script:
-  - ./configure --disable-man --disable-silent-rules --disable-glib --with-iodbc=/usr
+  - ./configure --disable-man --disable-silent-rules --disable-glib $CONFIGURE_FLAGS
   - make
   - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-array test/data/nwind.mdb "Customers"

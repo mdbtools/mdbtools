@@ -174,7 +174,7 @@ int i;
 				szSqlState, szErrorMsg);
 			return 1;
 		}		
-		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, 60, &length);
+		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, sizeof(szCol1), &length);
 		//SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
 	
 		/* Execute statement with first row. */
