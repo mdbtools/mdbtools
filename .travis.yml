@@ -17,15 +17,17 @@ addons:
   apt:
     packages:
     - libiodbc2-dev
+    - unixodbc-dev
   homebrew:
     packages:
     - libiodbc
+    - unixodbc
 
 before_script:
   - autoreconf -i -f -Wno-portability
 
 script:
-  - ./configure --disable-man --disable-silent-rules --disable-glib --with-iodbc=/usr
+  - ./configure --disable-man --disable-silent-rules --disable-glib
   - make
   - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-array test/data/nwind.mdb "Customers"
@@ -39,4 +41,11 @@ script:
   - ./src/util/mdb-tables test/data/nwind.mdb
   - ./src/util/mdb-ver test/data/ASampleDatabase.accdb
   - ./src/util/mdb-ver test/data/nwind.mdb
+  - make clean
+  - ./configure --disable-man --disable-silent-rules --disable-glib --with-iodbc=/usr
+  - make
+  - env MDBPATH=test/data ./src/odbc/unittest
+  - make clean
+  - ./configure --disable-man --disable-silent-rules --disable-glib --with-unixodbc=/usr
+  - make
   - env MDBPATH=test/data ./src/odbc/unittest
