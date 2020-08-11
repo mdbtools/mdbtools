@@ -1661,7 +1661,7 @@ SQLRETURN SQL_API SQLGetData(
 				strcpy(sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
-			stmt->pos = 0;
+			stmt->pos = len;
 			free(str);
 			str = NULL;
 			break;
