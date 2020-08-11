@@ -1634,28 +1634,28 @@ SQLRETURN SQL_API SQLGetData(
 				str = NULL;
 				return SQL_NO_DATA;
 			}
-			if (pcbValue) {
-				*pcbValue = len;
+			if (cbValueMax < 0) {
+				strcpy(sqlState, "HY090"); // Invalid string or buffer length
+				free(str);
+				str = NULL;
+				return SQL_ERROR;
 			}
-			if (!cbValueMax) {
+			if (pcbValue) {
+				*pcbValue = len - stmt->pos;
+			}
+			if (cbValueMax == 0) {
 				free(str);
 				str = NULL;
 				return SQL_SUCCESS_WITH_INFO;
 			}
-			if (len - stmt->pos > cbValueMax) {
-				/* the buffer we were given is too small, so
-				   truncate it to the size of the buffer */
-				memcpy(rgbValue, str, cbValueMax);
+			snprintf(rgbValue, cbValueMax, "%s", str + stmt->pos);
+			if (stmt->pos + cbValueMax < len + 1) {
 				stmt->pos += cbValueMax - 1;
 				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
-				strcpy(sqlState, "01004"); // trunctated
+				strcpy(sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
-
-			memcpy(rgbValue, str + stmt->pos, len - stmt->pos);
-			if (pcbValue)
-				*pcbValue = len - stmt->pos;
-			stmt->pos += len - stmt->pos;
+			stmt->pos = len;
 			free(str);
 			str = NULL;
 			break;
