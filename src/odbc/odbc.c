@@ -1641,21 +1641,22 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_ERROR;
 			}
 			if (pcbValue) {
-				*pcbValue = len - stmt->pos;
+				*pcbValue = len + 1 - stmt->pos;
 			}
 			if (cbValueMax == 0) {
 				free(str);
 				str = NULL;
 				return SQL_SUCCESS_WITH_INFO;
 			}
-			snprintf(rgbValue, cbValueMax, "%s", str + stmt->pos);
-			if (stmt->pos + cbValueMax < len + 1) {
-				stmt->pos += cbValueMax - 1;
+
+			memcpy(rgbValue, str + stmt->pos, MIN(len - stmt->pos, cbValueMax-1));
+			((char *)rgbValue)[MIN(len - stmt->pos, cbValueMax-1)] = '\0';
+			stmt->pos += MIN(len - stmt->pos, cbValueMax-1);
+			if (cbValueMax - 1 < len - stmt->pos) {
 				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
 				strcpy(sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
-			stmt->pos = len;
 			free(str);
 			str = NULL;
 			break;
