@@ -9,7 +9,16 @@ jobs:
         packages:
         - libiodbc2-dev
     env:
-      - CONFIGURE_FLAGS=--with-iodbc=/usr
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - libiodbc2-dev
+        - libglib2.0-dev
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --enable-glib"
   - compiler: clang
     os: linux
     addons:
@@ -17,7 +26,16 @@ jobs:
         packages:
         - unixodbc-dev
     env:
-      - CONFIGURE_FLAGS=--with-unixodbc=/usr
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - unixodbc-dev
+        - libglib2.0-dev
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --enable-glib"
   - compiler: gcc
     os: linux
     addons:
@@ -25,7 +43,7 @@ jobs:
         packages:
         - libiodbc2-dev
     env:
-      - CONFIGURE_FLAGS=--with-iodbc=/usr
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: gcc
     os: linux
     addons:
@@ -33,7 +51,7 @@ jobs:
         packages:
         - unixodbc-dev
     env:
-      - CONFIGURE_FLAGS=--with-unixodbc=/usr
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: clang
     os: osx
     osx_image: xcode11.4
@@ -42,7 +60,17 @@ jobs:
         packages:
         - libiodbc
     env:
-      - CONFIGURE_FLAGS=--with-iodbc=/usr/local/opt
+      - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - libiodbc
+        - glib
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
   - compiler: clang
     os: osx
     osx_image: xcode11.4
@@ -51,7 +79,17 @@ jobs:
         packages:
         - unixodbc
     env:
-      - CONFIGURE_FLAGS=--with-unixodbc=/usr/local/opt
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - unixodbc
+        - glib
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
   - compiler: gcc
     os: osx
     osx_image: xcode11.4
@@ -60,7 +98,7 @@ jobs:
         packages:
         - libiodbc
     env:
-      - CONFIGURE_FLAGS=--with-iodbc=/usr/local/opt
+      - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
   - compiler: gcc
     os: osx
     osx_image: xcode11.4
@@ -69,13 +107,13 @@ jobs:
         packages:
         - unixodbc
     env:
-      - CONFIGURE_FLAGS=--with-unixodbc=/usr/local/opt
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
 
 before_script:
   - autoreconf -i -f -Wno-portability
 
 script:
-  - ./configure --disable-man --disable-silent-rules --disable-glib $CONFIGURE_FLAGS
+  - ./configure --disable-man --disable-silent-rules $CONFIGURE_FLAGS
   - make
   - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-array test/data/nwind.mdb "Customers"
