@@ -2290,8 +2290,9 @@ static SQLSMALLINT _odbc_get_client_type(MdbColumn *col)
 #endif // returns text otherwise
 		case MDB_TEXT:
 		case MDB_MEMO:
-		case MDB_OLE:
 			return SQL_VARCHAR;
+		case MDB_OLE:
+			return SQL_LONGVARBINARY;
 		default:
 			// fprintf(stderr,"Unknown type %d\n",srv_type);
 			break;
