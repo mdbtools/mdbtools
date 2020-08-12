@@ -1649,14 +1649,19 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_SUCCESS_WITH_INFO;
 			}
 
-			memcpy(rgbValue, str + stmt->pos, MIN(len - stmt->pos, cbValueMax-1));
-			((char *)rgbValue)[MIN(len - stmt->pos, cbValueMax-1)] = '\0';
-			stmt->pos += MIN(len - stmt->pos, cbValueMax-1);
-			if (cbValueMax - 1 < len - stmt->pos) {
+			const int totalSizeRemaining = len - stmt->pos;
+			const int partsRemain = cbValueMax - 1 < totalSizeRemaining;
+			const int sizeToReadThisPart = partsRemain ? cbValueMax - 1 : totalSizeRemaining;
+			memcpy(rgbValue, str + stmt->pos, sizeToReadThisPart);
+
+			((char *)rgbValue)[sizeToReadThisPart] = '\0';
+			if (partsRemain) {
+			        stmt->pos += cbValueMax - 1;
 				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
 				strcpy(sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
+			stmt->pos = len;
 			free(str);
 			str = NULL;
 			break;
