@@ -48,7 +48,7 @@ static char *type_name[] = {"Form",
 
 void mdb_free_catalog(MdbHandle *mdb)
 {
-	int i, j;
+	guint i, j;
 	MdbCatalogEntry *entry;
 
 	if ((!mdb) || (!mdb->catalog)) return;

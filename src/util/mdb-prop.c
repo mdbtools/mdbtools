@@ -92,7 +92,7 @@ main(int argc, char **argv)
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 {
 	GPtrArray *aprops = mdb_kkd_to_props(mdb, kkd, len);
-	int i;
+	guint i;
 	if (!aprops)
 		return;
 	for (i=0; i<aprops->len; ++i) {

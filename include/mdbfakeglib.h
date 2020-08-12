@@ -41,7 +41,7 @@ typedef struct GString {
 
 typedef struct GPtrArray {
     void **pdata;
-    int len;
+    guint len;
 } GPtrArray;
 
 typedef struct GList {
