@@ -198,7 +198,7 @@ typedef struct MyNode {
 } MyNode;
 
 void *g_hash_table_lookup(GHashTable *table, const void *key) {
-    int i;
+    guint i;
     for (i=0; i<table->array->len; i++) {
         MyNode *node = g_ptr_array_index(table->array, i);
         if (table->compare(key, node->key))
@@ -209,7 +209,7 @@ void *g_hash_table_lookup(GHashTable *table, const void *key) {
 
 gboolean g_hash_table_lookup_extended (GHashTable *table, const void *lookup_key,
         void **orig_key, void **value) {
-    int i;
+    guint i;
     for (i=0; i<table->array->len; i++) {
         MyNode *node = g_ptr_array_index(table->array, i);
         if (table->compare(lookup_key, node->key)) {
@@ -230,7 +230,7 @@ void g_hash_table_insert(GHashTable *table, void *key, void *value) {
 
 gboolean g_hash_table_remove(GHashTable *table, gconstpointer key) {
     int found = 0;
-    for (int i=0; i<table->array->len; i++) {
+    for (guint i=0; i<table->array->len; i++) {
         MyNode *node = g_ptr_array_index(table->array, i);
         if (found) {
             table->array->pdata[i-1] = table->array->pdata[i];
@@ -252,7 +252,7 @@ GHashTable *g_hash_table_new(GHashFunc hashes, GEqualFunc equals) {
 }
 
 void g_hash_table_foreach(GHashTable *table, GHFunc function, void *data) {
-    int i;
+    guint i;
     for (i=0; i<table->array->len; i++) {
         MyNode *node = g_ptr_array_index(table->array, i);
         function(node->key, node->value, data);
@@ -260,7 +260,7 @@ void g_hash_table_foreach(GHashTable *table, GHFunc function, void *data) {
 }
 
 void g_hash_table_destroy(GHashTable *table) {
-    int i;
+    guint i;
     for (i=0; i<table->array->len; i++) {
         MyNode *node = g_ptr_array_index(table->array, i);
         free(node);
@@ -276,7 +276,7 @@ void g_ptr_array_sort(GPtrArray *array, GCompareFunc func) {
 }
 
 void g_ptr_array_foreach(GPtrArray *array, GFunc function, gpointer user_data) {
-    int i;
+    guint i;
     for (i=0; i<array->len; i++) {
         function(g_ptr_array_index(array, i), user_data);
     }
@@ -296,7 +296,7 @@ void g_ptr_array_add(GPtrArray *array, void *entry) {
 
 gboolean g_ptr_array_remove(GPtrArray *array, gpointer data) {
     int found = 0;
-    for (int i=0; i<array->len; i++) {
+    for (guint i=0; i<array->len; i++) {
         if (found) {
             array->pdata[i-1] = array->pdata[i];
         } else if (!found && array->pdata[i] == data) {
