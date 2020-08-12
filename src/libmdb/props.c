@@ -89,7 +89,8 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 {
 	guint32 record_len, name_len;
 	int pos = 0;
-	int elem, dtype, dsize;
+	guint elem;
+	int dtype, dsize;
 	gchar *name, *value;
 	MdbProperties *props;
 	int i=0;

@@ -1132,7 +1132,7 @@ mdb_index_scan_free(MdbTableDef *table)
 
 void mdb_free_indices(GPtrArray *indices)
 {
-	int i;
+	guint i;
 
 	if (!indices) return;
 	for (i=0; i<indices->len; i++)
