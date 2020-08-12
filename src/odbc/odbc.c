@@ -1640,14 +1640,26 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_SUCCESS_WITH_INFO;
 			}
 
+			/* if the column type is OLE, then we don't add terminators
+			  see https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdata-function?view=sql-server-ver15
+			  and https://www.ibm.com/support/knowledgecenter/SSEPEK_11.0.0/odbc/src/tpc/db2z_fngetdata.html
+
+			  "The buffer that the rgbValue argument specifies contains nul-terminated values, unless you retrieve
+			  binary data, or the SQL data type of the column is graphic (DBCS) and the C buffer type is SQL_C_CHAR."
+			*/
+			const int needsTerminator = (col->col_type != MDB_OLE);
+
 			const int totalSizeRemaining = len - stmt->pos;
-			const int partsRemain = cbValueMax - 1 < totalSizeRemaining;
-			const int sizeToReadThisPart = partsRemain ? cbValueMax - 1 : totalSizeRemaining;
+			const int partsRemain = cbValueMax - ( needsTerminator ? 1 : 0 ) < totalSizeRemaining;
+			const int sizeToReadThisPart = partsRemain ? cbValueMax - ( needsTerminator ? 1 : 0 ) : totalSizeRemaining;
 			memcpy(rgbValue, str + stmt->pos, sizeToReadThisPart);
 
-			((char *)rgbValue)[sizeToReadThisPart] = '\0';
+			if (needsTerminator)
+			{
+				((char *)rgbValue)[sizeToReadThisPart] = '\0';
+			}
 			if (partsRemain) {
-			        stmt->pos += cbValueMax - 1;
+				stmt->pos += cbValueMax - ( needsTerminator ? 1 : 0 );
 				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
 				strcpy(sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
