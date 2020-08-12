@@ -68,7 +68,7 @@ AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
-CFLAGS="$CFLAGS -Wall -Wstrict-prototypes -Werror"
+CFLAGS="$CFLAGS -Wall -Werror"
 AS_CASE([$host],
         [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 AS_CASE([$host],
@@ -104,10 +104,8 @@ if test "$with_iodbc"; then
 
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS $ODBC_LIBS"
-	AC_CHECK_LIB(iodbcinst, SQLGetPrivateProfileString,
-	 [ODBC_LIBS="$ODBC_LIBS -liodbcinst"
-	 AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1,
-	 [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	AC_CHECK_LIB(iodbcinst, SQLGetPrivateProfileString, [FOO=bar],
+                 AC_MSG_ERROR([Could not find SQLGetPrivateProfileString in -liodbcinst]))
 	LDFLAGS=$OLDLDFLAGS
 fi
 
@@ -127,10 +125,8 @@ if test "$with_unixodbc"; then
 
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS $ODBC_LIBS"
-	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString,
-	 [ODBC_LIBS="$ODBC_LIBS -lodbcinst"
-	 AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1,
-	 [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBC_LIBS="$ODBC_LIBS -lodbcinst"],
+                 AC_MSG_ERROR([Could not find SQLGetPrivateProfileString in -lodbcinst]))
 	LDFLAGS=$OLDLDFLAGS
 fi
 
@@ -145,6 +141,9 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 	AC_SUBST(ODBC_LIBS)
 	OPTDIRS="$OPTDIRS odbc"
 fi
+
+dnl Turn on -Wstrict-prototypes here because AC_CHECK_LIB is dumb
+CFLAGS="$CFLAGS -Wstrict-prototypes"
 
 dnl Conditionally build odbc wide version
 AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")

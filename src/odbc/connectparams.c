@@ -23,6 +23,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#ifdef UNIXODBC
+#include <odbcinstext.h>
+#else
+#include <odbcinst.h>
+#endif
 #include "connectparams.h"
 
 /*
@@ -42,20 +47,6 @@
 static char line[max_line];
 
 static guint HashFunction (gconstpointer key);
-#if HAVE_SQLGETPRIVATEPROFILESTRING
-#include <sqltypes.h>
-extern int  SQLGetPrivateProfileString( LPCSTR lpszSection,
-					LPCSTR lpszEntry,
-					LPCSTR lpszDefault,
-					LPSTR  lpszRetBuffer,
-					int    cbRetBuffer,
-					LPCSTR lpszFilename);
-#else
-static GString* GetIniFileName (void);
-static int FileExists (const gchar* name);
-static int FindSection (FILE* stream, const char* section);
-static int GetNextItem (FILE* stream, char** name, char** value);
-#endif //HAVE_SQLGETPRIVATEPROFILESTRING
 
 static void visit (gpointer key, gpointer value, gpointer user_data);
 static void cleanup (gpointer key, gpointer value, gpointer user_data);
@@ -98,95 +89,18 @@ void FreeConnectParams (ConnectParams* params)
    }
 }
 
-#if !HAVE_SQLGETPRIVATEPROFILESTRING
-static int LoadDSN (
-   const gchar* iniFileName, const gchar* dsnName, GHashTable* table)
-{
-   FILE* stream;
-   gchar* name;
-   gchar* value;
-
-
-   if ((stream = fopen (iniFileName, "r" )) != NULL )   
-   {
-      if (!FindSection (stream, dsnName))
-      {
-	 g_printerr ("Couldn't find DSN %s in %s\n", dsnName, iniFileName);
-	 fclose (stream);
-         return 0;
-      }
-      else
-      {
-         while (GetNextItem (stream, &name, &value))
-         {
-            g_hash_table_insert (table, g_strdup (name), g_strdup (value));
-         }
-      }
-
-      fclose( stream );   
-   }
-
-   return 1;
-}
-
-/*
- * Find the settings for the specified ODBC DSN
- */
-gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
-{
-   if (!params) {
-      fprintf(stderr,"LookupDSN: no parameters, returning FALSE\n");
-      return FALSE;
-   }
-   /*
-    * Set the DSN name property
-    */
- /*  params->dsnName = g_string_assign (params->dsnName, dsnName); */
-   /*
-    * Search for the ODBC ini file
-    */
-   if (!(params->iniFileName = GetIniFileName ())) {
-      fprintf(stderr,"LookupDSN: GetIniFileName returned FALSE\n");
-      return FALSE;
-   }
-
-   if (!LoadDSN (params->iniFileName->str, dsnName, params->table)) {
-      fprintf(stderr,"LookupDSN: LoadDSN returned FALSE\n");
-      return FALSE;
-   }
-
-   return TRUE;
-}
-/*
- * Get the value of a given ODBC Connection Parameter
- */
-
-gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
-{
-   if (!params || !params->table)
-      return NULL;
-
-   return g_hash_table_lookup (params->table, paramName);
-}
-
-#else
-gboolean LookupDSN (ConnectParams* params, const gchar* dsnName)
-{
-	return TRUE;
-}
 gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
 {
 	static char tmp[FILENAME_MAX];
 
 	/* use old servername */
 	tmp[0] = '\0';
-	if (SQLGetPrivateProfileString(params->dsnName->str, paramName, "", tmp, FILENAME_MAX, "odbc.ini") > 0) {
+	if (SQLGetPrivateProfileString(params->dsnName->str, paramName, "", tmp, sizeof(tmp), "odbc.ini") > 0) {
 		return tmp;
 	}
 	return NULL;
 
 }
-#endif /* !HAVE_SQLGETPRIVATEPROFILESTRING */
 
 /*
  * Apply a connection string to the ODBC Parameter Settings
@@ -379,135 +293,6 @@ static guint HashFunction (gconstpointer key)
    return value;
 }
 
-#if !HAVE_SQLGETPRIVATEPROFILESTRING
-static GString* GetIniFileName ()
-{
-   char* setting;
-   GString* iniFileName = g_string_new ("");
-   /*
-    * First, try the ODBCINI environment variable
-    */
-   if ((setting = getenv ("ODBCINI")) != NULL)
-   {
-      g_string_assign (iniFileName, getenv ("ODBCINI"));
-
-      if (FileExists (iniFileName->str))
-         return iniFileName;
-      
-      g_string_assign (iniFileName, "");
-   }
-   /*
-    * Second, try the HOME environment variable
-    */
-   if ((setting = getenv ("HOME")) != NULL)
-   {
-      g_string_assign (iniFileName, setting);
-      iniFileName = g_string_append (iniFileName, "/.odbc.ini");
-
-      if (FileExists (iniFileName->str))
-         return iniFileName;
-      
-      g_string_assign (iniFileName, "");
-   }
-   /*
-    * As a last resort, try SYS_ODBC_INI
-    */
-   g_string_assign (iniFileName, SYS_ODBC_INI); 
-   if (FileExists (iniFileName->str))
-      return iniFileName;
-    
-   g_string_assign (iniFileName, "");
-
-   return iniFileName;
-}
-
-static int FileExists (const gchar* name)
-{
-   struct stat fileStat;
-
-   return (stat (name, &fileStat) == 0);
-}
-
-static int FindSection (FILE* stream, const char* section)
-{
-   char* s;
-   char sectionPattern[max_line];
-   int len;
-
-   strcpy (sectionPattern, "[");
-   strcat (sectionPattern, section);
-   strcat (sectionPattern, "]");
-
-   s = fgets (line, max_line, stream);
-   while (s != NULL)
-   {
-      /*
-       * Get rid of the newline character
-       */
-      len = strlen (line);
-      if (len > 0) line[strlen (line) - 1] = '\0';
-      /*
-       * look for the section header
-       */
-      if (strcmp (line, sectionPattern) == 0)
-         return 1;
-
-      s = fgets (line, max_line, stream);
-   }
-
-   return 0;
-}
-
-static int GetNextItem (FILE* stream, char** name, char** value)
-{
-   char* s;
-   int len;
-   char equals[] = "="; /* used for seperator for strtok */
-   char* token;
-
-   if (name == NULL || value == NULL)
-   {
-      g_printerr ("GetNextItem, invalid parameters");
-      return 0;
-   }
-
-   s = fgets (line, max_line, stream);
-   if (s == NULL)
-   {
-      //perror ("fgets");
-      return 0;
-   }
-   /*
-    * Get rid of the newline character
-    */
-   len = strlen (line);
-   if (len > 0) line[strlen (line) - 1] = '\0';
-   /*
-    * Extract name from name = value
-    */
-   if ((token = strtok (line, equals)) == NULL) return 0;
-
-   len = strlen (token);
-   while (len > 0 && isspace(token[len-1]))
-   {
-      len--;
-      token[len] = '\0';
-   }
-   *name = token;
-   /*
-    * extract value from name = value
-    */
-   token = strtok (NULL, equals);
-   if (token == NULL) return 0;
-   while (*token && isspace(token[0]))
-      token++;
-
-   *value = token;
-
-   return 1;
-}
-#endif //!HAVE_SQLGETPRIVATEPROFILESTRING
-
 static void visit (gpointer key, gpointer value, gpointer user_data)
 {
    FILE* output = (FILE*) user_data;
@@ -522,7 +307,6 @@ static void cleanup (gpointer key, gpointer value, gpointer user_data)
 
 
 #ifdef UNIXODBC
-#include <odbcinstext.h>
 
 int
 ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)

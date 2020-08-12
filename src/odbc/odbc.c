@@ -200,7 +200,6 @@ SQLRETURN SQL_API SQLDriverConnect(
     SQLSMALLINT    *pcbConnStrOut,
     SQLUSMALLINT       fDriverCompletion)
 {
-	char* dsn = NULL;
 	char* database = NULL;
 	ConnectParams* params;
 	SQLRETURN ret;
@@ -210,11 +209,7 @@ SQLRETURN SQL_API SQLDriverConnect(
 
 	params = ((struct _hdbc*) hdbc)->params;
 
-	if ((dsn = ExtractDSN (params, (gchar*)szConnStrIn))) {
-		if (!LookupDSN (params, dsn)){
-			LogError ("Could not find DSN in odbc.ini");
-			return SQL_ERROR;
-		}
+	if (ExtractDSN(params, (gchar*)szConnStrIn)) {
 		SetConnectString (params, (gchar*)szConnStrIn);
 		if (!(database = GetConnectParam (params, "Database"))){
 			LogError ("Could not find Database parameter in '%s'", szConnStrIn);
@@ -471,7 +466,6 @@ SQLRETURN SQL_API SQLSetEnvAttr (
 	return SQL_SUCCESS;
 }
 
-
 SQLRETURN SQL_API SQLBindParameter(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       ipar,
@@ -489,26 +483,6 @@ SQLRETURN SQL_API SQLBindParameter(
 	TRACE("SQLBindParameter");
 	/*stmt = (struct _hstmt *) hstmt;*/
 	return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLAllocHandle(    
-    SQLSMALLINT HandleType,
-    SQLHANDLE InputHandle,
-    SQLHANDLE * OutputHandle)
-{
-	TRACE("SQLAllocHandle");
-	switch(HandleType) {
-		case SQL_HANDLE_STMT:
-			return SQLAllocStmt(InputHandle,OutputHandle);
-			break;
-		case SQL_HANDLE_DBC:
-			return SQLAllocConnect(InputHandle,OutputHandle);
-			break;
-		case SQL_HANDLE_ENV:
-			return SQLAllocEnv(OutputHandle);
-			break;
-	}
-	return SQL_ERROR;
 }
 
 SQLRETURN SQL_API SQLAllocConnect(
@@ -561,6 +535,27 @@ SQLRETURN SQL_API SQLAllocStmt(
 
 	*phstmt = stmt;
 	return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLAllocHandle(
+    SQLSMALLINT HandleType,
+    SQLHANDLE InputHandle,
+    SQLHANDLE * OutputHandle)
+{
+    SQLRETURN retval = SQL_ERROR;
+	TRACE("SQLAllocHandle");
+	switch(HandleType) {
+		case SQL_HANDLE_STMT:
+			retval = SQLAllocStmt(InputHandle,OutputHandle);
+			break;
+		case SQL_HANDLE_DBC:
+			retval = SQLAllocConnect(InputHandle,OutputHandle);
+			break;
+		case SQL_HANDLE_ENV:
+			retval = SQLAllocEnv(OutputHandle);
+			break;
+	}
+	return retval;
 }
 
 SQLRETURN SQL_API SQLBindCol(
@@ -639,12 +634,7 @@ SQLRETURN SQL_API SQLConnect(
 
 	params->dsnName = g_string_assign (params->dsnName, (gchar*)szDSN);
 
-	if (!LookupDSN (params, (gchar*)szDSN))
-	{
-		LogError ("Could not find DSN in odbc.ini");
-		return SQL_ERROR;
-	}
-	else if (!(database = GetConnectParam (params, "Database")))
+	if (!(database = GetConnectParam (params, "Database")))
 	{
 		LogError ("Could not find Database parameter in '%s'", szDSN);
 		return SQL_ERROR;
@@ -1101,25 +1091,6 @@ SQLRETURN SQL_API SQLFetch(
 	}
 }
 
-SQLRETURN SQL_API SQLFreeHandle(    
-    SQLSMALLINT HandleType,
-    SQLHANDLE Handle)
-{
-	TRACE("SQLFreeHandle");
-	switch(HandleType) {
-		case SQL_HANDLE_STMT:
-			SQLFreeStmt(Handle,SQL_DROP);
-			break;
-		case SQL_HANDLE_DBC:
-			SQLFreeConnect(Handle);
-			break;
-		case SQL_HANDLE_ENV:
-			SQLFreeEnv(Handle);
-			break;
-	}
-   return SQL_SUCCESS;
-}
-
 SQLRETURN SQL_API SQLFreeConnect(
     SQLHDBC            hdbc)
 {
@@ -1187,6 +1158,26 @@ SQLRETURN SQL_API SQLFreeStmt(
 	} else {
 	}
 	return SQL_SUCCESS;
+}
+
+SQLRETURN SQL_API SQLFreeHandle(
+    SQLSMALLINT HandleType,
+    SQLHANDLE Handle)
+{
+    SQLRETURN retval = SQL_ERROR;
+	TRACE("SQLFreeHandle");
+	switch(HandleType) {
+		case SQL_HANDLE_STMT:
+			retval = SQLFreeStmt(Handle,SQL_DROP);
+			break;
+		case SQL_HANDLE_DBC:
+			retval = SQLFreeConnect(Handle);
+			break;
+		case SQL_HANDLE_ENV:
+			retval = SQLFreeEnv(Handle);
+			break;
+	}
+   return retval;
 }
 
 SQLRETURN SQL_API SQLGetStmtAttr (
