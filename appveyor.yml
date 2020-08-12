@@ -22,16 +22,17 @@ build_script:
       if ($env:TOOLCHAIN -eq "msys2")
       {
         $env:MSYSTEM="MINGW64"
-        C:\msys64\usr\bin\bash -l -c "pacman -S --noconfirm mingw-w64-unixodbc"
+        C:\msys64\usr\bin\bash -l -c "pacman -S --noconfirm mingw-w64-x86_64-unixodbc"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && autoreconf -i -f -Wno-portability"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-unixodbc=/c/mingw64"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && make"
       }
       else
       {
-        C:\cygwin64\setup-x86_64.exe -qP libiodbc-devel
+        C:\cygwin64\setup-x86_64.exe -P bison
+        C:\cygwin64\setup-x86_64.exe -P libiodbc-devel
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f -Wno-portability"
-        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-iodbc=/cygdrive/c/usr"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-iodbc=/usr"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && make"
       }
 
