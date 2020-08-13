@@ -839,7 +839,7 @@ SQLRETURN SQL_API SQLColAttributes(
 		{
 			const char *type_name = _odbc_get_client_type_name(col);
 			if (type_name)
-				snprintf(rgbDesc, cbDescMax, "%s", type_name);
+				*pcbDesc = snprintf(rgbDesc, cbDescMax, "%s", type_name);
 			break;
 		}
 		case SQL_COLUMN_LENGTH:
