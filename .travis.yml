@@ -1,4 +1,5 @@
 language: c
+dist: bionic
 
 jobs:
   include:
@@ -49,6 +50,28 @@ jobs:
     addons:
       apt:
         packages:
+        - unixodbc-dev
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
+  - compiler: gcc-10
+    os: linux
+    addons:
+      apt:
+        sources:
+        - sourceline: 'ppa:ubuntu-toolchain-r/test'
+        packages:
+        - gcc-10
+        - libiodbc2-dev
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
+  - compiler: gcc-10
+    os: linux
+    addons:
+      apt:
+        sources:
+        - sourceline: 'ppa:ubuntu-toolchain-r/test'
+        packages:
+        - gcc-10
         - unixodbc-dev
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
