@@ -839,7 +839,7 @@ SQLRETURN SQL_API SQLColAttributes(
 		{
 			const char *type_name = _odbc_get_client_type_name(col);
 			if (type_name)
-				snprintf(rgbDesc, cbDescMax, "%s", type_name);
+				*pcbDesc = snprintf(rgbDesc, cbDescMax, "%s", type_name);
 			break;
 		}
 		case SQL_COLUMN_LENGTH:
@@ -1340,7 +1340,8 @@ SQLRETURN SQL_API SQLColumns(
 
 			ts2 = mdb_ascii2unicode(mdb, table->name, 0, (char*)t2, MDB_BIND_SIZE);
 			ts3 = mdb_ascii2unicode(mdb, col->name, 0, (char*)t3, MDB_BIND_SIZE);
-			ts5 = mdb_ascii2unicode(mdb, "FIX ME", 0,  (char*)t5, MDB_BIND_SIZE);
+			ts5 = mdb_ascii2unicode(mdb, _odbc_get_client_type_name(col), 0,  (char*)t5, MDB_BIND_SIZE);
+
 			nullable = SQL_NO_NULLS;
 			datatype = _odbc_get_client_type(col);
 			sqldatatype = _odbc_get_client_type(col);

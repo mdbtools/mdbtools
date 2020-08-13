@@ -31,12 +31,13 @@
  * This function is used in reading text data from an MDB table.
  */
 int
-mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen)
+mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen)
 {
 	char *tmp = NULL;
 	size_t tlen = 0;
 	size_t len_in, len_out;
-	char *in_ptr, *out_ptr;
+	const char *in_ptr = NULL;
+	char *out_ptr = NULL;
 
 	if ((!src) || (!dest) || (!dlen))
 		return 0;
@@ -73,7 +74,7 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
 #if HAVE_ICONV
 	//printf("1 len_in %d len_out %d\n",len_in, len_out);
 	while (1) {
-		iconv(mdb->iconv_in, &in_ptr, &len_in, &out_ptr, &len_out);
+		iconv(mdb->iconv_in, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
 		/* 
 		 * Have seen database with odd number of bytes in UCS-2, shouldn't happen but protect against it
 		 */
@@ -114,10 +115,11 @@ mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
  * If slen is 0, strlen will be used to calculate src's length.
  */
 int
-mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen)
+mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen)
 {
         size_t len_in, len_out;
-        char *in_ptr, *out_ptr;
+        const char *in_ptr = NULL;
+        char *out_ptr = NULL;
 
 	if ((!src) || (!dest) || (!dlen))
 		return 0;
@@ -128,7 +130,7 @@ mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dle
         len_out = dlen;
 
 #ifdef HAVE_ICONV
-	iconv(mdb->iconv_out, &in_ptr, &len_in, &out_ptr, &len_out);
+	iconv(mdb->iconv_out, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
 	//printf("len_in %d len_out %d\n", len_in, len_out);
 	dlen -= len_out;
 #else
