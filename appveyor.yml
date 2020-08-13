@@ -29,7 +29,7 @@ build_script:
       }
       else
       {
-        C:\cygwin64\setup-x86_64.exe -qP bison libiodbc-devel
+        C:\cygwin64\setup-x86_64.exe -qP bison flex libiodbc-devel
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f -Wno-portability"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-iodbc=/usr"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && make"

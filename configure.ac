@@ -70,7 +70,9 @@ AC_SUBST(LFLAGS)
 
 CFLAGS="$CFLAGS -Wall -Werror"
 AS_CASE([$host],
-        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
+        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"],
+        [*darwin*], [],
+        [LDFLAGS="$LDFLAGS -Wl,--no-undefined"])
 AS_CASE([$host],
         [*mingw*], [LDFLAGS="$LDFLAGS -lWs2_32"], [])
 dnl Enable -Wl,--as-needed by default to prevent overlinking
