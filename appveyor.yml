@@ -39,7 +39,7 @@ test_script:
       if ($env:TOOLCHAIN -eq "msys2")
       {
         $env:MSYSTEM="MINGW64"
-        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/odbc/mdb-count ./test/data/nwind.mdb Customers"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-count ./test/data/nwind.mdb Customers"
       }
       else
       {
