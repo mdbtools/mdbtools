@@ -594,8 +594,8 @@ int mdb_get_option(unsigned long optnum);
 void mdb_debug(int klass, char *fmt, ...);
 
 /* iconv.c */
-int mdb_unicode2ascii(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
-int mdb_ascii2unicode(MdbHandle *mdb, char *src, size_t slen, char *dest, size_t dlen);
+int mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen);
+int mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen);
 void mdb_iconv_init(MdbHandle *mdb);
 void mdb_iconv_close(MdbHandle *mdb);
 const char* mdb_target_charset(MdbHandle *mdb);

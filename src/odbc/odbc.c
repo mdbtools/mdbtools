@@ -1340,7 +1340,8 @@ SQLRETURN SQL_API SQLColumns(
 
 			ts2 = mdb_ascii2unicode(mdb, table->name, 0, (char*)t2, MDB_BIND_SIZE);
 			ts3 = mdb_ascii2unicode(mdb, col->name, 0, (char*)t3, MDB_BIND_SIZE);
-			ts5 = mdb_ascii2unicode(mdb, "FIX ME", 0,  (char*)t5, MDB_BIND_SIZE);
+			ts5 = mdb_ascii2unicode(mdb, _odbc_get_client_type_name(col), 0,  (char*)t5, MDB_BIND_SIZE);
+
 			nullable = SQL_NO_NULLS;
 			datatype = _odbc_get_client_type(col);
 			sqldatatype = _odbc_get_client_type(col);
