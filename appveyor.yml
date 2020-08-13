@@ -23,6 +23,7 @@ build_script:
       {
         $env:MSYSTEM="MINGW64"
         C:\msys64\usr\bin\bash -l -c "pacman -S --noconfirm mingw-w64-x86_64-unixodbc"
+        C:\msys64\usr\bin\bash -l -c "pacman -Ql mingw-w64-x86_64-unixodbc"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && autoreconf -i -f -Wno-portability"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-unixodbc=/mingw64"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && make"
@@ -48,3 +49,6 @@ test_script:
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-count ./test/data/nwind.mdb Customers"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && env MDBPATH=test/data ./src/odbc/unittest"
       }
+
+artifacts:
+  - path: config.log
