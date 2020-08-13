@@ -74,7 +74,7 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 #if HAVE_ICONV
 	//printf("1 len_in %d len_out %d\n",len_in, len_out);
 	while (1) {
-		iconv(mdb->iconv_in, (char **)&in_ptr, &len_in, &out_ptr, &len_out);
+		iconv(mdb->iconv_in, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
 		/* 
 		 * Have seen database with odd number of bytes in UCS-2, shouldn't happen but protect against it
 		 */
@@ -130,7 +130,7 @@ mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
         len_out = dlen;
 
 #ifdef HAVE_ICONV
-	iconv(mdb->iconv_out, (char **)&in_ptr, &len_in, &out_ptr, &len_out);
+	iconv(mdb->iconv_out, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
 	//printf("len_in %d len_out %d\n", len_in, len_out);
 	dlen -= len_out;
 #else
