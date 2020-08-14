@@ -100,6 +100,7 @@ if test "$with_iodbc"; then
 	HAVE_ODBC=true
 	ODBC_CFLAGS=$(iodbc-config --prefix="$with_iodbc" --cflags)
 	ODBC_LIBS=$(iodbc-config --prefix="$with_iodbc" --libs)
+	ODBC_LDFLAGS=""
 	CFLAGS="$CFLAGS -DIODBC"
 
 	OLDLDFLAGS=$LDFLAGS
@@ -128,6 +129,16 @@ if test "$with_unixodbc"; then
 	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBC_LIBS="$ODBC_LIBS -lodbcinst"],
                  AC_MSG_ERROR([Could not find SQLGetPrivateProfileString in -lodbcinst]))
 	LDFLAGS=$OLDLDFLAGS
+
+	OLDLDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS -Wl,-Bsymbolic-functions"
+	AC_MSG_CHECKING([for -Bsymbolic-functions linker flag])
+	AC_TRY_LINK([], [return 0],
+				[AC_MSG_RESULT(yes)
+				ODBC_LDFLAGS="-Wl,-Bsymbolic-functions"],
+				[AC_MSG_RESULT(no)
+				ODBC_LDFLAGS=""])
+	LDFLAGS=$OLDLDFLAGS
 fi
 
 if test "x$HAVE_ODBC" = "xtrue"; then
@@ -139,6 +150,7 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 
 	AC_SUBST(ODBC_CFLAGS)
 	AC_SUBST(ODBC_LIBS)
+	AC_SUBST(ODBC_LDFLAGS)
 	OPTDIRS="$OPTDIRS odbc"
 fi
 
