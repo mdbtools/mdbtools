@@ -133,7 +133,7 @@ if test "$with_unixodbc"; then
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS -Wl,-Bsymbolic-functions"
 	AC_MSG_CHECKING([for -Bsymbolic-functions linker flag])
-	AC_TRY_LINK([], [return 0],
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
 				[AC_MSG_RESULT(yes)
 				ODBC_LDFLAGS="-Wl,-Bsymbolic-functions"],
 				[AC_MSG_RESULT(no)
