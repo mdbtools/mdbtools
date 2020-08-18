@@ -1081,6 +1081,9 @@ SQLRETURN SQL_API SQLFetch(
 		//}
 		//cur = cur->next;
 	//}
+	if ( stmt->sql->limit >= 0 && stmt->rows_affected == stmt->sql->limit ) {
+		return SQL_NO_DATA_FOUND;
+	}
 
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
 		stmt->rows_affected++;
