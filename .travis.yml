@@ -82,6 +82,7 @@ jobs:
       homebrew:
         packages:
         - libiodbc
+        - bison
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
   - compiler: clang
@@ -92,6 +93,7 @@ jobs:
         packages:
         - libiodbc
         - glib
+        - bison
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
   - compiler: clang
@@ -101,6 +103,7 @@ jobs:
       homebrew:
         packages:
         - unixodbc
+        - bison
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
   - compiler: clang
@@ -111,6 +114,7 @@ jobs:
         packages:
         - unixodbc
         - glib
+        - bison
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
   - compiler: gcc
