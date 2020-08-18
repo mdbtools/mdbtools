@@ -22,6 +22,7 @@ https://github.com/evanmiller/mdbtools
 Intended focus areas of this fork:
 
 - [ ] Security / fuzz testing
+- [ ] Thread safety
 - [x] Removing GLib dependency
 - [x] Continuous integration with Travis and AppVeyor
 
