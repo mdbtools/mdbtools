@@ -32,7 +32,8 @@
 #endif
 #include <mdbtools.h>
 
-typedef struct {
+typedef struct MdbSQL
+{
 	MdbHandle *mdb;
 	int all_columns;
 	int sel_count;
@@ -71,16 +72,10 @@ typedef struct {
 	MdbSarg *sarg;
 } MdbSQLSarg;
 
-extern char *g_input_ptr;
-
-#undef YY_INPUT
-#define YY_INPUT(b, r, ms) (r = mdb_sql_yyinput(b, ms));
-
 #define mdb_sql_has_error(sql) ((sql)->error_msg[0] ? 1 : 0)
 #define mdb_sql_last_error(sql) ((sql)->error_msg)
 
 void mdb_sql_error(MdbSQL* sql, char *fmt, ...);
-MdbSQL *_mdb_sql(MdbSQL *sql);
 MdbSQL *mdb_sql_init(void);
 MdbSQLSarg *mdb_sql_alloc_sarg(void);
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name);
@@ -109,6 +104,9 @@ int mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table);
 int mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, int col_type, int col_size, int is_fixed);
 void mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
 int mdb_sql_add_limit(MdbSQL *sql, char *limit);
+
+
+int parse_sql(MdbSQL * mdb, const gchar* str);
 
 #ifdef __cplusplus
   }
