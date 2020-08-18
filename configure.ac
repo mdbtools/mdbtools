@@ -49,7 +49,7 @@ AC_MSG_RESULT( no - SQL engine disable);
 sql=false
 fi
 
-if $YACC -V >/dev/null 2>&1; then
+if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
     if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
         YFLAGS="$YFLAGS -Wno-conflicts-sr"
     fi
@@ -64,7 +64,7 @@ if test "x$sql" = "xtrue"; then
 	CFLAGS="$CFLAGS -DSQL"
 	OPTDIRS="$OPTDIRS sql"
 else
-	AC_MSG_WARN([Yacc is not available: SQL disabled.])
+	AC_MSG_WARN([Bison 3.0+ is not available: SQL disabled.])
 fi
 
 AM_CONDITIONAL(SQL, test x$sql = xtrue)
