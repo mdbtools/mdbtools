@@ -158,4 +158,5 @@ script:
   - ./src/util/mdb-tables test/data/nwind.mdb
   - ./src/util/mdb-ver test/data/ASampleDatabase.accdb
   - ./src/util/mdb-ver test/data/nwind.mdb
+  - ./src/util/mdb-sql -i test/sql/nwind.sql test/data/nwind.mdb
   - env MDBPATH=test/data ./src/odbc/unittest
