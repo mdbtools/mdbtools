@@ -1608,8 +1608,8 @@ SQLRETURN SQL_API SQLGetData(
 		default: /* FIXME here we assume fCType == SQL_C_CHAR */
 		to_c_char:
 		{
-			static size_t len = 0;
-			static char *str = NULL;
+			static __thread size_t len = 0;
+			static __thread char *str = NULL;
 
 			if (col->col_type == MDB_OLE) {
 				if (stmt->pos == 0) {
