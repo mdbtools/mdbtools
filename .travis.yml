@@ -85,6 +85,7 @@ jobs:
         - bison
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
   - compiler: clang
     os: osx
     osx_image: xcode11.4
@@ -96,6 +97,7 @@ jobs:
         - bison
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
   - compiler: clang
     os: osx
     osx_image: xcode11.4
@@ -106,6 +108,7 @@ jobs:
         - bison
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
   - compiler: clang
     os: osx
     osx_image: xcode11.4
@@ -117,6 +120,7 @@ jobs:
         - bison
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
   - compiler: gcc
     os: osx
     osx_image: xcode11.4

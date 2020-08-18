@@ -53,6 +53,7 @@ if $YACC -V >/dev/null 2>&1; then
     if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
         YFLAGS="$YFLAGS -Wno-conflicts-sr"
     fi
+    YFLAGS="$YFLAGS -Wno-yacc"
 else
 sql=false
 fi

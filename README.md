@@ -93,7 +93,7 @@ First, you must have reasonably current installations of:
 * [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.58)
 
 If you want to build the SQL engine, you'll need
-[bison](https://www.gnu.org/software/bison/) or
+[bison](https://www.gnu.org/software/bison/) (version >= 3.0) or
 [byacc](https://invisible-island.net/byacc/byacc.html), and
 [flex](https://github.com/westes/flex).
 
