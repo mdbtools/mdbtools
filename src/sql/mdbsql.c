@@ -590,7 +590,7 @@ void mdb_sql_reset(MdbSQL *sql)
 	sql->sel_count = 0;
 	sql->max_rows = -1;
 	sql->row_count = 0;
-	sql->limit = 0;
+	sql->limit = -1;
 }
 static void print_break(int sz, int first)
 {
@@ -883,7 +883,7 @@ mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table)
 {
 	int rc = mdb_fetch_row(table);
 	if (rc) {
-		if (sql->row_count + 1 > sql->limit) {
+		if (sql->limit >= 0 && sql->row_count + 1 > sql->limit) {
 			return 0;
 		}
 		sql->row_count++;
