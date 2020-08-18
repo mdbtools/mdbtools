@@ -36,8 +36,6 @@
 
 #include <locale.h>
 
-char *g_input_ptr;
-
 /* Prevent warnings from -Wmissing-prototypes.  */
 #ifdef YYPARSE_PARAM
 #if defined __STDC__ || defined __cplusplus
@@ -67,19 +65,6 @@ va_list ap;
 	fprintf(stderr, "%s\n", sql->error_msg);
 }
 
-int mdb_sql_yyinput(char *buf, int need)
-{
-int cplen, have;
-
-	have = strlen(g_input_ptr);
-	cplen = need > have ? have : need;
-	
-	if (cplen>0) {
-		memcpy(buf, g_input_ptr, cplen);
-		g_input_ptr += cplen;
-	} 
-	return cplen;
-}
 MdbSQL *mdb_sql_init()
 {
 MdbSQL *sql;
@@ -112,14 +97,9 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 	g_return_val_if_fail (sql, NULL);
 	g_return_val_if_fail (querystr, NULL);
 
-	g_input_ptr = (gchar*) querystr;
-
-	/* calls to yyparse should be serialized for thread safety */
-
-	/* begin unsafe */
-	_mdb_sql (sql);
 	sql->error_msg[0]='\0';
-	if (yyparse()) {
+
+	if (parse_sql (sql, querystr)) {
 		/* end unsafe */
 		mdb_sql_error (sql, _("Could not parse '%s' command"), querystr);
 		mdb_sql_reset (sql);
