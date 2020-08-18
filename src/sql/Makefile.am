@@ -11,4 +11,3 @@ CLEANFILES = parser.c parser.h lexer.c
 AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS)
 LIBS	=	$(GLIB_LIBS)
 libmdbsql_la_LIBADD =	../libmdb/libmdb.la
-YACC = @YACC@ -d
