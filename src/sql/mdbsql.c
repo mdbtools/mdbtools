@@ -833,6 +833,8 @@ int found = 0;
 		}
 		if (!found) {
 			mdb_sql_error(sql, "Column %s not found",sqlcol->name);
+			mdb_index_scan_free(table);
+			mdb_free_tabledef(table);
 			mdb_sql_reset(sql);
 			return;
 		}
