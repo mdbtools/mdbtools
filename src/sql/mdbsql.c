@@ -806,6 +806,7 @@ int found = 0;
 		mdb_add_row_to_pg(ttable,row_buffer, row_size);
 		ttable->num_rows++;
 		sql->cur_table = ttable;
+		mdb_free_tabledef(table);
 		return;
 	}
 
