@@ -42,9 +42,6 @@ static void unbind_columns (struct _hstmt*);
 
 #define FILL_FIELD(f,v,s) mdb_fill_temp_field(f,v,s,0,0,0,0)
 
-#ifndef MIN
-#define MIN(a,b) (a>b ? b : a)
-#endif
 static __thread char sqlState[6];
 
 typedef struct {
@@ -145,14 +142,19 @@ static int sqlwlen(SQLWCHAR *p){
 }
 #endif // ENABLE_ODBC_W
 
-static void LogError(struct _hdbc* dbc, const char* format, ...)
+static void LogHandleError(struct _hdbc* dbc, const char* format, ...)
 {
-   /*
-    * Someday, I might make this store more than one error.
-    */
     va_list argp;
     va_start(argp, format);
     vsnprintf(dbc->lastError, sizeof(dbc->lastError), format, argp);
+    va_end(argp);
+}
+
+static void LogStatementError(struct _hstmt* stmt, const char* format, ...)
+{
+    va_list argp;
+    va_start(argp, format);
+    vsnprintf(stmt->lastError, sizeof(stmt->lastError), format, argp);
     va_end(argp);
 }
 
@@ -190,7 +192,7 @@ SQLRETURN SQL_API SQLDriverConnect(
 	if (ExtractDSN(params, (gchar*)szConnStrIn)) {
 		SetConnectString (params, (gchar*)szConnStrIn);
 		if (!(database = GetConnectParam (params, "Database"))){
-			LogError(hdbc, "Could not find Database parameter in '%s'", szConnStrIn);
+			LogHandleError(hdbc, "Could not find Database parameter in '%s'", szConnStrIn);
 			return SQL_ERROR;
 		}
 		ret = do_connect (hdbc, database);
@@ -200,7 +202,7 @@ SQLRETURN SQL_API SQLDriverConnect(
 		ret = do_connect (hdbc, database);
 		return ret;
 	}
-	LogError(hdbc, "Could not find DSN nor DBQ in connect string '%s'", szConnStrIn);
+	LogHandleError(hdbc, "Could not find DSN nor DBQ in connect string '%s'", szConnStrIn);
 	return SQL_ERROR;
 }
 
@@ -284,7 +286,7 @@ SQLRETURN SQL_API SQLExtendedFetch(
 
 	TRACE("SQLExtendedFetch");
 	if (fFetchType!=SQL_FETCH_NEXT) {
-		LogError(stmt->hdbc, "Fetch type not supported in SQLExtendedFetch");
+		LogStatementError(stmt, "Fetch type not supported in SQLExtendedFetch");
 		return SQL_ERROR;
 	}
 	if (pcrow)
@@ -617,7 +619,7 @@ SQLRETURN SQL_API SQLConnect(
 
 	if (!(database = GetConnectParam (params, "Database")))
 	{
-		LogError(hdbc, "Could not find Database parameter in '%s'", szDSN);
+		LogHandleError(hdbc, "Could not find Database parameter in '%s'", szDSN);
 		return SQL_ERROR;
 	}
 
@@ -909,18 +911,23 @@ SQLRETURN SQL_API SQLError(
    
 	TRACE("SQLError");
 	//if(pfNativeError)fprintf(stderr,"NativeError %05d\n", *pfNativeError);
-	if (strlen(((struct _hdbc *)hdbc)->lastError) > 0)
-	{
-		strcpy ((char*)szSqlState, "08001");
-		int l = snprintf((char*)szErrorMsg, cbErrorMsgMax, "%s", ((struct _hdbc *)hdbc)->lastError);
-		if (pcbErrorMsg)
-			*pcbErrorMsg = l;
-		if (pfNativeError)
-			*pfNativeError = 1;
+    char *src = NULL;
+    if (hstmt) {
+        src = ((struct _hstmt *)hstmt)->lastError;
+    } else if (hdbc) {
+        src = ((struct _hdbc *)hdbc)->lastError;
+    }
+    if (src && src[0]) {
+        strcpy ((char*)szSqlState, "08001");
+        int l = snprintf((char*)szErrorMsg, cbErrorMsgMax, "%s", src);
+        if (pcbErrorMsg)
+            *pcbErrorMsg = l;
+        if (pfNativeError)
+            *pfNativeError = 1;
 
-		result = SQL_SUCCESS;
-		strcpy(((struct _hdbc *)hdbc)->lastError, "");
-	}
+        result = SQL_SUCCESS;
+        strcpy(src, "");
+    }
 
 	return result;
 }
@@ -945,10 +952,11 @@ SQLRETURN SQL_API SQLErrorW(
 
 	result = SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
 	if (result == SQL_SUCCESS) {
+        struct _hdbc *dbc = hstmt ? ((struct _hstmt *)hstmt)->hdbc : hdbc;
 		size_t l=6, z=6*sizeof(SQLWCHAR);
-		ascii2unicode((struct _hdbc *)hdbc, (char*)szSqlState8, &l, (char*)szSqlState, &z);
+		ascii2unicode(dbc, (char*)szSqlState8, &l, (char*)szSqlState, &z);
 		l = cbErrorMsgMax;
-		ascii2unicode((struct _hdbc *)hdbc, (char*)szErrorMsg8, (size_t*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
+		ascii2unicode(dbc, (char*)szErrorMsg8, (size_t*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
 		if (pcbErrorMsg)
 			*pcbErrorMsg = l;
 	}
@@ -969,7 +977,7 @@ SQLRETURN SQL_API SQLExecute(SQLHSTMT hstmt)
 
 	mdb_sql_run_query(stmt->sql, stmt->query);
 	if (mdb_sql_has_error(stmt->sql)) {
-		LogError(stmt->hdbc, "Couldn't parse SQL\n");
+		LogStatementError(stmt, "Couldn't parse SQL\n");
 		mdb_sql_reset(stmt->sql);
 		return SQL_ERROR;
 	} else {
@@ -1323,7 +1331,7 @@ SQLRETURN SQL_API SQLColumns(
 		table = mdb_read_table(entry);
 		if ( !table )
 		{
-			LogError(stmt->hdbc, "Could not read table '%s'", szTableName);
+			LogStatementError(stmt, "Could not read table '%s'", szTableName);
 			return SQL_ERROR;
 		}
 		mdb_read_columns(table);

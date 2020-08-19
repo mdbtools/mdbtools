@@ -56,6 +56,7 @@ struct _hstmt {
 	 * please make dynamic before checking in 
 	 */
 	char query[4096];
+    char lastError[256];
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
 	int icol; /* SQLGetData: last column */
