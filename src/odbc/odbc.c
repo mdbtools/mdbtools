@@ -42,8 +42,6 @@ static void unbind_columns (struct _hstmt*);
 
 #define FILL_FIELD(f,v,s) mdb_fill_temp_field(f,v,s,0,0,0,0)
 
-static __thread char sqlState[6];
-
 typedef struct {
 	SQLCHAR *type_name;
 	SQLSMALLINT data_type;
@@ -678,7 +676,7 @@ SQLRETURN SQL_API SQLDescribeCol(
 
 	TRACE("SQLDescribeCol");
 	if (icol<1 || icol>sql->num_columns) {
-		strcpy(sqlState, "07009"); // Invalid descriptor index
+		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
@@ -691,7 +689,7 @@ SQLRETURN SQL_API SQLDescribeCol(
 	}
 	if (i==table->num_cols) {
 		fprintf(stderr, "Column %s lost\n", (char*)sqlcol->name);
-		strcpy(sqlState, "07009"); // Invalid descriptor index
+		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 
@@ -700,11 +698,11 @@ SQLRETURN SQL_API SQLDescribeCol(
 		*pcbColName=strlen(sqlcol->name);
 	if (szColName) {
 		if (cbColNameMax < 0) {
-			strcpy(sqlState, "HY090"); // Invalid string or buffer length
+			strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
 			return SQL_ERROR;
 		}
 		if (snprintf((char *)szColName, cbColNameMax, "%s", sqlcol->name) + 1 > cbColNameMax) {
-			strcpy(sqlState, "01004"); // String data, right truncated
+			strcpy(stmt->sqlState, "01004"); // String data, right truncated
 			ret = SQL_SUCCESS_WITH_INFO;
 		}
 	}
@@ -782,7 +780,7 @@ SQLRETURN SQL_API SQLColAttributes(
 	}
 
 	if (icol<1 || icol>sql->num_columns) {
-		strcpy(sqlState, "07009"); // Invalid descriptor index
+		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 
@@ -796,7 +794,7 @@ SQLRETURN SQL_API SQLColAttributes(
           	}
 	}
 	if (i==table->num_cols) {
-		strcpy(sqlState, "07009"); // Invalid descriptor index
+		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
 
@@ -806,11 +804,11 @@ SQLRETURN SQL_API SQLColAttributes(
 		case SQL_COLUMN_NAME: case SQL_DESC_NAME:
 		case SQL_COLUMN_LABEL: /* = SQL_DESC_LABEL */
 			if (cbDescMax < 0) {
-				strcpy(sqlState, "HY090"); // Invalid string or buffer length
+				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
 				return SQL_ERROR;
 			}
 			if (snprintf(rgbDesc, cbDescMax, "%s", sqlcol->name) + 1 > cbDescMax) {
-				strcpy(sqlState, "01004"); // String data, right truncated
+				strcpy(stmt->sqlState, "01004"); // String data, right truncated
 				ret = SQL_SUCCESS_WITH_INFO;
 			}
 			break;
@@ -849,7 +847,7 @@ SQLRETURN SQL_API SQLColAttributes(
             *pfDesc = SQL_ATTR_READONLY;
             break;
 		default:
-			strcpy(sqlState, "HYC00"); // 	Driver not capable
+			strcpy(stmt->sqlState, "HYC00"); // 	Driver not capable
 			ret = SQL_ERROR;
 			break;
 	}
@@ -912,13 +910,21 @@ SQLRETURN SQL_API SQLError(
 	TRACE("SQLError");
 	//if(pfNativeError)fprintf(stderr,"NativeError %05d\n", *pfNativeError);
     char *src = NULL;
+    char *state = NULL;
     if (hstmt) {
         src = ((struct _hstmt *)hstmt)->lastError;
+        state = ((struct _hstmt *)hstmt)->sqlState;
     } else if (hdbc) {
         src = ((struct _hdbc *)hdbc)->lastError;
+        state = ((struct _hdbc *)hdbc)->sqlState;
+    } else if (henv) {
+        state = ((struct _henv *)henv)->sqlState;
     }
+
+    if (state)
+        strcpy((char*)szSqlState, state);
+
     if (src && src[0]) {
-        strcpy ((char*)szSqlState, "08001");
         int l = snprintf((char*)szErrorMsg, cbErrorMsgMax, "%s", src);
         if (pcbErrorMsg)
             *pcbErrorMsg = l;
@@ -1095,7 +1101,7 @@ SQLRETURN SQL_API SQLFreeConnect(
 
 	if (dbc->statements->len) {
 		// Function sequence error
-		strcpy(sqlState, "HY010");
+		strcpy(dbc->sqlState, "HY010");
 		return SQL_ERROR;
 	}
 	if (!g_ptr_array_remove(env->connections, dbc))
@@ -1121,7 +1127,7 @@ SQLRETURN SQL_API SQLFreeEnv(
 
 	if (env->connections->len) {
 		// Function sequence error
-		strcpy(sqlState, "HY010");
+		strcpy(env->sqlState, "HY010");
 		return SQL_ERROR;
 	}
 	g_ptr_array_free(env->connections, TRUE);
@@ -1427,7 +1433,7 @@ SQLRETURN SQL_API SQLGetData(
 	mdb = sql->mdb;
 
 	if (icol<1 || icol>sql->num_columns) {
-		strcpy(sqlState, "07009");
+		strcpy(stmt->sqlState, "07009");
 		return SQL_ERROR;
 	}
 
@@ -1448,7 +1454,7 @@ SQLRETURN SQL_API SQLGetData(
 	}
 
 	if (!rgbValue) {
-		strcpy(sqlState, "HY009");
+		strcpy(stmt->sqlState, "HY009");
 	 	return SQL_ERROR;
 	}
 
@@ -1463,7 +1469,7 @@ SQLRETURN SQL_API SQLGetData(
 		/* When NULL data is retrieved, non-null pcbValue is
 		   required */
 		if (!pcbValue) {
-			strcpy(sqlState, "22002");
+			strcpy(stmt->sqlState, "22002");
 			return SQL_ERROR;
 		}
 		*pcbValue = SQL_NULL_DATA;
@@ -1479,7 +1485,7 @@ SQLRETURN SQL_API SQLGetData(
 				goto found_bound_type;
 			}
 		}
-		strcpy(sqlState, "07009");
+		strcpy(stmt->sqlState, "07009");
 		return SQL_ERROR;
 	}
 	found_bound_type:
@@ -1501,7 +1507,7 @@ SQLRETURN SQL_API SQLGetData(
 			switch (fCType) {
 			case SQL_C_UTINYINT:
 				if (intValue<0 || intValue>UCHAR_MAX) {
-					strcpy(sqlState, "22003"); // Numeric value out of range
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
 				*(SQLCHAR*)rgbValue = (SQLCHAR)intValue;
@@ -1511,7 +1517,7 @@ SQLRETURN SQL_API SQLGetData(
 			case SQL_C_TINYINT:
 			case SQL_C_STINYINT:
 				if (intValue<SCHAR_MIN || intValue>SCHAR_MAX) {
-					strcpy(sqlState, "22003"); // Numeric value out of range
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
 				*(SQLSCHAR*)rgbValue = (SQLSCHAR)intValue;
@@ -1521,7 +1527,7 @@ SQLRETURN SQL_API SQLGetData(
 			case SQL_C_USHORT:
 			case SQL_C_SHORT:
 				if (intValue<0 || intValue>USHRT_MAX) {
-					strcpy(sqlState, "22003"); // Numeric value out of range
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
 				*(SQLSMALLINT*)rgbValue = (SQLSMALLINT)intValue;
@@ -1530,7 +1536,7 @@ SQLRETURN SQL_API SQLGetData(
 				break;
 			case SQL_C_SSHORT:
 				if (intValue<SHRT_MIN || intValue>SHRT_MAX) {
-					strcpy(sqlState, "22003"); // Numeric value out of range
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
 				*(SQLSMALLINT*)rgbValue = (SQLSMALLINT)intValue;
@@ -1539,7 +1545,7 @@ SQLRETURN SQL_API SQLGetData(
 				break;
 			case SQL_C_ULONG:
 				if (intValue<0 || intValue>UINT_MAX) {
-					strcpy(sqlState, "22003"); // Numeric value out of range
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
 				*(SQLUINTEGER*)rgbValue = (SQLINTEGER)intValue;
@@ -1549,7 +1555,7 @@ SQLRETURN SQL_API SQLGetData(
 			case SQL_C_LONG:
 			case SQL_C_SLONG:
 				if (intValue<INT_MIN || intValue>INT_MAX) {
-					strcpy(sqlState, "22003"); // Numeric value out of range
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
 					return SQL_ERROR;
 				}
 				*(SQLINTEGER*)rgbValue = intValue;
@@ -1557,7 +1563,7 @@ SQLRETURN SQL_API SQLGetData(
 					*pcbValue = sizeof(SQLINTEGER);
 				break;
 			default:
-				strcpy(sqlState, "HYC00"); // Not implemented
+				strcpy(stmt->sqlState, "HYC00"); // Not implemented
 				return SQL_ERROR;
 			}
 			break;
@@ -1627,7 +1633,7 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_NO_DATA;
 			}
 			if (cbValueMax < 0) {
-				strcpy(sqlState, "HY090"); // Invalid string or buffer length
+				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
 				free(str);
 				str = NULL;
 				return SQL_ERROR;
@@ -1662,7 +1668,7 @@ SQLRETURN SQL_API SQLGetData(
 			if (partsRemain) {
 				stmt->pos += cbValueMax - ( needsTerminator ? 1 : 0 );
 				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
-				strcpy(sqlState, "01004"); // truncated
+				strcpy(stmt->sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			stmt->pos = len;
@@ -1922,7 +1928,7 @@ SQLRETURN SQL_API SQLGetInfo(
 	default:
 		if (pcbInfoValue)
 			*pcbInfoValue = 0;
-		strcpy(sqlState, "HYC00");
+		strcpy(((struct _hdbc *)hdbc)->sqlState, "HYC00");
 		return SQL_ERROR;
 	}
 

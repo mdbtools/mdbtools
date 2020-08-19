@@ -37,6 +37,7 @@ extern "C" {
 
 struct _henv {
 	GPtrArray *connections;
+    char sqlState[6];
 };
 struct _hdbc {
 	struct _henv *henv;
@@ -44,6 +45,7 @@ struct _hdbc {
 	ConnectParams* params;
 	GPtrArray *statements;
     char lastError[256];
+    char sqlState[6];
 #ifdef ENABLE_ODBC_W
     iconv_t iconv_in;
     iconv_t iconv_out;
@@ -57,6 +59,7 @@ struct _hstmt {
 	 */
 	char query[4096];
     char lastError[256];
+    char sqlState[6];
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
 	int icol; /* SQLGetData: last column */
