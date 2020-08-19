@@ -43,6 +43,7 @@ struct _hdbc {
 	MdbSQL *sqlconn;
 	ConnectParams* params;
 	GPtrArray *statements;
+    char lastError[256];
 #ifdef ENABLE_ODBC_W
     iconv_t iconv_in;
     iconv_t iconv_out;
