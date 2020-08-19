@@ -201,7 +201,7 @@ void DumpParams (ConnectParams* params, FILE* output)
 
 gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
 {
-   char *p, *q, *s;
+   char *p, *q;
 
    if (!params)
       return NULL;
@@ -233,7 +233,7 @@ gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
 
 gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
 {
-   char *p, *q, *s;
+   char *p, *q;
 
    if (!params)
       return NULL;
