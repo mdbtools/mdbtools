@@ -75,6 +75,7 @@ MdbSQL *sql;
 	sql->sarg_tree = NULL;
 	sql->sarg_stack = NULL;
 	sql->max_rows = -1;
+	sql->limit = -1;
 
 	return sql;
 }
