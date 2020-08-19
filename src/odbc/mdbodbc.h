@@ -43,6 +43,10 @@ struct _hdbc {
 	MdbSQL *sqlconn;
 	ConnectParams* params;
 	GPtrArray *statements;
+#ifdef ENABLE_ODBC_W
+    iconv_t iconv_in;
+    iconv_t iconv_out;
+#endif
 };
 struct _hstmt {
 	MdbSQL *sql;

@@ -31,10 +31,6 @@
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
 
-#ifdef ENABLE_ODBC_W
-static iconv_t iconv_in,iconv_out;
-#endif //ENABLE_ODBC_W
-
 static SQLSMALLINT _odbc_get_client_type(MdbColumn *col);
 static const char * _odbc_get_client_type_name(MdbColumn *col);
 static int _odbc_fix_literals(struct _hstmt *stmt);
@@ -50,8 +46,8 @@ static void unbind_columns (struct _hstmt*);
 #define MIN(a,b) (a>b ? b : a)
 #endif
 #define _MAX_ERROR_LEN 255
-static char lastError[_MAX_ERROR_LEN+1];
-static char sqlState[6];
+static __thread char lastError[_MAX_ERROR_LEN+1];
+static __thread char sqlState[6];
 
 typedef struct {
 	SQLCHAR *type_name;
@@ -94,11 +90,9 @@ TypeInfo type_info[] = {
 #define MAX_TYPE_INFO 11
 
 #ifdef ENABLE_ODBC_W
-void my_fini(void);
-
-MDB_CONSTRUCTOR(my_init)
+static void _init_iconv(struct _hdbc* dbc) {
 {
-	TRACE("my_init");
+	TRACE("_init_iconv");
 	int endian = 1;
 	const char* wcharset;
 	if (sizeof(SQLWCHAR) == 2)
@@ -113,26 +107,16 @@ MDB_CONSTRUCTOR(my_init)
 			wcharset = "UCS-4BE";
 	else
 		fprintf(stderr, "Unsupported SQLWCHAR width %zd\n", sizeof(SQLWCHAR));
-//fprintf(stderr,"charset %s\n", wcharset);
-	//fprintf(stderr, "SQLWCHAR width %d\n", sizeof(SQLWCHAR));
-/*
-#if __SIZEOF_WCHAR_T__ == 4 || __WCHAR_MAX__ > 0x10000
-	#define WCHAR_CHARSET "UCS-4LE"
-#else
-	#define WCHAR_CHARSET "UCS-2LE"
-#endif
-*/
-	iconv_out = iconv_open(wcharset, "UTF-8");
-	iconv_in = iconv_open("UTF-8", wcharset);
 
-	atexit(my_fini);
+	dbc->iconv_out = iconv_open(wcharset, "UTF-8");
+	dbc->iconv_in = iconv_open("UTF-8", wcharset);
 }
 
-void my_fini()
+static void _free_iconv(struct _hdbc *dbc)
 {
-	TRACE("my_fini");
-	if(iconv_out != (iconv_t)-1)iconv_close(iconv_out);
-	if(iconv_in != (iconv_t)-1)iconv_close(iconv_in);
+	TRACE("_free_iconv");
+	if(dbc->iconv_out != (iconv_t)-1)iconv_close(dbc->iconv_out);
+	if(dbc->iconv_in != (iconv_t)-1)iconv_close(dbc->iconv_in);
 }
 
 static int unicode2ascii(char *_in, size_t *_lin, char *_out, size_t *_lout){
@@ -500,6 +484,9 @@ struct _hdbc* dbc;
 	dbc->params = NewConnectParams ();
 	dbc->statements = g_ptr_array_new();
 	dbc->sqlconn = mdb_sql_init();
+#ifdef ENABLE_ODBC_W
+    _init_iconv(dbc);
+#endif
 	*phdbc=dbc;
 
 	return SQL_SUCCESS;
@@ -1115,6 +1102,9 @@ SQLRETURN SQL_API SQLFreeConnect(
 	FreeConnectParams(dbc->params);
 	g_ptr_array_free(dbc->statements, TRUE);
 	mdb_sql_exit(dbc->sqlconn);
+#ifdef ENABLE_ODBC_W
+    _free_iconv(dbc);
+#endif
 	g_free(dbc);
 
 	return SQL_SUCCESS;
