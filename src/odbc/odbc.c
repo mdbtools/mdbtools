@@ -90,7 +90,7 @@ TypeInfo type_info[] = {
 #define MAX_TYPE_INFO 11
 
 #ifdef ENABLE_ODBC_W
-static void _init_iconv(struct _hdbc* dbc) {
+static void _init_iconv(struct _hdbc* dbc)
 {
 	TRACE("_init_iconv");
 	int endian = 1;
@@ -119,21 +119,21 @@ static void _free_iconv(struct _hdbc *dbc)
 	if(dbc->iconv_in != (iconv_t)-1)iconv_close(dbc->iconv_in);
 }
 
-static int unicode2ascii(char *_in, size_t *_lin, char *_out, size_t *_lout){
+static int unicode2ascii(struct _hdbc* dbc, char *_in, size_t *_lin, char *_out, size_t *_lout){
 	char *in=_in, *out=_out;
 	size_t lin=*_lin, lout=*_lout;
-	int ret = iconv(iconv_in, &in, &lin, &out, &lout);
+	int ret = iconv(dbc->iconv_in, &in, &lin, &out, &lout);
 	*_lin -= lin;
 	*_lout -= lout;
 	return ret;
 }
 
-static int ascii2unicode(char *_in, size_t *_lin, char *_out, size_t *_lout){
+static int ascii2unicode(struct _hdbc* dbc, char *_in, size_t *_lin, char *_out, size_t *_lout){
 	//fprintf(stderr,"ascii2unicode %08x %08x %08x %08x\n",_in,_lin,_out,_lout);
 	char *in=_in, *out=_out;
 	size_t lin=*_lin, lout=*_lout;
 	//fprintf(stderr,"ascii2unicode %zd %zd\n",lin,lout);
-	int ret = iconv(iconv_out, &in, &lin, &out, &lout);
+	int ret = iconv(dbc->iconv_out, &in, &lin, &out, &lout);
 	*_lin -= lin;
 	*_lout -= lout;
 	return ret;
@@ -227,7 +227,7 @@ SQLRETURN SQL_API SQLDriverConnectW(
 		size_t l = cbConnStrIn*sizeof(SQLWCHAR), z = (cbConnStrIn+1)*3;
 		SQLCHAR *tmp = malloc(z);
 		SQLRETURN ret;
-		unicode2ascii((char*)szConnStrIn, &l, (char*)tmp, &z);
+		unicode2ascii((struct _hdbc *)hdbc, (char*)szConnStrIn, &l, (char*)tmp, &z);
 		tmp[z] = 0;
 		ret = SQLDriverConnect(hdbc,hwnd,tmp,SQL_NTS,NULL,0,pcbConnStrOut,fDriverCompletion);
 		free(tmp);
@@ -651,9 +651,9 @@ SQLRETURN SQL_API SQLConnectW(
 		size_t l2=cbUID*4,z2=cbUID*2;
 		size_t l3=cbAuthStr*4,z3=cbAuthStr*2;
 		SQLRETURN ret;
-		unicode2ascii((char*)szDSN, &z1, (char*)tmp1, &l1);
-		unicode2ascii((char*)szUID, &z2, (char*)tmp2, &l2);
-		unicode2ascii((char*)szAuthStr, &z3, (char*)tmp3, &l3);
+		unicode2ascii((struct _hdbc *)hdbc, (char*)szDSN, &z1, (char*)tmp1, &l1);
+		unicode2ascii((struct _hdbc *)hdbc, (char*)szUID, &z2, (char*)tmp2, &l2);
+		unicode2ascii((struct _hdbc *)hdbc, (char*)szAuthStr, &z3, (char*)tmp3, &l3);
 		ret = SQLConnect(hdbc, tmp1, l1, tmp2, l2, tmp3, l3);
 		free(tmp1),free(tmp2),free(tmp3);
 		return ret;
@@ -747,7 +747,7 @@ SQLRETURN SQL_API SQLDescribeColW(
 		SQLCHAR *tmp=calloc(cbColNameMax*4,1);
 		size_t l=cbColNameMax*4;
 		SQLRETURN ret = SQLDescribeCol(hstmt, icol, tmp, cbColNameMax*4, (SQLSMALLINT*)&l, pfSqlType, pcbColDef, pibScale, pfNullable);
-		ascii2unicode((char*)tmp, &l, (char*)szColName, (size_t*)pcbColName);
+		ascii2unicode(((struct _hstmt*)hstmt)->hdbc, (char*)tmp, &l, (char*)szColName, (size_t*)pcbColName);
 		*pcbColName/=sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
@@ -877,7 +877,7 @@ SQLRETURN SQL_API SQLColAttributesW(
 		SQLCHAR *tmp=calloc(cbDescMax*4,1);
 		size_t l=cbDescMax*4;
 		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,(SQLSMALLINT*)&l,pfDesc);
-		ascii2unicode((char*)tmp, &l, (char*)rgbDesc, (size_t*)pcbDesc);
+		ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, &l, (char*)rgbDesc, (size_t*)pcbDesc);
 		*pcbDesc/=sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
@@ -952,9 +952,9 @@ SQLRETURN SQL_API SQLErrorW(
 	result = SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
 	if (result == SQL_SUCCESS) {
 		size_t l=6, z=6*sizeof(SQLWCHAR);
-		ascii2unicode((char*)szSqlState8, &l, (char*)szSqlState, &z);
+		ascii2unicode((struct _hdbc *)hdbc, (char*)szSqlState8, &l, (char*)szSqlState, &z);
 		l = cbErrorMsgMax;
-		ascii2unicode((char*)szErrorMsg8, (size_t*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
+		ascii2unicode((struct _hdbc *)hdbc, (char*)szErrorMsg8, (size_t*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
 		if (pcbErrorMsg)
 			*pcbErrorMsg = l;
 	}
@@ -1004,7 +1004,7 @@ SQLRETURN SQL_API SQLExecDirectW(
 		SQLCHAR *tmp=calloc(cbSqlStr*4,1);
 		size_t l=cbSqlStr*4,z=cbSqlStr*2;
 		SQLRETURN ret;
-		unicode2ascii((char*)szSqlStr, &z, (char*)tmp, &l);
+		unicode2ascii(((struct _hstmt *)hstmt)->hdbc, (char*)szSqlStr, &z, (char*)tmp, &l);
 		ret = SQLExecDirect(hstmt, tmp, l);
 		TRACE("SQLExecDirectW end");
 		free(tmp);
@@ -1386,7 +1386,7 @@ SQLRETURN SQL_API SQLColumnsW(
 		SQLCHAR *tmp=calloc(cbTableName*4,1);
 		size_t l=cbTableName*4,z=cbTableName*2;
 		SQLRETURN ret;
-		unicode2ascii((char*)szTableName, &z, (char*)tmp, &l);
+		unicode2ascii(((struct _hstmt* )hstmt)->hdbc, (char*)szTableName, &z, (char*)tmp, &l);
 		ret = SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);
 		free(tmp);
 		return ret;
@@ -1686,7 +1686,7 @@ SQLRETURN SQL_API SQLGetDataW(
 	SQLCHAR *tmp=calloc(cbValueMax*4,1);
 	size_t l=cbValueMax*4;
 	SQLRETURN ret = SQLGetData(hstmt, icol, fCType, tmp, cbValueMax*4, (SQLLEN*)&l);
-	ascii2unicode((char*)tmp, &l, (char*)rgbValue, (size_t*)pcbValue);
+	ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, &l, (char*)rgbValue, (size_t*)pcbValue);
 	*pcbValue/=sizeof(SQLWCHAR);
 	free(tmp);
 	return ret;
@@ -1944,7 +1944,7 @@ SQLRETURN SQL_API SQLGetInfoW(
 	size_t l=cbInfoValueMax*4;
 	SQLRETURN ret = SQLGetInfo(hdbc, fInfoType, tmp, cbInfoValueMax*4,(SQLSMALLINT*)&l);
 	size_t pcb=cbInfoValueMax;
-	ascii2unicode((char*)tmp, &l, (char*)rgbInfoValue, &pcb);
+	ascii2unicode((struct _hdbc *)hdbc, (char*)tmp, &l, (char*)rgbInfoValue, &pcb);
 	pcb/=sizeof(SQLWCHAR);
 	if(pcbInfoValue)*pcbInfoValue=pcb;
 	free(tmp);
