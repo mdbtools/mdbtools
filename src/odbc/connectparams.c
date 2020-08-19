@@ -43,9 +43,6 @@
 #define FILENAME_MAX 512
 #endif
 
-#define max_line 256
-static char line[max_line];
-
 static guint HashFunction (gconstpointer key);
 
 static void visit (gpointer key, gpointer value, gpointer user_data);
@@ -204,7 +201,7 @@ void DumpParams (ConnectParams* params, FILE* output)
 
 gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
 {
-   char *p, *q, *s;
+   char *p, *q;
 
    if (!params)
       return NULL;
@@ -225,23 +222,18 @@ gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
    while (isspace(*q))
      q++;
    /*
-    * Copy the DSN value to a buffer
-    */
-   s = line;
-   while (*q && *q != ';')
-      *s++ = *q++;
-   *s = '\0';
-   /*
     * Save it as a string in the params object
     */
-   params->dsnName = g_string_assign (params->dsnName, line);
+   char **components = g_strsplit(q, ";", 2);
+   params->dsnName = g_string_assign(params->dsnName, components[0]);
+   g_strfreev(components);
 
    return params->dsnName->str;   
 }
 
 gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
 {
-   char *p, *q, *s;
+   char *p, *q;
 
    if (!params)
       return NULL;
@@ -262,16 +254,11 @@ gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
    while (isspace(*q))
      q++;
    /*
-    * Copy the DSN value to a buffer
-    */
-   s = line;
-   while (*q && *q != ';')
-      *s++ = *q++;
-   *s = '\0';
-   /*
     * Save it as a string in the params object
     */
-   params->dsnName = g_string_assign (params->dsnName, line);
+   char **components = g_strsplit(q, ";", 2);
+   params->dsnName = g_string_assign(params->dsnName, components[0]);
+   g_strfreev(components);
 
    return params->dsnName->str;
 }
