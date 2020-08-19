@@ -351,7 +351,7 @@ ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 	if (pg && mdb->cur_pg == pg) return mdb->fmt->pg_size;
 
 	len = _mdb_read_pg(mdb, mdb->pg_buf, pg);
-	//fprintf(stderr, "read page %d type %02x\n", pg, mdb->pg_buf[0]);
+	//fprintf(stderr, "read page %ld type %02x\n", pg, mdb->pg_buf[0]);
 	mdb->cur_pg = pg;
 	/* kan - reset the cur_pos on a new page read */
 	mdb->cur_pos = 0; /* kan */
@@ -359,10 +359,7 @@ ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg)
 }
 ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg)
 {
-	ssize_t len;
-
-	len = _mdb_read_pg(mdb, mdb->alt_pg_buf, pg);
-	return len;
+	return _mdb_read_pg(mdb, mdb->alt_pg_buf, pg);
 }
 static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 {
