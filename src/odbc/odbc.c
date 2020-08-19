@@ -1337,6 +1337,11 @@ SQLRETURN SQL_API SQLColumns(
 		if (g_ascii_strcasecmp((char*)szTableName, entry->object_name) != 0)
 			continue;
 		table = mdb_read_table(entry);
+		if ( !table )
+		{
+			LogError ("Could not read table '%s'", szTableName);
+			return SQL_ERROR;
+		}
 		mdb_read_columns(table);
 		for (j=0; j<table->num_cols; j++) {
 			col = g_ptr_array_index(table->columns, j);
