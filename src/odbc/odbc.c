@@ -1334,7 +1334,7 @@ SQLRETURN SQL_API SQLColumns(
 	for (i=0; i<mdb->num_catalog; i++) {
      		entry = g_ptr_array_index(mdb->catalog, i);
 		/* TODO: Do more advanced matching */
-		if (g_ascii_strcasecmp((char*)szTableName, entry->object_name) != 0)
+		if (entry->object_type != MDB_TABLE || g_ascii_strcasecmp((char*)szTableName, entry->object_name) != 0)
 			continue;
 		table = mdb_read_table(entry);
 		if ( !table )
