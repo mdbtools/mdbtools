@@ -1158,6 +1158,8 @@ SQLRETURN SQL_API SQLFreeStmt(
 		/* Bound parameters not currently implemented */
 	} else {
 	}
+    free(stmt->ole_str);
+    stmt->ole_str = NULL;
 	return SQL_SUCCESS;
 }
 
@@ -1611,32 +1613,62 @@ SQLRETURN SQL_API SQLGetData(
 			break;
 		}
 #endif
+        case MDB_OLE:
+			if (cbValueMax < 0) {
+				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
+				return SQL_ERROR;
+			}
+			if (stmt->pos == 0) {
+				if (stmt->ole_str) {
+					free(stmt->ole_str);
+				}
+				stmt->ole_str = mdb_ole_read_full(mdb, col, &stmt->ole_len);
+			}
+			if (stmt->pos >= stmt->ole_len) {
+				return SQL_NO_DATA;
+			}
+			if (pcbValue) {
+				*pcbValue = stmt->ole_len - stmt->pos;
+			}
+			if (cbValueMax == 0) {
+				return SQL_SUCCESS_WITH_INFO;
+			}
+			/* if the column type is OLE, then we don't add terminators
+			   see https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdata-function?view=sql-server-ver15
+			   and https://www.ibm.com/support/knowledgecenter/SSEPEK_11.0.0/odbc/src/tpc/db2z_fngetdata.html
+
+			   "The buffer that the rgbValue argument specifies contains nul-terminated values, unless you retrieve
+			   binary data, or the SQL data type of the column is graphic (DBCS) and the C buffer type is SQL_C_CHAR."
+			   */
+			const int totalSizeRemaining = stmt->ole_len - stmt->pos;
+			const int partsRemain = cbValueMax < totalSizeRemaining;
+			const int sizeToReadThisPart = partsRemain ? cbValueMax : totalSizeRemaining;
+			memcpy(rgbValue, stmt->ole_str + stmt->pos, sizeToReadThisPart);
+
+			if (partsRemain) {
+				stmt->pos += cbValueMax;
+				strcpy(stmt->sqlState, "01004"); // truncated
+				return SQL_SUCCESS_WITH_INFO;
+			}
+			stmt->pos = stmt->ole_len;
+			free(stmt->ole_str);
+			stmt->ole_str = NULL;
+			break;
 		default: /* FIXME here we assume fCType == SQL_C_CHAR */
 		to_c_char:
 		{
-			static __thread size_t len = 0;
-			static __thread char *str = NULL;
-
-			if (col->col_type == MDB_OLE) {
-				if (stmt->pos == 0) {
-					str = mdb_ole_read_full(mdb, col, &len);
-				}
-			} else {
-				str = mdb_col_to_string(mdb, mdb->pg_buf,
-					col->cur_value_start, col->col_type, col->cur_value_len);
-				len = strlen(str);
+			if (cbValueMax < 0) {
+				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
+				return SQL_ERROR;
 			}
+			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
+					col->cur_value_start, col->col_type, col->cur_value_len);
+			size_t len = strlen(str);
 
 			if (stmt->pos >= len) {
 				free(str);
 				str = NULL;
 				return SQL_NO_DATA;
-			}
-			if (cbValueMax < 0) {
-				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
-				free(str);
-				str = NULL;
-				return SQL_ERROR;
 			}
 			if (pcbValue) {
 				*pcbValue = len + 1 - stmt->pos;
@@ -1647,27 +1679,16 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_SUCCESS_WITH_INFO;
 			}
 
-			/* if the column type is OLE, then we don't add terminators
-			  see https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetdata-function?view=sql-server-ver15
-			  and https://www.ibm.com/support/knowledgecenter/SSEPEK_11.0.0/odbc/src/tpc/db2z_fngetdata.html
-
-			  "The buffer that the rgbValue argument specifies contains nul-terminated values, unless you retrieve
-			  binary data, or the SQL data type of the column is graphic (DBCS) and the C buffer type is SQL_C_CHAR."
-			*/
-			const int needsTerminator = (col->col_type != MDB_OLE);
-
 			const int totalSizeRemaining = len - stmt->pos;
-			const int partsRemain = cbValueMax - ( needsTerminator ? 1 : 0 ) < totalSizeRemaining;
-			const int sizeToReadThisPart = partsRemain ? cbValueMax - ( needsTerminator ? 1 : 0 ) : totalSizeRemaining;
+			const int partsRemain = cbValueMax - 1 < totalSizeRemaining;
+			const int sizeToReadThisPart = partsRemain ? cbValueMax - 1 : totalSizeRemaining;
 			memcpy(rgbValue, str + stmt->pos, sizeToReadThisPart);
 
-			if (needsTerminator)
-			{
-				((char *)rgbValue)[sizeToReadThisPart] = '\0';
-			}
+			((char *)rgbValue)[sizeToReadThisPart] = '\0';
+
 			if (partsRemain) {
-				stmt->pos += cbValueMax - ( needsTerminator ? 1 : 0 );
-				if (col->col_type != MDB_OLE) { free(str); str = NULL; }
+				stmt->pos += cbValueMax - 1;
+				free(str); str = NULL;
 				strcpy(stmt->sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}

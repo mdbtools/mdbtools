@@ -60,6 +60,8 @@ struct _hstmt {
 	char query[4096];
     char lastError[256];
     char sqlState[6];
+    char *ole_str;
+    size_t ole_len;
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
 	int icol; /* SQLGetData: last column */
