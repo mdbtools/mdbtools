@@ -147,10 +147,6 @@ static int sqlwlen(SQLWCHAR *p){
 }
 #endif // ENABLE_ODBC_W
 
-/* The SQL engine is presently non-reenterrant and non-thread safe.  
-   See SQLExecute for details.
-*/
-
 static void LogError (const char* format, ...)
 {
    /*
