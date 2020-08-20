@@ -22,10 +22,6 @@
 #include <stdlib.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #define DEBUG 1
 
 static unsigned long opts;

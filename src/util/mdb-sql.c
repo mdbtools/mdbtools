@@ -47,10 +47,6 @@ extern void clear_history ();
 #include <string.h>
 #include "mdbsql.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
 void dump_results_pp(FILE *out, MdbSQL *sql);
 

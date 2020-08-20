@@ -20,10 +20,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 struct type_struct {
 	char *name;
 	int value;

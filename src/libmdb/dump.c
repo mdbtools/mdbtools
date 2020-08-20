@@ -21,10 +21,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 void mdb_buffer_dump(const void* buf, off_t start, size_t len)
 {
 	char asc[20];

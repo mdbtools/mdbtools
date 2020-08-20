@@ -20,10 +20,6 @@
 #define _XOPEN_SOURCE
 #include "mdbsql.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #ifdef HAVE_WORDEXP_H
 #define HAVE_WORDEXP
 #include <wordexp.h>

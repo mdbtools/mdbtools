@@ -21,10 +21,6 @@
 #include "mdbver.h"
 #include "mdbprivate.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 int
 main(int argc, char **argv)
 {

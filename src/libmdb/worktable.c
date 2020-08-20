@@ -18,10 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 /*
  * Temp table routines.  These are currently used to generate mock results for
  * commands like "list tables" and "describe table"
