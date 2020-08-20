@@ -159,16 +159,10 @@ main(int argc, char **argv)
 	if (insert_dialect)
 		header_row = 0;
 
-	if (date_fmt)
-		mdb_set_date_fmt(date_fmt);
-
 	if (null_text)
 		null_text = escapes(null_text);
 	else
 		null_text = g_strdup("");
-
-	if (boolean_words)
-		mdb_set_boolean_fmt_words();
 
 	if (str_bin_mode) {
 		if (!strcmp(str_bin_mode, "strip"))
@@ -188,6 +182,12 @@ main(int argc, char **argv)
 		/* Don't bother clean up memory before exit */
 		exit(1);
 	}
+
+	if (date_fmt)
+		mdb_set_date_fmt(mdb, date_fmt);
+
+	if (boolean_words)
+		mdb_set_boolean_fmt_words(mdb);
 
 	if (insert_dialect)
 		if (!mdb_set_default_backend(mdb, insert_dialect)) {
