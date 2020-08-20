@@ -19,10 +19,6 @@
 #include <errno.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #ifndef MIN
 #define MIN(a,b) (a>b ? b : a)
 #endif

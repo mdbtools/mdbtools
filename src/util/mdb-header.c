@@ -22,10 +22,6 @@
 #include <string.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 void copy_header (FILE *f)
 {
  fprintf (f, "/******************************************************************/\n");

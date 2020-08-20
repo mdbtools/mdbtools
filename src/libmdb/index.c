@@ -21,10 +21,6 @@
 #include <mswstr/mswstr.h>
 #endif
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 MdbIndexPage *mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain);
 MdbIndexPage *mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg);
 

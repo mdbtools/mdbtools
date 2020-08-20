@@ -18,10 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 /**
  * mdb_stats_on:
  * @mdb: Handle to the (open) MDB file to collect stats on.

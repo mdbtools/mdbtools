@@ -19,10 +19,6 @@
 #include <stdio.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #define MAX_MONEY_PRECISION   20
 #define MAX_NUMERIC_PRECISION 40
 /* 
