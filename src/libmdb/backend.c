@@ -16,151 +16,146 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define MdbBackendType_STRUCT_ELEMENT(a,b,c,d) {a,b,c,d}
 /*
 ** functions to deal with different backend database engines
 */
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 /*    Access data types */
 static const MdbBackendType mdb_access_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("Unknown 0x00", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Boolean", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Byte", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Integer", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Long Integer", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Currency", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Single", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Double", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("DateTime", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("Binary", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Text", 1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("OLE", 1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("Memo/Hyperlink",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("Unknown 0x0d",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Unknown 0x0e",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Replication ID",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Numeric",1,1,0)
+    { .name = "Unknown 0x00" },
+    { .name = "Boolean" },
+    { .name = "Byte" },
+    { .name = "Integer" },
+    { .name = "Long Integer" },
+    { .name = "Currency" },
+    { .name = "Single" },
+    { .name = "Double" },
+    { .name = "DateTime", .needs_quotes = 1 },
+    { .name = "Binary" },
+    { .name = "Text", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "OLE", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "Memo/Hyperlink", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "Unknown 0x0d" },
+    { .name = "Unknown 0x0e" },
+    { .name = "Replication ID" },
+    { .name = "Numeric", .needs_length = 1, .needs_scale = 1 },
 };
 
 /*    Oracle data types */
 static const MdbBackendType mdb_oracle_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x00",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER(1)",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER(3)",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER(5)",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER(11)",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER(15,2)",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("FLOAT",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("FLOAT",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("TIMESTAMP",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("BINARY",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("VARCHAR2",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("CLOB",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x0d",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x0e",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
+    { .name = "Oracle_Unknown 0x00" },
+    { .name = "NUMBER(1)" },
+    { .name = "NUMBER(3)" },
+    { .name = "NUMBER(5)" },
+    { .name = "NUMBER(11)" },
+    { .name = "NUMBER(15,2)" },
+    { .name = "FLOAT" },
+    { .name = "FLOAT" },
+    { .name = "TIMESTAMP" },
+    { .name = "BINARY" },
+    { .name = "VARCHAR2", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "BLOB" },
+    { .name = "CLOB" },
+    { .name = "Oracle_Unknown 0x0d" },
+    { .name = "Oracle_Unknown 0x0e" },
+    { .name = "NUMBER", .needs_length = 1 },
+    { .name = "NUMBER", .needs_length = 1 },
 };
 static const MdbBackendType mdb_oracle_shortdate_type =
-		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
+		    { .name = "DATE" };
 
 /*    Sybase/MSSQL data types */
 static const MdbBackendType mdb_sybase_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x00",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("bit",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("char",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("smallint",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("money",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("real",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("smalldatetime",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x09",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("varbinary",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("text",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x0d",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x0e",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Sybase_Replication ID",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
+    { .name = "Sybase_Unknown 0x00" },
+    { .name = "bit" },
+    { .name = "char", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "smallint" },
+    { .name = "int" },
+    { .name = "money" },
+    { .name = "real" },
+    { .name = "float" },
+    { .name = "smalldatetime" },
+    { .name = "Sybase_Unknown 0x09" },
+    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "varbinary", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "text", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "Sybase_Unknown 0x0d" },
+    { .name = "Sybase_Unknown 0x0e" },
+    { .name = "Sybase_Replication ID" },
+    { .name = "numeric", .needs_length = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_sybase_shortdate_type =
-		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
+		    { .name = "DATE" };
 
 /*    Postgres data types */
 static const MdbBackendType mdb_postgres_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x00",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("BOOL",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("SMALLINT",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER",0,0,0), /* bigint */
-		MdbBackendType_STRUCT_ELEMENT("NUMERIC(15,2)",0,0,0), /* money deprecated ? */
-		MdbBackendType_STRUCT_ELEMENT("REAL",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("DOUBLE PRECISION",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("TIMESTAMP WITHOUT TIME ZONE",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("BYTEA",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("VARCHAR",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BYTEA",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("TEXT",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0d",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x0e",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("UUID",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("NUMERIC",1,1,0),
+    { .name = "Postgres_Unknown 0x00" },
+    { .name = "BOOL" },
+    { .name = "SMALLINT" },
+    { .name = "INTEGER" },
+    { .name = "INTEGER" }, /* bigint */
+    { .name = "NUMERIC(15,2)" }, /* money deprecated ? */
+    { .name = "REAL" },
+    { .name = "DOUBLE PRECISION" },
+    { .name = "TIMESTAMP WITHOUT TIME ZONE" },
+    { .name = "BYTEA" },
+    { .name = "VARCHAR", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "BYTEA" },
+    { .name = "TEXT" },
+    { .name = "Postgres_Unknown 0x0d" },
+    { .name = "Postgres_Unknown 0x0e" },
+    { .name = "UUID" },
+    { .name = "NUMERIC", .needs_length = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_postgres_shortdate_type =
-		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
+		    { .name = "DATE" };
 static const MdbBackendType mdb_postgres_serial_type =
-		MdbBackendType_STRUCT_ELEMENT("SERIAL",0,0,0);
+		    { .name = "SERIAL" };
 
 /*    MySQL data types */
 static const MdbBackendType mdb_mysql_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("boolean", 0, 0, 0),
-		MdbBackendType_STRUCT_ELEMENT("tinyint", 0, 0, 0),
-		MdbBackendType_STRUCT_ELEMENT("smallint", 0, 0, 0),
-		MdbBackendType_STRUCT_ELEMENT("int",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("float",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("datetime",0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("varchar",1,0,1),
-		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("blob",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("char(38)",0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
+    { .name = "text", .needs_quotes = 1 },
+    { .name = "boolean" },
+    { .name = "tinyint" },
+    { .name = "smallint" },
+    { .name = "int" },
+    { .name = "float" },
+    { .name = "float" },
+    { .name = "float" },
+    { .name = "datetime", .needs_quotes = 1 },
+    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
+    { .name = "text", .needs_quotes = 1 },
+    { .name = "blob" },
+    { .name = "text", .needs_quotes = 1 },
+    { .name = "char(38)" },
+    { .name = "numeric", .needs_length = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_mysql_shortdate_type =
-		MdbBackendType_STRUCT_ELEMENT("date",0,0,0);
+		    { .name = "date" };
 
 /*    sqlite data types */
 static const MdbBackendType mdb_sqlite_types[] = {
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("REAL", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("DateTime", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("varchar", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("TEXT", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,1),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
-		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
+    { .name = "BLOB" },
+    { .name = "INTEGER" },
+    { .name = "INTEGER" },
+    { .name = "INTEGER" },
+    { .name = "INTEGER" },
+    { .name = "REAL" },
+    { .name = "REAL" },
+    { .name = "REAL" },
+    { .name = "DateTime", .needs_quotes = 1 },
+    { .name = "BLOB", .needs_quotes = 1 },
+    { .name = "varchar", .needs_quotes = 1 },
+    { .name = "BLOB", .needs_quotes = 1 },
+    { .name = "TEXT", .needs_quotes = 1 },
+    { .name = "BLOB", .needs_quotes = 1 },
+    { .name = "BLOB", .needs_quotes = 1 },
+    { .name = "INTEGER" },
+    { .name = "INTEGER" },
 };
 
 enum {
