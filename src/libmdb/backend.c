@@ -16,29 +16,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef JAVA
-#include "javadefines.h"
-#define MdbBackendType_STRUCT_ELEMENT(a,b,c,d) new MdbBackendType(a,b,c,d)
-#else
 #define MdbBackendType_STRUCT_ELEMENT(a,b,c,d) {a,b,c,d}
 /*
 ** functions to deal with different backend database engines
 */
-#
+
 #include "mdbtools.h"
 
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
 
-#endif   /* JAVA */
-
-static int is_init;
-GHashTable *mdb_backends;
-void _mdb_remove_backends(void);
-
 /*    Access data types */
-static MdbBackendType mdb_access_types[] = {
+static const MdbBackendType mdb_access_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Unknown 0x00", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Boolean", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("Byte", 0,0,0),
@@ -59,7 +49,7 @@ static MdbBackendType mdb_access_types[] = {
 };
 
 /*    Oracle data types */
-static MdbBackendType mdb_oracle_types[] = {
+static const MdbBackendType mdb_oracle_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Oracle_Unknown 0x00",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("NUMBER(1)",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("NUMBER(3)",0,0,0),
@@ -78,11 +68,11 @@ static MdbBackendType mdb_oracle_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
 		MdbBackendType_STRUCT_ELEMENT("NUMBER",1,0,0),
 };
-static MdbBackendType mdb_oracle_shortdate_type =
+static const MdbBackendType mdb_oracle_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
 
 /*    Sybase/MSSQL data types */
-static MdbBackendType mdb_sybase_types[] = {
+static const MdbBackendType mdb_sybase_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Sybase_Unknown 0x00",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("bit",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("char",1,0,1),
@@ -101,11 +91,11 @@ static MdbBackendType mdb_sybase_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Sybase_Replication ID",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
 };
-static MdbBackendType mdb_sybase_shortdate_type =
+static const MdbBackendType mdb_sybase_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
 
 /*    Postgres data types */
-static MdbBackendType mdb_postgres_types[] = {
+static const MdbBackendType mdb_postgres_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("Postgres_Unknown 0x00",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("BOOL",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("SMALLINT",0,0,0),
@@ -124,13 +114,13 @@ static MdbBackendType mdb_postgres_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("UUID",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("NUMERIC",1,1,0),
 };
-static MdbBackendType mdb_postgres_shortdate_type =
+static const MdbBackendType mdb_postgres_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("DATE",0,0,0);
-static MdbBackendType mdb_postgres_serial_type =
+static const MdbBackendType mdb_postgres_serial_type =
 		MdbBackendType_STRUCT_ELEMENT("SERIAL",0,0,0);
 
 /*    MySQL data types */
-static MdbBackendType mdb_mysql_types[] = {
+static const MdbBackendType mdb_mysql_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("text",0,0,1),
 		MdbBackendType_STRUCT_ELEMENT("boolean", 0, 0, 0),
 		MdbBackendType_STRUCT_ELEMENT("tinyint", 0, 0, 0),
@@ -149,11 +139,11 @@ static MdbBackendType mdb_mysql_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("char(38)",0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("numeric",1,1,0),
 };
-static MdbBackendType mdb_mysql_shortdate_type =
+static const MdbBackendType mdb_mysql_shortdate_type =
 		MdbBackendType_STRUCT_ELEMENT("date",0,0,0);
 
 /*    sqlite data types */
-static MdbBackendType mdb_sqlite_types[] = {
+static const MdbBackendType mdb_sqlite_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("BLOB", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
@@ -172,8 +162,6 @@ static MdbBackendType mdb_sqlite_types[] = {
 		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
 		MdbBackendType_STRUCT_ELEMENT("INTEGER", 0,0,0),
 };
-
-#ifndef JAVA
 
 enum {
 	MDB_BACKEND_ACCESS = 1,
@@ -339,23 +327,20 @@ mdb_colbacktype_takes_length(const MdbColumn *col)
 	return type->needs_length;
 }
 
-MDB_DEPRECATED(void,
-mdb_init_backends())
-{
-	fprintf(stderr, "mdb_init_backends() is DEPRECATED and does nothing. Stop calling it.\n");
-}
-
 /**
- * _mdb_init_backends
+ * mdb_init_backends
  *
  * Initializes the mdb_backends hash and loads the builtin backends.
  * Use mdb_remove_backends() to destroy this hash when done.
  */
-MDB_CONSTRUCTOR(_mdb_init_backends)
+void mdb_init_backends(MdbHandle *mdb)
 {
-	mdb_backends = g_hash_table_new(g_str_hash, g_str_equal);
+    if (mdb->backends) {
+        mdb_remove_backends(mdb);
+    }
+	mdb->backends = g_hash_table_new(g_str_hash, g_str_equal);
 
-	mdb_register_backend("access",
+	mdb_register_backend(mdb, "access",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_DEFVALUES,
 		mdb_access_types, NULL, NULL,
 		"Date()", "Date()",
@@ -365,7 +350,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		NULL,
 		NULL,
 		quote_schema_name_bracket_merge);
-	mdb_register_backend("sybase",
+	mdb_register_backend(mdb, "sybase",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
 		"getdate()", "getdate()",
@@ -375,7 +360,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
-	mdb_register_backend("oracle",
+	mdb_register_backend(mdb, "oracle",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
 		mdb_oracle_types, &mdb_oracle_shortdate_type, NULL,
 		"current_date", "sysdate",
@@ -385,7 +370,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
-	mdb_register_backend("postgres",
+	mdb_register_backend(mdb, "postgres",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
 		"current_date", "now()",
@@ -395,7 +380,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		"COMMENT ON TABLE %s IS %s;\n",
 		quote_schema_name_dquote);
-	mdb_register_backend("mysql",
+	mdb_register_backend(mdb, "mysql",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
 		"current_date", "now()",
@@ -405,7 +390,7 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		NULL,
 		NULL,
 		quote_schema_name_rquotes_merge);
-	mdb_register_backend("sqlite",
+	mdb_register_backend(mdb, "sqlite",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_sqlite_types, NULL, NULL,
 		"date('now')", "date('now')",
@@ -415,11 +400,14 @@ MDB_CONSTRUCTOR(_mdb_init_backends)
 		NULL,
 		NULL,
 		quote_schema_name_rquotes_merge);
-
-	atexit(_mdb_remove_backends);
 }
 
-void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendType *backend_type, MdbBackendType *type_shortdate, MdbBackendType *type_autonum, const char *short_now, const char *long_now, const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement, const char *column_comment_statement, const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
+void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabilities,
+        const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
+        const char *short_now, const char *long_now,
+        const char *charset_statement, const char *drop_statement,
+        const char *constaint_not_empty_statement, const char *column_comment_statement,
+        const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
 	MdbBackend *backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
 	backend->capabilities = capabilities;
@@ -434,13 +422,7 @@ void mdb_register_backend(char *backend_name, guint32 capabilities, MdbBackendTy
 	backend->column_comment_statement = column_comment_statement;
 	backend->table_comment_statement = table_comment_statement;
 	backend->quote_schema_name  = quote_schema_name;
-	g_hash_table_insert(mdb_backends, backend_name, backend);
-}
-
-MDB_DEPRECATED(void,
-mdb_remove_backends())
-{
-	fprintf(stderr, "mdb_remove_backends() is DEPRECATED and does nothing. Stop calling it.\n");
+	g_hash_table_insert(mdb->backends, backend_name, backend);
 }
 
 /**
@@ -449,10 +431,10 @@ mdb_remove_backends())
  * Removes all entries from and destroys the mdb_backends hash.
  */
 void
-_mdb_remove_backends()
+mdb_remove_backends(MdbHandle *mdb)
 {
-	g_hash_table_foreach(mdb_backends, mdb_drop_backend, NULL);
-	g_hash_table_destroy(mdb_backends);
+	g_hash_table_foreach(mdb->backends, mdb_drop_backend, NULL);
+	g_hash_table_destroy(mdb->backends);
 }
 static void mdb_drop_backend(gpointer key, gpointer value, gpointer data)
 {
@@ -473,12 +455,15 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 {
 	MdbBackend *backend;
 
-	backend = (MdbBackend *) g_hash_table_lookup(mdb_backends, backend_name);
+    if (!mdb->backends) {
+        mdb_init_backends(mdb);
+    }
+	backend = (MdbBackend *) g_hash_table_lookup(mdb->backends, backend_name);
 	if (backend) {
 		mdb->default_backend = backend;
 		g_free(mdb->backend_name); // NULL is ok
 		mdb->backend_name = (char *) g_strdup(backend_name);
-		is_init = 0;
+		mdb->backend_is_init = 0;
 		return 1;
 	} else {
 		return 0;
@@ -659,18 +644,18 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	} else if (!strcmp(mdb->backend_name, "sqlite")) {
 		backend = MDB_BACKEND_SQLITE;
 	} else {
-		if (is_init == 0) { /* the first time through */
-			is_init = 1;
+		if (mdb->backend_is_init == 0) { /* the first time through */
+			mdb->backend_is_init = 1;
 			return (char *) g_strconcat(
 				"-- relationships are not implemented for ",
 				mdb->backend_name, "\n", NULL);
 		} else { /* the second time through */
-			is_init = 0;
+			mdb->backend_is_init = 0;
 			return NULL;
 		}
 	}
 
-	if (is_init == 0) {
+	if (mdb->backend_is_init == 0) {
 		table = mdb_read_table_by_name(mdb, "MSysRelationships", MDB_TABLE);
 		if ((!table) || (table->num_rows == 0)) {
 			fprintf(stderr, "No MSysRelationships\n");
@@ -688,7 +673,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		mdb_bind_column_by_name(table, "grbit", bound[4], NULL);
 		mdb_rewind_table(table);
 
-		is_init = 1;
+		mdb->backend_is_init = 1;
 	}
 	else {
 		if (!table) {
@@ -697,7 +682,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	    if (table->cur_row >= table->num_rows) {  /* past the last row */
 			for (i=0;i<5;i++)
 				g_free(bound[i]);
-			is_init = 0;
+			mdb->backend_is_init = 0;
 			return NULL;
 		}
 	}
@@ -706,7 +691,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		if (!mdb_fetch_row(table)) {
 			for (i=0;i<5;i++)
 				g_free(bound[i]);
-			is_init = 0;
+			mdb->backend_is_init = 0;
 			return NULL;
 		}
 		if (!tablename || !strcmp(bound[1], tablename))
@@ -968,4 +953,3 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 		}
 	}
 }
-#endif

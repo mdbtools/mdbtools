@@ -307,6 +307,7 @@ mdb_close(MdbHandle *mdb)
 	}
 
 	mdb_iconv_close(mdb);
+    mdb_remove_backends(mdb);
 
 	g_free(mdb);
 }
