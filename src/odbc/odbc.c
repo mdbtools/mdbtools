@@ -1149,6 +1149,8 @@ SQLRETURN SQL_API SQLFreeStmt(
 	struct _hdbc *dbc = (struct _hdbc *) stmt->hdbc;
 
 	TRACE("SQLFreeStmt");
+	free(stmt->ole_str);
+	stmt->ole_str = NULL;
 	if (fOption==SQL_DROP) {
 		if (!g_ptr_array_remove(dbc->statements, stmt))
 			return SQL_INVALID_HANDLE;
@@ -1163,8 +1165,6 @@ SQLRETURN SQL_API SQLFreeStmt(
 		/* Bound parameters not currently implemented */
 	} else {
 	}
-    free(stmt->ole_str);
-    stmt->ole_str = NULL;
 	return SQL_SUCCESS;
 }
 
