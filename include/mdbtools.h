@@ -277,6 +277,9 @@ typedef struct {
 	char		*backend_name;
 	MdbFormatConstants *fmt;
 	MdbStatistics *stats;
+    char date_fmt[64];
+    const char *boolean_false_value;
+    const char *boolean_true_value;
 #ifdef HAVE_ICONV
 	iconv_t	iconv_in;
 	iconv_t	iconv_out;
@@ -506,8 +509,9 @@ int mdb_col_disp_size(MdbColumn *col);
 size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size);
 void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
-void mdb_set_date_fmt(const char *);
-void mdb_set_boolean_fmt_words(void);
+void mdb_set_date_fmt(MdbHandle *mdb, const char *);
+void mdb_set_boolean_fmt_words(MdbHandle *mdb);
+void mdb_set_boolean_fmt_numbers(MdbHandle *mdb);
 int mdb_read_row(MdbTableDef *table, unsigned int row);
 
 /* dump.c */

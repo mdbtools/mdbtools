@@ -32,39 +32,39 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
 
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
-static char *mdb_date_to_string(void *buf, int start);
+static char *mdb_date_to_string(MdbHandle *mdb, void *buf, int start);
 #ifdef MDB_COPY_OLE
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
-static char date_fmt[64] = "%x %X";
-static int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
-static int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
-
-
-void mdb_set_date_fmt(const char *fmt)
-{
-		date_fmt[63] = 0; 
-		strncpy(date_fmt, fmt, 63);
-}
+static const int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+static const int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
 /* Some databases (eg PostgreSQL) do not understand integer 0/1 values
  * as TRUE/FALSE, so provide a means to override the values used to be
  * the SQL Standard TRUE/FALSE values.
  */
-static char boolean_false_number[] = "0";
-static char boolean_true_number[]  = "1";
+static const char boolean_false_number[] = "0";
+static const char boolean_true_number[]  = "1";
 
-static char boolean_false_word[]   = "FALSE";
-static char boolean_true_word[]    = "TRUE";
+static const char boolean_false_word[]   = "FALSE";
+static const char boolean_true_word[]    = "TRUE";
 
-static char *boolean_false_value   = boolean_false_number;
-static char *boolean_true_value    = boolean_true_number;
-
-void mdb_set_boolean_fmt_words()
+void mdb_set_date_fmt(MdbHandle *mdb, const char *fmt)
 {
-	boolean_false_value = boolean_false_word;
-	boolean_true_value  = boolean_true_word;
+    snprintf(mdb->date_fmt, sizeof(mdb->date_fmt), "%s", fmt);
+}
+
+void mdb_set_boolean_fmt_numbers(MdbHandle *mdb)
+{
+	mdb->boolean_false_value = boolean_false_number;
+	mdb->boolean_true_value  = boolean_true_number;
+}
+
+void mdb_set_boolean_fmt_words(MdbHandle *mdb)
+{
+	mdb->boolean_false_value = boolean_false_word;
+	mdb->boolean_true_value  = boolean_true_word;
 }
 
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr)
@@ -200,7 +200,7 @@ mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 	col->cur_value_len = value;
 	if (col->bind_ptr) {
 		strcpy(col->bind_ptr,
-                       value ? boolean_false_value : boolean_true_value);
+                       value ? mdb->boolean_false_value : mdb->boolean_true_value);
 	}
 	if (col->len_ptr) {
 		*col->len_ptr = strlen(col->bind_ptr);
@@ -822,7 +822,7 @@ mdb_tm_to_date(struct tm *t, double *td)
 {
 	short yr = t->tm_year + 1900;
 	char leap = ((yr & 3) == 0) && ((yr % 100) != 0 || (yr % 400) == 0);
-	int *cal = leap ? leap_cal : noleap_cal;
+	const int *cal = leap ? leap_cal : noleap_cal;
 	long int time = (yr*365+(yr/4)-(yr/100)+(yr/400)+cal[t->tm_mon]+t->tm_mday)-693959;
 
 	*td = (((long)t->tm_hour * 3600)+((long)t->tm_min * 60)+((long)t->tm_sec)) / 86400.0;
@@ -834,7 +834,7 @@ mdb_date_to_tm(double td, struct tm *t)
 {
 	long int day, time;
 	int yr, q;
-	int *cal;
+	const int *cal;
 
 	day = (long int)(td);
 	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
@@ -876,7 +876,7 @@ mdb_date_to_tm(double td, struct tm *t)
 }
 
 static char *
-mdb_date_to_string(void *buf, int start)
+mdb_date_to_string(MdbHandle *mdb, void *buf, int start)
 {
 	struct tm t;
 	char *text = (char *) g_malloc(MDB_BIND_SIZE);
@@ -884,7 +884,7 @@ mdb_date_to_string(void *buf, int start)
 
 	mdb_date_to_tm(td, &t);
 
-	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
+	strftime(text, MDB_BIND_SIZE, mdb->date_fmt, &t);
 
 	return text;
 }
@@ -984,7 +984,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			}
 		break;
 		case MDB_DATETIME:
-			text = mdb_date_to_string(buf, start);
+			text = mdb_date_to_string(mdb, buf, start);
 		break;
 		case MDB_MEMO:
 			text = mdb_memo_to_string(mdb, start, size);
