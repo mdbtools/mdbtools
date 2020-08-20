@@ -163,7 +163,12 @@ static SQLRETURN do_connect (
 	struct _hdbc *dbc = (struct _hdbc *) hdbc;
 
 	if (mdb_sql_open(dbc->sqlconn, database))
+	{
+		// ODBC requires ISO format dates, see
+		// https://docs.microsoft.com/en-us/sql/relational-databases/native-client-odbc-date-time/datetime-data-type-conversions-odbc?view=sql-server-ver15
+		mdb_set_date_fmt( dbc->sqlconn->mdb, "%F %H:%M:%S" );
 		return SQL_SUCCESS;
+	}
 	else
 		return SQL_ERROR;
 }
