@@ -263,35 +263,6 @@ static int mdb_col_is_shortdate(const MdbColumn *col) {
     return format && !strcmp(format, "Short Date");
 }
 
-MDB_DEPRECATED(char*,
-mdb_get_coltype_string(MdbBackend *backend, int col_type))
-{
-	static int warn_deprecated = 0;
-	static char buf[16];
-
-	if (!warn_deprecated) {
-		warn_deprecated = 1;
-		fprintf(stderr, "mdb_get_coltype_string is deprecated. Use mdb_get_colbacktype_string.\n");
-	}
-	if (col_type > 0x10 ) {
-   		// return NULL;
-		snprintf(buf,sizeof(buf), "type %04x", col_type);
-		return buf;
-	} else
-		return backend->types_table[col_type].name;
-}
-
-MDB_DEPRECATED(int,
-mdb_coltype_takes_length(MdbBackend *backend, int col_type))
-{
-	static int warn_deprecated = 0;
-	if (!warn_deprecated) {
-		warn_deprecated = 1;
-		fprintf(stderr, "mdb_coltype_takes_length is deprecated. Use mdb_colbacktype_takes_length.\n");
-	}
-	return backend->types_table[col_type].needs_length;
-}
-
 const MdbBackendType*
 mdb_get_colbacktype(const MdbColumn *col) {
 	MdbBackend *backend = col->table->entry->mdb->default_backend;
@@ -313,8 +284,8 @@ mdb_get_colbacktype_string(const MdbColumn *col)
 	const MdbBackendType *type = mdb_get_colbacktype(col);
 	if (!type) {
    		// return NULL;
-		static char buf[16];
-		snprintf(buf,sizeof(buf), "type %04x", col->col_type);
+		static __thread char buf[16];
+		snprintf(buf, sizeof(buf), "type %04x", col->col_type);
 		return buf;
 	}
 	return type->name;
@@ -463,7 +434,7 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 		mdb->default_backend = backend;
 		g_free(mdb->backend_name); // NULL is ok
 		mdb->backend_name = (char *) g_strdup(backend_name);
-		mdb->backend_is_init = 0;
+		mdb->relationships_table = NULL;
 		return 1;
 	} else {
 		return 0;
@@ -629,8 +600,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 {
 	unsigned int i;
 	gchar *text = NULL;  /* String to be returned */
-	static char *bound[5];  /* Bound values */
-	static MdbTableDef *table;  /* Relationships table */
+	char **bound = mdb->relationships_values;  /* Bound values */
 	int backend = 0;
 	char *quoted_table_1, *quoted_column_1,
 	     *quoted_table_2, *quoted_column_2,
@@ -643,55 +613,42 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		backend = MDB_BACKEND_POSTGRES;
 	} else if (!strcmp(mdb->backend_name, "sqlite")) {
 		backend = MDB_BACKEND_SQLITE;
-	} else {
-		if (mdb->backend_is_init == 0) { /* the first time through */
-			mdb->backend_is_init = 1;
-			return (char *) g_strconcat(
-				"-- relationships are not implemented for ",
-				mdb->backend_name, "\n", NULL);
-		} else { /* the second time through */
-			mdb->backend_is_init = 0;
-			return NULL;
-		}
+	} else if (!mdb->relationships_table) {
+        return (char *) g_strconcat(
+                "-- relationships are not implemented for ",
+                mdb->backend_name, "\n", NULL);
 	}
 
-	if (mdb->backend_is_init == 0) {
-		table = mdb_read_table_by_name(mdb, "MSysRelationships", MDB_TABLE);
-		if ((!table) || (table->num_rows == 0)) {
+	if (!mdb->relationships_table) {
+		mdb->relationships_table = mdb_read_table_by_name(mdb, "MSysRelationships", MDB_TABLE);
+		if (!mdb->relationships_table || !mdb->relationships_table->num_rows) {
 			fprintf(stderr, "No MSysRelationships\n");
 			return NULL;
 		}
 
-		mdb_read_columns(table);
+		mdb_read_columns(mdb->relationships_table);
 		for (i=0;i<5;i++) {
 			bound[i] = (char *) g_malloc0(MDB_BIND_SIZE);
 		}
-		mdb_bind_column_by_name(table, "szColumn", bound[0], NULL);
-		mdb_bind_column_by_name(table, "szObject", bound[1], NULL);
-		mdb_bind_column_by_name(table, "szReferencedColumn", bound[2], NULL);
-		mdb_bind_column_by_name(table, "szReferencedObject", bound[3], NULL);
-		mdb_bind_column_by_name(table, "grbit", bound[4], NULL);
-		mdb_rewind_table(table);
-
-		mdb->backend_is_init = 1;
+		mdb_bind_column_by_name(mdb->relationships_table, "szColumn", bound[0], NULL);
+		mdb_bind_column_by_name(mdb->relationships_table, "szObject", bound[1], NULL);
+		mdb_bind_column_by_name(mdb->relationships_table, "szReferencedColumn", bound[2], NULL);
+		mdb_bind_column_by_name(mdb->relationships_table, "szReferencedObject", bound[3], NULL);
+		mdb_bind_column_by_name(mdb->relationships_table, "grbit", bound[4], NULL);
+		mdb_rewind_table(mdb->relationships_table);
 	}
-	else {
-		if (!table) {
-			fprintf(stderr, "table is NULL\n");
-		}
-	    if (table->cur_row >= table->num_rows) {  /* past the last row */
-			for (i=0;i<5;i++)
-				g_free(bound[i]);
-			mdb->backend_is_init = 0;
-			return NULL;
-		}
-	}
+    if (mdb->relationships_table->cur_row >= mdb->relationships_table->num_rows) {  /* past the last row */
+        for (i=0;i<5;i++)
+            g_free(bound[i]);
+        mdb->relationships_table = NULL;
+        return NULL;
+    }
 
 	while (1) {
-		if (!mdb_fetch_row(table)) {
+		if (!mdb_fetch_row(mdb->relationships_table)) {
 			for (i=0;i<5;i++)
 				g_free(bound[i]);
-			mdb->backend_is_init = 0;
+			mdb->relationships_table = NULL;
 			return NULL;
 		}
 		if (!tablename || !strcmp(bound[1], tablename))

@@ -272,7 +272,8 @@ typedef struct {
 	GPtrArray	*catalog;
 	MdbBackend	*default_backend;
 	char		*backend_name;
-    int          backend_is_init;
+	struct S_MdbTableDef *relationships_table;
+	char        *relationships_values[5];
 	MdbFormatConstants *fmt;
 	MdbStatistics *stats;
     char date_fmt[64];
