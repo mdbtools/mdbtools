@@ -889,25 +889,19 @@ mdb_date_to_string(void *buf, int start)
 	return text;
 }
 
-static char *
-mdb_uuid_to_string(MdbHandle *mdb, int start)
+char *mdb_uuid_to_string(const void *buf, int pos)
 {
-	char *text = NULL;
-  unsigned short uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7, uuid8;
+	const unsigned char *kkd = (const unsigned char *)buf;
+	return g_strdup_printf("{%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X"
+			"-" "%02X%02X" "%02X%02X%02X%02X%02X%02X}",
+			kkd[pos+3], kkd[pos+2], kkd[pos+1], kkd[pos], // little-endian
+			kkd[pos+5], kkd[pos+4], // little-endian
+			kkd[pos+7], kkd[pos+6], // little-endian
+			kkd[pos+8], kkd[pos+9], // big-endian
 
-  uuid1 = mdb_get_int16(mdb->pg_buf, start);
-  uuid2 = mdb_get_int16(mdb->pg_buf, start + 2);
-  uuid3 = mdb_get_int16(mdb->pg_buf, start + 4);
-  uuid4 = mdb_get_int16(mdb->pg_buf, start + 6);
-  uuid5 = mdb_get_int16(mdb->pg_buf, start + 8);
-  uuid6 = mdb_get_int16(mdb->pg_buf, start + 10);
-  uuid7 = mdb_get_int16(mdb->pg_buf, start + 12);
-  uuid8 = mdb_get_int16(mdb->pg_buf, start + 14);
-
-  text = g_strdup_printf("{%04x%04x-%04x-%04x-%04x-%04x%04x%04x}",
-    uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7, uuid8);
-
-	return text;
+			kkd[pos+10], kkd[pos+11],
+			kkd[pos+12], kkd[pos+13],
+			kkd[pos+14], kkd[pos+15]); // big-endian
 }
 
 #if 0
@@ -1000,7 +994,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		case MDB_NUMERIC:
 		break;
 		case MDB_REPID:
-		  text = mdb_uuid_to_string(mdb, start);
+		  text = mdb_uuid_to_string(mdb->pg_buf, start);
 		break;
 		default:
 			text = g_strdup("");

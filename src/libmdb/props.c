@@ -137,21 +137,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 			g_hash_table_insert(props->hash, g_strdup(name),
 				g_strdup(kkd[pos + 8] ? "yes" : "no"));
         } else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
-            gchar *guid = g_malloc0(39);
-            snprintf(guid, 39, "{%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X"
-                    "-" "%02X%02X" "%02X%02X%02X%02X%02X%02X}",
-                    (unsigned char)kkd[pos+11], (unsigned char)kkd[pos+10],
-                    (unsigned char)kkd[pos+9], (unsigned char)kkd[pos+8], // little-endian
-
-                    (unsigned char)kkd[pos+13], (unsigned char)kkd[pos+12], // little-endian
-
-                    (unsigned char)kkd[pos+15], (unsigned char)kkd[pos+14], // little-endian
-
-                    (unsigned char)kkd[pos+16], (unsigned char)kkd[pos+17], // big-endian
-
-                    (unsigned char)kkd[pos+18], (unsigned char)kkd[pos+19],
-                    (unsigned char)kkd[pos+20], (unsigned char)kkd[pos+21],
-                    (unsigned char)kkd[pos+22], (unsigned char)kkd[pos+23]); // big-endian
+            gchar *guid = mdb_uuid_to_string(kkd, pos+8);
 			g_hash_table_insert(props->hash, g_strdup(name), guid);
 		} else {
 			g_hash_table_insert(props->hash, g_strdup(name),
