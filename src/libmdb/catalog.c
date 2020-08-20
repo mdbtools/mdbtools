@@ -18,10 +18,10 @@
 
 #include "mdbtools.h"
 
-char *
+const char *
 mdb_get_objtype_string(int obj_type)
 {
-static char *type_name[] = {"Form",
+    static const char *type_name[] = {"Form",
 			"Table",
 			"Macro",
 			"System Table",
@@ -35,7 +35,7 @@ static char *type_name[] = {"Form",
 			"Database"
 		};
 
-	if (obj_type > 11) {
+	if (obj_type >= (int)(sizeof(type_name)/sizeof(type_name[0]))) {
 		return NULL;
 	} else {
 		return type_name[obj_type]; 
