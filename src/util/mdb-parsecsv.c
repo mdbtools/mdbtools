@@ -24,10 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #define FILENAMESIZE 128
 #define BUFFERSIZE 4096
 #define LF 10

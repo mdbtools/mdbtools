@@ -18,10 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 char *
 mdb_get_objtype_string(int obj_type)
 {

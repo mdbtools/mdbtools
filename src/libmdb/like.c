@@ -20,10 +20,6 @@
 #include <string.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 /**
  * mdb_like_cmp
  * @s: String to search within.

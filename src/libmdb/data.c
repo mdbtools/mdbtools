@@ -21,10 +21,6 @@
 #include <math.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #define OFFSET_MASK 0x1fff
 
 char *mdb_money_to_string(MdbHandle *mdb, int start);

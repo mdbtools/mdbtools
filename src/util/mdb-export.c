@@ -18,10 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #undef MDB_BIND_SIZE
 #define MDB_BIND_SIZE 200000
 

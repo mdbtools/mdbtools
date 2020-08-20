@@ -29,9 +29,6 @@
 
 #include <time.h>
 #include "mdbtools.h"
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
 
 void
 mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data)

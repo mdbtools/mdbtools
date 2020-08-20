@@ -18,11 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
-
 static gint mdb_col_comparer(MdbColumn **a, MdbColumn **b)
 {
 	if ((*a)->col_num > (*b)->col_num)
