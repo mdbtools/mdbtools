@@ -331,11 +331,14 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 		data->props = NULL;
 		g_ptr_array_add(newmdb->catalog, data);
 	}
-	mdb->backend_name = NULL;
+	mdb_iconv_init(newmdb);
+	newmdb->backends = NULL;
+	mdb_init_backends(newmdb);
+	mdb_set_default_backend(newmdb, mdb->backend_name);
+
 	if (mdb->f) {
 		mdb->f->refs++;
 	}
-	mdb_iconv_init(mdb);
 
 	return newmdb;
 }
