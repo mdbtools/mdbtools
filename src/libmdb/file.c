@@ -17,6 +17,7 @@
  */
 
 #include <inttypes.h>
+#include <stddef.h>
 #include "mdbtools.h"
 
 /*
@@ -323,18 +324,20 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	unsigned int i;
 
 	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
-	newmdb->stats = NULL;
+
+	memset(newmdb + offsetof(MdbHandle, catalog), 0,
+			sizeof(MdbHandle) - offsetof(MdbHandle, catalog));
+
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
 		data = g_memdup(entry,sizeof(MdbCatalogEntry));
+		data->mdb = newmdb;
 		data->props = NULL;
 		g_ptr_array_add(newmdb->catalog, data);
 	}
+
 	mdb_iconv_init(newmdb);
-	newmdb->backends = NULL;
-	newmdb->backend_name = NULL;
-	newmdb->default_backend = NULL;
 	mdb_set_default_backend(newmdb, mdb->backend_name);
 
 	if (mdb->f) {

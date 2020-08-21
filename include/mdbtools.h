@@ -268,17 +268,19 @@ typedef struct {
 	unsigned int  cur_pos;
 	unsigned char pg_buf[MDB_PGSIZE];
 	unsigned char alt_pg_buf[MDB_PGSIZE];
+	MdbFormatConstants *fmt;
+    char date_fmt[64];
+    const char *boolean_false_value;
+    const char *boolean_true_value;
 	unsigned int  num_catalog;
+
+    // Non-cloneable fields start here
 	GPtrArray	*catalog;
 	MdbBackend	*default_backend;
 	char		*backend_name;
 	struct S_MdbTableDef *relationships_table;
 	char        *relationships_values[5];
-	MdbFormatConstants *fmt;
 	MdbStatistics *stats;
-    char date_fmt[64];
-    const char *boolean_false_value;
-    const char *boolean_true_value;
     GHashTable *backends;
 #ifdef HAVE_ICONV
 	iconv_t	iconv_in;
