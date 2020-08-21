@@ -325,8 +325,7 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 
 	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
 
-	memset(newmdb + offsetof(MdbHandle, catalog), 0,
-			sizeof(MdbHandle) - offsetof(MdbHandle, catalog));
+	memset(&newmdb->catalog, 0, sizeof(MdbHandle) - offsetof(MdbHandle, catalog));
 
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
