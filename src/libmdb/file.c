@@ -333,7 +333,8 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	}
 	mdb_iconv_init(newmdb);
 	newmdb->backends = NULL;
-	mdb_init_backends(newmdb);
+	newmdb->backend_name = NULL;
+	newmdb->default_backend = NULL;
 	mdb_set_default_backend(newmdb, mdb->backend_name);
 
 	if (mdb->f) {
