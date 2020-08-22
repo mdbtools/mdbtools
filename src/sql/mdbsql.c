@@ -50,7 +50,7 @@ int yyparse ();
 static MdbSargNode * mdb_sql_alloc_node(void);
 
 void
-mdb_sql_error(MdbSQL* sql, char *fmt, ...)
+mdb_sql_error(MdbSQL* sql, const char* fmt, ...)
 {
 va_list ap;
 

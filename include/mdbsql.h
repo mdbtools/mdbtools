@@ -75,7 +75,7 @@ typedef struct {
 #define mdb_sql_has_error(sql) ((sql)->error_msg[0] ? 1 : 0)
 #define mdb_sql_last_error(sql) ((sql)->error_msg)
 
-void mdb_sql_error(MdbSQL* sql, char *fmt, ...);
+void mdb_sql_error(MdbSQL* sql, const char *fmt, ...);
 MdbSQL *mdb_sql_init(void);
 MdbSQLSarg *mdb_sql_alloc_sarg(void);
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name);
