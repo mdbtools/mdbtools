@@ -21,10 +21,16 @@ https://github.com/evanmiller/mdbtools
 
 Intended focus areas of this fork:
 
-- [ ] Security / fuzz testing
-- [ ] Thread safety
+- [ ] Security / stability / fuzz testing
+- [x] Thread safety\*
 - [x] Removing GLib dependency
+- [x] Improved ODBC compliance
 - [x] Continuous integration with Travis and AppVeyor
+
+\* Multiple `MdbHandle`s can now be created on different threads – and
+`MdbHandle`s can be passed between threads – but threads should not attempt to
+use the same `MdbHandle` at the same time. Use `mdb_clone_handle` to create a
+new handle using an existing file descriptor.
 
 A re-formatted and updated README file follows.
 
