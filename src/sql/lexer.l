@@ -50,25 +50,28 @@ struct sql_context;
 
 
 %%
-select	{ return SELECT; }
+select		{ return SELECT; }
 from		{ return FROM; }
 connect	{ return CONNECT; }
 disconnect	{ return DISCONNECT; }
 to		{ return TO; }
 list		{ return LIST; }
 where		{ return WHERE; }
-tables	{ return TABLES; }
-table	{ return TABLE; }
+tables		{ return TABLES; }
+table		{ return TABLE; }
 describe	{ return DESCRIBE; }
 and		{ return AND; }
 or		{ return OR; }
 not		{ return NOT; }
 is		{ return IS; }
 null		{ return NUL; }
+"="		{ return EQ; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
+"<"		{ return LT; }
+">"		{ return GT; }
 like		{ return LIKE; }
-limit	{ return LIMIT; }
+limit		{ return LIMIT; }
 count		{ return COUNT; }
 strptime	{ return STRPTIME; }
 [ \t\r]	;
