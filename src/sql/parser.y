@@ -71,6 +71,18 @@ typedef struct sql_context
 %type <ival> nulloperator
 %type <name> identifier
 
+//
+// operator precedence
+//
+
+// left associativity means that 1+2+3 translates to (1+2)+3
+// the order of operators here determines their precedence
+
+%left OR
+%left AND
+%right NOT
+%left EQ LTEQ GTEQ LT GT LIKE IS
+
 %%
 
 stmt:
@@ -142,9 +154,9 @@ identifier:
 	;
 
 operator:
-	'='	{ $$ = MDB_EQUAL; }
-	| '>'	{ $$ = MDB_GT; }
-	| '<'	{ $$ = MDB_LT; }
+	EQ	{ $$ = MDB_EQUAL; }
+	| GT	{ $$ = MDB_GT; }
+	| LT	{ $$ = MDB_LT; }
 	| LTEQ	{ $$ = MDB_LTEQ; }
 	| GTEQ	{ $$ = MDB_GTEQ; }
 	| LIKE	{ $$ = MDB_LIKE; }
