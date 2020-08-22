@@ -17,6 +17,7 @@
  */
 
 #include <inttypes.h>
+#include <stddef.h>
 #include "mdbtools.h"
 
 /*
@@ -303,6 +304,7 @@ mdb_close(MdbHandle *mdb)
 	}
 
 	mdb_iconv_close(mdb);
+    mdb_remove_backends(mdb);
 
 	g_free(mdb);
 }
@@ -322,19 +324,24 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	unsigned int i;
 
 	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
-	newmdb->stats = NULL;
+
+	memset(&newmdb->catalog, 0, sizeof(MdbHandle) - offsetof(MdbHandle, catalog));
+
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
 		data = g_memdup(entry,sizeof(MdbCatalogEntry));
+		data->mdb = newmdb;
 		data->props = NULL;
 		g_ptr_array_add(newmdb->catalog, data);
 	}
-	mdb->backend_name = NULL;
+
+	mdb_iconv_init(newmdb);
+	mdb_set_default_backend(newmdb, mdb->backend_name);
+
 	if (mdb->f) {
 		mdb->f->refs++;
 	}
-	mdb_iconv_init(mdb);
 
 	return newmdb;
 }
