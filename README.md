@@ -23,6 +23,7 @@ Intended focus areas of this fork:
 
 - [ ] Security / stability / fuzz testing
 - [x] Thread safety\*
+- [x] In-memory database API
 - [x] Removing GLib dependency
 - [x] Improved ODBC compliance
 - [x] Continuous integration with Travis and AppVeyor

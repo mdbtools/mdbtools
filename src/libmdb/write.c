@@ -70,18 +70,17 @@ ssize_t
 mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 {
 	ssize_t len;
-	struct stat status;
 	off_t offset = pg * mdb->fmt->pg_size;
 
-	fstat(mdb->f->fd, &status);
+    fseek(mdb->f->stream, 0, SEEK_END);
 	/* is page beyond current size + 1 ? */
-	if (status.st_size < offset + mdb->fmt->pg_size) {
+	if (ftello(mdb->f->stream) < offset + mdb->fmt->pg_size) {
 		fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
 		return 0;
 	}
-	lseek(mdb->f->fd, offset, SEEK_SET);
-	len = write(mdb->f->fd,mdb->pg_buf,mdb->fmt->pg_size);
-	if (len==-1) {
+	fseek(mdb->f->stream, offset, SEEK_SET);
+	len = fwrite(mdb->pg_buf, mdb->fmt->pg_size, 1, mdb->f->stream);
+	if (ferror(mdb->f->stream)) {
 		perror("write");
 		return 0;
 	} else if (len<mdb->fmt->pg_size) {

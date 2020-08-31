@@ -28,12 +28,17 @@ int main(int argc, char **argv) {
 
 	if (argc < 3) {
 		fprintf(stderr, "Usage: %s <file> <table>\n", argv[0]);
-		exit(1);
+        return 1;
 	}
 	
     // open db and try to read table:
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
-	mdb_read_catalog(mdb, MDB_TABLE);
+    if (!mdb) {
+        return 1;
+    }
+	if (!mdb_read_catalog(mdb, MDB_TABLE)) {
+        return 1;
+    }
 	for (i = 0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index(mdb->catalog, i);
 		if (entry->object_type == MDB_TABLE && !g_ascii_strcasecmp(entry->object_name, argv[2])) {
@@ -46,8 +51,8 @@ int main(int argc, char **argv) {
     
     // check was found:
 	if (!found) {
-		fprintf(stderr, "No table named %s found.\n", argv[2]);
-        exit(1);
+		fprintf(stderr, "No table named %s found (among %d tables in file).\n", argv[2], mdb->num_catalog);
+        return 1;
 	}
 
 	mdb_close(mdb);

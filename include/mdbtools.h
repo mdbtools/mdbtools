@@ -225,9 +225,8 @@ typedef struct {
 } MdbStatistics;
 
 typedef struct {
-	int           fd;
+	FILE        *stream;
 	gboolean      writable;
-	char          *filename;
 	guint32		jet_version;
 	guint32		db_key;
 	char		db_passwd[14];
@@ -463,6 +462,7 @@ long   mdb_pg_get_int32(MdbHandle *mdb, int offset);
 float  mdb_pg_get_single(MdbHandle *mdb, int offset);
 double mdb_pg_get_double(MdbHandle *mdb, int offset);
 MdbHandle *mdb_open(const char *filename, MdbFileFlags flags);
+MdbHandle *mdb_open_buffer(void *buffer, size_t len, MdbFileFlags flags);
 void mdb_close(MdbHandle *mdb);
 MdbHandle *mdb_clone_handle(MdbHandle *mdb);
 void mdb_swap_pgbuf(MdbHandle *mdb);

@@ -39,9 +39,19 @@ test_script:
       if ($env:TOOLCHAIN -eq "msys2")
       {
         $env:MSYSTEM="MINGW64"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-ver ./test/data/ASampleDatabase.accdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-ver ./test/data/nwind.mdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-tables ./test/data/ASampleDatabase.accdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-tables ./test/data/nwind.mdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-count ./test/data/ASampleDatabase.accdb 'Asset Items'"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-count ./test/data/nwind.mdb Customers"
       }
       else
       {
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-ver ./test/data/ASampleDatabase.accdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-ver ./test/data/nwind.mdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-tables ./test/data/ASampleDatabase.accdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-tables ./test/data/nwind.mdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-count ./test/data/ASampleDatabase.accdb 'Asset Items'"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-count ./test/data/nwind.mdb Customers"
       }

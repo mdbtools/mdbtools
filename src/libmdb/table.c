@@ -65,9 +65,15 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	void *buf, *pg_buf = mdb->pg_buf;
 	guint i;
 
-	mdb_read_pg(mdb, entry->table_pg);
-	if (mdb_get_byte(pg_buf, 0) != 0x02)  /* not a valid table def page */
+	if (!mdb_read_pg(mdb, entry->table_pg)) {
+        fprintf(stderr, "mdb_read_table: Unable to read page %lu\n", entry->table_pg);
+        return NULL;
+    }
+	if (mdb_get_byte(pg_buf, 0) != 0x02) {
+        fprintf(stderr, "mdb_read_table: Page %lu [size=%d] is not a valid table definition page (First byte = 0x%02X, expected 0x02)\n",
+                entry->table_pg, (int)fmt->pg_size, mdb_get_byte(pg_buf, 0));
 		return NULL;
+    }
 	table = mdb_alloc_tabledef(entry);
 
 	mdb_get_int16(pg_buf, 8); /* len */
@@ -81,6 +87,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	/* grab a copy of the usage map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_usage_map_offset);
 	if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz))) {
+        fprintf(stderr, "mdb_read_table: Unable to find page row %d\n", pg_row);
 		mdb_free_tabledef(table);
 		return NULL;
 	}
@@ -93,6 +100,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	/* grab a copy of the free space page map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_free_map_offset);
 	if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz))) {
+        fprintf(stderr, "mdb_read_table: Unable to find page row %d\n", pg_row);
 		mdb_free_tabledef(table);
 		return NULL;
 	}
@@ -300,8 +308,6 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
 		g_free(tmp_buf);
-
-
 	}
 
 	/* Sort the columns by col_num */

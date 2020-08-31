@@ -9,6 +9,7 @@ AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_PROG_CC(gcc)
+AC_PROG_CXX
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR], [AM_PROG_AR])
@@ -24,6 +25,11 @@ AC_CHECK_LIB(mswstr, DBLCMapStringW)
 AC_CHECK_DECLS([program_invocation_short_name], [], [], [[
                 #define _GNU_SOURCE
                 #include <errno.h>]])
+
+dnl Checks for library functions.
+VL_LIB_READLINE
+AC_CHECK_FUNC(strptime,[ AC_DEFINE(HAVE_STRPTIME, 1, [strptime check]) AM_CONDITIONAL(HAVE_STRPTIME, true) ],[ AM_CONDITIONAL(HAVE_STRPTIME, false) ])
+AC_CHECK_FUNC(fmemopen,[ AC_DEFINE(HAVE_FMEMOPEN, 1, [fmemopen check]) ])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -76,6 +82,27 @@ AS_CASE([$host],
         [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 AS_CASE([$host],
         [*mingw*], [LDFLAGS="$LDFLAGS -lWs2_32"], [])
+
+dnl Fuzz testing
+
+AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], ["Enable fuzz testing (requires Clang 6 or later)"]), [
+   AC_MSG_CHECKING([whether $CC accepts -fsanitize=fuzzer])
+   tmp_saved_flags=$[]_AC_LANG_PREFIX[]FLAGS
+   _AC_LANG_PREFIX[]FLAGS="$[]_AC_LANG_PREFIX[]FLAGS -fsanitize=fuzzer"
+   AC_LINK_IFELSE([AC_LANG_PROGRAM()],
+       [
+        AC_MSG_RESULT(yes)
+        OPTDIRS="$OPTDIRS fuzz"
+        fuzzer=yes],
+        AC_MSG_RESULT(no)
+       AC_MSG_FAILURE([-fsanitize=fuzzer not supported (Required with --enable-fuzz-testing)]))
+   _AC_LANG_PREFIX[]FLAGS=$tmp_saved_flags
+], [fuzzer=no])
+AM_CONDITIONAL([FUZZER_ENABLED], test "x$fuzzer" = "xyes")
+
+AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
+AC_SUBST([LIB_FUZZING_ENGINE])
+
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],
@@ -269,10 +296,6 @@ AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)
 ##################################################
 AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
 
-dnl Checks for library functions.
-VL_LIB_READLINE
-AC_CHECK_FUNC(strptime,[ AC_DEFINE(HAVE_STRPTIME, 1, [strptime check]) AM_CONDITIONAL(HAVE_STRPTIME, true) ],[ AM_CONDITIONAL(HAVE_STRPTIME, false) ])
-
 localedir=${datadir}/locale
 AC_SUBST(localedir)
 
@@ -287,6 +310,7 @@ include/Makefile
 src/libmdb/Makefile
 src/sql/Makefile
 src/odbc/Makefile
+src/fuzz/Makefile
 doc/Makefile
 src/gmdb2/Makefile
 src/gmdb2/gladefiles/Makefile
