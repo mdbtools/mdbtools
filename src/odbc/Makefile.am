@@ -5,9 +5,6 @@ AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS) $(ODBC_CFLAGS)
 libmdbodbc_la_SOURCES	= odbc.c connectparams.c
 libmdbodbc_la_LIBADD	= ../libmdb/libmdb.la ../sql/libmdbsql.la $(ODBC_LIBS)
 libmdbodbc_la_LDFLAGS	= -avoid-version -export-symbols-regex '^(SQL|ODBCINST)' $(ODBC_LDFLAGS)
-if FAKE_GLIB
-libmdbodbc_la_SOURCES += ../libmdb/fakeglib.c
-endif
 if ICONV
 lib_LTLIBRARIES += libmdbodbcW.la
 libmdbodbcW_la_SOURCES	= $(libmdbodbc_la_SOURCES)

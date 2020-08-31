@@ -9,15 +9,6 @@ mdb_sql_SOURCES = mdb-sql.c
 mdb_ver_SOURCES = mdb-ver.c
 mdb_import_SOURCES = mdb-import.c
 updrow_SOURCES = updrow.c
-if FAKE_GLIB
-mdb_export_SOURCES += ../libmdb/fakeglib.c
-mdb_schema_SOURCES += ../libmdb/fakeglib.c
-mdb_tables_SOURCES += ../libmdb/fakeglib.c
-mdb_sql_SOURCES += ../libmdb/fakeglib.c
-mdb_ver_SOURCES += ../libmdb/fakeglib.c
-mdb_import_SOURCES += ../libmdb/fakeglib.c
-updrow_SOURCES += ../libmdb/fakeglib.c
-endif
 LIBS	=	$(GLIB_LIBS) @LIBS@
 DEFS = @DEFS@ -DLOCALEDIR=\"$(localedir)\"
 AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS) -Wsign-compare
