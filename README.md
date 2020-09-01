@@ -1,48 +1,33 @@
 [![Build Status](https://travis-ci.org/evanmiller/mdbtools.svg?branch=master)](https://travis-ci.org/evanmiller/mdbtools)
 [![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/mdbtools/branch/master)
 
-Yet another attempt to resuscitate MDB Tools – the Access-accessing C library
-and command-line suite.
+Welcome to the exciting world of MDB Tools! MDB Tools is a set of programs to
+help you extract data from Microsoft Access files in various settings.
 
-This is a fork of a [fork](https://github.com/cyberemissary/mdbtools) of a
-[fork](https://github.com/brjohnsn/mdbtools) of a
-[fork](https://github.com/leecher1337/mdbtools) of the [original MDB
-Tools](https://github.com/brianb/mdbtools) by Brian Buns. I got sick of seeing
-the project waste away, so I'm taking the initiative to get MDB Tools
-whipped back into shape and properly maintained.
+After several years of neglect, MDB Tools is under new management as of 2020.
+Update your bookmarks and tell your favorite search engine that this is the new
+address:
+
+    https://github.com/mdbtools/mdbtools
 
 A brief history: the last *official* release (version 0.7.1) occurred in 2016.
 [cyberemissary](https://github.com/cyberemissary) (whose work this fork is
-based on) made a release in December 2018 and called it 0.8.2. *I am not
-planning a formal release* but rather collecting and merging patches to submit
-upstream. In the meantime you are welcome to use this code base:
+based on) made a release in December 2018 and called it 0.8.2. In September
+2020, @brianb moved his repository to the current address, and gave
+administrative access to @evanmiller, who acts as the present maintainer.
 
-https://github.com/evanmiller/mdbtools
-
-Intended focus areas of this fork:
+An official 0.9 release is planned for late 2020. Areas of improvement since
+the 0.7/0.8 days:
 
 - [x] Security / stability / fuzz testing
-- [x] Thread safety\*
+- [x] Thread safety
 - [x] In-memory database API
-- [x] Making GLib optional
+- [x] GLib is now optional
 - [x] Improved ODBC compliance
 - [x] Continuous integration with Travis and AppVeyor
 
-\* Multiple `MdbHandle`s can now be created on different threads – and
-`MdbHandle`s can be passed between threads – but threads should not attempt to
-use the same `MdbHandle` at the same time. Use `mdb_clone_handle` to create a
-new handle using an existing file descriptor.
-
-A re-formatted and updated README file follows.
-
-*In a chipper open-source voice...*
-
-Welcome to the exciting world of MDB Tools! In short, MDB Tools is a set of 
-programs to help you use Microsoft Access file in various settings.
-
-The initial goal of these tools is to be able to extract data structures and 
-data from mdb files. This goal will of course expand over time as the file 
-format becomes more well understood.
+The rest of this README explains what you can find in the project, how to
+install it, and how to contribute.
 
 # Components
 
@@ -83,7 +68,7 @@ An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use 
 
 ## gmdb2
 
-The Gnome MDB File Viewer and debugger. Still alpha.
+The Gnome MDB File Viewer and debugger. Still alpha and may be removed before 0.9.
 
 # License
 
@@ -117,7 +102,7 @@ If you want to generate the html version of the docbook, you'll need
 
 # Installation
 
-Last version is available at https://github.com/evanmiller/mdbtools
+Last version is available at https://github.com/mdbtools/mdbtools
 
 ```bash
 $ autoreconf -i -f -Wno-portability
@@ -188,4 +173,4 @@ where the code stands and what has been gleened of the file format.
 # Contact
 
 Please send bug reports to the new github repository.
-https://github.com/evanmiller/mdbtools/issues
+https://github.com/mdbtools/mdbtools/issues
