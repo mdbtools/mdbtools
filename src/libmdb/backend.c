@@ -315,6 +315,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		NULL,
+		NULL,
+		NULL,
 		quote_schema_name_bracket_merge);
 	mdb_register_backend(mdb, "sybase",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
@@ -324,7 +326,9 @@ void mdb_init_backends(MdbHandle *mdb)
 		"DROP TABLE %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
+		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
+		NULL,
 		quote_schema_name_dquote);
 	mdb_register_backend(mdb, "oracle",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
@@ -334,7 +338,9 @@ void mdb_init_backends(MdbHandle *mdb)
 		"DROP TABLE %s;\n",
 		NULL,
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
+		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
+		NULL,
 		quote_schema_name_dquote);
 	mdb_register_backend(mdb, "postgres",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
@@ -344,7 +350,9 @@ void mdb_init_backends(MdbHandle *mdb)
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
+		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
+		NULL,
 		quote_schema_name_dquote);
 	mdb_register_backend(mdb, "mysql",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
@@ -354,7 +362,9 @@ void mdb_init_backends(MdbHandle *mdb)
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		NULL,
+		"COMMENT %s",
 		NULL,
+		"COMMENT %s",
 		quote_schema_name_rquotes_merge);
 	mdb_register_backend(mdb, "sqlite",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
@@ -365,6 +375,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		NULL,
+		NULL,
+		NULL,
 		quote_schema_name_rquotes_merge);
 }
 
@@ -372,8 +384,12 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
         const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
         const char *short_now, const char *long_now,
         const char *charset_statement, const char *drop_statement,
-        const char *constaint_not_empty_statement, const char *column_comment_statement,
-        const char *table_comment_statement, gchar* (*quote_schema_name)(const gchar*, const gchar*))
+        const char *constaint_not_empty_statement,
+        const char *column_comment_statement,
+        const char *per_column_comment_statement, 
+        const char *table_comment_statement,
+        const char *per_table_comment_statement,
+        gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
 	MdbBackend *backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
 	backend->capabilities = capabilities;
@@ -386,7 +402,9 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->drop_statement = drop_statement;
 	backend->constaint_not_empty_statement = constaint_not_empty_statement;
 	backend->column_comment_statement = column_comment_statement;
+	backend->per_column_comment_statement = per_column_comment_statement;
 	backend->table_comment_statement = table_comment_statement;
+	backend->per_table_comment_statement = per_table_comment_statement;
 	backend->quote_schema_name  = quote_schema_name;
 	g_hash_table_insert(mdb->backends, backend_name, backend);
 }
@@ -495,7 +513,6 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 	MdbHandle* mdb = table->entry->mdb;
 	MdbIndex *idx;
 	MdbColumn *col;
-
 
 	if (!strcmp(mdb->backend_name, "postgres")) {
 		backend = MDB_BACKEND_POSTGRES;
@@ -737,7 +754,6 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		g_free(quoted_name);
 
 		if (mdb_colbacktype_takes_length(col)) {
-
 			/* more portable version from DW patch */
 			if (col->col_size == 0)
 				fputs(" (255)", outfile);
@@ -745,6 +761,18 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 				fprintf(outfile, " (%d, %d)", col->col_scale, col->col_prec);
 			else
 				fprintf(outfile, " (%d)", col->col_size);
+		}
+
+		if (mdb->default_backend->per_column_comment_statement && export_options & MDB_SHEXP_COMMENTS) {
+			prop_value = mdb_col_get_prop(col, "Description");
+			if (prop_value) {
+				char *comment = quote_with_squotes(prop_value);
+				fputs(" ", outfile);
+				fprintf(outfile,
+					mdb->default_backend->per_column_comment_statement,
+					comment);
+				free(comment);
+			}
 		}
 
 		if (export_options & MDB_SHEXP_CST_NOTNULL) {
@@ -801,7 +829,17 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			fputs("\n", outfile);
 	} /* for */
 
-	fputs(");\n", outfile);
+	fputs(")", outfile);
+	if (mdb->default_backend->per_table_comment_statement && export_options & MDB_SHEXP_COMMENTS) {
+		prop_value = mdb_table_get_prop(table, "Description");
+		if (prop_value) {
+			char *comment = quote_with_squotes(prop_value);
+			fputs(" ", outfile);
+			fprintf(outfile, mdb->default_backend->per_table_comment_statement, comment);
+			free(comment);
+		}
+	}
+	fputs(";\n", outfile);
 
 	/* Add the constraints on columns */
 	for (i = 0; i < table->num_cols; i++) {
@@ -820,7 +858,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 						quoted_table_name, quoted_name);
 		}
 
-		if (export_options & MDB_SHEXP_COMMENTS) {
+		if (mdb->default_backend->column_comment_statement && export_options & MDB_SHEXP_COMMENTS) {
 			prop_value = mdb_col_get_prop(col, "Description");
 			if (prop_value) {
 				char *comment = quote_with_squotes(prop_value);
@@ -834,8 +872,8 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		g_free(quoted_name);
 	}
 
-	/* Add the comments on table */
-	if (export_options & MDB_SHEXP_COMMENTS) {
+	/* Add the constraints on table */
+	if (mdb->default_backend->table_comment_statement && export_options & MDB_SHEXP_COMMENTS) {
 		prop_value = mdb_table_get_prop(table, "Description");
 		if (prop_value) {
 			char *comment = quote_with_squotes(prop_value);
