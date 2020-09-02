@@ -20,10 +20,6 @@
 
 #include "base64.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #undef MDB_BIND_SIZE
 #define MDB_BIND_SIZE 200000
 
@@ -38,8 +34,7 @@ static char *row_end = "}\n";
 static char *delimiter = ",";
 static size_t quote_len = 1; //strlen(quote_char); /* multibyte */
 static size_t orig_escape_len = 1; //strlen(escape_char);
-static int drop_nonascii;
-
+static int drop_nonascii = 0;
 
 //#define DONT_ESCAPE_ESCAPE
 static void
@@ -114,40 +109,42 @@ main(int argc, char **argv)
 	char **bound_values;
 	int  *bound_lens;
 	FILE *outfile = stdout;
-	drop_nonascii = 0;
-	int  opt;
+	char *date_fmt = NULL;
 	char *value;
 	size_t length;
 
-	while ((opt=getopt(argc, argv, "AD:"))!=-1) {
-		switch (opt) {
-		case 'A':
-			drop_nonascii = 1;
-		break;
-		case 'D':
-			mdb_set_date_fmt(optarg);
-		break;
-		default:
-		break;
-		}
+	GOptionEntry entries[] = {
+		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"no-unprintable", 'U', 0, G_OPTION_ARG_NONE, &drop_nonascii, "Change unprintable characters to spaces (otherwise escaped as \\u00XX)", NULL},
+        {NULL}
+    };
+
+	GError *error = NULL;
+	GOptionContext *opt_context;
+
+	opt_context = g_option_context_new("<file> <table> - export data from Access file to JSON");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit (1);
 	}
-	/*
-	** optind is now the position of the first non-option arg,
-	** see getopt(3)
-	*/
-	if (argc-optind < 2) {
-		fprintf(stderr,"Usage: %s [options] <file> <table>\n",argv[0]);
-		fprintf(stderr,"where options are:\n");
-		fprintf(stderr,"  -D <format>          set the date format (see strftime(3) for details)\n");
-		fprintf(stderr,"  -A                   drop non ascii characters in non-binary fields\n");
+
+	if (argc != 3) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit(1);
 	}
 
-	if (!(mdb = mdb_open(argv[optind], MDB_NOFLAGS))) {
+	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
 		exit(1);
 	}
 
-	table = mdb_read_table_by_name(mdb, argv[argc-1], MDB_TABLE);
+	if (date_fmt)
+		mdb_set_date_fmt(mdb, date_fmt);
+
+	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 	if (!table) {
 		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[argc-1]);
 		mdb_close(mdb);

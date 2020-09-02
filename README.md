@@ -50,7 +50,8 @@ Provides command line utilities, including:
 | ------- | ----------- |
 | `mdb-ver` | Prints the version (JET 3 or 4) of an mdb file. |
 | `mdb-schema` | Prints DDL for the specified table. |
-| `mdb-export` | Export table to CSV format. |
+| `mdb-export` | Export table to CSV or SQL formats. |
+| `mdb-json` | Export table to JSON format. |
 | `mdb-tables` | A simple dump of table names to be used with shell scripts. |
 | `mdb-count` | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
 | `mdb-header` | Generates a C header to be used in exporting mdb data to a C prog. |
