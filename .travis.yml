@@ -165,8 +165,8 @@ before_script:
 script:
   - ./configure --disable-silent-rules $CONFIGURE_FLAGS
   - make
-  - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
-  - ./src/util/mdb-array test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-json test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-json test/data/nwind.mdb "Customers"
   - ./src/util/mdb-count test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-count test/data/nwind.mdb "Customers"
   - ./src/util/mdb-prop test/data/ASampleDatabase.accdb "Asset Items"

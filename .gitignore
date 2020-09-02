@@ -39,6 +39,7 @@ src/sql/parser.h
 src/util/mdb-array
 src/util/mdb-count
 src/util/mdb-export
+src/util/mdb-exportjson
 src/util/mdb-header
 src/util/mdb-import
 src/util/mdb-parsecsv
