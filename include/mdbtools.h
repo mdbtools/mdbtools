@@ -187,7 +187,8 @@ enum {
 enum {
 	MDB_BINEXPORT_STRIP,
 	MDB_BINEXPORT_RAW,
-	MDB_BINEXPORT_OCTAL
+	MDB_BINEXPORT_OCTAL,
+	MDB_BINEXPORT_HEXADECIMAL
 };
 
 #define IS_JET4(mdb) (mdb->f->jet_version==MDB_VER_JET4) /* obsolete */

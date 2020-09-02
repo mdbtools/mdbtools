@@ -47,6 +47,7 @@ MdbCatalogEntry *cat_entry;
 #define BIN_STRIP "Strip"
 #define BIN_RAW "Raw"
 #define BIN_OCTAL "Octal"
+#define BIN_HEXADECIMAL "Hexademical"
 
 void
 gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
@@ -134,6 +135,8 @@ gmdb_export_get_binmode(GladeXML *xml)
 		return MDB_BINEXPORT_STRIP;
 	else if (!strcmp(str,BIN_OCTAL))
 		return MDB_BINEXPORT_OCTAL;
+	else if (!strcmp(str,BIN_HEXADECIMAL))
+		return MDB_BINEXPORT_HEXADECIMAL;
 	else
 		return MDB_BINEXPORT_RAW;
 }
@@ -200,16 +203,20 @@ gmdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int 
 				if (!*col_val)
 					break;
 
-			if (quote_len && !strncmp(col_val, quote_char, quote_len)) {
+			int is_binary_hex_col = is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_HEXADECIMAL;
+
+			if (quote_len && !strncmp(col_val, quote_char, quote_len) && !is_binary_hex_col) {
 				fprintf(outfile, "%s%s", escape_char, quote_char);
 				col_val += quote_len;
 #ifndef DONT_ESCAPE_ESCAPE
-			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len)) {
+			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len) && !is_binary_hex_col) {
 				fprintf(outfile, "%s%s", escape_char, escape_char);
 				col_val += orig_escape_len;
 #endif
 			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == MDB_BINEXPORT_OCTAL)
 				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
+			} else if (is_binary_hex_col)
+				fprintf(outfilt, "%02X", *(unsigned char*)col_val++);
 			else
 				putc(*col_val++, outfile);
 		}
@@ -366,5 +373,6 @@ gmdb_table_export_populate_dialog(GladeXML *xml)
 	gtk_combo_box_append_text(combobox, BIN_STRIP);
 	gtk_combo_box_append_text(combobox, BIN_RAW);
 	gtk_combo_box_append_text(combobox, BIN_OCTAL);
+	gtk_combo_box_append_text(combobox, BIN_HEXADECIMAL);
 	gtk_combo_box_set_active(combobox, 1);
 }
