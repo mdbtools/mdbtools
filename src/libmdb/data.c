@@ -22,6 +22,7 @@
 #include "mdbtools.h"
 
 #define OFFSET_MASK 0x1fff
+#define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
 
 char *mdb_money_to_string(MdbHandle *mdb, int start);
 char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
@@ -45,6 +46,10 @@ static const char boolean_true_number[]  = "1";
 
 static const char boolean_false_word[]   = "FALSE";
 static const char boolean_true_word[]    = "TRUE";
+
+void mdb_set_bind_size(MdbHandle *mdb, size_t bind_size) {
+    mdb->bind_size = bind_size;
+}
 
 void mdb_set_date_fmt(MdbHandle *mdb, const char *fmt)
 {
@@ -255,7 +260,7 @@ int ret;
 			} else {
 				str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}
-			snprintf(col->bind_ptr, MDB_BIND_SIZE, "%s", str);
+			snprintf(col->bind_ptr, mdb->bind_size, "%s", str);
 			g_free(str);
 		}
 		ret = strlen(col->bind_ptr);
@@ -610,18 +615,18 @@ void*
 mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 {
 	char ole_ptr[MDB_MEMO_OVERHEAD];
-	char *result = malloc(MDB_BIND_SIZE * 64);
-	size_t result_buffer_size = MDB_BIND_SIZE * 64;
+	char *result = malloc(OLE_BUFFER_SIZE);
+	size_t result_buffer_size = OLE_BUFFER_SIZE;
 	size_t len, pos;
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
 
-	len = mdb_ole_read(mdb, col, ole_ptr, MDB_BIND_SIZE * 64);
+	len = mdb_ole_read(mdb, col, ole_ptr, OLE_BUFFER_SIZE);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
 	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
-			result_buffer_size += MDB_BIND_SIZE * 64;
+			result_buffer_size += OLE_BUFFER_SIZE;
 			result = realloc(result, result_buffer_size);
 		}
 		memcpy(result + pos, col->bind_ptr, len);
@@ -703,7 +708,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	gint32 row_start, pg_row;
 	size_t len;
 	void *buf, *pg_buf = mdb->pg_buf;
-	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	char *text = (char *) g_malloc(mdb->bind_size);
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		strcpy(text, "");
@@ -723,7 +728,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	if (memo_len & 0x80000000) {
 		/* inline memo field */
 		mdb_unicode2ascii(mdb, (char*)pg_buf + start + MDB_MEMO_OVERHEAD,
-			size - MDB_MEMO_OVERHEAD, text, MDB_BIND_SIZE);
+			size - MDB_MEMO_OVERHEAD, text, mdb->bind_size);
 		return text;
 	} else if (memo_len & 0x40000000) {
 		/* single-page memo field */
@@ -740,7 +745,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			pg_row & 0xff, row_start, len);
 		mdb_buffer_dump(buf, row_start, len);
 #endif
-		mdb_unicode2ascii(mdb, (char*)buf + row_start, len, text, MDB_BIND_SIZE);
+		mdb_unicode2ascii(mdb, (char*)buf + row_start, len, text, mdb->bind_size);
 		return text;
 	} else if ((memo_len & 0xff000000) == 0) { // assume all flags in MSB
 		/* multi-page memo field */
@@ -775,7 +780,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		if (tmpoff < memo_len) {
 			fprintf(stderr, "Warning: incorrect memo length\n");
 		}
-		mdb_unicode2ascii(mdb, tmp, tmpoff, text, MDB_BIND_SIZE);
+		mdb_unicode2ascii(mdb, tmp, tmpoff, text, mdb->bind_size);
 		g_free(tmp);
 		return text;
 	} else {
@@ -875,12 +880,12 @@ static char *
 mdb_date_to_string(MdbHandle *mdb, void *buf, int start)
 {
 	struct tm t;
-	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	char *text = (char *) g_malloc(mdb->bind_size);
 	double td = mdb_get_double(buf, start);
 
 	mdb_date_to_tm(td, &t);
 
-	strftime(text, MDB_BIND_SIZE, mdb->date_fmt, &t);
+	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
 
 	return text;
 }
@@ -974,9 +979,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			if (size<0) {
 				text = g_strdup("");
 			} else {
-				text = (char *) g_malloc(MDB_BIND_SIZE);
+				text = (char *) g_malloc(mdb->bind_size);
 				mdb_unicode2ascii(mdb, (char*)buf + start,
-					size, text, MDB_BIND_SIZE);
+					size, text, mdb->bind_size);
 			}
 		break;
 		case MDB_DATETIME:

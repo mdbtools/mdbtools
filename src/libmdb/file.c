@@ -174,6 +174,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 	MdbHandle *mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
     mdb_set_date_fmt(mdb, "%x %X");
+    mdb_set_bind_size(mdb, MDB_BIND_SIZE);
     mdb_set_boolean_fmt_numbers(mdb);
 #ifdef HAVE_ICONV
 	mdb->iconv_in = (iconv_t)-1;

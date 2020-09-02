@@ -20,8 +20,7 @@
 
 #include "base64.h"
 
-#undef MDB_BIND_SIZE
-#define MDB_BIND_SIZE 200000
+#define EXPORT_BIND_SIZE 200000
 
 #define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
@@ -144,6 +143,8 @@ main(int argc, char **argv)
 	if (date_fmt)
 		mdb_set_date_fmt(mdb, date_fmt);
 
+    mdb_set_bind_size(mdb, EXPORT_BIND_SIZE);
+
 	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 	if (!table) {
 		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[argc-1]);
@@ -159,7 +160,7 @@ main(int argc, char **argv)
 	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
 	for (i=0;i<table->num_cols;i++) {
 		/* bind columns */
-		bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+		bound_values[i] = (char *) g_malloc0(EXPORT_BIND_SIZE);
 		mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
 	}
 

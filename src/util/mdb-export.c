@@ -18,8 +18,7 @@
 
 #include "mdbtools.h"
 
-#undef MDB_BIND_SIZE
-#define MDB_BIND_SIZE 200000
+#define EXPORT_BIND_SIZE 200000
 
 #define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
@@ -191,6 +190,8 @@ main(int argc, char **argv)
 	if (boolean_words)
 		mdb_set_boolean_fmt_words(mdb);
 
+    mdb_set_bind_size(mdb, EXPORT_BIND_SIZE);
+
 	if (insert_dialect)
 		if (!mdb_set_default_backend(mdb, insert_dialect)) {
 			fputs("Invalid backend type\n", stderr);
@@ -213,7 +214,7 @@ main(int argc, char **argv)
 	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
 	for (i = 0; i < table->num_cols; i++) {
 		/* bind columns */
-		bound_values[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+		bound_values[i] = (char *) g_malloc0(EXPORT_BIND_SIZE);
 		mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
 	}
 	if (header_row) {
