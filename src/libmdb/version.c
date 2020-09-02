@@ -17,6 +17,7 @@
  */
 
 #include "mdbver.h"
+#include "mdbtools.h"
 
 const char *mdb_get_version() {
     return MDB_VERSION_NO;
