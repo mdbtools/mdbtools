@@ -44,8 +44,7 @@ typedef struct MdbSQL
 	MdbTableDef *cur_table;
 	MdbSargNode *sarg_tree;
 	GList *sarg_stack;
-	/* FIX ME */
-	void *bound_values[256];
+	GPtrArray *bound_values;
 	unsigned char *kludge_ttable_pg;
 	long max_rows;
 	char error_msg[1024];
@@ -79,6 +78,7 @@ void mdb_sql_error(MdbSQL* sql, const char *fmt, ...);
 MdbSQL *mdb_sql_init(void);
 MdbSQLSarg *mdb_sql_alloc_sarg(void);
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name);
+void mdb_sql_free_tree(MdbSargNode *tree);
 int mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant);
 void mdb_sql_all_columns(MdbSQL *sql);
 void mdb_sql_sel_count(MdbSQL *sql);
@@ -100,11 +100,11 @@ MdbSQL* mdb_sql_run_query (MdbSQL*, const gchar*);
 void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow);
 int mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2);
 void mdb_sql_bind_all(MdbSQL *sql);
+void mdb_sql_unbind_all(MdbSQL *sql);
 int mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table);
 int mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, int col_type, int col_size, int is_fixed);
 void mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
 int mdb_sql_add_limit(MdbSQL *sql, char *limit);
-
 
 int parse_sql(MdbSQL * mdb, const gchar* str);
 
