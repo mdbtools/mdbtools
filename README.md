@@ -25,6 +25,7 @@ the 0.7/0.8 days:
 - [x] GLib is now optional
 - [x] Improved ODBC compliance
 - [x] Continuous integration with Travis and AppVeyor
+- [x] New `mdb-queries` tool
 
 The rest of this README explains what you can find in the project, how to
 install it, and how to contribute.
@@ -55,6 +56,7 @@ Provides command line utilities, including:
 | `mdb-header` | Generates a C header to be used in exporting mdb data to a C prog. |
 | `mdb-parsecsv` | Generates a C program given a CSV file made with mdb-export. |
 | `mdb-sql` | A simple SQL engine (also used by ODBC and gmdb). |
+| `mdb-queries` | List and print queries stored in the database. |
 | `prcat` | Prints the catalog table from an mdb file. |
 | `prkkd` | Dump of information about design view data given the offset to it. |
 | `prtable` | Dump of a table definition. |
