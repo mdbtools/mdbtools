@@ -16,11 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-/* #include <windows.h> */
 #include <stdio.h>
 #include <sql.h>
 #include <sqlext.h>
 
+// This test requires the presence of nwind.mdb in the MDBPATH.
+// It is stored in a separate repository: https://github.com/mdbtools/mdbtestdata
 
 #define SALES_PERSON_LEN 2
 #define STATUS_LEN 6
