@@ -41,9 +41,9 @@ char * mdb_get_query_id(MdbHandle *mdb,char *query);
 
 int main (int argc, char **argv) {
 	unsigned int i;
-	MdbHandle *mdb;
-	MdbCatalogEntry *entry,*sys_queries,*temp;
-	MdbTableDef *table;
+	MdbHandle *mdb = NULL;
+	MdbCatalogEntry *entry = NULL, *sys_queries = NULL, *temp = NULL;
+	MdbTableDef *table = NULL;
 	char *delimiter = NULL;
 	int list_only=0;
 	int found_match=0;
@@ -249,8 +249,8 @@ void mdb_list_queries(MdbHandle *mdb, int line_break, char *delimiter) {
 ****************************************************/
 char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 	unsigned int i;
-	MdbCatalogEntry *entry;
-	MdbTableDef *table;
+	MdbCatalogEntry *entry = NULL;
+	MdbTableDef *table = NULL;
 	static char id[256];
 	char name[256];
 	
@@ -281,5 +281,5 @@ char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 		mdb_free_tabledef(table);
 	}
 	
-	return(id);
+	return id;
 }
