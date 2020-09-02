@@ -623,7 +623,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 
 		mdb_read_columns(mdb->relationships_table);
 		for (i=0;i<5;i++) {
-			bound[i] = (char *) g_malloc0(MDB_BIND_SIZE);
+			bound[i] = (char *) g_malloc0(mdb->bind_size);
 		}
 		mdb_bind_column_by_name(mdb->relationships_table, "szColumn", bound[0], NULL);
 		mdb_bind_column_by_name(mdb->relationships_table, "szObject", bound[1], NULL);

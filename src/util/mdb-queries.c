@@ -33,8 +33,7 @@
 	
 #include "mdbtools.h"
 
-#undef MDB_BIND_SIZE
-#define MDB_BIND_SIZE 200000
+#define QUERY_BIND_SIZE 200000
 
 void mdb_list_queries(MdbHandle *mdb, int line_break, char *delimiter);
 char * mdb_get_query_id(MdbHandle *mdb,char *query);
@@ -50,21 +49,22 @@ int main (int argc, char **argv) {
 	int line_break=0;
 	int opt;	
 	char *query_id;
+    size_t bind_size = QUERY_BIND_SIZE;
 	
 	// variables for the msysqueries table. hopefully 256 is big enough
-	char *attribute = (char *) malloc(MDB_BIND_SIZE);
-	char *expression = (char *) malloc(MDB_BIND_SIZE);
-	char *flag = (char *) malloc(MDB_BIND_SIZE);
-	char *name1 = (char *) malloc(MDB_BIND_SIZE);
-	char *name2 = (char *) malloc(MDB_BIND_SIZE);
-	char *objectid = (char *) malloc(MDB_BIND_SIZE);
-	char *order = (char *) malloc(MDB_BIND_SIZE);
+	char *attribute = (char *) malloc(bind_size);
+	char *expression = (char *) malloc(bind_size);
+	char *flag = (char *) malloc(bind_size);
+	char *name1 = (char *) malloc(bind_size);
+	char *name2 = (char *) malloc(bind_size);
+	char *objectid = (char *) malloc(bind_size);
+	char *order = (char *) malloc(bind_size);
 	
 	//variables for the generation of sql
-	char *sql_tables = (char *) malloc(MDB_BIND_SIZE);
-	char *sql_columns = (char *) malloc(MDB_BIND_SIZE);
-	char *sql_where = (char *) malloc(MDB_BIND_SIZE);
-	char *sql_sorting = (char *) malloc(MDB_BIND_SIZE);
+	char *sql_tables = (char *) malloc(bind_size);
+	char *sql_columns = (char *) malloc(bind_size);
+	char *sql_where = (char *) malloc(bind_size);
+	char *sql_sorting = (char *) malloc(bind_size);
 	
 	/* see getopt(3) for more information on getopt and this will become clear */
 	while ((opt=getopt(argc, argv, "L1d:"))!=-1) {
@@ -101,6 +101,8 @@ int main (int argc, char **argv) {
 		fprintf(stderr,"Couldn't open database.\n");
 		exit(1);
 	}
+
+    mdb_set_bind_size(mdb, bind_size);
 
  	/* read the catalog */
  	if (!mdb_read_catalog (mdb, MDB_ANY)) {

@@ -54,7 +54,7 @@
 #define MDB_MAX_IDX_COLS 10
 #define MDB_CATALOG_PG 18
 #define MDB_MEMO_OVERHEAD 12
-#define MDB_BIND_SIZE 16384
+#define MDB_BIND_SIZE 16384 // override with mdb_set_bind_size(MdbHandle*, size_t)
 
 // This attribute is not supported by all compilers:
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
@@ -269,6 +269,7 @@ typedef struct {
 	unsigned char pg_buf[MDB_PGSIZE];
 	unsigned char alt_pg_buf[MDB_PGSIZE];
 	MdbFormatConstants *fmt;
+    size_t bind_size;
     char date_fmt[64];
     const char *boolean_false_value;
     const char *boolean_true_value;
@@ -512,6 +513,7 @@ int mdb_col_disp_size(MdbColumn *col);
 size_t mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr);
 size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size);
 void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
+void mdb_set_bind_size(MdbHandle *mdb, size_t bind_size);
 void mdb_set_date_fmt(MdbHandle *mdb, const char *);
 void mdb_set_boolean_fmt_words(MdbHandle *mdb);
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb);
