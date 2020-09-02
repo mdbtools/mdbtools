@@ -285,8 +285,8 @@ AC_ARG_ENABLE(man,
   AS_HELP_STRING([--disable-man], [disable man generation]),
   enable_man="$enableval", [enable_man=yes])
 if test "$enable_man" = yes; then
-  if ! which txt2man > /dev/null; then
-    AC_MSG_ERROR([Could not find txt2man script. Install it or configure with --disable-man if you are not interrested in manuals.])
+  if ! which gawk > /dev/null; then
+    AC_MSG_ERROR([Could not find GNU awk. Install it or configure with --disable-man if you are not interested in manuals.])
   fi
 fi
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)

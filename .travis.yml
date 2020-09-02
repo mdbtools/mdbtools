@@ -9,6 +9,7 @@ jobs:
       apt:
         packages:
         - libiodbc2-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: clang
@@ -18,6 +19,7 @@ jobs:
         packages:
         - libiodbc2-dev
         - libglib2.0-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --enable-glib"
   - compiler: clang
@@ -26,6 +28,7 @@ jobs:
       apt:
         packages:
         - unixodbc-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: clang
@@ -35,6 +38,7 @@ jobs:
         packages:
         - unixodbc-dev
         - libglib2.0-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --enable-glib"
   - compiler: gcc
@@ -43,6 +47,7 @@ jobs:
       apt:
         packages:
         - libiodbc2-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: gcc
@@ -51,6 +56,7 @@ jobs:
       apt:
         packages:
         - unixodbc-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: gcc-10
@@ -62,6 +68,7 @@ jobs:
         packages:
         - gcc-10
         - libiodbc2-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: gcc-10
@@ -73,6 +80,7 @@ jobs:
         packages:
         - gcc-10
         - unixodbc-dev
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: clang
@@ -83,6 +91,7 @@ jobs:
         packages:
         - libiodbc
         - bison
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -95,6 +104,7 @@ jobs:
         - libiodbc
         - glib
         - bison
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -106,6 +116,7 @@ jobs:
         packages:
         - unixodbc
         - bison
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -118,6 +129,7 @@ jobs:
         - unixodbc
         - glib
         - bison
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -129,6 +141,7 @@ jobs:
         packages:
         - libiodbc
         - bison
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -140,6 +153,7 @@ jobs:
         packages:
         - unixodbc
         - bison
+        - gawk
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -148,7 +162,7 @@ before_script:
   - autoreconf -i -f -Wno-portability
 
 script:
-  - ./configure --disable-man --disable-silent-rules $CONFIGURE_FLAGS
+  - ./configure --disable-silent-rules $CONFIGURE_FLAGS
   - make
   - ./src/util/mdb-array test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-array test/data/nwind.mdb "Customers"

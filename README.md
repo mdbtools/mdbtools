@@ -94,7 +94,7 @@ If you want to build the ODBC driver, you'll need `unixodbc-dev` (version
 2.2.10 or above) or [iodbc](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/WelcomeVisitors).
 
 If you want to build man pages, you'll need
-[txt2man](https://github.com/mvertes/txt2man).
+[GNU awk](https://www.gnu.org/software/gawk/).
 
 If you want to generate the html version of the docbook, you'll need
 [openjade](http://openjade.sourceforge.net) and basic dsl catalogs.
@@ -102,7 +102,21 @@ If you want to generate the html version of the docbook, you'll need
 
 # Installation
 
-Last version is available at https://github.com/mdbtools/mdbtools
+Latest version is available at https://github.com/mdbtools/mdbtools
+
+## Debian
+
+```
+apt-get install mdbtools
+```
+
+## Homebrew
+
+```bash
+brew install mdbtools
+```
+
+## From source
 
 ```bash
 $ autoreconf -i -f -Wno-portability
@@ -110,7 +124,7 @@ $ autoreconf -i -f -Wno-portability
 
 If you want to build the html version of the docbook documentation, you need to
 set the environment variable `DOCBOOK_DSL` to the modular dsl translation file.
-For exemple, before configure, you need something like:
+For example, before configure, you need something like:
 
 ```bash
 $ export DOCBOOK_DSL=/usr/share/sgml/docbook/stylesheet/dsssl/modular/html/docbook.dsl
