@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
 SUBDIRS = bash-completion
-bin_PROGRAMS	=	mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql mdb-ver mdb-prop mdb-count mdb-queries
+bin_PROGRAMS	=	mdb-export mdb-array mdb-schema mdb-tables mdb-parsecsv mdb-header mdb-sql mdb-ver mdb-prop mdb-count mdb-queries mdb-exportjson
 noinst_PROGRAMS = mdb-import prtable prcat prdata prkkd prdump prole updrow prindex
 mdb_export_SOURCES = mdb-export.c
 mdb_schema_SOURCES = mdb-schema.c
