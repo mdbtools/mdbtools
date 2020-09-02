@@ -449,6 +449,9 @@ typedef struct {
 extern MDB_DEPRECATED(void, mdb_init(void));
 extern MDB_DEPRECATED(void, mdb_exit(void));
 
+/* version.c */
+const char *mdb_get_version(void);
+
 /* file.c */
 ssize_t mdb_read_pg(MdbHandle *mdb, unsigned long pg);
 ssize_t mdb_read_alt_pg(MdbHandle *mdb, unsigned long pg);
