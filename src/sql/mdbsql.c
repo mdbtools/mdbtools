@@ -550,13 +550,7 @@ void mdb_sql_exit(MdbSQL *sql)
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
-    unsigned int i;
 	mdb_sql_free(sql);
-
-	/* Reset bound values */
-	for (i=0;i<sql->num_columns;i++) {
-		g_free(g_ptr_array_index(sql->bound_values, i));
-	}
 
 	/* Reset columns */
 	sql->num_columns = 0;
