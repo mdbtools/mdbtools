@@ -159,7 +159,7 @@ jobs:
       - YACC="/usr/local/opt/bison/bin/bison"
 
 before_script:
-  - git clone git@github.com:mdbtools/mdbtestdata.git test
+  - git clone https://github.com/mdbtools/mdbtestdata.git test
   - autoreconf -i -f -Wno-portability
 
 script:
