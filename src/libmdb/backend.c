@@ -943,3 +943,53 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 		}
 	}
 }
+
+#define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
+#define is_quote_type(x) (is_binary_type(x) || x==MDB_TEXT || x==MDB_MEMO || x==MDB_DATETIME)
+//#define DONT_ESCAPE_ESCAPE
+void
+mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
+/* quote_text: Don't quote if 0.
+ */
+{
+	size_t quote_len = strlen(quote_char); /* multibyte */
+
+	size_t orig_escape_len = escape_char ? strlen(escape_char) : 0;
+
+	/* double the quote char if no escape char passed */
+	if (!escape_char)
+		escape_char = quote_char;
+
+	if (quote_text && is_quote_type(col_type)) {
+		fputs(quote_char, outfile);
+		while (1) {
+			if (is_binary_type(col_type)) {
+				if (bin_mode == MDB_BINEXPORT_STRIP)
+					break;
+				if (!bin_len--)
+					break;
+			} else /* use \0 sentry */
+				if (!*col_val)
+					break;
+
+			int is_binary_hex_col = is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_HEXADECIMAL;
+
+			if (quote_len && !strncmp(col_val, quote_char, quote_len) && !is_binary_hex_col) {
+				fprintf(outfile, "%s%s", escape_char, quote_char);
+				col_val += quote_len;
+#ifndef DONT_ESCAPE_ESCAPE
+			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len) && !is_binary_hex_col) {
+				fprintf(outfile, "%s%s", escape_char, escape_char);
+				col_val += orig_escape_len;
+#endif
+			} else if (is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_OCTAL) {
+				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
+			} else if (is_binary_hex_col) {
+				fprintf(outfile, "%02X", *(unsigned char*)col_val++);
+			} else
+				putc(*col_val++, outfile);
+		}
+		fputs(quote_char, outfile);
+	} else
+		fputs(col_val, outfile);
+}

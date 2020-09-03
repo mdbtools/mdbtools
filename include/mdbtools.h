@@ -546,6 +546,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
         gchar* (*quote_schema_name)(const gchar*, const gchar*));
 int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 void mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
+void mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode);
 
 /* sargs.c */
 int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
