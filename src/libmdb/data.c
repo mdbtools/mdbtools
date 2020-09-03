@@ -29,7 +29,7 @@ char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
 
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
-static char *mdb_date_to_string(MdbHandle *mdb, void *buf, int start);
+static char *mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start);
 #ifdef MDB_COPY_OLE
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
@@ -54,6 +54,11 @@ void mdb_set_bind_size(MdbHandle *mdb, size_t bind_size) {
 void mdb_set_date_fmt(MdbHandle *mdb, const char *fmt)
 {
     snprintf(mdb->date_fmt, sizeof(mdb->date_fmt), "%s", fmt);
+}
+
+void mdb_set_shortdate_fmt(MdbHandle *mdb, const char *fmt)
+{
+    snprintf(mdb->shortdate_fmt, sizeof(mdb->shortdate_fmt), "%s", fmt);
 }
 
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb)
@@ -257,6 +262,12 @@ int ret;
 			char *str;
 			if (col->col_type == MDB_NUMERIC) {
 				str = mdb_numeric_to_string(mdb, start, col->col_scale, col->col_prec);
+			} else if (col->col_type == MDB_DATETIME) {
+				if (mdb_col_is_shortdate(col)) {
+					str = mdb_date_to_string(mdb, mdb->shortdate_fmt, mdb->pg_buf, start);
+				} else {
+					str = mdb_date_to_string(mdb, mdb->date_fmt, mdb->pg_buf, start);
+				}
 			} else {
 				str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}
@@ -877,7 +888,7 @@ mdb_date_to_tm(double td, struct tm *t)
 }
 
 static char *
-mdb_date_to_string(MdbHandle *mdb, void *buf, int start)
+mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 {
 	struct tm t;
 	char *text = (char *) g_malloc(mdb->bind_size);
@@ -985,7 +996,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			}
 		break;
 		case MDB_DATETIME:
-			text = mdb_date_to_string(mdb, buf, start);
+			text = mdb_date_to_string(mdb, mdb->date_fmt, buf, start);
 		break;
 		case MDB_MEMO:
 			text = mdb_memo_to_string(mdb, start, size);

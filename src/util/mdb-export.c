@@ -43,6 +43,7 @@ main(int argc, char **argv)
 	int boolean_words = 0;
 	int batch_size = 1000;
 	char *insert_dialect = NULL;
+	char *shortdate_fmt = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
 	char *str_bin_mode = NULL;
@@ -58,7 +59,8 @@ main(int argc, char **argv)
 		{"row-delimiter", 'R', 0, G_OPTION_ARG_STRING, &row_delimiter, "Specify a row delimiter", "char"},
 		{"quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
 		{"backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
-		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
 		{"namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
 		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
@@ -138,6 +140,9 @@ main(int argc, char **argv)
 
 	if (date_fmt)
 		mdb_set_date_fmt(mdb, date_fmt);
+
+	if (shortdate_fmt)
+		mdb_set_shortdate_fmt(mdb, shortdate_fmt);
 
 	if (boolean_words)
 		mdb_set_boolean_fmt_words(mdb);

@@ -167,6 +167,7 @@ static SQLRETURN do_connect (
 		// ODBC requires ISO format dates, see
 		// https://docs.microsoft.com/en-us/sql/relational-databases/native-client-odbc-date-time/datetime-data-type-conversions-odbc?view=sql-server-ver15
 		mdb_set_date_fmt( dbc->sqlconn->mdb, "%F %H:%M:%S" );
+		mdb_set_shortdate_fmt( dbc->sqlconn->mdb, "%F" );
 		return SQL_SUCCESS;
 	}
 	else
@@ -1592,8 +1593,7 @@ SQLRETURN SQL_API SQLGetData(
 			struct tm tmp_t;
 			mdb_date_to_tm(mdb_get_double(mdb->pg_buf, col->cur_value_start), &tmp_t);
 
-			const char *format = mdb_col_get_prop(col, "Format");
-			if (format && !strcmp(format, "Short Date")) {
+			if (mdb_col_is_shortdate(col)) {
 				DATE_STRUCT sql_dt;
 				sql_dt.year     = tmp_t.tm_year + 1900;
 				sql_dt.month    = tmp_t.tm_mon + 1;

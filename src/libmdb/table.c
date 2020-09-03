@@ -417,3 +417,8 @@ mdb_col_get_prop(const MdbColumn *col, const gchar *key) {
 		return NULL;
 	return g_hash_table_lookup(col->props->hash, key);
 }
+
+int mdb_col_is_shortdate(const MdbColumn *col) {
+    const char *format = mdb_col_get_prop(col, "Format");
+    return format && !strcmp(format, "Short Date");
+}

@@ -253,11 +253,6 @@ quote_with_squotes(const gchar* value)
 	return quote_generic(value, '\'', '\'');
 }
 
-static int mdb_col_is_shortdate(const MdbColumn *col) {
-    const char *format = mdb_col_get_prop(col, "Format");
-    return format && !strcmp(format, "Short Date");
-}
-
 const MdbBackendType*
 mdb_get_colbacktype(const MdbColumn *col) {
 	MdbBackend *backend = col->table->entry->mdb->default_backend;

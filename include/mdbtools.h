@@ -273,6 +273,7 @@ typedef struct {
 	MdbFormatConstants *fmt;
     size_t bind_size;
     char date_fmt[64];
+    char shortdate_fmt[64];
     const char *boolean_false_value;
     const char *boolean_true_value;
 	unsigned int  num_catalog;
@@ -498,6 +499,7 @@ int mdb_is_user_table(MdbCatalogEntry *entry);
 int mdb_is_system_table(MdbCatalogEntry *entry);
 const char *mdb_table_get_prop(const MdbTableDef *table, const gchar *key);
 const char *mdb_col_get_prop(const MdbColumn *col, const gchar *key);
+int mdb_col_is_shortdate(const MdbColumn *col);
 
 /* data.c */
 int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr);
@@ -520,6 +522,7 @@ size_t mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_
 void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
 void mdb_set_bind_size(MdbHandle *mdb, size_t bind_size);
 void mdb_set_date_fmt(MdbHandle *mdb, const char *);
+void mdb_set_shortdate_fmt(MdbHandle *mdb, const char *);
 void mdb_set_boolean_fmt_words(MdbHandle *mdb);
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb);
 int mdb_read_row(MdbTableDef *table, unsigned int row);
