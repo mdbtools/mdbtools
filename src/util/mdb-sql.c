@@ -156,40 +156,6 @@ do_set_cmd(MdbSQL *sql, char *s)
 	}
 }
 
-int
-read_file(char *s, int line, unsigned int *bufsz, char *mybuf)
-{
-	char *fname;
-	FILE *in;
-	char buf[256];
-	unsigned int cursz = 0;	
-	int lines = 0;	
-
-	fname = s;
-	while (*fname && *fname==' ') fname++;
-
-	if (! (in = fopen(fname, "r"))) {
-		fprintf(stderr,"Unable to open file %s\n", fname);
-		mybuf[0]=0;
-		return 0;
-	}
-	while (fgets(buf, 255, in)) {
-		cursz += strlen(buf) + 1;
-		if (cursz > (*bufsz)) {
-			(*bufsz) *= 2;
-			mybuf = (char *) realloc(mybuf, *bufsz);
-		}	
-		strcat(mybuf, buf);
-#ifdef HAVE_READLINE_HISTORY
-		/* don't record blank lines */
-		if (strlen(buf)) add_history(buf);
-#endif
-		strcat(mybuf, "\n");
-		lines++;
-		printf("%d => %s",line+lines, buf);
-	}
-	return lines;
-}
 void 
 run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
@@ -370,6 +336,7 @@ main(int argc, char **argv)
 	char *home = getenv("HOME");
 	char *histpath;
 	char *delimiter = NULL;
+	int in_from_colon_r = 0;
 
 
 	GOptionEntry entries[] = {
@@ -443,14 +410,19 @@ main(int argc, char **argv)
 		if (s) free(s);
 
 		if (in) {
-			s=malloc(bufsz);
+			s=calloc(bufsz, 1);
 			if (!fgets(s, bufsz, in)) {
 				// Backwards compatibility with older MDBTools
 				// Files read from the command line had an
 				// implicit "go" at the end
-				if (strlen(mybuf))
+				if (!in_from_colon_r && strlen(mybuf))
 					strcpy(s, "go");
-				else
+				else if (in_from_colon_r) {
+					line = 0;
+					fclose(in);
+					in = NULL;
+					in_from_colon_r = 0;
+				} else
 					break;
 			} else if (s[strlen(s)-1]=='\n')
 				s[strlen(s)-1]=0;
@@ -475,7 +447,19 @@ main(int argc, char **argv)
 			line = 0;
 			mybuf[0]='\0';
 		} else if (!strncmp(s,":r",2)) {
-			line += read_file(&s[2], line, &bufsz, mybuf);
+			char *fname = &s[2];
+			if (in) {
+				fprintf(stderr, "Can not handle nested opens\n");
+			} else {
+				while (*fname && isspace(*fname))
+					fname++;
+				if (!(in = fopen(fname, "r"))) {
+					fprintf(stderr,"Unable to open file %s\n", fname);
+					mybuf[0]=0;
+				} else {
+					in_from_colon_r = 1;
+				}
+			}
 		} else {
 			char *p;
 
@@ -484,8 +468,10 @@ main(int argc, char **argv)
 				mybuf = (char *) g_realloc(mybuf, bufsz);
 			}
 #ifdef HAVE_READLINE_HISTORY
-			/* don't record blank lines, or lines read from files */
-			if (!in && strlen(s)) add_history(s);
+			/* don't record blank lines, or lines read from files
+			 * specified on the command line */
+			if ((!in || in_from_colon_r) && strlen(s))
+				add_history(s);
 #endif
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */
