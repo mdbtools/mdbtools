@@ -443,15 +443,16 @@ main(int argc, char **argv)
 		if (s) free(s);
 
 		if (in) {
-			s=malloc(256);
-			if ((!s) || (!fgets(s, 256, in))) {
-				/* if we have something in the buffer, run it */
+			s=malloc(bufsz);
+			if (!fgets(s, bufsz, in)) {
+				// Backwards compatibility with older MDBTools
+				// Files read from the command line had an
+				// implicit "go" at the end
 				if (strlen(mybuf))
-					run_query((out) ? out : stdout,
-					          sql, mybuf, delimiter);
-				break;
-			}
-			if (s[strlen(s)-1]=='\n')
+					strcpy(s, "go");
+				else
+					break;
+			} else if (s[strlen(s)-1]=='\n')
 				s[strlen(s)-1]=0;
 		} else {
 			sprintf(prompt, "%d => ", line);
@@ -483,8 +484,8 @@ main(int argc, char **argv)
 				mybuf = (char *) g_realloc(mybuf, bufsz);
 			}
 #ifdef HAVE_READLINE_HISTORY
-			/* don't record blank lines */
-			if (strlen(s)) add_history(s);
+			/* don't record blank lines, or lines read from files */
+			if (!in && strlen(s)) add_history(s);
 #endif
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */
