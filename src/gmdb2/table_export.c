@@ -47,6 +47,7 @@ MdbCatalogEntry *cat_entry;
 #define BIN_STRIP "Strip"
 #define BIN_RAW "Raw"
 #define BIN_OCTAL "Octal"
+#define BIN_HEXADECIMAL "Hexademical"
 
 void
 gmdb_export_get_delimiter(GladeXML *xml, gchar *delimiter, int max_buf)
@@ -134,6 +135,8 @@ gmdb_export_get_binmode(GladeXML *xml)
 		return MDB_BINEXPORT_STRIP;
 	else if (!strcmp(str,BIN_OCTAL))
 		return MDB_BINEXPORT_OCTAL;
+	else if (!strcmp(str,BIN_HEXADECIMAL))
+		return MDB_BINEXPORT_HEXADECIMAL;
 	else
 		return MDB_BINEXPORT_RAW;
 }
@@ -170,54 +173,6 @@ gmdb_export_help_cb(GtkWidget *w, gpointer data)
 		g_error_free (error);
 	}
 }
-
-/* That function is a duplicate of the one in util/mdb-export.c
- * They should be merged and moved in libmdb (backend.c)
- */
-#define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
-#define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
-//#define DONT_ESCAPE_ESCAPE
-void
-gmdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
-{
-	size_t quote_len = strlen(quote_char); /* multibyte */
-
-	size_t orig_escape_len = escape_char ? strlen(escape_char) : 0;
-
-	/* double the quote char if no escape char passed */
-	if (!escape_char)
-		escape_char = quote_char;
-
-	if (quote_text && is_quote_type(col_type)) {
-		fputs(quote_char, outfile);
-		while (1) {
-			if (is_binary_type(col_type)) {
-				if (bin_mode == MDB_BINEXPORT_STRIP)
-					break;
-				if (!bin_len--)
-					break;
-			} else /* use \0 sentry */
-				if (!*col_val)
-					break;
-
-			if (quote_len && !strncmp(col_val, quote_char, quote_len)) {
-				fprintf(outfile, "%s%s", escape_char, quote_char);
-				col_val += quote_len;
-#ifndef DONT_ESCAPE_ESCAPE
-			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len)) {
-				fprintf(outfile, "%s%s", escape_char, escape_char);
-				col_val += orig_escape_len;
-#endif
-			} else if (is_binary_type(col_type) && *col_val <= 0 && bin_mode == MDB_BINEXPORT_OCTAL)
-				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
-			else
-				putc(*col_val++, outfile);
-		}
-		fputs(quote_char, outfile);
-	} else
-		fputs(col_val, outfile);
-}
-
 
 void
 gmdb_table_export_button_cb(GtkWidget *w, gpointer data)
@@ -276,7 +231,7 @@ size_t length;
 			if (i>0)
 				fputs(delimiter, outfile);
 			col=g_ptr_array_index(table->columns,i);
-			gmdb_print_col(outfile, col->name, quotechar[0]!='\0', MDB_TEXT, 0, quotechar, escape_char, bin_mode);
+			mdb_print_col(outfile, col->name, quotechar[0]!='\0', MDB_TEXT, 0, quotechar, escape_char, bin_mode);
 		}
 	}
 	if (need_headers) fputs(lineterm, outfile);
@@ -295,7 +250,7 @@ size_t length;
 					value = bound_values[i];
 					length = bound_lens[i];
 				}
-				gmdb_print_col(outfile, value, quotechar[0]!='\0', col->col_type, length, quotechar, escape_char, bin_mode);
+				mdb_print_col(outfile, value, quotechar[0]!='\0', col->col_type, length, quotechar, escape_char, bin_mode);
 				if (col->col_type == MDB_OLE)
 					free(value);
 			}
@@ -366,5 +321,6 @@ gmdb_table_export_populate_dialog(GladeXML *xml)
 	gtk_combo_box_append_text(combobox, BIN_STRIP);
 	gtk_combo_box_append_text(combobox, BIN_RAW);
 	gtk_combo_box_append_text(combobox, BIN_OCTAL);
+	gtk_combo_box_append_text(combobox, BIN_HEXADECIMAL);
 	gtk_combo_box_set_active(combobox, 1);
 }

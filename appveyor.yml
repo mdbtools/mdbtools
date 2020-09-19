@@ -1,0 +1,59 @@
+version: 0.1.{build}
+
+os: Windows Server 2012 R2
+
+platform: x64
+
+environment:
+  matrix:
+  - TOOLCHAIN: "msys2"
+  - TOOLCHAIN: "cygwin"
+
+branches:
+  only:
+    - master
+
+clone_folder: c:\projects\mdbtools
+
+skip_tags: true
+
+build_script:
+  - ps: |
+      if ($env:TOOLCHAIN -eq "msys2")
+      {
+        $env:MSYSTEM="MINGW64"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && autoreconf -i -f -Wno-portability"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && make"
+      }
+      else
+      {
+        C:\cygwin64\setup-x86_64.exe -qP bison flex libiodbc-devel
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f -Wno-portability"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && make"
+      }
+
+test_script:
+  - ps: |
+      if ($env:TOOLCHAIN -eq "msys2")
+      {
+        $env:MSYSTEM="MINGW64"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-ver ./test/data/ASampleDatabase.accdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-ver ./test/data/nwind.mdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-tables ./test/data/ASampleDatabase.accdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-tables ./test/data/nwind.mdb"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-count ./test/data/ASampleDatabase.accdb 'Asset Items'"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./src/util/mdb-count ./test/data/nwind.mdb Customers"
+      }
+      else
+      {
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-ver ./test/data/ASampleDatabase.accdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-ver ./test/data/nwind.mdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-tables ./test/data/ASampleDatabase.accdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-tables ./test/data/nwind.mdb"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-count ./test/data/ASampleDatabase.accdb 'Asset Items'"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./src/util/mdb-count ./test/data/nwind.mdb Customers"
+      }

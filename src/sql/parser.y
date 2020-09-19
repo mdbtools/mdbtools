@@ -1,4 +1,3 @@
-%{
 /* MDB Tools - A library for reading MS Access database files
  * Copyright (C) 2000 Brian Bruns
  *
@@ -16,22 +15,42 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+%{
 #include "mdbsql.h"
 
-int yylex(void);
-int yyerror(char *);
+struct sql_context;
+#include "parser.h"
 
-MdbSQL *_mdb_sql(MdbSQL *sql)
+typedef void *yyscan_t;
+typedef struct yy_buffer_state* YY_BUFFER_STATE;
+extern int yylex_init(yyscan_t* scanner);
+extern int yylex_destroy(yyscan_t scanner);
+extern int yylex(YYSTYPE* yylval_param, YYLTYPE* yyloc, yyscan_t yyscanner);
+extern YY_BUFFER_STATE yy_scan_string(const char* buffer, yyscan_t scanner);
+
+/** error handler for bison */
+void yyerror(YYLTYPE* yyloc, struct sql_context* sql_ctx, char const* msg);
+
+typedef struct sql_context
 {
-static MdbSQL *g_sql;
+  // lexer context
+  yyscan_t flex_scanner;
 
-	if (sql) {
-		g_sql = sql;
-	}
-	return g_sql;
-}
+  MdbSQL *mdb;
+} sql_context;
 
+#define scanner parser_ctx->flex_scanner
+
+// we want verbose error messages
+#define YYERROR_VERBOSE 1
 %}
+
+// make the parser reentrant
+%locations
+%define api.pure
+%lex-param {void * scanner}
+%parse-param {struct sql_context* parser_ctx}
 
 %union {
 	char *name;
@@ -39,10 +58,10 @@ static MdbSQL *g_sql;
 	int ival;
 }
 
+%start stmt
 
-
-%token <name> IDENT NAME PATH STRING NUMBER 
-%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT
+%token <name> IDENT NAME PATH STRING NUMBER
+%token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
 %token DESCRIBE TABLE
 %token LTEQ GTEQ LIKE IS NUL
 
@@ -52,28 +71,40 @@ static MdbSQL *g_sql;
 %type <ival> nulloperator
 %type <name> identifier
 
+//
+// operator precedence
+//
+
+// left associativity means that 1+2+3 translates to (1+2)+3
+// the order of operators here determines their precedence
+
+%left OR
+%left AND
+%right NOT
+%left EQ LTEQ GTEQ LT GT LIKE IS
+
 %%
 
 stmt:
 	query
-	| error { yyclearin; mdb_sql_reset(_mdb_sql(NULL)); }
+	| error { yyclearin; mdb_sql_reset(parser_ctx->mdb); }
 	;
 
 query:
 	SELECT column_list FROM table where_clause limit_clause {
-			mdb_sql_select(_mdb_sql(NULL));	
+	                mdb_sql_select(parser_ctx->mdb);
 		}
 	|	CONNECT TO database { 
-			mdb_sql_open(_mdb_sql(NULL), $3); free($3); 
+	                mdb_sql_open(parser_ctx->mdb, $3); free($3);
 		}
 	|	DISCONNECT { 
-			mdb_sql_close(_mdb_sql(NULL));
+	                mdb_sql_close(parser_ctx->mdb);
 		}
 	|	DESCRIBE TABLE table { 
-			mdb_sql_describe_table(_mdb_sql(NULL)); 
+	                mdb_sql_describe_table(parser_ctx->mdb);
 		}
 	|	LIST TABLES { 
-			mdb_sql_listtables(_mdb_sql(NULL)); 
+	                mdb_sql_listtables(parser_ctx->mdb);
 		}
 	;
 
@@ -84,35 +115,35 @@ where_clause:
 
 limit_clause:
 	/* empty */
-	| LIMIT NUMBER { mdb_sql_add_limit(_mdb_sql(NULL), $2); free($2); }
+	| LIMIT NUMBER { mdb_sql_add_limit(parser_ctx->mdb, $2); free($2); }
 	;
 
 sarg_list:
 	sarg 
 	| '(' sarg_list ')'
-	| NOT sarg_list { mdb_sql_add_not(_mdb_sql(NULL)); }
-	| sarg_list OR sarg_list { mdb_sql_add_or(_mdb_sql(NULL)); }
-	| sarg_list AND sarg_list { mdb_sql_add_and(_mdb_sql(NULL)); }
+	| NOT sarg_list { mdb_sql_add_not(parser_ctx->mdb); }
+	| sarg_list OR sarg_list { mdb_sql_add_or(parser_ctx->mdb); }
+	| sarg_list AND sarg_list { mdb_sql_add_and(parser_ctx->mdb); }
 	;
 
 sarg:
 	identifier operator constant	{ 
-				mdb_sql_add_sarg(_mdb_sql(NULL), $1, $2, $3);
+	                        mdb_sql_add_sarg(parser_ctx->mdb, $1, $2, $3);
 				free($1);
 				free($3);
 				}
 	| constant operator identifier {
-				mdb_sql_add_sarg(_mdb_sql(NULL), $3, $2, $1);
+	                        mdb_sql_add_sarg(parser_ctx->mdb, $3, $2, $1);
 				free($1);
 				free($3);
 				}
 	| constant operator constant {
-				mdb_sql_eval_expr(_mdb_sql(NULL), $1, $2, $3);
+	                        mdb_sql_eval_expr(parser_ctx->mdb, $1, $2, $3);
 				free($1);
 				free($3);
 	}
 	| identifier nulloperator	{ 
-				mdb_sql_add_sarg(_mdb_sql(NULL), $1, $2, NULL);
+	                        mdb_sql_add_sarg(parser_ctx->mdb, $1, $2, NULL);
 				free($1);
 				}
 	;
@@ -123,9 +154,9 @@ identifier:
 	;
 
 operator:
-	'='	{ $$ = MDB_EQUAL; }
-	| '>'	{ $$ = MDB_GT; }
-	| '<'	{ $$ = MDB_LT; }
+	EQ	{ $$ = MDB_EQUAL; }
+	| GT	{ $$ = MDB_GT; }
+	| LT	{ $$ = MDB_LT; }
 	| LTEQ	{ $$ = MDB_LTEQ; }
 	| GTEQ	{ $$ = MDB_GTEQ; }
 	| LIKE	{ $$ = MDB_LIKE; }
@@ -137,7 +168,12 @@ nulloperator:
 	;
 
 constant:
-	NUMBER { $$ = $1; }
+	STRPTIME '(' constant ',' constant ')' { 
+	        $$ = mdb_sql_strptime(parser_ctx->mdb, $3, $5);
+		free($3);
+		free($5);
+	}
+	| NUMBER { $$ = $1; }
 	| STRING { $$ = $1; }
 	;
 
@@ -147,17 +183,39 @@ database:
 	;
 
 table:
-	identifier { mdb_sql_add_table(_mdb_sql(NULL), $1); free($1); }
+	identifier { mdb_sql_add_table(parser_ctx->mdb, $1); free($1); }
 	;
 
 column_list:
-	'*'	{ mdb_sql_all_columns(_mdb_sql(NULL)); }
+	COUNT '(' '*' ')'	{ mdb_sql_sel_count(parser_ctx->mdb); }
+	| '*'	{ mdb_sql_all_columns(parser_ctx->mdb); }
 	|	column  
 	|	column ',' column_list 
 	;
 	 
+
 column:
-	identifier { mdb_sql_add_column(_mdb_sql(NULL), $1); free($1); }
+	identifier { mdb_sql_add_column(parser_ctx->mdb, $1); free($1); }
 	;
 
 %%
+
+
+int parse_sql( MdbSQL * mdb, const gchar *str)
+{
+  sql_context ctx;
+  ctx.mdb = mdb;
+
+  yylex_init(&ctx.flex_scanner);
+  yy_scan_string(str, ctx.flex_scanner);
+  int res = yyparse(&ctx);
+  yylex_destroy(ctx.flex_scanner);
+
+  return res;
+}
+
+void yyerror(YYLTYPE* yyloc,sql_context* sql_ctx, char const * msg)
+{
+	fprintf(stderr,"Error at Line : %s\n", msg);
+	mdb_sql_error(sql_ctx->mdb, "%s", msg);
+}

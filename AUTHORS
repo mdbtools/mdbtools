@@ -40,3 +40,5 @@ Tim Retout <tim@retout.co.uk>
 Nirgal Vourgère <jmb_deb@nirgal.com>
 	postgres fixes and adds, bug fixes
 
+@kodonnell
+    added (trivial) mdb-count utility

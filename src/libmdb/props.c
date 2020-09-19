@@ -76,7 +76,7 @@ free_names(GPtrArray *names) {
 	g_ptr_array_free(names, TRUE);
 }
 MdbProperties *
-mdb_alloc_props()
+mdb_alloc_props(void)
 {
 	MdbProperties *props;
 
@@ -89,7 +89,8 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 {
 	guint32 record_len, name_len;
 	int pos = 0;
-	int elem, dtype, dsize;
+	guint elem;
+	int dtype, dsize;
 	gchar *name, *value;
 	MdbProperties *props;
 	int i=0;
@@ -117,7 +118,11 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		record_len = mdb_get_int16(kkd, pos);
 		dtype = kkd[pos + 3];
 		elem = mdb_get_int16(kkd, pos + 4);
+		if (elem < 0 || elem >= names->len)
+			break;
 		dsize = mdb_get_int16(kkd, pos + 6);
+		if (dsize < 0 || pos + 8 + dsize > len)
+			break;
 		value = g_malloc(dsize + 1);
 		strncpy(value, &kkd[pos + 8], dsize);
 		value[dsize] = '\0';
@@ -131,6 +136,9 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		if (dtype == MDB_BOOL) {
 			g_hash_table_insert(props->hash, g_strdup(name),
 				g_strdup(kkd[pos + 8] ? "yes" : "no"));
+        } else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
+            gchar *guid = mdb_uuid_to_string(kkd, pos+8);
+			g_hash_table_insert(props->hash, g_strdup(name), guid);
 		} else {
 			g_hash_table_insert(props->hash, g_strdup(name),
 			  mdb_col_to_string(mdb, kkd, pos + 8, dtype, dsize));
@@ -159,16 +167,16 @@ mdb_dump_props(MdbProperties *props, FILE *outfile, int show_name) {
 /*
  * That function takes a raw KKD/MR2 binary buffer,
  * typically read from LvProp in table MSysbjects
- * and returns a GArray of MdbProps*
+ * and returns a GPtrArray of MdbProps*
  */
-GArray*
+GPtrArray*
 mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 	guint32 record_len;
 	guint16 record_type;
 	size_t pos;
 	GPtrArray *names = NULL;
 	MdbProperties *props;
-	GArray *result;
+	GPtrArray *result;
 
 #if MDB_DEBUG
 	mdb_buffer_dump(buffer, 0, len);
@@ -181,7 +189,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 		return NULL;
 	}
 
-	result = g_array_new(0, 0, sizeof(MdbProperties*));
+	result = g_ptr_array_new();
 
 	pos = 4;
 	while (pos < len) {
@@ -196,12 +204,13 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 				break;
 			case 0x00:
 			case 0x01:
+			case 0x02:
 				if (!names) {
 					fprintf(stderr,"sequence error!\n");
 					break;
 				}
 				props = mdb_read_props(mdb, names, (char*)buffer+pos+6, record_len - 6);
-				g_array_append_val(result, props);
+				g_ptr_array_add(result, props);
 				//mdb_dump_props(props, stderr, 1);
 				break;
 			default:

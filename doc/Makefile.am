@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-TXT2MAN = txt2man
+TXT2MAN = ./txt2man
 PRODUCT = MDBTools
 
 # To make the userguide, export DOCBOOK_DSL TO point to docbook.dsl.

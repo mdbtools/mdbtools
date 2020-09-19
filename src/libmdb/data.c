@@ -16,51 +16,61 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#define _XOPEN_SOURCE
 #include <time.h>
 #include <math.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #define OFFSET_MASK 0x1fff
+#define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
 
 char *mdb_money_to_string(MdbHandle *mdb, int start);
 char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
 
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
-static char *mdb_date_to_string(void *buf, int start);
+static char *mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start);
 #ifdef MDB_COPY_OLE
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
-static char date_fmt[64] = "%x %X";
-
-void mdb_set_date_fmt(const char *fmt)
-{
-		date_fmt[63] = 0; 
-		strncpy(date_fmt, fmt, 63);
-}
+static const int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+static const int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
 /* Some databases (eg PostgreSQL) do not understand integer 0/1 values
  * as TRUE/FALSE, so provide a means to override the values used to be
  * the SQL Standard TRUE/FALSE values.
  */
-static char boolean_false_number[] = "0";
-static char boolean_true_number[]  = "1";
+static const char boolean_false_number[] = "0";
+static const char boolean_true_number[]  = "1";
 
-static char boolean_false_word[]   = "FALSE";
-static char boolean_true_word[]    = "TRUE";
+static const char boolean_false_word[]   = "FALSE";
+static const char boolean_true_word[]    = "TRUE";
 
-static char *boolean_false_value   = boolean_false_number;
-static char *boolean_true_value    = boolean_true_number;
+void mdb_set_bind_size(MdbHandle *mdb, size_t bind_size) {
+    mdb->bind_size = bind_size;
+}
 
-void mdb_set_boolean_fmt_words()
+void mdb_set_date_fmt(MdbHandle *mdb, const char *fmt)
 {
-	boolean_false_value = boolean_false_word;
-	boolean_true_value  = boolean_true_word;
+    snprintf(mdb->date_fmt, sizeof(mdb->date_fmt), "%s", fmt);
+}
+
+void mdb_set_shortdate_fmt(MdbHandle *mdb, const char *fmt)
+{
+    snprintf(mdb->shortdate_fmt, sizeof(mdb->shortdate_fmt), "%s", fmt);
+}
+
+void mdb_set_boolean_fmt_numbers(MdbHandle *mdb)
+{
+	mdb->boolean_false_value = boolean_false_number;
+	mdb->boolean_true_value  = boolean_true_number;
+}
+
+void mdb_set_boolean_fmt_words(MdbHandle *mdb)
+{
+	mdb->boolean_false_value = boolean_false_word;
+	mdb->boolean_true_value  = boolean_true_word;
 }
 
 void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr)
@@ -107,20 +117,22 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
  * @off: Pointer for returning an offset to the row
  * @len: Pointer for returning the length of the row
  * 
- * Returns: 0 on success.  1 on failure.
+ * Returns: 0 on success. -1 on failure.
  */
 int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len)
 {
 	unsigned int pg = pg_row >> 8;
 	unsigned int row = pg_row & 0xff;
+    int result = 0;
 
 	if (mdb_read_alt_pg(mdb, pg) != mdb->fmt->pg_size)
-		return 1;
+		return -1;
 	mdb_swap_pgbuf(mdb);
-	mdb_find_row(mdb, row, off, len);
+	result = mdb_find_row(mdb, row, off, len);
 	mdb_swap_pgbuf(mdb);
+    *off &= OFFSET_MASK;
 	*buf = mdb->alt_pg_buf;
-	return 0;
+	return result;
 }
 
 int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
@@ -134,6 +146,12 @@ int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
 	next_start = (row == 0) ? mdb->fmt->pg_size :
 		mdb_get_int16(mdb->pg_buf, rco + row*2) & OFFSET_MASK;
 	*len = next_start - (*start & OFFSET_MASK);
+
+	if ((*start & OFFSET_MASK) >= mdb->fmt->pg_size ||
+			(*start & OFFSET_MASK) > next_start ||
+			next_start > mdb->fmt->pg_size)
+		return -1;
+
 	return 0;
 }
 
@@ -188,7 +206,7 @@ mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 	col->cur_value_len = value;
 	if (col->bind_ptr) {
 		strcpy(col->bind_ptr,
-                       value ? boolean_false_value : boolean_true_value);
+                       value ? mdb->boolean_false_value : mdb->boolean_true_value);
 	}
 	if (col->len_ptr) {
 		*col->len_ptr = strlen(col->bind_ptr);
@@ -243,11 +261,17 @@ int ret;
 			//fprintf(stdout,"len %d size %d\n",len, col->col_size);
 			char *str;
 			if (col->col_type == MDB_NUMERIC) {
-				str = mdb_numeric_to_string(mdb, start, col->col_prec, col->col_scale);
+				str = mdb_numeric_to_string(mdb, start, col->col_scale, col->col_prec);
+			} else if (col->col_type == MDB_DATETIME) {
+				if (mdb_col_is_shortdate(col)) {
+					str = mdb_date_to_string(mdb, mdb->shortdate_fmt, mdb->pg_buf, start);
+				} else {
+					str = mdb_date_to_string(mdb, mdb->date_fmt, mdb->pg_buf, start);
+				}
 			} else {
 				str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, len);
 			}
-			strcpy(col->bind_ptr, str);
+			snprintf(col->bind_ptr, mdb->bind_size, "%s", str);
 			g_free(str);
 		}
 		ret = strlen(col->bind_ptr);
@@ -273,9 +297,13 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 
 	if (mdb_find_row(mdb, row, &row_start, &row_size)) {
-		fprintf(stderr, "warning: mdb_find_row failed.");
+		fprintf(stderr, "warning: mdb_find_row failed.\n");
 		return 0;
 	}
+    if (row_size == 0) {
+		fprintf(stderr, "warning: row_size = 0.\n");
+		return 0;
+    }
 
 	delflag = lookupflag = 0;
 	if (row_start & 0x8000) lookupflag++;
@@ -292,8 +320,9 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 	}
 
-	num_fields = mdb_crack_row(table, row_start, row_start + row_size - 1,
-		fields);
+	num_fields = mdb_crack_row(table, row_start, row_size, fields);
+	if (num_fields < 0)
+		return 0;
 	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
 	
 #if MDB_DEBUG
@@ -357,7 +386,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 		}
 
 		table->cur_phys_pg = next_pg;
-		if (mdb->pg_buf[0]==MDB_PAGE_DATA && mdb_get_int32(mdb->pg_buf, 4)==entry->table_pg)
+		if (mdb->pg_buf[0]==MDB_PAGE_DATA && mdb_get_int32(mdb->pg_buf, 4)==(long)entry->table_pg)
 			return table->cur_phys_pg;
 
 		/* On rare occasion, mdb_map_find_next will return a wrong page */
@@ -372,7 +401,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
 			return 0;
-	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=entry->table_pg);
+	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=(long)entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
 	return table->cur_phys_pg;
 }
@@ -412,8 +441,7 @@ mdb_fetch_row(MdbTableDef *table)
 				fmt->row_count_offset);
 			if (table->cur_row >= rows) {
 				table->cur_row = 0;
-				table->cur_pg_num++;
-				if (table->cur_pg_num > pages->len)
+				if (++table->cur_pg_num > (unsigned int)pages->len)
 					return 0;
 			}
 			memcpy(mdb->pg_buf,
@@ -514,6 +542,8 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 		&buf, &row_start, &len)) {
 		return 0;
 	}
+	if (len < 4)
+		return 0;
 	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 	if (col->bind_ptr)
@@ -523,7 +553,7 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	return len - 4;
 }
 size_t 
-mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
+mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 {
 	guint32 ole_len;
 	void *buf;
@@ -539,16 +569,12 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 	if (ole_len & 0x80000000) {
 		/* inline ole field, if we can satisfy it, then do it */
 		len = col->cur_value_len - MDB_MEMO_OVERHEAD;
-		if (chunk_size >= len) {
-			if (col->bind_ptr) 
-				memcpy(col->bind_ptr, 
-					&mdb->pg_buf[col->cur_value_start + 
-						MDB_MEMO_OVERHEAD],
-					len);
-			return len;
-		} else {
+		if (chunk_size < len)
 			return 0;
-		}
+		if (col->bind_ptr)
+			memcpy(col->bind_ptr, &mdb->pg_buf[col->cur_value_start +
+					MDB_MEMO_OVERHEAD], len);
+		return len;
 	} else if (ole_len & 0x40000000) {
 		col->cur_blob_pg_row = mdb_get_int32(ole_ptr, 4);
 		mdb_debug(MDB_DEBUG_OLE,"ole row = %d ole pg = %ld",
@@ -574,7 +600,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
 			col->cur_blob_pg_row >> 8);
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
-			&buf, &row_start, &len)) {
+			&buf, &row_start, &len) || len < 4) {
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -594,24 +620,24 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, int chunk_size)
  * mdb_ole_read_full calls mdb_ole_read then loop over mdb_ole_read_next as much as necessary.
  * returns the result in a big buffer.
  * The call must free it.
- * Note that this function is not indempotent: It may be called only once per column after each bind.
+ * Note that this function is not idempotent: It may be called only once per column after each bind.
  */
 void*
 mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 {
 	char ole_ptr[MDB_MEMO_OVERHEAD];
-	char *result = malloc(MDB_BIND_SIZE);
-	size_t result_buffer_size = MDB_BIND_SIZE;
+	char *result = malloc(OLE_BUFFER_SIZE);
+	size_t result_buffer_size = OLE_BUFFER_SIZE;
 	size_t len, pos;
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
 
-	len = mdb_ole_read(mdb, col, ole_ptr, MDB_BIND_SIZE);
+	len = mdb_ole_read(mdb, col, ole_ptr, OLE_BUFFER_SIZE);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
 	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
-			result_buffer_size += MDB_BIND_SIZE;
+			result_buffer_size += OLE_BUFFER_SIZE;
 			result = realloc(result, result_buffer_size);
 		}
 		memcpy(result + pos, col->bind_ptr, len);
@@ -666,7 +692,7 @@ static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size)
 			mdb_debug(MDB_DEBUG_OLE,"Reading LVAL page %06x",
 				pg_row >> 8);
 
-			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len)) {
+			if (mdb_find_pg_row(mdb,pg_row,&buf,&row_start,&len) || len < 4) {
 				return 0;
 			}
 
@@ -693,7 +719,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	gint32 row_start, pg_row;
 	size_t len;
 	void *buf, *pg_buf = mdb->pg_buf;
-	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	char *text = (char *) g_malloc(mdb->bind_size);
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		strcpy(text, "");
@@ -713,7 +739,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	if (memo_len & 0x80000000) {
 		/* inline memo field */
 		mdb_unicode2ascii(mdb, (char*)pg_buf + start + MDB_MEMO_OVERHEAD,
-			size - MDB_MEMO_OVERHEAD, text, MDB_BIND_SIZE);
+			size - MDB_MEMO_OVERHEAD, text, mdb->bind_size);
 		return text;
 	} else if (memo_len & 0x40000000) {
 		/* single-page memo field */
@@ -730,7 +756,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			pg_row & 0xff, row_start, len);
 		mdb_buffer_dump(buf, row_start, len);
 #endif
-		mdb_unicode2ascii(mdb, (char*)buf + row_start, len, text, MDB_BIND_SIZE);
+		mdb_unicode2ascii(mdb, (char*)buf + row_start, len, text, mdb->bind_size);
 		return text;
 	} else if ((memo_len & 0xff000000) == 0) { // assume all flags in MSB
 		/* multi-page memo field */
@@ -756,7 +782,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 				break;
 
 			/* Stop processing on zero length multiple page memo fields */
-			if (!len)
+			if (len < 4)
 				break;
 
 			memcpy(tmp + tmpoff, (char*)buf + row_start + 4, len - 4);
@@ -765,7 +791,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		if (tmpoff < memo_len) {
 			fprintf(stderr, "Warning: incorrect memo length\n");
 		}
-		mdb_unicode2ascii(mdb, tmp, tmpoff, text, MDB_BIND_SIZE);
+		mdb_unicode2ascii(mdb, tmp, tmpoff, text, mdb->bind_size);
 		g_free(tmp);
 		return text;
 	} else {
@@ -798,18 +824,29 @@ static int trim_trailing_zeros(char * buff)
 }
 #endif
 
+
 /* Date/Time is stored as a double, where the whole
    part is the days from 12/30/1899 and the fractional
    part is the fractional part of one day. */
+
+void
+mdb_tm_to_date(struct tm *t, double *td)
+{
+	short yr = t->tm_year + 1900;
+	char leap = ((yr & 3) == 0) && ((yr % 100) != 0 || (yr % 400) == 0);
+	const int *cal = leap ? leap_cal : noleap_cal;
+	long int time = (yr*365+(yr/4)-(yr/100)+(yr/400)+cal[t->tm_mon]+t->tm_mday)-693959;
+
+	*td = (((long)t->tm_hour * 3600)+((long)t->tm_min * 60)+((long)t->tm_sec)) / 86400.0;
+	if (time>=0) *td+=time; else *td=time-*td;
+}
 
 void
 mdb_date_to_tm(double td, struct tm *t)
 {
 	long int day, time;
 	int yr, q;
-	int *cal;
-	int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
-	int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
+	const int *cal;
 
 	day = (long int)(td);
 	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
@@ -851,38 +888,32 @@ mdb_date_to_tm(double td, struct tm *t)
 }
 
 static char *
-mdb_date_to_string(void *buf, int start)
+mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 {
 	struct tm t;
-	char *text = (char *) g_malloc(MDB_BIND_SIZE);
+	char *text = (char *) g_malloc(mdb->bind_size);
 	double td = mdb_get_double(buf, start);
 
 	mdb_date_to_tm(td, &t);
 
-	strftime(text, MDB_BIND_SIZE, date_fmt, &t);
+	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
 
 	return text;
 }
 
-static char *
-mdb_uuid_to_string(MdbHandle *mdb, int start)
+char *mdb_uuid_to_string(const void *buf, int pos)
 {
-	char *text = NULL;
-  unsigned short uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7, uuid8;
+	const unsigned char *kkd = (const unsigned char *)buf;
+	return g_strdup_printf("{%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X"
+			"-" "%02X%02X" "%02X%02X%02X%02X%02X%02X}",
+			kkd[pos+3], kkd[pos+2], kkd[pos+1], kkd[pos], // little-endian
+			kkd[pos+5], kkd[pos+4], // little-endian
+			kkd[pos+7], kkd[pos+6], // little-endian
+			kkd[pos+8], kkd[pos+9], // big-endian
 
-  uuid1 = mdb_get_int16(mdb->pg_buf, start);
-  uuid2 = mdb_get_int16(mdb->pg_buf, start + 2);
-  uuid3 = mdb_get_int16(mdb->pg_buf, start + 4);
-  uuid4 = mdb_get_int16(mdb->pg_buf, start + 6);
-  uuid5 = mdb_get_int16(mdb->pg_buf, start + 8);
-  uuid6 = mdb_get_int16(mdb->pg_buf, start + 10);
-  uuid7 = mdb_get_int16(mdb->pg_buf, start + 12);
-  uuid8 = mdb_get_int16(mdb->pg_buf, start + 14);
-
-  text = g_strdup_printf("{%04x%04x-%04x-%04x-%04x-%04x%04x%04x}",
-    uuid1, uuid2, uuid3, uuid4, uuid5, uuid6, uuid7, uuid8);
-
-	return text;
+			kkd[pos+10], kkd[pos+11],
+			kkd[pos+12], kkd[pos+13],
+			kkd[pos+14], kkd[pos+15]); // big-endian
 }
 
 #if 0
@@ -959,13 +990,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			if (size<0) {
 				text = g_strdup("");
 			} else {
-				text = (char *) g_malloc(MDB_BIND_SIZE);
+				text = (char *) g_malloc(mdb->bind_size);
 				mdb_unicode2ascii(mdb, (char*)buf + start,
-					size, text, MDB_BIND_SIZE);
+					size, text, mdb->bind_size);
 			}
 		break;
 		case MDB_DATETIME:
-			text = mdb_date_to_string(buf, start);
+			text = mdb_date_to_string(mdb, mdb->date_fmt, buf, start);
 		break;
 		case MDB_MEMO:
 			text = mdb_memo_to_string(mdb, start, size);
@@ -975,7 +1006,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		case MDB_NUMERIC:
 		break;
 		case MDB_REPID:
-		  text = mdb_uuid_to_string(mdb, start);
+		  text = mdb_uuid_to_string(mdb->pg_buf, start);
 		break;
 		default:
 			text = g_strdup("");

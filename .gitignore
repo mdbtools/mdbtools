@@ -4,9 +4,11 @@
 *.out
 .deps/
 .libs/
+.idea/
 aclocal.m4
 autom4te.cache/
-build-aux/
+build-aux/*
+!build-aux/config.rpath
 m4/
 !m4/ccalias.m4
 !m4/iconv.m4
@@ -35,7 +37,9 @@ src/sql/lexer.c
 src/sql/parser.c
 src/sql/parser.h
 src/util/mdb-array
+src/util/mdb-count
 src/util/mdb-export
+src/util/mdb-exportjson
 src/util/mdb-header
 src/util/mdb-import
 src/util/mdb-parsecsv

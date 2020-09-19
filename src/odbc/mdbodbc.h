@@ -37,12 +37,19 @@ extern "C" {
 
 struct _henv {
 	GPtrArray *connections;
+    char sqlState[6];
 };
 struct _hdbc {
 	struct _henv *henv;
 	MdbSQL *sqlconn;
 	ConnectParams* params;
 	GPtrArray *statements;
+    char lastError[256];
+    char sqlState[6];
+#ifdef ENABLE_ODBC_W
+    iconv_t iconv_in;
+    iconv_t iconv_out;
+#endif
 };
 struct _hstmt {
 	MdbSQL *sql;
@@ -51,6 +58,10 @@ struct _hstmt {
 	 * please make dynamic before checking in 
 	 */
 	char query[4096];
+    char lastError[256];
+    char sqlState[6];
+    char *ole_str;
+    size_t ole_len;
 	struct _sql_bind_info *bind_head;
 	int rows_affected;
 	int icol; /* SQLGetData: last column */

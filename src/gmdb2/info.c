@@ -71,6 +71,12 @@ MdbCatalogEntry *entry = mdb_get_catalogentry_by_name(mdb, "SummaryInfo");
 	case MDB_VER_ACCDB_2010:
 		version = "ACE 14 (Access 2010)";
 		break;
+	case MDB_VER_ACCDB_2013:
+		version = "ACE 15 (Access 2013)";
+		break;
+	case MDB_VER_ACCDB_2016:
+		version = "ACE 16 (Access 2016)";
+		break;
 	default:
 		version = "Unknown";
 	}

@@ -29,9 +29,6 @@
 
 #include <time.h>
 #include "mdbtools.h"
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
 
 void
 mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data)
@@ -98,6 +95,44 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 	return 0;
 }
 
+/* Actually used to not rely on libm. 
+ * Maybe there is a cleaner and faster solution? */
+static double poor_mans_trunc(double x)
+{
+	char buf[16];
+	sprintf(buf, "%.6f", x);
+	sscanf(buf, "%lf", &x);
+	return x;
+}
+
+int mdb_test_double(int op, double vd, double d)
+{
+    int ret = 0;
+	switch (op) {
+		case MDB_EQUAL:
+			//fprintf(stderr, "comparing %lf and %lf\n", d, node->value.d);
+			ret = (vd == d);
+            break;
+		case MDB_GT:
+			ret = (vd < d);
+			break;
+		case MDB_LT:
+			ret = (vd > d);
+			break;
+		case MDB_GTEQ:
+			ret = (vd <= d);
+			break;
+		case MDB_LTEQ:
+			ret = (vd >= d);
+			break;
+		default:
+			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_double() for operator %d\n",op);
+			break;
+	}
+	return ret;
+}
+
+#if 0 // Obsolete
 int
 mdb_test_date(MdbSargNode *node, double td)
 {
@@ -140,6 +175,7 @@ mdb_test_date(MdbSargNode *node, double td)
 	}
 	return 0;
 }
+#endif
 
 
 int
@@ -174,34 +210,50 @@ int
 mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field)
 {
 	char tmpbuf[256];
+	char* val;
+	int ret = 1;
 
 	if (node->op == MDB_ISNULL)
-		return field->is_null?1:0;
+		ret = field->is_null;
 	else if (node->op == MDB_NOTNULL)
-		return field->is_null?0:1;
+		ret = !field->is_null;
 	switch (col->col_type) {
 		case MDB_BOOL:
-			return mdb_test_int(node, !field->is_null);
+			ret = mdb_test_int(node, !field->is_null);
 			break;
 		case MDB_BYTE:
-			return mdb_test_int(node, (gint32)((char *)field->value)[0]);
+			ret = mdb_test_int(node, (gint32)((char *)field->value)[0]);
 			break;
 		case MDB_INT:
-			return mdb_test_int(node, (gint32)mdb_get_int16(field->value, 0));
+			ret = mdb_test_int(node, (gint32)mdb_get_int16(field->value, 0));
 			break;
 		case MDB_LONGINT:
-			return mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
+			ret = mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
+			break;
+		case MDB_FLOAT:
+			ret = mdb_test_double(node->op, node->value.d, mdb_get_single(field->value, 0));
+			break;
+		case MDB_DOUBLE:
+			ret = mdb_test_double(node->op, node->value.d, mdb_get_double(field->value, 0));
 			break;
 		case MDB_TEXT:
 			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, 256);
-			return mdb_test_string(node, tmpbuf);
+			ret = mdb_test_string(node, tmpbuf);
+			break;
+		case MDB_MEMO:
+			val = mdb_col_to_string(mdb, mdb->pg_buf, field->start, col->col_type, (gint32)mdb_get_int32(field->value, 0));
+			//printf("%s\n",val);
+			ret = mdb_test_string(node, val);
+			g_free(val);
+			break;
 		case MDB_DATETIME:
-			return mdb_test_date(node, mdb_get_double(field->value, 0));
+			ret = mdb_test_double(node->op, poor_mans_trunc(node->value.d), poor_mans_trunc(mdb_get_double(field->value, 0)));
+			break;
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
 			break;
 	}
-	return 1;
+	return ret;
 }
 int
 mdb_find_field(int col_num, MdbField *fields, int num_fields)

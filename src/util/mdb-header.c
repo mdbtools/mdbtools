@@ -22,10 +22,6 @@
 #include <string.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 void copy_header (FILE *f)
 {
  fprintf (f, "/******************************************************************/\n");
@@ -122,6 +118,7 @@ FILE *cfile;
 		       fprintf (cfile, "\tdump_string (x.");
 		       break;
 		     default:
+               fprintf(stderr, "ERROR: unsupported type: 0x%02x\n", col->col_type);
 		       unsupported = 1;
 		       break;
 		     }
@@ -147,8 +144,6 @@ FILE *cfile;
  
  mdb_close (mdb);
 
- if (unsupported)
-  fputs("ERROR: unsupported type.\n", stderr);
  exit(unsupported);
 }
 

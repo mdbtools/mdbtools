@@ -18,10 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 static gint32
 mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint32 start_pg)
 {
@@ -68,7 +64,7 @@ mdb_map_find_next1(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guin
 		}
 		if(mdb_read_alt_pg(mdb, map_pg) != mdb->fmt->pg_size) {
 			fprintf(stderr, "Oops! didn't get a full page at %d\n", map_pg);
-			exit(1);
+			return -1;
 		} 
 
 		usage_bitmap = mdb->alt_pg_buf + 4;
@@ -97,18 +93,18 @@ mdb_map_find_next(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guint
 	fprintf(stderr, "Warning: unrecognized usage map type: %d\n", map[0]);
 	return -1;
 }
-guint32
+gint32
 mdb_alloc_page(MdbTableDef *table)
 {
 	printf("Allocating new page\n");
 	return 0;
 }
-guint32 
+gint32
 mdb_map_find_next_freepage(MdbTableDef *table, int row_size)
 {
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
-	guint32 pgnum;
+	gint32 pgnum;
 	guint32 cur_pg = 0;
 	int free_space;
 
@@ -119,11 +115,10 @@ mdb_map_find_next_freepage(MdbTableDef *table, int row_size)
 		//printf("looking at page %d\n", pgnum);
 		if (!pgnum) {
 			/* allocate new page */
-			pgnum = mdb_alloc_page(table);
-			return pgnum;
+			return mdb_alloc_page(table);
 		} else if (pgnum==-1) {
 			fprintf(stderr, "Error: mdb_map_find_next_freepage error while reading maps.\n");
-			exit(1);
+			return -1;
 		}
 		cur_pg = pgnum;
 

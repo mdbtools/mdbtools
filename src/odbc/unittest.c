@@ -16,11 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-/* #include <windows.h> */
 #include <stdio.h>
 #include <sql.h>
 #include <sqlext.h>
 
+// This test requires the presence of nwind.mdb in the MDBPATH.
+// It is stored in a separate repository: https://github.com/mdbtools/mdbtestdata
 
 #define SALES_PERSON_LEN 2
 #define STATUS_LEN 6
@@ -53,7 +54,7 @@ static void printStatementError(HSTMT hstmt, char *msg)
 }
 
 
-int main()
+int main(int argc, char **argv)
 {
 int i;
 
@@ -111,10 +112,9 @@ int i;
 	}
 
 
-	retcode = SQLConnect(hdbc, 
-				   (UCHAR *)"Northwind", SQL_NTS, 
-				   (UCHAR *)"", SQL_NTS,
-				   (UCHAR *)"", SQL_NTS);
+	retcode = SQLDriverConnect(hdbc, NULL,
+            (UCHAR *)"DBQ=nwind.mdb", SQL_NTS,
+            NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
 	if (retcode != SQL_SUCCESS && retcode != SQL_SUCCESS_WITH_INFO)
 	{
 		UCHAR  szSqlState[6];
@@ -175,7 +175,7 @@ int i;
 				szSqlState, szErrorMsg);
 			return 1;
 		}		
-		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, 60, &length);
+		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, sizeof(szCol1), &length);
 		//SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
 	
 		/* Execute statement with first row. */
@@ -194,5 +194,5 @@ int i;
 	}		
 	printf("Done\n");
 
-	return 1;
+	return 0;
 }

@@ -1,18 +1,27 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([mdbtools],[0.7.1],[mdbtools-dev@lists.sourceforge.net])
+AC_INIT([mdbtools],[0.9.0-beta],[https://github.com/mdbtools/mdbtools/issues],[],[https://github.com/mdbtools/mdbtools])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
 AM_INIT_AUTOMAKE
 
+MDBTOOLS_VERSION_MAJOR=0
+MDBTOOLS_VERSION_MINOR=9
+MDBTOOLS_VERSION_MICRO=0
+
+# Update this logic when the major version changes
+VERSION_INFO=`expr $MDBTOOLS_VERSION_MINOR - 6`:$MDBTOOLS_VERSION_MICRO
+AC_SUBST(VERSION_INFO)
+
 AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AC_PROG_CC(gcc)
+AC_PROG_CXX
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR], [AM_PROG_AR])
-LT_INIT
+LT_INIT([win32-dll])
 AC_PROG_LEX
 AC_PROG_YACC
 
@@ -20,6 +29,15 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
 AC_CHECK_HEADERS(wordexp.h)
+AC_CHECK_LIB(mswstr, DBLCMapStringW)
+AC_CHECK_DECLS([program_invocation_short_name], [], [], [[
+                #define _GNU_SOURCE
+                #include <errno.h>]])
+
+dnl Checks for library functions.
+VL_LIB_READLINE
+AC_CHECK_FUNC(strptime,[ AC_DEFINE(HAVE_STRPTIME, 1, [strptime check]) AM_CONDITIONAL(HAVE_STRPTIME, true) ],[ AM_CONDITIONAL(HAVE_STRPTIME, false) ])
+AC_CHECK_FUNC(fmemopen,[ AC_DEFINE(HAVE_FMEMOPEN, 1, [fmemopen check]) ])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -45,7 +63,14 @@ AC_MSG_RESULT( no - SQL engine disable);
 sql=false
 fi
 
-if ! $YACC -V >/dev/null 2>&1; then
+if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
+    if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-conflicts-sr"
+    fi
+    if $YACC -Wno-yacc -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-yacc"
+    fi
+else
 sql=false
 fi
 
@@ -53,14 +78,39 @@ if test "x$sql" = "xtrue"; then
 	CFLAGS="$CFLAGS -DSQL"
 	OPTDIRS="$OPTDIRS sql"
 else
-	AC_MSG_WARN([Yacc is not available: SQL disabled.])
+	AC_MSG_WARN([Bison 3.0+ is not available: SQL disabled.])
 fi
 
 AM_CONDITIONAL(SQL, test x$sql = xtrue)
 AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
-CFLAGS="$CFLAGS -Wall"
+CFLAGS="$CFLAGS -Wall -Werror"
+AS_CASE([$host],
+        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
+AS_CASE([$host],
+        [*mingw*], [LDFLAGS="$LDFLAGS -lWs2_32"], [])
+
+dnl Fuzz testing
+
+AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], ["Enable fuzz testing (requires Clang 6 or later)"]), [
+   AC_MSG_CHECKING([whether $CC accepts -fsanitize=fuzzer])
+   tmp_saved_flags=$[]_AC_LANG_PREFIX[]FLAGS
+   _AC_LANG_PREFIX[]FLAGS="$[]_AC_LANG_PREFIX[]FLAGS -fsanitize=fuzzer"
+   AC_LINK_IFELSE([AC_LANG_PROGRAM()],
+       [
+        AC_MSG_RESULT(yes)
+        OPTDIRS="$OPTDIRS fuzz"
+        fuzzer=yes],
+        AC_MSG_RESULT(no)
+       AC_MSG_FAILURE([-fsanitize=fuzzer not supported (Required with --enable-fuzz-testing)]))
+   _AC_LANG_PREFIX[]FLAGS=$tmp_saved_flags
+], [fuzzer=no])
+AM_CONDITIONAL([FUZZER_ENABLED], test "x$fuzzer" = "xyes")
+
+AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
+AC_SUBST([LIB_FUZZING_ENGINE])
+
 dnl Enable -Wl,--as-needed by default to prevent overlinking
 
 AC_ARG_ENABLE([as-needed],
@@ -88,14 +138,13 @@ if test "$with_iodbc"; then
 	HAVE_ODBC=true
 	ODBC_CFLAGS=$(iodbc-config --prefix="$with_iodbc" --cflags)
 	ODBC_LIBS=$(iodbc-config --prefix="$with_iodbc" --libs)
+	ODBC_LDFLAGS=""
 	CFLAGS="$CFLAGS -DIODBC"
 
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS $ODBC_LIBS"
-	AC_CHECK_LIB(iodbcinst, SQLGetPrivateProfileString,
-	 [ODBC_LIBS="$ODBC_LIBS -liodbcinst"
-	 AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1,
-	 [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	AC_CHECK_LIB(iodbcinst, SQLGetPrivateProfileString, [FOO=bar],
+                 AC_MSG_ERROR([Could not find SQLGetPrivateProfileString in -liodbcinst]))
 	LDFLAGS=$OLDLDFLAGS
 fi
 
@@ -108,12 +157,25 @@ if test "$with_unixodbc"; then
 	ODBC_LIBS="-L$with_unixodbc/lib"
 	CFLAGS="$CFLAGS -DUNIXODBC"
 
+	dnl SIZEOF_LONG_INT and HAVE_LONG_LONG are required by some versions of unixODBC
+	dnl https://github.com/lurcher/unixODBC/issues/40
+	AC_CHECK_SIZEOF([long int])
+	AC_CHECK_TYPES([long long])
+
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS $ODBC_LIBS"
-	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString,
-	 [ODBC_LIBS="$ODBC_LIBS -lodbcinst"
-	 AC_DEFINE_UNQUOTED(HAVE_SQLGETPRIVATEPROFILESTRING, 1,
-	 [Define to 1 if you have the SQLGetPrivateProfileString function.])])
+	AC_CHECK_LIB(odbcinst, SQLGetPrivateProfileString, [ODBC_LIBS="$ODBC_LIBS -lodbcinst"],
+                 AC_MSG_ERROR([Could not find SQLGetPrivateProfileString in -lodbcinst]))
+	LDFLAGS=$OLDLDFLAGS
+
+	OLDLDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS -Wl,-Bsymbolic-functions"
+	AC_MSG_CHECKING([for -Bsymbolic-functions linker flag])
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
+				[AC_MSG_RESULT(yes)
+				ODBC_LDFLAGS="-Wl,-Bsymbolic-functions"],
+				[AC_MSG_RESULT(no)
+				ODBC_LDFLAGS=""])
 	LDFLAGS=$OLDLDFLAGS
 fi
 
@@ -126,8 +188,12 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 
 	AC_SUBST(ODBC_CFLAGS)
 	AC_SUBST(ODBC_LIBS)
+	AC_SUBST(ODBC_LDFLAGS)
 	OPTDIRS="$OPTDIRS odbc"
 fi
+
+dnl Turn on -Wstrict-prototypes here because AC_CHECK_LIB is dumb
+CFLAGS="$CFLAGS -Wstrict-prototypes"
 
 dnl Conditionally build odbc wide version
 AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
@@ -143,14 +209,22 @@ pkg-config is required.
 See pkg-config.freedesktop.org])
 fi
 
+dnl See if GLib is present and wanted
+AC_ARG_ENABLE(glib,
+    AS_HELP_STRING([--disable-glib], [do not link with GLib]),
+        [enable_glib=$enableval], [enable_glib=yes])
 
-dnl check for glib/gtk/gnome
-PKG_CHECK_MODULES([GLIB], [glib-2.0], ,
-	AC_MSG_ERROR([
-glib 2.0 is required by MDB Tools (runtime and devel).
-It can be downloaded at www.gtk.org.
-]))
+if test "$enable_glib" = "yes"; then
+    PKG_CHECK_MODULES([GLIB], [glib-2.0], HAVE_GLIB=true, HAVE_GLIB=false)
+    if test "x$HAVE_GLIB" = "xtrue"; then
+        GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
+    else
+        enable_glib=no
+    fi
+fi
+AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
+dnl check for gtk/gnome
 PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
 
 GNOME_DOC_INIT
@@ -210,6 +284,8 @@ if test x$enable_gtk_doc = xauto ; then
 fi
 
 AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
+AM_CONDITIONAL(HAVE_GNOME_DOC_UTILS, test x$enable_gtk_doc = xyes)
+AM_CONDITIONAL(ENABLE_SK, test x$enable_gtk_doc = xyes)
 
 ##################################################
 # Check for txt2man
@@ -219,8 +295,8 @@ AC_ARG_ENABLE(man,
   AS_HELP_STRING([--disable-man], [disable man generation]),
   enable_man="$enableval", [enable_man=yes])
 if test "$enable_man" = yes; then
-  if ! which txt2man > /dev/null; then
-    AC_MSG_ERROR([Could not find txt2man script. Install it or configure with --disable-man if you are not interrested in manuals.])
+  if ! which gawk > /dev/null; then
+    AC_MSG_ERROR([Could not find GNU awk. Install it or configure with --disable-man if you are not interested in manuals.])
   fi
 fi
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)
@@ -229,9 +305,6 @@ AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)
 # Check for docbook
 ##################################################
 AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
-
-dnl Checks for library functions.
-VL_LIB_READLINE
 
 localedir=${datadir}/locale
 AC_SUBST(localedir)
@@ -247,6 +320,7 @@ include/Makefile
 src/libmdb/Makefile
 src/sql/Makefile
 src/odbc/Makefile
+src/fuzz/Makefile
 doc/Makefile
 src/gmdb2/Makefile
 src/gmdb2/gladefiles/Makefile
@@ -273,6 +347,8 @@ if test x$sql = xtrue; then summary=${bold_green}enabled; else summary=${bold_re
 AC_MSG_NOTICE([   SQL          : ${summary}${reset}])
 if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   ODBC         : ${summary}${reset}])
+if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   GLib         : ${summary}${reset}])
 if test x$build_gmdb2 = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   UI           : ${summary}${reset}])
 if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi

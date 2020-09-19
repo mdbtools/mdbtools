@@ -17,18 +17,20 @@
  */
 
 #include <stdarg.h>
+#define _XOPEN_SOURCE
 #include "mdbsql.h"
-
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
 
 #ifdef HAVE_WORDEXP_H
 #define HAVE_WORDEXP
 #include <wordexp.h>
 #endif
 
-char *g_input_ptr;
+#ifdef HAVE_STRPTIME
+#include <time.h>
+#include <stdio.h>
+#endif
+
+#include <locale.h>
 
 /* Prevent warnings from -Wmissing-prototypes.  */
 #ifdef YYPARSE_PARAM
@@ -45,8 +47,10 @@ int yyparse ();
 #endif
 #endif /* ! YYPARSE_PARAM */
 
+static MdbSargNode * mdb_sql_alloc_node(void);
+
 void
-mdb_sql_error(MdbSQL* sql, char *fmt, ...)
+mdb_sql_error(MdbSQL* sql, const char* fmt, ...)
 {
 va_list ap;
 
@@ -57,19 +61,6 @@ va_list ap;
 	fprintf(stderr, "%s\n", sql->error_msg);
 }
 
-int mdb_sql_yyinput(char *buf, int need)
-{
-int cplen, have;
-
-	have = strlen(g_input_ptr);
-	cplen = need > have ? have : need;
-	
-	if (cplen>0) {
-		memcpy(buf, g_input_ptr, cplen);
-		g_input_ptr += cplen;
-	} 
-	return cplen;
-}
 MdbSQL *mdb_sql_init()
 {
 MdbSQL *sql;
@@ -80,6 +71,7 @@ MdbSQL *sql;
 	sql->sarg_tree = NULL;
 	sql->sarg_stack = NULL;
 	sql->max_rows = -1;
+	sql->limit = -1;
 
 	return sql;
 }
@@ -102,14 +94,9 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 	g_return_val_if_fail (sql, NULL);
 	g_return_val_if_fail (querystr, NULL);
 
-	g_input_ptr = (gchar*) querystr;
-
-	/* calls to yyparse should be serialized for thread safety */
-
-	/* begin unsafe */
-	_mdb_sql (sql);
 	sql->error_msg[0]='\0';
-	if (yyparse()) {
+
+	if (parse_sql (sql, querystr)) {
 		/* end unsafe */
 		mdb_sql_error (sql, _("Could not parse '%s' command"), querystr);
 		mdb_sql_reset (sql);
@@ -135,7 +122,7 @@ void mdb_sql_set_maxrow(MdbSQL *sql, int maxrow)
 
 static void mdb_sql_free_columns(GPtrArray *columns)
 {
-	unsigned int i;
+	int i;
 	if (!columns) return;
 	for (i=0; i<columns->len; i++) {
 		MdbSQLColumn *c = (MdbSQLColumn *)g_ptr_array_index(columns, i);
@@ -146,7 +133,7 @@ static void mdb_sql_free_columns(GPtrArray *columns)
 }
 static void mdb_sql_free_tables(GPtrArray *tables)
 {
-	unsigned int i;
+	int i;
 	if (!tables) return;
 	for (i=0; i<tables->len; i++) {
 		MdbSQLTable *t = (MdbSQLTable *)g_ptr_array_index(tables, i);
@@ -197,7 +184,7 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 
 	return sql->mdb;
 }
-MdbSargNode *
+static MdbSargNode *
 mdb_sql_alloc_node()
 {
 	return (MdbSargNode *) g_malloc0(sizeof(MdbSargNode));
@@ -316,7 +303,7 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 			printf(" < %d\n", node->value.i); 
 			break;
 		case MDB_GT: 
-			printf(" < %d\n", node->value.i); 
+			printf(" > %d\n", node->value.i); 
 			break;
 		case MDB_LIKE: 
 			printf(" like %s\n", node->value.s); 
@@ -334,6 +321,50 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 		mdb_sql_dump_node(node->right, mylevel);
 	}
 }
+
+/* Parses date format specifier into JET date representation (double) */
+char *
+mdb_sql_strptime(MdbSQL *sql, char *data, char *format)
+{
+#ifndef HAVE_STRPTIME
+	mdb_sql_error(sql, "Your system doesn't support strptime.");
+	mdb_sql_reset(sql);
+	return NULL;
+#else
+	char *p, *pszDate;
+	struct tm tm={0};
+	double date=0;
+
+	if (data[0]!='\'' || *(p=&data[strlen(data)-1])!='\'') {
+		mdb_sql_error(sql, "First parameter of strptime (data) must be a string.");
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	*p=0; ++data;
+	if (format[0]!='\'' || *(p=&format[strlen(format)-1])!='\'') {
+		mdb_sql_error(sql, "Second parameter of strptime (format) must be a string.");
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	*p=0; ++format;
+	if (!strptime(data, format, &tm)) {
+		mdb_sql_error(sql, "strptime('%s','%s') failed.", data, format);
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	mdb_tm_to_date(&tm, &date);
+	/* It seems that when just using a time offset without date in strptime, 
+	 * we always get 1 as decimal part, een though it should be 0 for time */
+	if (date < 2 && date > 1) date--;
+	if ((pszDate=malloc(16))) {
+		char cLocale=localeconv()->decimal_point[0], *p;
+		sprintf(pszDate, "%lf", date);
+		if (cLocale!='.') for (p=pszDate; *p; p++) if (*p==cLocale) *p='.';
+	}
+	return pszDate;
+#endif
+}
+
 /* evaluate a expression involving 2 constants and add answer to the stack */
 int 
 mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
@@ -387,6 +418,7 @@ int
 mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 {
 	int lastchar;
+	char *p;
 	MdbSargNode *node;
 
 	node = mdb_sql_alloc_node();
@@ -406,8 +438,14 @@ mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 		lastchar = strlen(constant) > 256 ? 256 : strlen(constant);
 		strncpy(node->value.s, &constant[1], lastchar - 2);;
 		node->value.s[lastchar - 1]='\0';
+		node->val_type = MDB_TEXT;
+	} else if ((p=strchr(constant, '.'))) {
+		*p=localeconv()->decimal_point[0];
+		node->value.d = strtod(constant, NULL);
+		node->val_type = MDB_DOUBLE;
 	} else {
 		node->value.i = atoi(constant);
+		node->val_type = MDB_INT;
 	}
 
 	mdb_sql_push_node(sql, node);
@@ -419,6 +457,12 @@ mdb_sql_all_columns(MdbSQL *sql)
 {
 	sql->all_columns=1;	
 }
+void
+mdb_sql_sel_count(MdbSQL *sql)
+{
+	sql->sel_count=1;
+}
+
 int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 {
 	MdbSQLColumn *c;
@@ -483,6 +527,8 @@ void mdb_sql_exit(MdbSQL *sql)
 }
 void mdb_sql_reset(MdbSQL *sql)
 {
+	unsigned int i;
+
 	if (sql->cur_table) {
 		mdb_index_scan_free(sql->cur_table);
 		if (sql->cur_table->sarg_tree) {
@@ -494,7 +540,6 @@ void mdb_sql_reset(MdbSQL *sql)
 	}
 
 	/* Reset bound values */
-	unsigned int i;
 	for (i=0;i<sql->num_columns;i++) {
 		g_free(sql->bound_values[i]);
 		sql->bound_values[i] = NULL;
@@ -519,9 +564,10 @@ void mdb_sql_reset(MdbSQL *sql)
 	sql->sarg_stack = NULL;
 
 	sql->all_columns = 0;
+	sql->sel_count = 0;
 	sql->max_rows = -1;
 	sql->row_count = 0;
-	sql->limit = 0;
+	sql->limit = -1;
 }
 static void print_break(int sz, int first)
 {
@@ -659,24 +705,40 @@ void mdb_sql_describe_table(MdbSQL *sql)
 	sql->cur_table = ttable;
 }
 
+MdbColumn *mdb_sql_find_colbyname(MdbTableDef *table, char *name)
+{
+	unsigned int i;
+	MdbColumn *col;
+
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!g_ascii_strcasecmp(col->name, name)) return col;
+	}
+	return NULL;
+}
+
 int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 {
 	MdbTableDef *table = data;
-	unsigned int i;
 	MdbColumn *col;
 
 	if (!mdb_is_relational_op(node->op)) return 0;
 	if (!node->parent) return 0;
 
-	for (i=0;i<table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		if (!g_ascii_strcasecmp(col->name, (char *)node->parent)) {
-			node->col = col;
-			break;
+	if ((col = mdb_sql_find_colbyname(table, (char *)node->parent))) {
+		node->col = col;
+		/* Do conversion to required target value type.
+		 * Plain integers are UNIX timestamps for backwards compatibility of parser
+		*/
+		if (col->col_type == MDB_DATETIME && node->val_type == MDB_INT) {
+			struct tm *tm = gmtime((time_t*)&node->value.i);
+			mdb_tm_to_date(tm, &node->value.d);
+			node->val_type = MDB_DOUBLE;
 		}
 	}
 	return 0;
 }
+
 void 
 mdb_sql_select(MdbSQL *sql)
 {
@@ -693,6 +755,7 @@ int found = 0;
 		return;
 	}
 
+	if (!sql->num_tables) return;
 	sql_tab = g_ptr_array_index(sql->tables,0);
 
 	table = mdb_read_table_by_name(mdb, sql_tab->name, MDB_TABLE);
@@ -703,6 +766,27 @@ int found = 0;
 		return;
 	}
 	mdb_read_columns(table);
+
+	if (sql->sel_count && !sql->sarg_tree) {
+		MdbTableDef *ttable = mdb_create_temp_table(mdb, "#count");
+		char tmpstr[32];
+		gchar row_cnt[32];
+		unsigned char row_buffer[MDB_PGSIZE];
+		MdbField fields[1];
+		int row_size, tmpsiz;
+
+		mdb_sql_add_temp_col(sql, ttable, 0, "count", MDB_TEXT, 30, 0);
+		sprintf(tmpstr,"%d",table->num_rows);
+		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, row_cnt, 32);
+		mdb_fill_temp_field(&fields[0],row_cnt, tmpsiz, 0,0,0,0);
+		row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
+		mdb_add_row_to_pg(ttable,row_buffer, row_size);
+		ttable->num_rows++;
+		sql->cur_table = ttable;
+		mdb_free_tabledef(table);
+		return;
+	}
+
 	mdb_read_indices(table);
 	mdb_rewind_table(table);
 
@@ -726,6 +810,8 @@ int found = 0;
 		}
 		if (!found) {
 			mdb_sql_error(sql, "Column %s not found",sqlcol->name);
+			mdb_index_scan_free(table);
+			mdb_free_tabledef(table);
 			mdb_sql_reset(sql);
 			return;
 		}
@@ -777,7 +863,7 @@ mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table)
 {
 	int rc = mdb_fetch_row(table);
 	if (rc) {
-		if (sql->row_count + 1 > sql->limit) {
+		if (sql->limit >= 0 && sql->row_count + 1 > sql->limit) {
 			return 0;
 		}
 		sql->row_count++;

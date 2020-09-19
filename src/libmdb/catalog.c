@@ -18,14 +18,10 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
-char *
+const char *
 mdb_get_objtype_string(int obj_type)
 {
-static char *type_name[] = {"Form",
+    static const char *type_name[] = {"Form",
 			"Table",
 			"Macro",
 			"System Table",
@@ -39,7 +35,7 @@ static char *type_name[] = {"Form",
 			"Database"
 		};
 
-	if (obj_type > 11) {
+	if (obj_type >= (int)(sizeof(type_name)/sizeof(type_name[0]))) {
 		return NULL;
 	} else {
 		return type_name[obj_type]; 
@@ -48,7 +44,7 @@ static char *type_name[] = {"Form",
 
 void mdb_free_catalog(MdbHandle *mdb)
 {
-	unsigned int i, j;
+	guint i, j;
 	MdbCatalogEntry *entry;
 
 	if ((!mdb) || (!mdb->catalog)) return;
@@ -57,8 +53,8 @@ void mdb_free_catalog(MdbHandle *mdb)
 		if (entry) {
 			if (entry->props) {
 				for (j=0; j<entry->props->len; j++)
-					mdb_free_props(g_array_index(entry->props, MdbProperties*, j));
-				g_array_free(entry->props, TRUE);
+					mdb_free_props(g_ptr_array_index(entry->props, j));
+				g_ptr_array_free(entry->props, TRUE);
 			}
 			g_free(entry);
 		}
@@ -77,7 +73,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	char obj_flags[256];
 	char obj_props[MDB_BIND_SIZE];
 	int type;
-	unsigned int i;
+	int i;
 	MdbColumn *col_props;
 	int kkd_size_ole;
 
@@ -96,15 +92,28 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	/* mdb_table_dump(&msysobj); */
 
 	table = mdb_read_table(&msysobj);
-	if (!table) return NULL;
+    if (!table) {
+        fprintf(stderr, "Unable to read table %s\n", msysobj.object_name);
+        mdb_free_catalog(mdb);
+        goto cleanup;
+    }
 
 	mdb_read_columns(table);
 
-	mdb_bind_column_by_name(table, "Id", obj_id, NULL);
-	mdb_bind_column_by_name(table, "Name", obj_name, NULL);
-	mdb_bind_column_by_name(table, "Type", obj_type, NULL);
-	mdb_bind_column_by_name(table, "Flags", obj_flags, NULL);
-	i = mdb_bind_column_by_name(table, "LvProp", obj_props, &kkd_size_ole);
+    if (mdb_bind_column_by_name(table, "Id", obj_id, NULL) == -1 ||
+        mdb_bind_column_by_name(table, "Name", obj_name, NULL) == -1 ||
+        mdb_bind_column_by_name(table, "Type", obj_type, NULL) == -1 ||
+        mdb_bind_column_by_name(table, "Flags", obj_flags, NULL) == -1) {
+        fprintf(stderr, "Unable to bind columns from table %s (%d columns found)\n",
+                msysobj.object_name, table->num_cols);
+        mdb_free_catalog(mdb);
+        goto cleanup;
+    }
+    if ((i = mdb_bind_column_by_name(table, "LvProp", obj_props, &kkd_size_ole)) == -1) {
+        fprintf(stderr, "Unable to bind column %s from table %s\n", "LvProp", msysobj.object_name);
+        mdb_free_catalog(mdb);
+        goto cleanup;
+    }
 	col_props = g_ptr_array_index(table->columns, i-1);
 
 	mdb_rewind_table(table);
@@ -133,9 +142,11 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	}
 	//mdb_dump_catalog(mdb, MDB_TABLE);
  
-	mdb_free_tabledef(table);
+cleanup:
+    if (table)
+        mdb_free_tabledef(table);
 
-	return mdb->catalog;
+    return mdb->catalog;
 }
 
 

@@ -18,11 +18,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
-
 static gint mdb_col_comparer(MdbColumn **a, MdbColumn **b)
 {
 	if ((*a)->col_num > (*b)->col_num)
@@ -31,15 +26,6 @@ static gint mdb_col_comparer(MdbColumn **a, MdbColumn **b)
 		return -1;
 	else
 		return 0;
-}
-
-unsigned char mdb_col_needs_size(int col_type)
-{
-	if (col_type == MDB_TEXT) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
 }
 
 MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
@@ -56,7 +42,7 @@ void mdb_free_tabledef(MdbTableDef *table)
 {
 	if (!table) return;
 	if (table->is_temp_table) {
-		unsigned int i;
+		guint i;
 		/* Temp table pages are being stored in memory */
 		for (i=0; i<table->temp_table_pages->len; i++)
 			g_free(g_ptr_array_index(table->temp_table_pages,i));
@@ -79,9 +65,15 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 	void *buf, *pg_buf = mdb->pg_buf;
 	guint i;
 
-	mdb_read_pg(mdb, entry->table_pg);
-	if (mdb_get_byte(pg_buf, 0) != 0x02)  /* not a valid table def page */
+	if (!mdb_read_pg(mdb, entry->table_pg)) {
+        fprintf(stderr, "mdb_read_table: Unable to read page %lu\n", entry->table_pg);
+        return NULL;
+    }
+	if (mdb_get_byte(pg_buf, 0) != 0x02) {
+        fprintf(stderr, "mdb_read_table: Page %lu [size=%d] is not a valid table definition page (First byte = 0x%02X, expected 0x02)\n",
+                entry->table_pg, (int)fmt->pg_size, mdb_get_byte(pg_buf, 0));
 		return NULL;
+    }
 	table = mdb_alloc_tabledef(entry);
 
 	mdb_get_int16(pg_buf, 8); /* len */
@@ -94,7 +86,11 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	/* grab a copy of the usage map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_usage_map_offset);
-	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz));
+	if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->map_sz))) {
+        fprintf(stderr, "mdb_read_table: Unable to find page row %d\n", pg_row);
+		mdb_free_tabledef(table);
+		return NULL;
+	}
 	table->usage_map = g_memdup((char*)buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		mdb_buffer_dump(buf, row_start, table->map_sz);
@@ -103,7 +99,11 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	/* grab a copy of the free space page map */
 	pg_row = mdb_get_int32(pg_buf, fmt->tab_free_map_offset);
-	mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz));
+	if (mdb_find_pg_row(mdb, pg_row, &buf, &row_start, &(table->freemap_sz))) {
+        fprintf(stderr, "mdb_read_table: Unable to find page row %d\n", pg_row);
+		mdb_free_tabledef(table);
+		return NULL;
+	}
 	table->free_usage_map = g_memdup((char*)buf + row_start, table->freemap_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
@@ -112,7 +112,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	if (entry->props)
 		for (i=0; i<entry->props->len; ++i) {
-			MdbProperties *props = g_array_index(entry->props, MdbProperties*, i);
+			MdbProperties *props = g_ptr_array_index(entry->props, i);
 			if (!props->name)
 				table->props = props;
 		}
@@ -176,7 +176,7 @@ read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
 		*cur_pos -= (mdb->fmt->pg_size - 8);
 	}
 	/* Copy pages into buffer */
-	while (*cur_pos + len >= mdb->fmt->pg_size) {
+	while (*cur_pos + len >= (size_t)mdb->fmt->pg_size) {
 		int piece_len = mdb->fmt->pg_size - *cur_pos;
 		if (_buf) {
 			memcpy(_buf, mdb->pg_buf + *cur_pos, piece_len);
@@ -201,7 +201,7 @@ void mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 }
 void mdb_free_columns(GPtrArray *columns)
 {
-	unsigned int i, j;
+	guint i, j;
 	MdbColumn *col;
 
 	if (!columns) return;
@@ -223,10 +223,11 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	MdbFormatConstants *fmt = mdb->fmt;
 	MdbColumn *pcol;
 	unsigned char *col;
-	unsigned int i, j;
+	unsigned int i;
+	guint j;
 	int cur_pos;
 	size_t name_sz;
-	GArray *allprops;
+	GPtrArray *allprops;
 	
 	table->columns = g_ptr_array_new();
 
@@ -266,8 +267,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 
 		/* FIXME: can this be right in Jet3 and Jet4? */
 		if (pcol->col_type == MDB_NUMERIC) {
-			pcol->col_prec = col[11];
-			pcol->col_scale = col[12];
+			pcol->col_scale = col[11];
+			pcol->col_prec = col[12];
 		}
 
 		// col_flags_offset == 13 or 15
@@ -307,8 +308,6 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
 		g_free(tmp_buf);
-
-
 	}
 
 	/* Sort the columns by col_num */
@@ -319,8 +318,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		for (i=0;i<table->num_cols;i++) {
 			pcol = g_ptr_array_index(table->columns, i);
 			for (j=0; j<allprops->len; ++j) {
-				MdbProperties *props = g_array_index(allprops, MdbProperties*, j);
-				if (props->name && pcol->name && !strcmp(props->name, pcol->name)) {
+				MdbProperties *props = g_ptr_array_index(allprops, j);
+				if (props->name && !strcmp(props->name, pcol->name)) {
 					pcol->props = props;
 					break;
 				}
@@ -417,4 +416,9 @@ mdb_col_get_prop(const MdbColumn *col, const gchar *key) {
 	if (!col->props)
 		return NULL;
 	return g_hash_table_lookup(col->props->hash, key);
+}
+
+int mdb_col_is_shortdate(const MdbColumn *col) {
+    const char *format = mdb_col_get_prop(col, "Format");
+    return format && !strcmp(format, "Short Date");
 }

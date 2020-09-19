@@ -20,10 +20,6 @@
 
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 struct type_struct {
 	char *name;
 	int value;
@@ -44,7 +40,7 @@ struct type_struct {
 };
 
 char *
-valid_types()
+valid_types(void)
 {
 	static char ret[256]; /* be sure to allow for enough space if adding more */
 	int i = 0;	

@@ -22,16 +22,12 @@
 #include <stdlib.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 #define DEBUG 1
 
 static unsigned long opts;
 static int optset;
 
-static void load_options();
+static void load_options(void);
 
 void
 mdb_debug(int klass, char *fmt, ...)

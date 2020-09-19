@@ -1,0 +1,182 @@
+language: c
+dist: bionic
+
+jobs:
+  include:
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - libiodbc2-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - libiodbc2-dev
+        - libglib2.0-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --enable-glib"
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - unixodbc-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
+  - compiler: clang
+    os: linux
+    addons:
+      apt:
+        packages:
+        - unixodbc-dev
+        - libglib2.0-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --enable-glib"
+  - compiler: gcc
+    os: linux
+    addons:
+      apt:
+        packages:
+        - libiodbc2-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
+  - compiler: gcc
+    os: linux
+    addons:
+      apt:
+        packages:
+        - unixodbc-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
+  - compiler: gcc-10
+    os: linux
+    addons:
+      apt:
+        sources:
+        - sourceline: 'ppa:ubuntu-toolchain-r/test'
+        packages:
+        - gcc-10
+        - libiodbc2-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
+  - compiler: gcc-10
+    os: linux
+    addons:
+      apt:
+        sources:
+        - sourceline: 'ppa:ubuntu-toolchain-r/test'
+        packages:
+        - gcc-10
+        - unixodbc-dev
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - libiodbc
+        - bison
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - libiodbc
+        - glib
+        - bison
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - unixodbc
+        - bison
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - unixodbc
+        - glib
+        - bison
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
+  - compiler: gcc
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - libiodbc
+        - bison
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
+  - compiler: gcc
+    os: osx
+    osx_image: xcode11.4
+    addons:
+      homebrew:
+        packages:
+        - unixodbc
+        - bison
+        - gawk
+    env:
+      - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
+      - YACC="/usr/local/opt/bison/bin/bison"
+
+before_script:
+  - git clone https://github.com/mdbtools/mdbtestdata.git test
+  - autoreconf -i -f -Wno-portability
+
+script:
+  - ./configure --disable-silent-rules $CONFIGURE_FLAGS
+  - make
+  - ./src/util/mdb-json test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-json test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-count test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-count test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-prop test/data/ASampleDatabase.accdb "Asset Items"
+  - ./src/util/mdb-prop test/data/nwind.mdb "Customers"
+  - ./src/util/mdb-schema test/data/ASampleDatabase.accdb
+  - ./src/util/mdb-schema test/data/nwind.mdb
+  - ./src/util/mdb-tables test/data/ASampleDatabase.accdb
+  - ./src/util/mdb-tables test/data/nwind.mdb
+  - ./src/util/mdb-ver test/data/ASampleDatabase.accdb
+  - ./src/util/mdb-ver test/data/nwind.mdb
+  - ./src/util/mdb-sql -i test/sql/nwind.sql test/data/nwind.mdb
+  - ./src/util/mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwner
+  - env MDBPATH=test/data ./src/odbc/unittest

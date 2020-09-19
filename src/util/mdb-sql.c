@@ -47,10 +47,6 @@ extern void clear_history ();
 #include <string.h>
 #include "mdbsql.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
 void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
 void dump_results_pp(FILE *out, MdbSQL *sql);
 
@@ -257,7 +253,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	if (headers) {
 		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			if (strlen(sqlcol->name)>sqlcol->disp_size)
+			if (strlen(sqlcol->name)>(size_t)sqlcol->disp_size)
 				sqlcol->disp_size = strlen(sqlcol->name);
 			print_break(out, sqlcol->disp_size, !j);
 		}
@@ -333,8 +329,10 @@ main(int argc, char **argv)
 	MdbSQL *sql;
 	FILE *in = NULL, *out = NULL;
 	char *filename_in=NULL, *filename_out=NULL;
+#ifdef HAVE_READLINE_HISTORY
 	char *home = getenv("HOME");
 	char *histpath;
+#endif
 	char *delimiter = NULL;
 	int in_from_colon_r = 0;
 

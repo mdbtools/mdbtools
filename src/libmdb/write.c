@@ -21,11 +21,6 @@
 #include <inttypes.h>
 #include "mdbtools.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
-
-
 //static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
 static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields, guint32 pgnum, guint16 rownum);
 
@@ -75,18 +70,17 @@ ssize_t
 mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 {
 	ssize_t len;
-	struct stat status;
 	off_t offset = pg * mdb->fmt->pg_size;
 
-	fstat(mdb->f->fd, &status);
+    fseek(mdb->f->stream, 0, SEEK_END);
 	/* is page beyond current size + 1 ? */
-	if (status.st_size < offset + mdb->fmt->pg_size) {
-		fprintf(stderr,"offset %jd is beyond EOF\n",(intmax_t)offset);
+	if (ftello(mdb->f->stream) < offset + mdb->fmt->pg_size) {
+		fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
 		return 0;
 	}
-	lseek(mdb->f->fd, offset, SEEK_SET);
-	len = write(mdb->f->fd,mdb->pg_buf,mdb->fmt->pg_size);
-	if (len==-1) {
+	fseek(mdb->f->stream, offset, SEEK_SET);
+	len = fwrite(mdb->pg_buf, mdb->fmt->pg_size, 1, mdb->f->stream);
+	if (ferror(mdb->f->stream)) {
 		perror("write");
 		return 0;
 	} else if (len<mdb->fmt->pg_size) {
@@ -112,18 +106,25 @@ mdb_is_col_indexed(MdbTableDef *table, int colnum)
 	return 0;
 }
 
-static void
-mdb_crack_row4(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_sz, unsigned int row_var_cols, unsigned int *var_col_offsets)
+static int
+mdb_crack_row4(MdbHandle *mdb, unsigned int row_start, unsigned int row_end,
+        unsigned int bitmask_sz, unsigned int row_var_cols, unsigned int *var_col_offsets)
 {
 	unsigned int i;
+
+	if (bitmask_sz + 3 + row_var_cols*2 + 2 > row_end)
+		return 0;
 
 	for (i=0; i<row_var_cols+1; i++) {
 		var_col_offsets[i] = mdb_get_int16(mdb->pg_buf,
 			row_end - bitmask_sz - 3 - (i*2));
 	}
+
+    return 1;
 }
-static void
-mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_sz, unsigned int row_var_cols, unsigned int *var_col_offsets)
+static int
+mdb_crack_row3(MdbHandle *mdb, unsigned int row_start, unsigned int row_end,
+        unsigned int bitmask_sz, unsigned int row_var_cols, unsigned int *var_col_offsets)
 {
 	unsigned int i;
 	unsigned int num_jumps = 0, jumps_used = 0;
@@ -136,6 +137,9 @@ mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
 	if ((col_ptr-row_start-row_var_cols)/256 < num_jumps)
 		num_jumps--;
 
+	if (bitmask_sz + num_jumps + 1 > row_end)
+		return 0;
+
 	jumps_used = 0;
 	for (i=0; i<row_var_cols+1; i++) {
 		while ((jumps_used < num_jumps)
@@ -144,6 +148,8 @@ mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
 		}
 		var_col_offsets[i] = mdb->pg_buf[col_ptr-i]+(jumps_used*256);
 	}
+
+    return 1;
 }
 /**
  * mdb_crack_row:
@@ -164,10 +170,10 @@ mdb_crack_row3(MdbHandle *mdb, int row_start, int row_end, unsigned int bitmask_
  * This routine is mostly used internally by mdb_fetch_row() but may have some
  * applicability for advanced application programs.
  *
- * Return value: number of fields present.
+ * Return value: number of fields present, or -1 if the buffer is invalid.
  */
 int
-mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
+mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fields)
 {
 	MdbColumn *col;
 	MdbCatalogEntry *entry = table->entry;
@@ -180,9 +186,10 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	unsigned int fixed_cols_found, row_fixed_cols;
 	unsigned int col_count_size;
 	unsigned int i;
+    unsigned int row_end = row_start + row_size - 1;
 
 	if (mdb_get_option(MDB_DEBUG_ROW)) {
-		mdb_buffer_dump(pg_buf, row_start, row_end - row_start + 1);
+		mdb_buffer_dump(pg_buf, row_start, row_size);
 	}
 
 	if (IS_JET3(mdb)) {
@@ -194,6 +201,11 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 	}
 
 	bitmask_sz = (row_cols + 7) / 8;
+    if (bitmask_sz + !IS_JET3(mdb) >= row_end) {
+        fprintf(stderr, "warning: Invalid page buffer detected in mdb_crack_row.\n");
+        return -1;
+    }
+
 	nullmask = (unsigned char*)pg_buf + row_end - bitmask_sz + 1;
 
 	/* read table of variable column locations */
@@ -202,13 +214,19 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 			mdb_get_byte(pg_buf, row_end - bitmask_sz) :
 			mdb_get_int16(pg_buf, row_end - bitmask_sz - 1);
 		var_col_offsets = (unsigned int *)g_malloc((row_var_cols+1)*sizeof(int));
+        int success = 0;
 		if (IS_JET3(mdb)) {
-			mdb_crack_row3(mdb, row_start, row_end, bitmask_sz,
-				 row_var_cols, var_col_offsets);
+			success = mdb_crack_row3(mdb, row_start, row_end, bitmask_sz,
+                    row_var_cols, var_col_offsets);
 		} else {
-			mdb_crack_row4(mdb, row_start, row_end, bitmask_sz,
-				 row_var_cols, var_col_offsets);
+			success = mdb_crack_row4(mdb, row_start, row_end, bitmask_sz,
+                    row_var_cols, var_col_offsets);
 		}
+        if (!success) {
+            fprintf(stderr, "warning: Invalid page buffer detected in mdb_crack_row.\n");
+            g_free(var_col_offsets);
+            return -1;
+        }
 	}
 
 	fixed_cols_found = 0;
@@ -252,6 +270,11 @@ mdb_crack_row(MdbTableDef *table, int row_start, int row_end, MdbField *fields)
 			fields[i].value = NULL;
 			fields[i].siz = 0;
 			fields[i].is_null = 1;
+		}
+		if ((size_t)(fields[i].start + fields[i].siz) > row_start + row_size) {
+			fprintf(stderr, "warning: Invalid data location detected in mdb_crack_row.\n");
+			g_free(var_col_offsets);
+			return -1;
 		}
 	}
 
@@ -554,7 +577,7 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	MdbCatalogEntry *entry = table->entry;
 	MdbHandle *mdb = entry->mdb;
 	MdbFormatConstants *fmt = mdb->fmt;
-	guint32 pgnum;
+	gint32 pgnum;
 	guint16 rownum;
 
 	if (!mdb->f->writable) {
@@ -566,7 +589,7 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 		mdb_buffer_dump(row_buffer, 0, new_row_size);
 	}
 	pgnum = mdb_map_find_next_freepage(table, new_row_size);
-	if (!pgnum) {
+	if (!pgnum || pgnum == -1) {
 		fprintf(stderr, "Unable to allocate new page.\n");
 		return 0;
 	}
@@ -656,15 +679,15 @@ mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_siz
 int 
 mdb_update_row(MdbTableDef *table)
 {
-int row_start, row_end;
-unsigned int i;
-MdbColumn *col;
-MdbCatalogEntry *entry = table->entry;
-MdbHandle *mdb = entry->mdb;
-MdbField fields[256];
-unsigned char row_buffer[4096];
+    int row_start, row_end;
+    unsigned int i;
+    MdbColumn *col;
+    MdbCatalogEntry *entry = table->entry;
+    MdbHandle *mdb = entry->mdb;
+    MdbField fields[256];
+    unsigned char row_buffer[4096];
 	size_t old_row_size, new_row_size;
-unsigned int num_fields;
+    int num_fields;
 
 	if (!mdb->f->writable) {
 		fprintf(stderr, "File is not open for writing\n");
@@ -687,11 +710,16 @@ unsigned int num_fields;
 		}
 	}
 	num_fields = mdb_crack_row(table, row_start, row_end, fields);
+    if (num_fields == -1) {
+		fprintf(stderr, "Invalid row buffer, update will not occur\n");
+        return 0;
+    }
 
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
+        /*
 		for (i=0;i<num_fields;i++) {
-			//printf("col %d %d start %d siz %d fixed 5d\n", i, fields[i].colnum, fields[i].start, fields[i].siz, fields[i].is_fixed);
-		}
+			printf("col %d %d start %d siz %d fixed 5d\n", i, fields[i].colnum, fields[i].start, fields[i].siz, fields[i].is_fixed);
+		} */
 	}
 	for (i=0;i<table->num_cols;i++) {
 		col = g_ptr_array_index(table->columns,i);
@@ -800,7 +828,7 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 	new_pg = mdb_new_leaf_pg(entry);
 
 	/* reinitial ipg pointers to start of page */
-	mdb_index_page_reset(ipg);
+	mdb_index_page_reset(mdb, ipg);
 	mdb_read_pg(mdb, ipg->pg);
 
 	/* do we support this index type yet? */
