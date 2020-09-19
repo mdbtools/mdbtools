@@ -334,6 +334,28 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	}
 }
 
+static char *
+find_sql_terminator(char *s)
+{
+	char *sp;
+	int len = strlen(s);
+
+	if (len == 0) {
+		return NULL;
+	}
+
+	sp = &s[len-1];
+	while (sp > s && isspace(*sp)) {
+		sp--;
+	}
+
+	if (*sp == ';') {
+		return sp;
+	}
+
+	return NULL;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -454,6 +476,8 @@ main(int argc, char **argv)
 		} else if (!strncmp(s,":r",2)) {
 			line += read_file(&s[2], line, &bufsz, mybuf);
 		} else {
+			char *p;
+
 			while (strlen(mybuf) + strlen(s) > bufsz) {
 				bufsz *= 2;
 				mybuf = (char *) g_realloc(mybuf, bufsz);
@@ -465,6 +489,13 @@ main(int argc, char **argv)
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */
 			strcat(mybuf,"\n");
+
+			if ((p = find_sql_terminator(mybuf))) {
+				*p = '\0';
+				line = 0;
+				run_query((out) ? out : stdout, sql, mybuf, delimiter);
+				mybuf[0]='\0';
+			}
 		}
 	}
 	mdb_sql_exit(sql);
