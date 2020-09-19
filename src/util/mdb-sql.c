@@ -156,40 +156,6 @@ do_set_cmd(MdbSQL *sql, char *s)
 	}
 }
 
-int
-read_file(char *s, int line, unsigned int *bufsz, char *mybuf)
-{
-	char *fname;
-	FILE *in;
-	char buf[256];
-	unsigned int cursz = 0;	
-	int lines = 0;	
-
-	fname = s;
-	while (*fname && *fname==' ') fname++;
-
-	if (! (in = fopen(fname, "r"))) {
-		fprintf(stderr,"Unable to open file %s\n", fname);
-		mybuf[0]=0;
-		return 0;
-	}
-	while (fgets(buf, 255, in)) {
-		cursz += strlen(buf) + 1;
-		if (cursz > (*bufsz)) {
-			(*bufsz) *= 2;
-			mybuf = (char *) realloc(mybuf, *bufsz);
-		}	
-		strcat(mybuf, buf);
-#ifdef HAVE_READLINE_HISTORY
-		/* don't record blank lines */
-		if (strlen(buf)) add_history(buf);
-#endif
-		strcat(mybuf, "\n");
-		lines++;
-		printf("%d => %s",line+lines, buf);
-	}
-	return lines;
-}
 void 
 run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
@@ -334,6 +300,28 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	}
 }
 
+static char *
+find_sql_terminator(char *s)
+{
+	char *sp;
+	int len = strlen(s);
+
+	if (len == 0) {
+		return NULL;
+	}
+
+	sp = &s[len-1];
+	while (sp > s && isspace(*sp)) {
+		sp--;
+	}
+
+	if (*sp == ';') {
+		return sp;
+	}
+
+	return NULL;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -348,6 +336,7 @@ main(int argc, char **argv)
 	char *home = getenv("HOME");
 	char *histpath;
 	char *delimiter = NULL;
+	int in_from_colon_r = 0;
 
 
 	GOptionEntry entries[] = {
@@ -421,15 +410,21 @@ main(int argc, char **argv)
 		if (s) free(s);
 
 		if (in) {
-			s=malloc(256);
-			if ((!s) || (!fgets(s, 256, in))) {
-				/* if we have something in the buffer, run it */
-				if (strlen(mybuf))
-					run_query((out) ? out : stdout,
-					          sql, mybuf, delimiter);
-				break;
-			}
-			if (s[strlen(s)-1]=='\n')
+			s=calloc(bufsz, 1);
+			if (!fgets(s, bufsz, in)) {
+				// Backwards compatibility with older MDBTools
+				// Files read from the command line had an
+				// implicit "go" at the end
+				if (!in_from_colon_r && strlen(mybuf))
+					strcpy(s, "go");
+				else if (in_from_colon_r) {
+					line = 0;
+					fclose(in);
+					in = NULL;
+					in_from_colon_r = 0;
+				} else
+					break;
+			} else if (s[strlen(s)-1]=='\n')
 				s[strlen(s)-1]=0;
 		} else {
 			sprintf(prompt, "%d => ", line);
@@ -452,19 +447,42 @@ main(int argc, char **argv)
 			line = 0;
 			mybuf[0]='\0';
 		} else if (!strncmp(s,":r",2)) {
-			line += read_file(&s[2], line, &bufsz, mybuf);
+			char *fname = &s[2];
+			if (in) {
+				fprintf(stderr, "Can not handle nested opens\n");
+			} else {
+				while (*fname && isspace(*fname))
+					fname++;
+				if (!(in = fopen(fname, "r"))) {
+					fprintf(stderr,"Unable to open file %s\n", fname);
+					mybuf[0]=0;
+				} else {
+					in_from_colon_r = 1;
+				}
+			}
 		} else {
+			char *p;
+
 			while (strlen(mybuf) + strlen(s) > bufsz) {
 				bufsz *= 2;
 				mybuf = (char *) g_realloc(mybuf, bufsz);
 			}
 #ifdef HAVE_READLINE_HISTORY
-			/* don't record blank lines */
-			if (strlen(s)) add_history(s);
+			/* don't record blank lines, or lines read from files
+			 * specified on the command line */
+			if ((!in || in_from_colon_r) && strlen(s))
+				add_history(s);
 #endif
 			strcat(mybuf,s);
 			/* preserve line numbering for the parser */
 			strcat(mybuf,"\n");
+
+			if ((p = find_sql_terminator(mybuf))) {
+				*p = '\0';
+				line = 0;
+				run_query((out) ? out : stdout, sql, mybuf, delimiter);
+				mybuf[0]='\0';
+			}
 		}
 	}
 	mdb_sql_exit(sql);

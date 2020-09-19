@@ -65,7 +65,7 @@ If you want to build the ODBC driver, you'll need unixodbc (version 2.2.10 or
 above) or iodbc.
 
 If you want to build man pages, you'll need txt2man. Source is available at
-http://mvertes.free.fr/download/.
+https://github.com/mvertes/txt2man.
 
 If you want to generate the html version of the docbook, you'll need openjade
 and basic dsl catalogs.
@@ -74,7 +74,7 @@ and basic dsl catalogs.
 Installation from source:
 =========================
 
-Last version is available at https://github.com/brianb/mdbtools
+Last version is available at https://github.com/mdbtools/mdbtools
 
   $ autoreconf -i -f
 
@@ -117,7 +117,7 @@ The mailing list from the old site is available at
 http://mdbtools.sourceforge.net
 
 Please send bug repports to the new github platform.
-https://github.com/brianb/mdbtools/issues
+https://github.com/mdbtools/mdbtools/issues
 
 
 Brian Bruns
