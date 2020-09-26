@@ -62,7 +62,7 @@ typedef struct sql_context
 
 %token <name> IDENT NAME PATH STRING NUMBER
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
-%token DESCRIBE TABLE
+%token DESCRIBE TABLE TOP PERCENT
 %token LTEQ GTEQ LIKE IS NUL
 
 %type <name> database
@@ -91,7 +91,7 @@ stmt:
 	;
 
 query:
-	SELECT column_list FROM table where_clause limit_clause {
+	SELECT top_clause column_list FROM table where_clause limit_clause {
 	                mdb_sql_select(parser_ctx->mdb);
 		}
 	|	CONNECT TO database { 
@@ -108,6 +108,17 @@ query:
 		}
 	;
 
+top_clause:
+	/* empty */
+	|	TOP NUMBER { mdb_sql_add_limit(parser_ctx->mdb, $2, 0); free($2); }
+	|	TOP NUMBER PERCENT {
+			if (mdb_sql_add_limit(parser_ctx->mdb, $2, 1)) {
+				yyerror(NULL, parser_ctx, "Percent values must be between 0 and 100");
+			}
+			free($2);
+		}
+	;
+
 where_clause:
 	/* empty */
 	| WHERE sarg_list
@@ -115,7 +126,14 @@ where_clause:
 
 limit_clause:
 	/* empty */
-	| LIMIT NUMBER { mdb_sql_add_limit(parser_ctx->mdb, $2); free($2); }
+	| LIMIT NUMBER {
+			if (mdb_sql_get_limit(parser_ctx->mdb) != -1) {
+				yyerror(NULL, parser_ctx, "Can not have TOP and LIMIT clauses");
+			} else {
+				mdb_sql_add_limit(parser_ctx->mdb, $2, 0);
+			}
+			free($2);
+		}
 	;
 
 sarg_list:

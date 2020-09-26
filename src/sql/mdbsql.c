@@ -72,6 +72,7 @@ MdbSQL *sql;
 	sql->sarg_stack = NULL;
 	sql->max_rows = -1;
 	sql->limit = -1;
+	sql->limit_percent = 0;
 
 	return sql;
 }
@@ -473,10 +474,21 @@ int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 	sql->num_columns++;
 	return 0;
 }
-int mdb_sql_add_limit(MdbSQL *sql, char *limit)
+int mdb_sql_add_limit(MdbSQL *sql, char *limit, int percent)
 {
 	sql->limit = atoi(limit);
+	sql->limit_percent = percent;
+
+	if (sql->limit_percent && (sql->limit < 0 || sql->limit > 100)) {
+		return 1;
+	}
+
 	return 0;
+}
+
+int mdb_sql_get_limit(MdbSQL *sql)
+{
+	return sql->limit;
 }
 
 int mdb_sql_add_function1(MdbSQL *sql, char *func_name, char *arg1)
@@ -833,6 +845,13 @@ int found = 0;
 
 	sql->cur_table = table;
 	mdb_index_scan_init(mdb, table);
+
+	/* We know how many rows there are, so convert limit percentage
+	 * to an row count */
+	if (sql->limit != -1 && sql->limit_percent) {
+		sql->limit = (int)((double)table->num_rows / 100 * sql->limit);
+		sql->limit_percent = 0;
+	}
 }
 
 void 
