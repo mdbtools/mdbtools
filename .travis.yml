@@ -181,11 +181,13 @@ jobs:
       - YACC="/usr/local/opt/bison/bin/bison"
 
 before_script:
+  - pkg-config gnome-doc-utils --modversion
   - git clone https://github.com/mdbtools/mdbtestdata.git test
   - autoreconf -i -f -Wno-portability
 
 script:
   - ./configure --disable-silent-rules $CONFIGURE_FLAGS
+  - cat config.log
   - make
   - ./src/util/mdb-json test/data/ASampleDatabase.accdb "Asset Items"
   - ./src/util/mdb-json test/data/nwind.mdb "Customers"
