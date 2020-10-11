@@ -192,9 +192,6 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 	OPTDIRS="$OPTDIRS odbc"
 fi
 
-dnl Turn on -Wstrict-prototypes here because AC_CHECK_LIB is dumb
-CFLAGS="$CFLAGS -Wstrict-prototypes"
-
 dnl Conditionally build odbc wide version
 AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
 
