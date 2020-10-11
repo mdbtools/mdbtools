@@ -71,7 +71,7 @@ An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use 
 
 ## gmdb2
 
-The Gnome MDB File Viewer and debugger. Still alpha and may be removed before 0.9.
+The Gnome MDB File Viewer and debugger. Alpha quality, moved to [mdbtools/gmdb2](https://github.com/mdbtools/gmdb2).
 
 # License
 
@@ -122,7 +122,7 @@ brew install mdbtools
 ## From source
 
 ```bash
-$ autoreconf -i -f -Wno-portability
+$ autoreconf -i -f
 ```
 
 If you want to build the html version of the docbook documentation, you need to

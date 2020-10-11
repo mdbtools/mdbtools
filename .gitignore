@@ -30,8 +30,6 @@ libtool
 mdbtools.spec
 types.h
 src/extras/mdb-hexdump
-src/gmdb2/gmdb2
-src/gmdb2/help/gmdb-C.omf
 src/odbc/unittest
 src/sql/lexer.c
 src/sql/parser.c
@@ -39,11 +37,12 @@ src/sql/parser.h
 src/util/mdb-array
 src/util/mdb-count
 src/util/mdb-export
-src/util/mdb-exportjson
+src/util/mdb-json
 src/util/mdb-header
 src/util/mdb-import
 src/util/mdb-parsecsv
 src/util/mdb-prop
+src/util/mdb-queries
 src/util/mdb-schema
 src/util/mdb-sql
 src/util/mdb-tables
