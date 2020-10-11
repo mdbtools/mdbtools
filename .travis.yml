@@ -10,6 +10,7 @@ jobs:
         packages:
         - libiodbc2-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: clang
@@ -20,6 +21,7 @@ jobs:
         - libiodbc2-dev
         - libglib2.0-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --enable-glib"
   - compiler: clang
@@ -29,6 +31,7 @@ jobs:
         packages:
         - unixodbc-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: clang
@@ -39,6 +42,7 @@ jobs:
         - unixodbc-dev
         - libglib2.0-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --enable-glib"
   - compiler: gcc
@@ -48,6 +52,7 @@ jobs:
         packages:
         - libiodbc2-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: gcc
@@ -57,6 +62,7 @@ jobs:
         packages:
         - unixodbc-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: gcc-10
@@ -69,6 +75,7 @@ jobs:
         - gcc-10
         - libiodbc2-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr --disable-glib"
   - compiler: gcc-10
@@ -81,6 +88,7 @@ jobs:
         - gcc-10
         - unixodbc-dev
         - gawk
+        - gtk-doc-tools
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr --disable-glib"
   - compiler: clang
@@ -92,6 +100,7 @@ jobs:
         - libiodbc
         - bison
         - gawk
+        - gtk-doc
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -105,6 +114,7 @@ jobs:
         - glib
         - bison
         - gawk
+        - gtk-doc
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -117,6 +127,7 @@ jobs:
         - unixodbc
         - bison
         - gawk
+        - gtk-doc
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -130,6 +141,7 @@ jobs:
         - glib
         - bison
         - gawk
+        - gtk-doc
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -142,6 +154,7 @@ jobs:
         - libiodbc
         - bison
         - gawk
+        - gtk-doc
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -154,6 +167,7 @@ jobs:
         - unixodbc
         - bison
         - gawk
+        - gtk-doc
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"

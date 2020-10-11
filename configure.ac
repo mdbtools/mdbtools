@@ -224,25 +224,6 @@ if test "$enable_glib" = "yes"; then
 fi
 AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
-dnl check for gtk/gnome
-PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
-
-GNOME_DOC_INIT
-AC_ARG_ENABLE(gmdb2,
-        AS_HELP_STRING([--disable-gmdb2],[do not build gmdb2]),
-        [build_gmdb2=$enableval], [build_gmdb2=yes])
-
-if test "$build_gmdb2" = "yes" ; then
-	if test "x$HAVE_GNOME" = "xtrue"; then
-		AC_SUBST(GNOME_CFLAGS)
-		AC_SUBST(GNOME_LIBS)
-		OPTDIRS="$OPTDIRS gmdb2"
-	fi
-else
-        AC_MSG_NOTICE(gmdb2 disabled)
-	build_gmdb2=no
-fi
-
 AC_SUBST([OPTDIRS])
 AC_CONFIG_FILES([src/Makefile])
 
@@ -262,15 +243,7 @@ fi
 
 AC_SUBST(HTML_DIR)
 
-gtk_doc_min_version=1.0
-AC_MSG_CHECKING([gtk-doc version >= $gtk_doc_min_version])
-if pkg-config --atleast-version=$gtk_doc_min_version gtk-doc; then
-  AC_MSG_RESULT(yes)
-  GTKDOC=true
-else
-  AC_MSG_RESULT(no)
-  GTKDOC=false
-fi
+PKG_CHECK_EXISTS([gtk-doc >= 1.0], [GTKDOC=true], [GTKDOC=false])
 
 dnl Let people disable the gtk-doc stuff.
 AC_ARG_ENABLE(gtk-doc, AS_HELP_STRING([--enable-gtk-doc], [use gtk-doc to build documentation [default=auto]]), enable_gtk_doc="$enableval", enable_gtk_doc=auto)
@@ -284,8 +257,6 @@ if test x$enable_gtk_doc = xauto ; then
 fi
 
 AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
-AM_CONDITIONAL(HAVE_GNOME_DOC_UTILS, test x$enable_gtk_doc = xyes)
-AM_CONDITIONAL(ENABLE_SK, test x$enable_gtk_doc = xyes)
 
 ##################################################
 # Check for txt2man
@@ -322,10 +293,6 @@ src/sql/Makefile
 src/odbc/Makefile
 src/fuzz/Makefile
 doc/Makefile
-src/gmdb2/Makefile
-src/gmdb2/gladefiles/Makefile
-src/gmdb2/pixmaps/Makefile
-src/gmdb2/help/Makefile
 mdbtools.spec
 include/mdbver.h])
 AC_OUTPUT
@@ -349,8 +316,6 @@ if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${b
 AC_MSG_NOTICE([   ODBC         : ${summary}${reset}])
 if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   GLib         : ${summary}${reset}])
-if test x$build_gmdb2 = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   UI           : ${summary}${reset}])
 if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   Gtk doc      : ${summary}${reset}])
 if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi

@@ -75,8 +75,9 @@ HISTORY
   mdb-sql first appeared in MDB Tools 0.3.
 
 SEE ALSO
-  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-import(1) mdb-prop(1) mdb-ver(1)
-  mdb-array(1) mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1) isql(1)
+  mdb-export(1) mdb-hexdump(1) mdb-import(1) mdb-prop(1) mdb-ver(1)
+  mdb-array(1) mdb-header(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1)
+  isql(1)
 
 AUTHORS
   The mdb-sql utility was written by Brian Bruns.
