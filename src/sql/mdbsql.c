@@ -161,12 +161,26 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 
 #ifdef HAVE_WORDEXP
 	wordexp_t words;
+	int need_free_words = 0;
 
-	if (wordexp(db_name, &words, 0)==0) {
-		if (words.we_wordc>0) 
-			db_namep = words.we_wordv[0];
+	switch (wordexp(db_name, &words, 0))
+	{
+		case 0:
+			if (words.we_wordc>0)
+			{
+				db_namep = words.we_wordv[0];
+			}
+			need_free_words = 1;
+			break;
+		case WRDE_NOSPACE:
+			// If the error was WRDE_NOSPACE, then perhaps part of the result was allocated.
+			need_free_words = 1;
+			break;
+		default:
+			// Some other error
+			need_free_words = 0;
+			break;
 	}
-	
 #endif
 
 	sql->mdb = mdb_open(db_namep, MDB_NOFLAGS);
@@ -180,7 +194,10 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 	}
 
 #ifdef HAVE_WORDEXP
-	wordfree(&words);
+	if ( need_free_words )
+	{
+		wordfree(&words);
+	}
 #endif	
 
 	return sql->mdb;
