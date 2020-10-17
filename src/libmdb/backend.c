@@ -305,6 +305,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_DEFVALUES,
 		mdb_access_types, NULL, NULL,
 		"Date()", "Date()",
+		NULL,
+		NULL,
 		"-- That file uses encoding %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
@@ -317,6 +319,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
 		"getdate()", "getdate()",
+		NULL,
+		NULL,
 		"-- That file uses encoding %s\n",
 		"DROP TABLE %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
@@ -329,6 +333,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
 		mdb_oracle_types, &mdb_oracle_shortdate_type, NULL,
 		"current_date", "sysdate",
+		NULL,
+		NULL,
 		"-- That file uses encoding %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
@@ -341,6 +347,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
 		"current_date", "now()",
+		"%Y-%m-%d %H:%M:%S",
+		"%Y-%m-%d",
 		"SET client_encoding = '%s';\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
@@ -353,6 +361,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
 		"current_date", "now()",
+		"%Y-%m-%d %H:%M:%S",
+		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
@@ -365,6 +375,8 @@ void mdb_init_backends(MdbHandle *mdb)
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_sqlite_types, NULL, NULL,
 		"date('now')", "date('now')",
+		"%Y-%m-%d %H:%M:%S",
+		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		NULL,
@@ -378,6 +390,7 @@ void mdb_init_backends(MdbHandle *mdb)
 void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabilities,
         const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
         const char *short_now, const char *long_now,
+        const char *date_fmt, const char *shortdate_fmt,
         const char *charset_statement, const char *drop_statement,
         const char *constaint_not_empty_statement,
         const char *column_comment_statement,
@@ -393,6 +406,8 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->type_autonum = type_autonum;
 	backend->short_now = short_now;
 	backend->long_now = long_now;
+	backend->date_fmt = date_fmt;
+	backend->shortdate_fmt = shortdate_fmt;
 	backend->charset_statement = charset_statement;
 	backend->drop_statement = drop_statement;
 	backend->constaint_not_empty_statement = constaint_not_empty_statement;
@@ -443,6 +458,16 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 		g_free(mdb->backend_name); // NULL is ok
 		mdb->backend_name = (char *) g_strdup(backend_name);
 		mdb->relationships_table = NULL;
+		if (backend->date_fmt) {
+			mdb_set_date_fmt(mdb, backend->date_fmt);
+		} else {
+			mdb_set_date_fmt(mdb, "%x %X");
+		}
+		if (backend->shortdate_fmt) {
+			mdb_set_shortdate_fmt(mdb, backend->shortdate_fmt);
+		} else {
+			mdb_set_shortdate_fmt(mdb, "%x");
+		}
 		return 1;
 	} else {
 		return 0;
