@@ -197,7 +197,7 @@ AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
 
 dnl Testing presence of pkg-config
 AC_MSG_CHECKING([pkg-config m4 macros])
-if test m4_ifdef([PKG_CHECK_MODULES], [yes], [no]) == yes; then
+if test m4_ifdef([PKG_CHECK_MODULES], [yes], [no]) = yes; then
 	AC_MSG_RESULT([yes]);
 else
 	AC_MSG_RESULT([no]);
