@@ -14,7 +14,7 @@ endif
 CLEANFILES = ${dist_man_MANS} install install.tgz
 EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.txt \
 	mdb-array.txt mdb-header.txt mdb-hexdump.txt mdb-parsecsv.txt mdb-prop.txt mdb-import.txt \
-        faq.html install.sgml
+        faq.html install.sgml txt2man
 
 .txt.1:
 	$(TXT2MAN) -t $* -r "$(PRODUCT) $(VERSION)" -s 1 -v "Executable programs or shell commands" $(srcdir)/$< > $@
