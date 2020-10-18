@@ -14,13 +14,13 @@ OPTIONS
   -H, --no-header               Suppress header row.
   -Q, --no-quote                Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
   -d, --delimiter delim         Specify an alternative column delimiter. Default is , (comma).
-  -R, --row-delimiter delim     Specify a row delimiter. Default is \n (ASCII value 10).
+  -R, --row-delimiter delim     Specify a row delimiter. Default is \\n (ASCII value 10).
   -I, --insert backend          INSERT statements (instead of CSV). You must specify which SQL backend dialect to use. Allowed values are: access, sybase, oracle, postgres, mysql and sqlite.
   -D, --date-format fmt         Set the date format (see strftime(3) for details).
   -q, --quote char              Use to wrap text-like fields. Default is " (double quote).
   -X, --escape char             Use to escape quoted characters within a field. Default is doubling.
   -N, --namespace prefix        Prefix identifiers with prefix.
-  -b, --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \ooo style octal data or output \xx style hexadecimal data.
+  -b, --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \\ooo style octal data or output \\xx style hexadecimal data.
 
 NOTES 
 
