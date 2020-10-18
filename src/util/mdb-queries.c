@@ -89,7 +89,7 @@ int main (int argc, char **argv) {
 		fprintf (stderr, "Usage: %s [options] <database filename> <query name>\n",argv[0]);
 		fprintf (stderr, "where options are:\n");
 		fprintf (stderr, "  -L\t\t\tList queries in the database (default if no query name is passed)\n");
-		fprintf (stderr, "  -1\t\t\tUse newline as the delimiter (used in conjuction with listing)\n");
+		fprintf (stderr, "  -1\t\t\tUse newline as the delimiter (used in conjunction with listing)\n");
 		fprintf (stderr, "  -d <delimiter>\tSpecify delimiter to use\n");
 		exit (1);
 	}
