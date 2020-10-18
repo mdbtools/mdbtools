@@ -20,7 +20,7 @@ OPTIONS
   -q, --quote char              Use to wrap text-like fields. Default is " (double quote).
   -X, --escape char             Use to escape quoted characters within a field. Default is doubling.
   -N, --namespace prefix        Prefix identifiers with prefix.
-  -b  --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \ooo style octal data or output \xx style hexadecimal data.
+  -b, --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \ooo style octal data or output \xx style hexadecimal data.
 
 NOTES 
 
