@@ -181,9 +181,7 @@ fi
 
 if test "x$HAVE_ODBC" = "xtrue"; then
 	if test "x$sql" != "xtrue" ; then
-		echo
-		echo ODBC requires flex and bison for the SQL engine
-		exit 1
+		AC_MSG_ERROR([ODBC requires flex and bison for the SQL engine])
 	fi
 
 	AC_SUBST(ODBC_CFLAGS)

@@ -21,8 +21,8 @@
 #include <mswstr/mswstr.h>
 #endif
 
-MdbIndexPage *mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain);
-MdbIndexPage *mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg);
+static MdbIndexPage *mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain);
+static MdbIndexPage *mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg);
 
 char idx_to_text[] = {
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 0-7     0x00-0x07 */
@@ -707,7 +707,8 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 		 * add to the chain and call this function
 		 * recursively.
 		 */
-		newipg = mdb_chain_add_page(mdb, chain, pg);
+		if (!mdb_chain_add_page(mdb, chain, pg))
+			break;
 		newipg = mdb_find_next_leaf(mdb, idx, chain);
 		//printf("returning pg %lu\n",newipg->pg);
 		return newipg;
@@ -716,7 +717,7 @@ mdb_find_next_leaf(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 	return NULL;
 
 }
-MdbIndexPage *
+static MdbIndexPage *
 mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg)
 {
 	MdbIndexPage *ipg;
@@ -724,7 +725,7 @@ mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg)
 	chain->cur_depth++;
 	if (chain->cur_depth > MDB_MAX_INDEX_DEPTH) {
 		fprintf(stderr,"Error! maximum index depth of %d exceeded.  This is probably due to a programming bug, If you are confident that your indexes really are this deep, adjust MDB_MAX_INDEX_DEPTH in mdbtools.h and recompile.\n", MDB_MAX_INDEX_DEPTH);
-		exit(1);
+		return NULL;
 	}
 	ipg = &(chain->pages[chain->cur_depth - 1]);
 	mdb_index_page_init(mdb, ipg);
@@ -736,7 +737,7 @@ mdb_chain_add_page(MdbHandle *mdb, MdbIndexChain *chain, guint32 pg)
  * returns the bottom page of the IndexChain, if IndexChain is empty it 
  * initializes it by reading idx->first_pg (the root page)
  */
-MdbIndexPage *
+static MdbIndexPage *
 mdb_index_read_bottom_pg(MdbHandle *mdb, MdbIndex *idx, MdbIndexChain *chain)
 {
 	MdbIndexPage *ipg;
