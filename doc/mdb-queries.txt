@@ -1,0 +1,42 @@
+NAME
+  mdb-queries - Get listing of tables in an MDB database
+
+SYNOPSIS
+  mdb-queries [-L] [-1] [-d delim] database query
+  mdb-queries -h|--help
+
+DESCRIPTION
+  mdb-queries is a utility program distributed with MDB Tools. 
+
+  It produces a list of queries in the database, and dump the SQL associated with a specific query.
+
+OPTIONS
+  -L        List queries in the database (default if no query name is passed)
+  -1        Use newline as the delimiter (used in conjuction with listing)
+  -d delim  Specify delimiter to use
+
+NOTES 
+
+ENVIRONMENT
+  MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
+  MDBICONV            Defines the output charset. Default is UTF-8. mdbtools must have been compiled with iconv.
+  MDBOPTS             semi-column separated list of options:
+                      * use_index
+                      * no_memo
+                      * debug_like
+                      * debug_write
+                      * debug_usage
+                      * debug_ole
+                      * debug_row
+                      * debug_props
+                      * debug_all is a shortcut for all debug_* options
+
+HISTORY
+  mdb-queries first appeared in MDB Tools 0.9.
+
+SEE ALSO
+  mdb-export(1) mdb-hexdump(1) mdb-import(1) mdb-prop(1) mdb-sql(1) mdb-ver(1)
+  mdb-array(1) mdb-header(1) mdb-parsecsv(1) mdb-schema(1)
+
+AUTHORS
+  The mdb-queries utility was written by Leonard Leblanc.
