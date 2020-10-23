@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-import &&
 _mdb_import()
 {
 	local cur

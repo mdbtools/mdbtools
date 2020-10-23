@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-schema &&
 _mdb_schema()
 {
 	local cur prev

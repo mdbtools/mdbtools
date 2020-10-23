@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-prop &&
 _mdb_prop()
 {
 	local cur

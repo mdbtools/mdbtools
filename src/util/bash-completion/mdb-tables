@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-tables &&
 _mdb_tables()
 {
 	local cur prev

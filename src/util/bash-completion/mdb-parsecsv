@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-parsecsv &&
 _mdb_parsecsv()
 {
 	local cur

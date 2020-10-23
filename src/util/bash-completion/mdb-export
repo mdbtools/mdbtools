@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-export &&
 _mdb_export()
 {
 	local cur prev

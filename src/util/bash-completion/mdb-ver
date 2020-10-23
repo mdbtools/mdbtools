@@ -1,5 +1,4 @@
 #-*- mode: shell-script;-*-
-have mdb-ver &&
 _mdb_ver()
 {
 	local cur
