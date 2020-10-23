@@ -268,6 +268,27 @@ fi
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)
 
 ##################################################
+# Check for bash-completion.
+##################################################
+
+AC_ARG_WITH([bash-completion-dir],
+  AS_HELP_STRING([--with-bash-completion-dir[=PATH]],
+  [Install the bash auto-completion script in this directory. @<:@default=yes@:>@]),
+  [],
+  [with_bash_completion_dir=yes])
+
+if test "x$with_bash_completion_dir" = "xyes"; then
+  PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
+    [BASH_COMPLETION_DIR="`pkg-config --variable=completionsdir bash-completion`"],
+    [BASH_COMPLETION_DIR="$datadir/bash-completion/completions"])
+else
+  BASH_COMPLETION_DIR="$with_bash_completion_dir"
+fi
+
+AC_SUBST([BASH_COMPLETION_DIR])
+AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "x$with_bash_completion_dir" != "xno"])
+
+##################################################
 # Check for docbook
 ##################################################
 AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
@@ -306,15 +327,17 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([${bold}MDB Tools $VERSION - Configuration summary${reset}])
 AC_MSG_NOTICE([])
 if test x$sql = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   SQL          : ${summary}${reset}])
+AC_MSG_NOTICE([   SQL             : ${summary}${reset}])
 if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   ODBC         : ${summary}${reset}])
+AC_MSG_NOTICE([   ODBC            : ${summary}${reset}])
 if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   GLib         : ${summary}${reset}])
+AC_MSG_NOTICE([   GLib            : ${summary}${reset}])
 if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   Gtk doc      : ${summary}${reset}])
+AC_MSG_NOTICE([   Gtk doc         : ${summary}${reset}])
 if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   man          : ${summary}${reset}])
+AC_MSG_NOTICE([   man             : ${summary}${reset}])
 if test -n "$DOCBOOK_DSL"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   html docbook : ${summary}${reset}])
+AC_MSG_NOTICE([   html docbook    : ${summary}${reset}])
+if test "x$with_bash_completion_dir" != "xno"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   bash-completion : ${summary}${reset}])
 AC_MSG_NOTICE([])
