@@ -12,7 +12,7 @@ DESCRIPTION
 
 OPTIONS
   -L        List queries in the database (default if no query name is passed)
-  -1        Use newline as the delimiter (used in conjuction with listing)
+  -1        Use newline as the delimiter (used in conjunction with listing)
   -d delim  Specify delimiter to use
 
 NOTES 
