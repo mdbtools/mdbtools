@@ -103,7 +103,7 @@ int mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2);
 void mdb_sql_bind_all(MdbSQL *sql);
 int mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table);
 int mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, int col_type, int col_size, int is_fixed);
-void mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
+int mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
 int mdb_sql_add_limit(MdbSQL *sql, char *limit, int percent);
 int mdb_sql_get_limit(MdbSQL *sql);
 

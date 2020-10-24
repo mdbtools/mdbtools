@@ -871,15 +871,22 @@ int found = 0;
 	}
 }
 
-void 
+int 
 mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr)
 {
 	MdbSQLColumn *sqlcol;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
-	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
-	mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr, len_ptr);
+	colnum--;
+	if (colnum >= 0 && colnum < sql->num_columns) {
+		sqlcol = g_ptr_array_index(sql->columns,colnum);
+		mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr, len_ptr);
+		return 0;
+	}
+
+	return -1;
 }
+
 void 
 mdb_sql_bind_all(MdbSQL *sql)
 {
