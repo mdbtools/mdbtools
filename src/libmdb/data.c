@@ -73,20 +73,31 @@ void mdb_set_boolean_fmt_words(MdbHandle *mdb)
 	mdb->boolean_true_value  = boolean_true_word;
 }
 
-void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr)
+int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr)
 {
-	MdbColumn *col;
+	MdbColumn *col = NULL;
 
 	/* 
 	** the column arrary is 0 based, so decrement to get 1 based parameter 
 	*/
-	col=g_ptr_array_index(table->columns, col_num - 1);
-	
-	if (bind_ptr)
-		col->bind_ptr = bind_ptr;
-	if (len_ptr)
-		col->len_ptr = len_ptr;
+	col_num--;
+
+	if (col_num >= 0 && col_num < (int)table->num_cols) {
+		col=g_ptr_array_index(table->columns, col_num);
+
+		if (col) {
+			if (bind_ptr)
+				col->bind_ptr = bind_ptr;
+			if (len_ptr)
+				col->len_ptr = len_ptr;
+
+			return 0;
+		}
+	}
+
+	return -1;
 }
+
 int
 mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int *len_ptr)
 {
