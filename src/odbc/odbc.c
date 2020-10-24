@@ -1676,7 +1676,7 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_NO_DATA;
 			}
 			if (pcbValue) {
-				*pcbValue = len + 1 - stmt->pos;
+				*pcbValue = len - stmt->pos;
 			}
 			if (cbValueMax == 0) {
 				free(str);
