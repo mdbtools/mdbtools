@@ -23,10 +23,18 @@ _mdb_export()
 	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local tablenames
+		local tablename
 		dbname=$prev
 		__expand_tilde_by_ref dbname
-		tablenames=$(eval mdb-tables -S -d / "${dbname}" 2>/dev/null)
-		COMPREPLY=( $( IFS=/ compgen -W "${tablenames}" -- $cur ) )
+		local IFS=$'\n'
+		tablenames=""
+		while read tablename
+		do
+			#shell-quote each line
+			tablenames="$tablenames"$'\n'"$(printf %q "${tablename}")"
+		done < <(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)
+		compopt -o filenames
+		COMPREPLY=( $( compgen -W "${tablenames}" -- $cur ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi

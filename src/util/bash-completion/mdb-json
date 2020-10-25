@@ -1,14 +1,19 @@
 #-*- mode: shell-script;-*-
-_mdb_prop()
+_mdb_json()
 {
-	local cur
-        
+	local cur prev
 	COMPREPLY=()
 	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD-1]}
 
-	if (( COMP_CWORD == 1 )); then
-		_filedir '@(mdb|mdw|accdb)'
-	elif (( COMP_CWORD == 2 )); then
+	if [[ "$prev" == -@(D|-date-format|T|-datetime-format|U|--no-unprintable|h|-help) ]] ; then
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '-h -D -T -U \
+		--date-format --datetime-format \
+		--no-unprintable \
+		--help' -- $cur ) )
+	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local tablenames
 		local tablename
@@ -23,9 +28,9 @@ _mdb_prop()
 		done < <(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)
 		compopt -o filenames
 		COMPREPLY=( $( compgen -W "${tablenames}" -- $cur ) )
-	elif (( COMP_CWORD == 3 )); then
-		COMPREPLY=( $( compgen -W 'Lv LvProp LvModule LvExtra' -- $cur ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
 	fi
 	return 0
 } &&
-complete -F _mdb_prop mdb-prop
+complete -F _mdb_json mdb-json
