@@ -6,7 +6,7 @@ _mdb_export()
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD-1]}
 
-	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|-quote|X|-escape|N|-namespace|S|-batch-size|D|-date-format|T|-datetime-format|0|-null|h|-help) ]] ; then
+	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|q|-quote|X|-escape|N|-namespace|S|-batch-size|D|-date-format|T|-datetime-format|0|-null|h|-help) ]] ; then
 		return 0
 	elif [[ "$prev" == -@(I|-insert) ]] ; then
 		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- $cur ) )
