@@ -8,7 +8,7 @@ _mdb_export()
 
 	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|-quote|X|-escape|N|-namespace|S|-batch-size|D|-date-format|T|-datetime-format|0|-null|h|-help) ]] ; then
 		return 0
-	elif [[ "$prev" == -I ]] ; then
+	elif [[ "$prev" == -@(I|-insert) ]] ; then
 		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- $cur ) )
 	elif [[ "$prev" == -@(b|-bin) ]] ; then
 		COMPREPLY=( $( compgen -W 'strip raw octal hex' -- $cur ) )
@@ -16,7 +16,7 @@ _mdb_export()
 		COMPREPLY=( $( compgen -W '-H -d -R -Q -q -X -I -N -S -D -T -0 -B -h \
 		--no-header --delimiter --row-delimiter \
 		--no-quote --quote --escape \
-		--backend --namespace --batch-size \
+		--insert --namespace --batch-size \
 		--date-format --datetime-format \
 		--null --bin --boolean-words
 		--help' -- $cur ) )
