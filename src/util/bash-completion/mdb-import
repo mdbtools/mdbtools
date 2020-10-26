@@ -1,33 +1,27 @@
 #-*- mode: shell-script;-*-
 _mdb_import()
 {
-	local cur
-        
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	prev=${COMP_WORDS[COMP_CWORD-1]}
+	local cur prev words cword split
+	_init_completion -s || return
 
-	if [[ "$prev" == -@(d|-delimiter) ]]; then
+	if [[ "$prev" == -@(H|--header|d|-delimiter) ]]; then
 		return 0
-	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-H --header \
-                            -d --delimiter \
-                            -h --help' -- $cur ) )
+	fi
+
+	$split && return
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '--header= --delimiter= --help' -- "$cur" ) )
+		[[ $COMPREPLY == *= ]] && compopt -o nospace
 	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
 		local dbname
 		local tablenames
-		local tablename
 		dbname=$prev
 		__expand_tilde_by_ref dbname
 		local IFS=$'\n'
-		tablenames=""
-		while read tablename
-		do
-			#shell-quote each line
-			tablenames="$tablenames"$'\n'"$(printf %q "${tablename}")"
-		done < <(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)
+		tablenames="$(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)"
 		compopt -o filenames
-		COMPREPLY=( $( compgen -W "${tablenames}" -- $cur ) )
+		COMPREPLY=( $( compgen -W '${tablenames}' -- "$cur" ) )
 	else
 		_filedir '@(mdb|mdw|accdb|txt|csv)'
 	fi

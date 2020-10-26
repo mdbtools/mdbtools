@@ -1,40 +1,31 @@
 #-*- mode: shell-script;-*-
 _mdb_export()
 {
-	local cur prev
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	prev=${COMP_WORDS[COMP_CWORD-1]}
+	local cur prev words cword split
+	_init_completion -s || return
 
 	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|q|-quote|X|-escape|N|-namespace|S|-batch-size|D|-date-format|T|-datetime-format|0|-null|h|-help) ]] ; then
 		return 0
 	elif [[ "$prev" == -@(I|-insert) ]] ; then
-		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- $cur ) )
+		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- "$cur" ) )
 	elif [[ "$prev" == -@(b|-bin) ]] ; then
-		COMPREPLY=( $( compgen -W 'strip raw octal hex' -- $cur ) )
-	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-H -d -R -Q -q -X -I -N -S -D -T -0 -B -h \
-		--no-header --delimiter --row-delimiter \
-		--no-quote --quote --escape \
-		--insert --namespace --batch-size \
-		--date-format --datetime-format \
-		--null --bin --boolean-words
-		--help' -- $cur ) )
+		COMPREPLY=( $( compgen -W 'strip raw octal hex' -- "$cur" ) )
+	fi
+
+	$split && return
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
+		[[ $COMPREPLY == *= ]] && compopt -o nospace
 	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local tablenames
-		local tablename
 		dbname=$prev
 		__expand_tilde_by_ref dbname
 		local IFS=$'\n'
-		tablenames=""
-		while read tablename
-		do
-			#shell-quote each line
-			tablenames="$tablenames"$'\n'"$(printf %q "${tablename}")"
-		done < <(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)
+		tablenames="$(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)"
 		compopt -o filenames
-		COMPREPLY=( $( compgen -W "${tablenames}" -- $cur ) )
+		COMPREPLY=( $( compgen -W '${tablenames}' -- "$cur" ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi

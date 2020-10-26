@@ -1,33 +1,22 @@
 #-*- mode: shell-script;-*-
 _mdb_queries()
 {
-	local cur prev
-        
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	prev=${COMP_WORDS[COMP_CWORD-1]}
+	local cur prev words cword
+	_init_completion || return
 
 	if [[ "$prev" == -@(d) ]]; then
 		return 0
 	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-L\
-                            -1 \
-                            -d' -- $cur ) )
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
 	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local querynames
-		local queryname
 		dbname=$prev
 		__expand_tilde_by_ref dbname
 		local IFS=$'\n'
-		querynames=""
-		while read queryname
-		do
-			#shell-quote each line
-			querynames="$querynames"$'\n'"$(printf %q "${queryname}")"
-		done < <(eval mdb-queries -1 "${dbname}" 2>/dev/null)
+		querynames="$(eval mdb-queries -1 "${dbname}" 2>/dev/null)"
 		compopt -o filenames
-		COMPREPLY=( $( compgen -W "${querynames}" -- $cur ) )
+		COMPREPLY=( $( compgen -W "${querynames}" -- "$cur" ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi

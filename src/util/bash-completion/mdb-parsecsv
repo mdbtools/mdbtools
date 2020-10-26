@@ -1,11 +1,10 @@
 #-*- mode: shell-script;-*-
 _mdb_parsecsv()
 {
-	local cur
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
+	local cur prev words cword
+	_init_completion || return
 
-	if (( COMP_CWORD == 1 )); then
+	if (( $cword == 1 )); then
 		_filedir '@(txt|csv)'
 	fi
 	return 0
