@@ -488,16 +488,24 @@ mdb_fetch_row(MdbTableDef *table)
 void mdb_data_dump(MdbTableDef *table)
 {
 	unsigned int i;
+	int ret;
 	char *bound_values[MDB_MAX_COLS]; 
 
 	for (i=0;i<table->num_cols;i++) {
 		bound_values[i] = (char *) g_malloc(256);
-		mdb_bind_column(table, i+1, bound_values[i], NULL);
+		ret = mdb_bind_column(table, i+1, bound_values[i], NULL);
+		if (ret == -1) {
+			fprintf(stdout, "error binding column %d\n", i+1);
+			g_free(bound_values[i]);
+			bound_values[i] = NULL;
+		}
 	}
 	mdb_rewind_table(table);
 	while (mdb_fetch_row(table)) {
 		for (i=0;i<table->num_cols;i++) {
-			fprintf(stdout, "column %d is %s\n", i+1, bound_values[i]);
+			if (bound_values[i]) {
+				fprintf(stdout, "column %d is %s\n", i+1, bound_values[i]);
+			}
 		}
 	}
 	for (i=0;i<table->num_cols;i++) {
