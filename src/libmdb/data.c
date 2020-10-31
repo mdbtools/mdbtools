@@ -91,7 +91,7 @@ int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_pt
 			if (len_ptr)
 				col->len_ptr = len_ptr;
 
-			return 0;
+			return col_num + 1;
 		}
 	}
 
