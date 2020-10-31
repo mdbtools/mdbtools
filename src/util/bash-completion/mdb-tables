@@ -1,24 +1,21 @@
 #-*- mode: shell-script;-*-
 _mdb_tables()
 {
-	local cur prev
-        
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	prev=${COMP_WORDS[COMP_CWORD-1]}
+	local cur prev words cword split
+	_init_completion -s || return
 
 	if [[ "$prev" == -@(d|-delimiter) ]]; then
 		return 0
 	elif [[ "$prev" == -@(t|-type) ]]; then
-		COMPREPLY=( $( compgen -W 'form table macro systable report query linkedtable module relationship dbprop any all' -- $cur ) )
+		COMPREPLY=( $( compgen -W 'form table macro systable report query linkedtable module relationship dbprop any all' -- "$cur" ) )
 		return 0
-	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-S --system\
-                            -1 --single-column \
-                            -d --delimiter \
-                            -t --type \
-                            -T --showtype \
-                            -h --help' -- $cur ) )
+	fi
+
+	$split && return
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
+		[[ $COMPREPLY == *= ]] && compopt -o nospace
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi
