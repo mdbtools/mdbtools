@@ -51,6 +51,7 @@ main(int argc, char **argv)
 	int bin_mode = MDB_BINEXPORT_RAW;
 	char *value;
 	size_t length;
+	int ret;
 
 	GOptionEntry entries[] = {
 		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
@@ -172,7 +173,11 @@ main(int argc, char **argv)
 	for (i = 0; i < table->num_cols; i++) {
 		/* bind columns */
 		bound_values[i] = (char *) g_malloc0(EXPORT_BIND_SIZE);
-		mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
+		ret = mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
+		if (ret == -1) {
+			fprintf(stderr, "Failed to bind column %d\n", i + 1);
+			exit(1);
+		}
 	}
 	if (header_row) {
 		for (i = 0; i < table->num_cols; i++) {

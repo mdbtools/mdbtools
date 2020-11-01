@@ -64,7 +64,11 @@ MdbSarg sarg;
 	for (j=0;j<table->num_cols;j++) {
 		bound_values[j] = (char *) g_malloc(MDB_BIND_SIZE);
 		bound_values[j][0] = '\0';
-		mdb_bind_column(table, j+1, bound_values[j], NULL);
+		ret = mdb_bind_column(table, j+1, bound_values[j], NULL);
+		if (ret == -1) {
+			fprintf(stderr, "Failed to bind column %d\n", i + 1);
+			exit(1);
+		}
 	}
 
 	/* print header */
