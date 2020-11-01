@@ -51,22 +51,23 @@ main(int argc, char **argv)
 	int bin_mode = MDB_BINEXPORT_RAW;
 	char *value;
 	size_t length;
+	int ret;
 
 	GOptionEntry entries[] = {
 		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
-		{"no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
 		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify an alternative column delimiter. Default is comma.", "char"},
 		{"row-delimiter", 'R', 0, G_OPTION_ARG_STRING, &row_delimiter, "Specify a row delimiter", "char"},
+		{"no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
 		{"quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
-		{"backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
+		{"escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
+		{"insert", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
+		{"namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
+		{"batch-size", 'S', 0, G_OPTION_ARG_INT, &batch_size, "Size of insert batches on supported platforms.", "int"},
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
-		{"escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
-		{"namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
 		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
 		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex"},
 		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
-		{"batch-size", 'S', 0, G_OPTION_ARG_INT, &batch_size, "Size of insert batches on supported platforms.", "int"},
 		{NULL},
 	};
 	GError *error = NULL;
@@ -172,7 +173,11 @@ main(int argc, char **argv)
 	for (i = 0; i < table->num_cols; i++) {
 		/* bind columns */
 		bound_values[i] = (char *) g_malloc0(EXPORT_BIND_SIZE);
-		mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
+		ret = mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
+		if (ret == -1) {
+			fprintf(stderr, "Failed to bind column %d\n", i + 1);
+			exit(1);
+		}
 	}
 	if (header_row) {
 		for (i = 0; i < table->num_cols; i++) {

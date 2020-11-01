@@ -1,26 +1,20 @@
 #-*- mode: shell-script;-*-
 _mdb_schema()
 {
-	local cur prev
-        
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	prev=${COMP_WORDS[COMP_CWORD-1]}
+	local cur prev words cword split
+	_init_completion -s || return
 
 	if [[ "$prev" == -@(T|-table|N|-namespace) ]] ; then
 		return 0
-	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-T --table \
-                            -N --namespace \
-		            --drop-table --no-drop-table \
-		            --not-null --no-not-null \
-		            --default-values --no-default-values \
-		            --not-empty --no-not-empty \
-		            --indexes --no-indexes \
-		            --relations --no-relations
-                            -h --help' -- $cur ) )
+	fi
+
+	$split && return
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
+		[[ $COMPREPLY == *= ]] && compopt -o nospace
 	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
-		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql' -- $cur ) )
+		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- "$cur" ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi

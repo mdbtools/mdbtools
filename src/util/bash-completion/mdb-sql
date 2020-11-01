@@ -1,24 +1,20 @@
 #-*- mode: shell-script;-*-
 _mdb_sql()
 {
-	local cur prev
-        
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
-	prev=${COMP_WORDS[COMP_CWORD-1]}
+	local cur prev words cword split
+	_init_completion -s || return
 
-	if [[ "$prev" == -d ]] ; then
+	if [[ "$prev" == -@(P|-no-pretty-print|H|-no-header|F|-no-footer) ]] ; then
 		return 0
+	fi
+
+	$split && return
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W '$(_parse_help "$1")' -- "$cur"))
+		[[ $COMPREPLY == *= ]] && compopt -o nospace
 	elif [[ "$prev" == -@(i|-input|o|-output) ]] ; then
 		_filedir
-	elif [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-H --no-header \
-                            -F --no-footer \
-                            -p --no-pretty-print \
-                            -d --delimiter \
-                            -i --input \
-                            -o --output \
-                            -h --help' -- $cur ) )
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi

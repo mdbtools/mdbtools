@@ -319,10 +319,10 @@ dnl doc/reference/libmdb/Makefile])
 ##################################################
 
 
-bold_red=$(tput bold)$(tput setf 4)
-bold_green=$(tput bold)$(tput setf 2)
-bold=$(tput bold)
-reset=$(tput sgr0)
+bold_red=$(tput bold 2>/dev/null)$(tput setf 4 2>/dev/null)
+bold_green=$(tput bold 2>/dev/null)$(tput setf 2 2>/dev/null)
+bold=$(tput bold 2>/dev/null)
+reset=$(tput sgr0 2>/dev/null)
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([${bold}MDB Tools $VERSION - Configuration summary${reset}])
 AC_MSG_NOTICE([])

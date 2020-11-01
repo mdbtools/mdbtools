@@ -1,12 +1,10 @@
 #-*- mode: shell-script;-*-
-_mdb_prop()
+_mdb_count()
 {
 	local cur prev words cword
 	_init_completion || return
 
-	if (( $cword == 1 )); then
-		_filedir '@(mdb|mdw|accdb)'
-	elif (( $cword == 2 )); then
+	if [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local tablenames
 		dbname=$prev
@@ -15,9 +13,9 @@ _mdb_prop()
 		tablenames="$(eval mdb-tables -S -1 "${dbname}" 2>/dev/null)"
 		compopt -o filenames
 		COMPREPLY=( $( compgen -W '${tablenames}' -- "$cur" ) )
-	elif (( $cword == 3 )); then
-		COMPREPLY=( $( compgen -W 'Lv LvProp LvModule LvExtra' -- "$cur" ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
 	fi
 	return 0
 } &&
-complete -F _mdb_prop mdb-prop
+complete -F _mdb_count mdb-count

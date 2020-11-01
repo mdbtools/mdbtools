@@ -2,7 +2,8 @@ NAME
   mdb-export - Export data in an MDB database table to CSV format.
 
 SYNOPSIS
-  mdb-export [-H] [-d delim] [-R delim] [[-Q] | [-q char [-X char]]] [-I backend] [-D fmt] [-N prefix] [-b strip|raw|octal] database table
+  mdb-export [--no-header] [--delimiter delim] [--row-delimiter delim] [[--no-quote] | [--quote char [--escape char]]] [--date-format fmt] [--datetime-format fmt] [--bin strip|raw|octal|hex] [--boolean-words] database table
+  mdb-export --insert backend [--namespace prefix] [--batch-size int] database table
   mdb-export -h|--help
 
 DESCRIPTION
@@ -10,19 +11,26 @@ DESCRIPTION
 
   It produces a CSV (comma separated value) output for the given table. Such output is suitable for importation into databases or spreadsheets.
 
+  Used with --insert, it outputs SQL specific to backend dialect, including some constraints like NOT NULL and foreign keys.
+
 OPTIONS
   -H, --no-header               Suppress header row.
-  -Q, --no-quote                Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
   -d, --delimiter delim         Specify an alternative column delimiter. Default is , (comma).
   -R, --row-delimiter delim     Specify a row delimiter. Default is \\n (ASCII value 10).
+  -Q, --no-quote                Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
+  -q, --quote char              Use char to wrap text-like fields. Default is " (double quote).
+  -X, --escape char             Use char to escape quoted characters within a field. Default is doubling.
   -I, --insert backend          INSERT statements (instead of CSV). You must specify which SQL backend dialect to use. Allowed values are: access, sybase, oracle, postgres, mysql and sqlite.
-  -D, --date-format fmt         Set the date format (see strftime(3) for details).
-  -q, --quote char              Use to wrap text-like fields. Default is " (double quote).
-  -X, --escape char             Use to escape quoted characters within a field. Default is doubling.
   -N, --namespace prefix        Prefix identifiers with prefix.
+  -S, --batch-size int          Size of insert batches on supported platforms.
+  -D, --date-format fmt         Set the date format (see strftime(3) for details.
+  -T, --datetime-format fmt     Set the date/time format (see strftime(3) for details.
+  -0, --null char               Use char to represent a NULL value.
   -b, --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \\ooo style octal data or output \\xx style hexadecimal data.
+  -B, --boolean-words           Use TRUE/FALSE in Boolean fields (default is 0/1).
 
 NOTES 
+  Most of the formatting options actually also works with --insert.
 
 ENVIRONMENT
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).

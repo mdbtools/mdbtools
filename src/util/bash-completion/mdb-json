@@ -1,19 +1,19 @@
 #-*- mode: shell-script;-*-
-_mdb_import()
+_mdb_json()
 {
 	local cur prev words cword split
 	_init_completion -s || return
 
-	if [[ "$prev" == -@(H|--header|d|-delimiter) ]]; then
+	if [[ "$prev" == -@(D|-date-format|T|-datetime-format|U|--no-unprintable|h|-help) ]] ; then
 		return 0
 	fi
 
 	$split && return
 
 	if [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '--header= --delimiter= --help' -- "$cur" ) )
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
 		[[ $COMPREPLY == *= ]] && compopt -o nospace
-	elif [[ "$prev" == @(*mdb|*mdw|*accdb) ]]; then
+	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
 		local dbname
 		local tablenames
 		dbname=$prev
@@ -23,8 +23,8 @@ _mdb_import()
 		compopt -o filenames
 		COMPREPLY=( $( compgen -W '${tablenames}' -- "$cur" ) )
 	else
-		_filedir '@(mdb|mdw|accdb|txt|csv)'
+		_filedir '@(mdb|mdw|accdb)'
 	fi
 	return 0
 } &&
-complete -F _mdb_import mdb-import
+complete -F _mdb_json mdb-json

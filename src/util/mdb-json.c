@@ -112,6 +112,7 @@ main(int argc, char **argv)
 	char *shortdate_fmt = NULL;
 	char *value;
 	size_t length;
+	int ret;
 
 	GOptionEntry entries[] = {
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
@@ -166,7 +167,11 @@ main(int argc, char **argv)
 	for (i=0;i<table->num_cols;i++) {
 		/* bind columns */
 		bound_values[i] = (char *) g_malloc0(EXPORT_BIND_SIZE);
-		mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
+		ret = mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
+		if (ret == -1) {
+			fprintf(stderr, "Failed to bind column %d\n", i + 1);
+			exit(1);
+		}
 	}
 
 	while(mdb_fetch_row(table)) {

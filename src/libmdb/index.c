@@ -383,7 +383,7 @@ mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash)
 	{
 #ifdef __MSWSTR_H__
 		char *out_ptr = alloca((len+1)*2);
-		int i;
+		unsigned int i;
 		// mdb_ascii2unicode doesn't work, we don't want unicode compression!
 		for (i=0; i<len+1; i++) {
 			out_ptr[i*2] = text[i];

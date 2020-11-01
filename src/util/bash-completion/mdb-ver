@@ -1,13 +1,12 @@
 #-*- mode: shell-script;-*-
 _mdb_ver()
 {
-	local cur
-        
-	COMPREPLY=()
-	cur=${COMP_WORDS[COMP_CWORD]}
+	local cur prev words cword
+	_init_completion || return
 
 	if [[ "$cur" == -* ]]; then
-		COMPREPLY=( $( compgen -W '-M -h --help' -- $cur ) )
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
+		#COMPREPLY=($(compgen -W '--help --mdbtools' -- "$cur"))
 	else
 		_filedir '@(mdb|mdw|accdb)'
 	fi

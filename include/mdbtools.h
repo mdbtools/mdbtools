@@ -509,7 +509,7 @@ void mdb_data_dump(MdbTableDef *table);
 void mdb_date_to_tm(double td, struct tm *t);
 void mdb_tm_to_date(struct tm *t, double *td);
 char *mdb_uuid_to_string(const void *buf, int start);
-void mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
+int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
 int mdb_rewind_table(MdbTableDef *table);
 int mdb_fetch_row(MdbTableDef *table);
 int mdb_is_fixed_col(MdbColumn *col);
