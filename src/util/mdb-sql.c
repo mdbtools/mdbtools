@@ -230,11 +230,11 @@ dump_results(FILE *out, MdbSQL *sql, char *delimiter)
 	while(mdb_sql_fetch_row(sql, sql->cur_table)) {
   		for (j=0;j<sql->num_columns-1;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			fprintf(out, "%s%s", (char*)(sql->bound_values[j]),
+			fprintf(out, "%s%s", (char*)(g_ptr_array_index(sql->bound_values, j)),
 				delimiter ? delimiter : "\t");
 		}
 		sqlcol = g_ptr_array_index(sql->columns,sql->num_columns-1);
-		fprintf(out, "%s", (char*)(sql->bound_values[sql->num_columns-1]));
+		fprintf(out, "%s", (char*)(g_ptr_array_index(sql->bound_values, sql->num_columns-1)));
 		fprintf(out,"\n");
 		fflush(out);
 	}
@@ -278,7 +278,7 @@ dump_results_pp(FILE *out, MdbSQL *sql)
 	while(mdb_sql_fetch_row(sql, sql->cur_table)) {
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
-			print_value(out, sql->bound_values[j],sqlcol->disp_size,!j);
+			print_value(out, (char *) g_ptr_array_index(sql->bound_values, j), sqlcol->disp_size,!j);
 		}
 		fprintf(out,"\n");
 		fflush(out);
