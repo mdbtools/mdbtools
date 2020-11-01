@@ -495,7 +495,7 @@ void mdb_data_dump(MdbTableDef *table)
 		bound_values[i] = (char *) g_malloc(256);
 		ret = mdb_bind_column(table, i+1, bound_values[i], NULL);
 		if (ret == -1) {
-			fprintf(stdout, "error binding column %d\n", i+1);
+			fprintf(stderr, "error binding column %d\n", i+1);
 			g_free(bound_values[i]);
 			bound_values[i] = NULL;
 		}
