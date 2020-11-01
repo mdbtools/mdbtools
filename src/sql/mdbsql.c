@@ -73,6 +73,7 @@ MdbSQL *sql;
 	sql->sarg_stack = NULL;
 	sql->max_rows = -1;
 	sql->limit = -1;
+	sql->limit_percent = 0;
 
 	return sql;
 }
@@ -189,12 +190,26 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 
 #ifdef HAVE_WORDEXP
 	wordexp_t words;
+	int need_free_words = 0;
 
-	if (wordexp(db_name, &words, 0)==0) {
-		if (words.we_wordc>0) 
-			db_namep = words.we_wordv[0];
+	switch (wordexp(db_name, &words, 0))
+	{
+		case 0:
+			if (words.we_wordc>0)
+			{
+				db_namep = words.we_wordv[0];
+			}
+			need_free_words = 1;
+			break;
+		case WRDE_NOSPACE:
+			// If the error was WRDE_NOSPACE, then perhaps part of the result was allocated.
+			need_free_words = 1;
+			break;
+		default:
+			// Some other error
+			need_free_words = 0;
+			break;
 	}
-	
 #endif
 
 	sql->mdb = mdb_open(db_namep, MDB_NOFLAGS);
@@ -208,7 +223,10 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 	}
 
 #ifdef HAVE_WORDEXP
-	wordfree(&words);
+	if ( need_free_words )
+	{
+		wordfree(&words);
+	}
 #endif	
 
 	return sql->mdb;
@@ -502,10 +520,21 @@ int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 	sql->num_columns++;
 	return 0;
 }
-int mdb_sql_add_limit(MdbSQL *sql, char *limit)
+int mdb_sql_add_limit(MdbSQL *sql, char *limit, int percent)
 {
 	sql->limit = atoi(limit);
+	sql->limit_percent = percent;
+
+	if (sql->limit_percent && (sql->limit < 0 || sql->limit > 100)) {
+		return 1;
+	}
+
 	return 0;
+}
+
+int mdb_sql_get_limit(MdbSQL *sql)
+{
+	return sql->limit;
 }
 
 int mdb_sql_add_function1(MdbSQL *sql, char *func_name, char *arg1)
@@ -833,6 +862,13 @@ int found = 0;
 
 	sql->cur_table = table;
 	mdb_index_scan_init(mdb, table);
+
+	/* We know how many rows there are, so convert limit percentage
+	 * to an row count */
+	if (sql->limit != -1 && sql->limit_percent) {
+		sql->limit = (int)((double)table->num_rows / 100 * sql->limit);
+		sql->limit_percent = 0;
+	}
 }
 
 void 

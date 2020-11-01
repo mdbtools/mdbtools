@@ -62,9 +62,11 @@ int main (int argc, char **argv) {
 	
 	//variables for the generation of sql
 	char *sql_tables = (char *) malloc(bind_size);
+	char *sql_predicate = (char *) malloc(bind_size);
 	char *sql_columns = (char *) malloc(bind_size);
 	char *sql_where = (char *) malloc(bind_size);
 	char *sql_sorting = (char *) malloc(bind_size);
+	int flagint;
 	
 	/* see getopt(3) for more information on getopt and this will become clear */
 	while ((opt=getopt(argc, argv, "L1d:"))!=-1) {
@@ -87,7 +89,7 @@ int main (int argc, char **argv) {
 		fprintf (stderr, "Usage: %s [options] <database filename> <query name>\n",argv[0]);
 		fprintf (stderr, "where options are:\n");
 		fprintf (stderr, "  -L\t\t\tList queries in the database (default if no query name is passed)\n");
-		fprintf (stderr, "  -1\t\t\tUse newline as the delimiter (used in conjuction with listing)\n");
+		fprintf (stderr, "  -1\t\t\tUse newline as the delimiter (used in conjunction with listing)\n");
 		fprintf (stderr, "  -d <delimiter>\tSpecify delimiter to use\n");
 		exit (1);
 	}
@@ -148,8 +150,22 @@ int main (int argc, char **argv) {
 
 				while (mdb_fetch_row(table)) {
 					if(strcmp(query_id,objectid) == 0) {
+						flagint = atoi(flag);
 						//we have a row for our query
 						switch(atoi(attribute)) {
+							case 3:		// predicate
+								if (flagint & 0x30) {
+									strcpy(sql_predicate, " TOP ");
+									strcat(sql_predicate, name1);
+									if (flagint & 0x20) {
+										strcat(sql_predicate, " PERCENT");
+									}
+								} else if (flagint & 0x8) {
+									strcpy(sql_predicate, " DISTINCTROW");
+								} else if (flagint & 0x2) {
+									strcpy(sql_predicate, " DISTINCT");
+								}
+								break;
 							case 5:		// table name
 								if(strcmp(sql_tables,"") == 0) {
 									strcpy(sql_tables,name1);
@@ -193,9 +209,9 @@ int main (int argc, char **argv) {
 				
 				/* print out the sql statement */
 				if(strcmp(sql_where,"") == 0) {
-					fprintf(stdout,"SELECT %s FROM %s %s\n",sql_columns,sql_tables,sql_sorting);
+					fprintf(stdout,"SELECT%s %s FROM %s %s\n",sql_predicate,sql_columns,sql_tables,sql_sorting);
 				} else {
-					fprintf(stdout,"SELECT %s FROM %s WHERE %s %s\n",sql_columns,sql_tables,sql_where,sql_sorting);
+					fprintf(stdout,"SELECT%s %s FROM %s WHERE %s %s\n",sql_predicate,sql_columns,sql_tables,sql_where,sql_sorting);
 				}
 						
 				mdb_free_tabledef(table);

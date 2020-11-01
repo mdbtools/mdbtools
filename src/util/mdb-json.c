@@ -109,11 +109,13 @@ main(int argc, char **argv)
 	int  *bound_lens;
 	FILE *outfile = stdout;
 	char *date_fmt = NULL;
+	char *shortdate_fmt = NULL;
 	char *value;
 	size_t length;
 
 	GOptionEntry entries[] = {
-		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"no-unprintable", 'U', 0, G_OPTION_ARG_NONE, &drop_nonascii, "Change unprintable characters to spaces (otherwise escaped as \\u00XX)", NULL},
         {NULL}
     };
@@ -142,6 +144,9 @@ main(int argc, char **argv)
 
 	if (date_fmt)
 		mdb_set_date_fmt(mdb, date_fmt);
+
+	if (shortdate_fmt)
+		mdb_set_shortdate_fmt(mdb, shortdate_fmt);
 
     mdb_set_bind_size(mdb, EXPORT_BIND_SIZE);
 

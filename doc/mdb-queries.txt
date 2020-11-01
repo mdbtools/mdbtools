@@ -1,13 +1,21 @@
 NAME
-  mdb-hexdump - Hexdump utility from MDB Tools
+  mdb-queries - Get listing of tables in an MDB database
 
 SYNOPSIS
-  mdb-hexdump file [pagenumber]
+  mdb-queries [-L] [-1] [-d delim] database query
+  mdb-queries -h|--help
 
 DESCRIPTION
-  mdb-hexdump is a utility program distributed with MDB Tools.
+  mdb-queries is a utility program distributed with MDB Tools. 
 
-  mdb-hexdump makes a hex dump of a binary file (such as an mdb file).
+  It produces a list of queries in the database, and dump the SQL associated with a specific query.
+
+OPTIONS
+  -L        List queries in the database (default if no query name is passed)
+  -1        Use newline as the delimiter (used in conjunction with listing)
+  -d delim  Specify delimiter to use
+
+NOTES 
 
 ENVIRONMENT
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
@@ -23,10 +31,13 @@ ENVIRONMENT
                       * debug_props
                       * debug_all is a shortcut for all debug_* options
 
+HISTORY
+  mdb-queries first appeared in MDB Tools 0.9.
+
 SEE ALSO
-  mdb-array(1) mdb-count(1) mdb-export(1) mdb-header(1)
-  mdb-import(1) mdb-json(1) mdb-parsecsv(1) mdb-prop(1) mdb-queries(1)
+  mdb-array(1) mdb-count(1) mdb-export(1) mdb-header(1) mdb-hexdump(1)
+  mdb-import(1) mdb-json(1) mdb-parsecsv(1) mdb-prop(1)
   mdb-schema(1) mdb-sql(1) mdb-tables(1) mdb-ver(1)
 
 AUTHORS
-  The mdb-hexdump utility was written by Brian Bruns.
+  The mdb-queries utility was written by Leonard Leblanc.

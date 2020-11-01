@@ -1,5 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
 noinst_PROGRAMS	=	unittest
+noinst_HEADERS = connectparams.h mdbodbc.h
 lib_LTLIBRARIES	=	libmdbodbc.la
 AM_CFLAGS	=	-I$(top_srcdir)/include $(GLIB_CFLAGS) $(ODBC_CFLAGS)
 libmdbodbc_la_SOURCES	= odbc.c connectparams.c

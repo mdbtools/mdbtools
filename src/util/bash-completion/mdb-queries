@@ -1,0 +1,25 @@
+#-*- mode: shell-script;-*-
+_mdb_queries()
+{
+	local cur prev words cword
+	_init_completion || return
+
+	if [[ "$prev" == -@(d) ]]; then
+		return 0
+	elif [[ "$cur" == -* ]]; then
+		COMPREPLY=($(compgen -W '$(_parse_help "$1")' -- "$cur"))
+	elif [[ "$prev" == *@(mdb|mdw|accdb) ]] ; then
+		local dbname
+		local querynames
+		dbname=$prev
+		__expand_tilde_by_ref dbname
+		local IFS=$'\n'
+		querynames="$(eval mdb-queries -1 "${dbname}" 2>/dev/null)"
+		compopt -o filenames
+		COMPREPLY=( $( compgen -W "${querynames}" -- "$cur" ) )
+	else
+		_filedir '@(mdb|mdw|accdb)'
+	fi
+	return 0
+} &&
+complete -F _mdb_queries mdb-queries

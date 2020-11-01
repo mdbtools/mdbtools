@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/evanmiller/mdbtools.svg?branch=master)](https://travis-ci.org/evanmiller/mdbtools)
-[![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/mdbtools/branch/master)
+[![Build Status](https://travis-ci.org/mdbtools/mdbtools.svg?branch=master)](https://travis-ci.org/mdbtools/mdbtools)
+[![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/master?svg=true)](https://ci.appveyor.com/project/mdbtools/mdbtools/branch/master)
 
 Welcome to the exciting world of MDB Tools! MDB Tools is a set of programs to
 help you extract data from Microsoft Access files in various settings.
@@ -71,7 +71,7 @@ An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use 
 
 ## gmdb2
 
-The Gnome MDB File Viewer and debugger. Still alpha and may be removed before 0.9.
+The Gnome MDB File Viewer and debugger. Alpha quality, moved to [mdbtools/gmdb2](https://github.com/mdbtools/gmdb2).
 
 # License
 
@@ -122,7 +122,7 @@ brew install mdbtools
 ## From source
 
 ```bash
-$ autoreconf -i -f -Wno-portability
+$ autoreconf -i -f
 ```
 
 If you want to build the html version of the docbook documentation, you need to

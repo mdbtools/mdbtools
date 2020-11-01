@@ -1,9 +1,17 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([mdbtools],[0.8.2],[mdbtools-dev@lists.sourceforge.net])
+AC_INIT([mdbtools],[0.9.0-beta2],[https://github.com/mdbtools/mdbtools/issues],[],[https://github.com/mdbtools/mdbtools])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
 AM_INIT_AUTOMAKE
+
+MDBTOOLS_VERSION_MAJOR=0
+MDBTOOLS_VERSION_MINOR=9
+MDBTOOLS_VERSION_MICRO=0
+
+# Update this logic when the major version changes
+VERSION_INFO=`expr $MDBTOOLS_VERSION_MINOR - 6`:$MDBTOOLS_VERSION_MICRO
+AC_SUBST(VERSION_INFO)
 
 AM_MAINTAINER_MODE([enable])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -173,9 +181,7 @@ fi
 
 if test "x$HAVE_ODBC" = "xtrue"; then
 	if test "x$sql" != "xtrue" ; then
-		echo
-		echo ODBC requires flex and bison for the SQL engine
-		exit 1
+		AC_MSG_ERROR([ODBC requires flex and bison for the SQL engine])
 	fi
 
 	AC_SUBST(ODBC_CFLAGS)
@@ -184,15 +190,12 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 	OPTDIRS="$OPTDIRS odbc"
 fi
 
-dnl Turn on -Wstrict-prototypes here because AC_CHECK_LIB is dumb
-CFLAGS="$CFLAGS -Wstrict-prototypes"
-
 dnl Conditionally build odbc wide version
 AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
 
 dnl Testing presence of pkg-config
 AC_MSG_CHECKING([pkg-config m4 macros])
-if test m4_ifdef([PKG_CHECK_MODULES], [yes], [no]) == yes; then
+if test m4_ifdef([PKG_CHECK_MODULES], [yes], [no]) = yes; then
 	AC_MSG_RESULT([yes]);
 else
 	AC_MSG_RESULT([no]);
@@ -216,25 +219,6 @@ if test "$enable_glib" = "yes"; then
 fi
 AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
-dnl check for gtk/gnome
-PKG_CHECK_MODULES([GNOME], [gtk+-2.0 >= 2.14 libglade-2.0 libgnomeui-2.0], HAVE_GNOME=true, HAVE_GNOME=false)
-
-GNOME_DOC_INIT
-AC_ARG_ENABLE(gmdb2,
-        AS_HELP_STRING([--disable-gmdb2],[do not build gmdb2]),
-        [build_gmdb2=$enableval], [build_gmdb2=yes])
-
-if test "$build_gmdb2" = "yes" ; then
-	if test "x$HAVE_GNOME" = "xtrue"; then
-		AC_SUBST(GNOME_CFLAGS)
-		AC_SUBST(GNOME_LIBS)
-		OPTDIRS="$OPTDIRS gmdb2"
-	fi
-else
-        AC_MSG_NOTICE(gmdb2 disabled)
-	build_gmdb2=no
-fi
-
 AC_SUBST([OPTDIRS])
 AC_CONFIG_FILES([src/Makefile])
 
@@ -254,15 +238,7 @@ fi
 
 AC_SUBST(HTML_DIR)
 
-gtk_doc_min_version=1.0
-AC_MSG_CHECKING([gtk-doc version >= $gtk_doc_min_version])
-if pkg-config --atleast-version=$gtk_doc_min_version gtk-doc; then
-  AC_MSG_RESULT(yes)
-  GTKDOC=true
-else
-  AC_MSG_RESULT(no)
-  GTKDOC=false
-fi
+PKG_CHECK_EXISTS([gtk-doc >= 1.0], GTKDOC=true, GTKDOC=false)
 
 dnl Let people disable the gtk-doc stuff.
 AC_ARG_ENABLE(gtk-doc, AS_HELP_STRING([--enable-gtk-doc], [use gtk-doc to build documentation [default=auto]]), enable_gtk_doc="$enableval", enable_gtk_doc=auto)
@@ -276,8 +252,6 @@ if test x$enable_gtk_doc = xauto ; then
 fi
 
 AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
-AM_CONDITIONAL(HAVE_GNOME_DOC_UTILS, test x$enable_gtk_doc = xyes)
-AM_CONDITIONAL(ENABLE_SK, test x$enable_gtk_doc = xyes)
 
 ##################################################
 # Check for txt2man
@@ -292,6 +266,27 @@ if test "$enable_man" = yes; then
   fi
 fi
 AM_CONDITIONAL(ENABLE_MAN, test "$enable_man" = yes)
+
+##################################################
+# Check for bash-completion.
+##################################################
+
+AC_ARG_WITH([bash-completion-dir],
+  AS_HELP_STRING([--with-bash-completion-dir[=PATH]],
+  [Install the bash auto-completion script in this directory. @<:@default=yes@:>@]),
+  [],
+  [with_bash_completion_dir=yes])
+
+if test "x$with_bash_completion_dir" = "xyes"; then
+  PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
+    [BASH_COMPLETION_DIR="`pkg-config --variable=completionsdir bash-completion`"],
+    [BASH_COMPLETION_DIR="$datadir/bash-completion/completions"])
+else
+  BASH_COMPLETION_DIR="$with_bash_completion_dir"
+fi
+
+AC_SUBST([BASH_COMPLETION_DIR])
+AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "x$with_bash_completion_dir" != "xno"])
 
 ##################################################
 # Check for docbook
@@ -314,10 +309,6 @@ src/sql/Makefile
 src/odbc/Makefile
 src/fuzz/Makefile
 doc/Makefile
-src/gmdb2/Makefile
-src/gmdb2/gladefiles/Makefile
-src/gmdb2/pixmaps/Makefile
-src/gmdb2/help/Makefile
 mdbtools.spec
 include/mdbver.h])
 AC_OUTPUT
@@ -328,25 +319,25 @@ dnl doc/reference/libmdb/Makefile])
 ##################################################
 
 
-bold_red=$(tput bold)$(tput setf 4)
-bold_green=$(tput bold)$(tput setf 2)
-bold=$(tput bold)
-reset=$(tput sgr0)
+bold_red=$(tput bold 2>/dev/null)$(tput setf 4 2>/dev/null)
+bold_green=$(tput bold 2>/dev/null)$(tput setf 2 2>/dev/null)
+bold=$(tput bold 2>/dev/null)
+reset=$(tput sgr0 2>/dev/null)
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([${bold}MDB Tools $VERSION - Configuration summary${reset}])
 AC_MSG_NOTICE([])
 if test x$sql = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   SQL          : ${summary}${reset}])
+AC_MSG_NOTICE([   SQL             : ${summary}${reset}])
 if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   ODBC         : ${summary}${reset}])
+AC_MSG_NOTICE([   ODBC            : ${summary}${reset}])
 if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   GLib         : ${summary}${reset}])
-if test x$build_gmdb2 = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   UI           : ${summary}${reset}])
+AC_MSG_NOTICE([   GLib            : ${summary}${reset}])
 if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   Gtk doc      : ${summary}${reset}])
+AC_MSG_NOTICE([   Gtk doc         : ${summary}${reset}])
 if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   man          : ${summary}${reset}])
+AC_MSG_NOTICE([   man             : ${summary}${reset}])
 if test -n "$DOCBOOK_DSL"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   html docbook : ${summary}${reset}])
+AC_MSG_NOTICE([   html docbook    : ${summary}${reset}])
+if test "x$with_bash_completion_dir" != "xno"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   bash-completion : ${summary}${reset}])
 AC_MSG_NOTICE([])

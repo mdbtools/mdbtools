@@ -20,58 +20,10 @@
 
 #define EXPORT_BIND_SIZE 200000
 
-#define is_quote_type(x) (x==MDB_TEXT || x==MDB_OLE || x==MDB_MEMO || x==MDB_DATETIME || x==MDB_BINARY || x==MDB_REPID)
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 
 static char *escapes(char *s);
 
-//#define DONT_ESCAPE_ESCAPE
-static void
-print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int bin_mode)
-/* quote_text: Don't quote if 0.
- */
-{
-	size_t quote_len = strlen(quote_char); /* multibyte */
-
-	size_t orig_escape_len = escape_char ? strlen(escape_char) : 0;
-
-	/* double the quote char if no escape char passed */
-	if (!escape_char)
-		escape_char = quote_char;
-
-	if (quote_text && is_quote_type(col_type)) {
-		fputs(quote_char, outfile);
-		while (1) {
-			if (is_binary_type(col_type)) {
-				if (bin_mode == MDB_BINEXPORT_STRIP)
-					break;
-				if (!bin_len--)
-					break;
-			} else /* use \0 sentry */
-				if (!*col_val)
-					break;
-
-			int is_binary_hex_col = is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_HEXADECIMAL;
-
-			if (quote_len && !strncmp(col_val, quote_char, quote_len) && !is_binary_hex_col) {
-				fprintf(outfile, "%s%s", escape_char, quote_char);
-				col_val += quote_len;
-#ifndef DONT_ESCAPE_ESCAPE
-			} else if (orig_escape_len && !strncmp(col_val, escape_char, orig_escape_len) && !is_binary_hex_col) {
-				fprintf(outfile, "%s%s", escape_char, escape_char);
-				col_val += orig_escape_len;
-#endif
-			} else if (is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_OCTAL) {
-				fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
-			} else if (is_binary_hex_col) {
-				fprintf(outfile, "%02X", *(unsigned char*)col_val++);
-			} else
-				putc(*col_val++, outfile);
-		}
-		fputs(quote_char, outfile);
-	} else
-		fputs(col_val, outfile);
-}
 int
 main(int argc, char **argv)
 {
@@ -91,6 +43,7 @@ main(int argc, char **argv)
 	int boolean_words = 0;
 	int batch_size = 1000;
 	char *insert_dialect = NULL;
+	char *shortdate_fmt = NULL;
 	char *date_fmt = NULL;
 	char *namespace = NULL;
 	char *str_bin_mode = NULL;
@@ -101,18 +54,19 @@ main(int argc, char **argv)
 
 	GOptionEntry entries[] = {
 		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
-		{"no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
 		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify an alternative column delimiter. Default is comma.", "char"},
 		{"row-delimiter", 'R', 0, G_OPTION_ARG_STRING, &row_delimiter, "Specify a row delimiter", "char"},
+		{"no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
 		{"quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
-		{"backend", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
-		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
+		{"insert", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
 		{"namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
-		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
-		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal"},
-		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
 		{"batch-size", 'S', 0, G_OPTION_ARG_INT, &batch_size, "Size of insert batches on supported platforms.", "int"},
+		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
+		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
+		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex"},
+		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
 		{NULL},
 	};
 	GError *error = NULL;
@@ -186,6 +140,9 @@ main(int argc, char **argv)
 
 	if (date_fmt)
 		mdb_set_date_fmt(mdb, date_fmt);
+
+	if (shortdate_fmt)
+		mdb_set_shortdate_fmt(mdb, shortdate_fmt);
 
 	if (boolean_words)
 		mdb_set_boolean_fmt_words(mdb);
@@ -267,7 +224,7 @@ main(int argc, char **argv)
 						value = bound_values[i];
 						length = bound_lens[i];
 					}
-					print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+					mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
 					if (col->col_type == MDB_OLE)
 						free(value);
 				}
@@ -323,18 +280,18 @@ main(int argc, char **argv)
 					if (!strcmp(mdb->backend_name, "sqlite") && is_binary_type(col->col_type) && bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
 						char *quote_char_binary_sqlite = (char *) g_strdup("'");
 						fputs("X", outfile);
-						print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_sqlite, escape_char, bin_mode);
+						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_sqlite, escape_char, bin_mode);
 						g_free (quote_char_binary_sqlite);
 						/* Correctly handle insertion of binary blobs into PostgreSQL using the notation of decode('1234ABCD...', 'hex') */
 					} else if (!strcmp(mdb->backend_name, "postgres") && is_binary_type(col->col_type) && bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
 						char *quote_char_binary_postgres = (char *) g_strdup("'");
 						fputs("decode(", outfile);
-						print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_postgres, escape_char, bin_mode);
+						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_postgres, escape_char, bin_mode);
 						fputs(", 'hex')", outfile);
 						g_free (quote_char_binary_postgres);
 						/* No special treatment for other backends or when hexadecimal notation hasn't been selected with the -b hex command line option */
 					} else {
-						print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
+						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode);
 					}
 					if (col->col_type == MDB_OLE)
 						free(value);

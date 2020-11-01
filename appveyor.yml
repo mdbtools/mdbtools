@@ -11,6 +11,7 @@ environment:
 
 branches:
   only:
+    - dev
     - master
 
 clone_folder: c:\projects\mdbtools

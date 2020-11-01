@@ -1,21 +1,21 @@
 NAME
-  mdb-parsecsv - Convert CSV table dump into C file.
+  mdb-json - Export data in an MDB database table to JSON.
 
 SYNOPSIS
-  mdb-parsecsv file
+  mdb-json [-D fmt] [-T fmt] [-U] database table
+  mdb-json -h|--help
 
 DESCRIPTION
-  mdb-parsecsv is a utility program distributed with MDB Tools.
+  mdb-json is a utility program distributed with MDB Tools. 
 
-  mdb-parsecsv takes a CSV file representing a database table, and converts
-  it into a C array.
+  It produces a CSV (comma separated value) output for the given table. Such output is suitable for importation into databases or spreadsheets.
 
-NOTES
-  If the first argument does not exist as a file, mdb-parsecsv will look for
-  the same filename with '.txt' appended.
+OPTIONS
+  -D, --date-format fmt     Set the date format (see strftime(3) for details).
+  -T, --time-format fmt     Set the date/time format (see strftime(3) for details).
+  -U, --no-unprintable      Change unprintable characters to spaces (otherwise escaped as \\u00XX)
 
-  The file extension is stripped, and the output written to the base name
-  plus a '.c' extension.
+NOTES 
 
 ENVIRONMENT
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
@@ -33,8 +33,11 @@ ENVIRONMENT
 
 SEE ALSO
   mdb-array(1) mdb-count(1) mdb-export(1) mdb-header(1) mdb-hexdump(1)
-  mdb-import(1) mdb-json(1) mdb-prop(1) mdb-queries(1)
+  mdb-import(1) mdb-parsecsv(1) mdb-prop(1) mdb-queries(1)
   mdb-schema(1) mdb-sql(1) mdb-tables(1) mdb-ver(1)
 
+HISTORY
+  mdb-json first appeared in MDB Tools 0.9.
+
 AUTHORS
-  The mdb-parsecsv utility was written by Brian Bruns.
+  The mdb-json utility was written by Ugo Di Girolamo. It is based on mdb-export(1).

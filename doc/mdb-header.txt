@@ -30,8 +30,9 @@ EXIT STATUS
   mdb-header exits with error code 1 if there was anunsupported type.
 
 SEE ALSO
-  gmdb2(1) mdb-export(1) mdb-hexdump(1) mdb-prop(1) mdb-sql(1) mdb-ver(1)
-  mdb-array(1) mdb-parsecsv(1) mdb-schema(1) mdb-tables(1) mdb-import(1)
+  mdb-array(1) mdb-count(1) mdb-export(1) mdb-hexdump(1)
+  mdb-import(1) mdb-json(1) mdb-parsecsv(1) mdb-prop(1) mdb-queries(1)
+  mdb-schema(1) mdb-sql(1) mdb-tables(1) mdb-ver(1)
 
 AUTHORS
   The mdb-header utility was written by Brian Bruns.

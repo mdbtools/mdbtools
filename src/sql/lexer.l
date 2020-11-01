@@ -72,6 +72,8 @@ null		{ return NUL; }
 ">"		{ return GT; }
 like		{ return LIKE; }
 limit		{ return LIMIT; }
+top		{ return TOP; }
+percent		{ return PERCENT; }
 count		{ return COUNT; }
 strptime	{ return STRPTIME; }
 [ \t\r]	;
