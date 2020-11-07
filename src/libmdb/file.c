@@ -394,7 +394,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	ssize_t len;
 	off_t offset = pg * mdb->fmt->pg_size;
 
-    if (fseek(mdb->f->stream, 0, SEEK_END) == -1) {
+    if (fseeko(mdb->f->stream, 0, SEEK_END) == -1) {
         fprintf(stderr, "Unable to seek to end of file\n");
         return 0;
     }
@@ -405,7 +405,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	if (mdb->stats && mdb->stats->collect) 
 		mdb->stats->pg_reads++;
 
-	if (fseek(mdb->f->stream, offset, SEEK_SET) == -1) {
+	if (fseeko(mdb->f->stream, offset, SEEK_SET) == -1) {
         fprintf(stderr, "Unable to seek to page %lu\n", pg);
         return 0;
     }
