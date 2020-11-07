@@ -36,8 +36,7 @@ AC_CHECK_DECLS([program_invocation_short_name], [], [], [[
 
 dnl Checks for library functions.
 VL_LIB_READLINE
-AC_CHECK_FUNC(strptime,[ AC_DEFINE(HAVE_STRPTIME, 1, [strptime check]) AM_CONDITIONAL(HAVE_STRPTIME, true) ],[ AM_CONDITIONAL(HAVE_STRPTIME, false) ])
-AC_CHECK_FUNC(fmemopen,[ AC_DEFINE(HAVE_FMEMOPEN, 1, [fmemopen check]) ])
+AC_CHECK_FUNCS(strptime fmemopen)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
