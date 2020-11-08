@@ -45,6 +45,9 @@ AC_TYPE_SIZE_T
 AM_ICONV
 AM_GCC_ATTRIBUTE_ALIAS
 
+dnl Enable large files on 32-bit systems
+AC_SYS_LARGEFILE
+
 dnl no optional stuff by default
 OPTDIRS=""
 
