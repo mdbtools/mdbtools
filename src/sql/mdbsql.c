@@ -880,7 +880,7 @@ mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr)
 	MdbSQLColumn *sqlcol;
 
     if (colnum <= 0 || colnum > sql->num_columns)
-        return -1
+        return -1;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
