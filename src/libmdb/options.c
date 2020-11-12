@@ -24,8 +24,8 @@
 
 #define DEBUG 1
 
-static unsigned long opts;
-static int optset;
+static __thread unsigned long opts;
+static __thread int optset;
 
 static void load_options(void);
 
@@ -50,9 +50,10 @@ load_options()
 {
 	char *opt;
 	char *s;
+    char *ctx;
 
     if (!optset && (s=getenv("MDBOPTS"))) {
-		opt = strtok(s, ":");
+		opt = strtok_r(s, ":", &ctx);
 		while (opt) {
         	if (!strcmp(opt, "use_index")) opts |= MDB_USE_INDEX;
         	if (!strcmp(opt, "no_memo")) opts |= MDB_NO_MEMO;
@@ -70,7 +71,7 @@ load_options()
 				opts |= MDB_DEBUG_ROW;
 				opts |= MDB_DEBUG_PROPS;
 			}
-			opt = strtok(NULL,":");
+			opt = strtok_r(NULL,":", &ctx);
 		}
     }
 	optset = 1;
