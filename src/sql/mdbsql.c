@@ -760,8 +760,9 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 		 * Plain integers are UNIX timestamps for backwards compatibility of parser
 		*/
 		if (col->col_type == MDB_DATETIME && node->val_type == MDB_INT) {
-			struct tm *tm = gmtime((time_t*)&node->value.i);
-			mdb_tm_to_date(tm, &node->value.d);
+			struct tm tm;
+			gmtime_r((time_t*)&node->value.i, &tm);
+			mdb_tm_to_date(&tm, &node->value.d);
 			node->val_type = MDB_DOUBLE;
 		}
 	}
