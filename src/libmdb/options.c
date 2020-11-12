@@ -24,8 +24,8 @@
 
 #define DEBUG 1
 
-static unsigned long opts;
-static int optset;
+static __thread unsigned long opts;
+static __thread int optset;
 
 static void load_options(void);
 
