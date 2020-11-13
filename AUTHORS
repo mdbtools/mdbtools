@@ -1,50 +1,83 @@
-Brian Bruns <camber@ais.org>
-	Started MDB Tools
-
-Karl Nyberg <knyberg@grebyn.com>
-	Lots and lots of bug fixes and functionality
-
-Georg Bauer <gb@hugo.westfalen.de>
-	Lots and lots of bug fixes and functionality
-
-Carl Seutter <cgseutter@worldnet.att.net>
-	Backend schema export, other stuff
-
-Trevor Harrison <trevor@harrison.org>
-	password field, etc...	
-
-Brent Johnson <xone47@yahoo.com>
-	large MEMO fields, deleted rows, double datatype
-
-Tim Nelson <vbprogie@hotmail.com>
-	Multipage table defs, column totals > 255
-
-David Mansfield <mdbtools@dm.cobite.com>
-	Numerous patches
-
-Jeff Smith <whydoubt@yahoo.com>
-	Patches too numerous to enumerate.
-
-Steve Langasek <vorlon@debian.org>
-	build fixes, ODBC fixes
-
-Rene Engelhard <rene@debian.org>
-	build fixes
-
-Vincent Fourmond <fourmond@debian.org>
-	float handling fix
-
-Tim Retout <tim@retout.co.uk>
-	mdb-dump arg check fix, ODBC fix, add man pages
-
-Nirgal Vourgère <jmb_deb@nirgal.com>
-	postgres fixes and adds, bug fixes
-
-Kane O'Donnell <kane.odonnell@datamine.com>
-	Added mdb-count utility.
-
-Leonard Leblanc <lleblanc@macroelite.ca>
-	Added mdb-queries utility.
-
-Ugo Di Girolamo <ugo@urbancompass.com>
-	Added mdb-json utility.
+2000-2005,2007,2010,2011,2016 Brian Bruns <camber@ais.org>
+2000 Brent Johnson <xone47@yahoo.com>
+2000 Carl Seutter <cgseutter@worldnet.att.net>
+2000 Georg Bauer <gb@hugo.westfalen.de>
+2000 Karl Nyberg <karl@grebyn.com>
+2000 Michael Wood
+2000 Tim Nelson <vbprogie@hotmail.com>
+2000 Trevor Harrison <trevor@harrison.org>
+2001 Oliver Stieber
+2001 Yves Maingoy
+2002 Ben McKeegan
+2002 Don Badrak
+2002 Mike Finger
+2002 trewitt <trewitt>
+2004-2006 Jeff Smith <whydoubt@yahoo.com>
+2004,2005 David Mansfield <mdbtools@dm.cobite.com>
+2004,2012 Filip Van Raemdonck <mechanix@debian.org>
+2004 Alexandre Horst
+2004 Luciano Miguel Wolf
+2004 Michael Meeks <michael@ximian.com>
+2004 teodor <teodor@sigaev.ru>
+2004 Wind Li
+2005 Alex Hunsaker <badalex@gmail.com>
+2005 Artur Frysiak
+2005 calvinrsmith <calvinrsmith>
+2005 Edward Catmur
+2005 Horst Knorr
+2005 Leonard Leblanc <lleblanc@macroelite.ca>
+2005 Martin Ellis
+2005 Mike Prudence
+2005 Pedro Gutierrez
+2005 Yasir Assam
+2008 Brett Hutley
+2009,2010 Tim Retout <<tim@retout.co.uk>
+2009,2011 Mark Williams <markrwilliams@gmail.com>
+2009 Pablo Llopis <pablo.llopis+ml@gmail.com>
+2009 Rene Engelhard <rene@debian.org>
+2009 Steve Langasek <vorlon@debian.org>
+2009 Vincent Fourmond <fourmond@debian.org>
+2010,2011 Bernhard Reiter <ockham@raz.or.at>
+2011-2017,2020 Jean-Michel Nirgal Vourgère <contact_mdbtols@nirgal.com>
+2011,2013,2018 James Ahlborn <jtahlborn@yahoo.com>
+2011 Dmitry Nikitin <luckas_fb@mail.ru>
+2011 Jakob Egger <jabakobob@gmail.com>
+2011 xsloader <xsloader@xs.guild.gs>
+2012-2015 Jimmy Taker <jimmytaker@gmx.de>
+2012 Adam Vandenberg <flangy@gmail.com>
+2012 branche <branche@users.sourceforge.net>
+2012 Hans de Goede <hdegoede@redhat.com>
+2012 Will Daniels <mail@willdaniels.co.uk>
+2013,2014 tyzhaoqi <tyzhaoqi@gmail.com>
+2013,2015 William Rogers <rogers.wb@gmail.com>
+2013 Boris Barbulovski <bbarbulovski@gmail.com>
+2013 Chris Kerr <cjk34@cam.ac.uk>
+2014 David Hicks <david@hicks.id.au>
+2014 lovelytwo
+2014 Maurus Cuelenaere <mcuelenaere@gmail.com>
+2014 Mihai Draghicioiu <mihai.draghicioiu@gmail.com>
+2014 Paul Fitzpatrick <paulfitz@alum.mit.edu>
+2014 Shane Mc Cormack <shanemcc@gmail.com>
+2014 Ugo Di Girolamo <ugo@urbancompass.com>
+2015,2016 Sam Shaw <samuel.shaw@sdsgroup.com.au>
+2015,2017 leecher1337 <leecher@dose.0wnz.at>
+2015 Dan Villiom Podlaski Christiansen <danchr@gmail.com>
+2015 Dmitrij D. Czarkoff <czarkoff@gmail.com>
+2015 Sam Stuck <sam.stuck@binaryfetish.com>
+2015 Stefano Costa <steko@iosa.it>
+2015 Vladimir Rutsky <vladimir.rutsky@transas.com>
+2016 Ewen McNeill <ewen@naos.co.nz>
+2016 Joshua Short <joshua.short@gmail.com>
+2017 chunhao <chuchuhao831@gmail.com>
+2017 Joshua Pinter <joshuapinter@gmail.com>
+2017 Kane O'Donnell <kane.odonnell@datamine.com>
+2018-2020 Evan Miller <emmiller@gmail.com>
+2018,2019 Cyber Emissary <admin@cyberemissary.com>
+2018 Bruce Johnson <brjohnsn@gmail.com>
+2018 Mark Ord <ord@scholars.home>
+2018 Matt Newman <mdjnewman@gmail.com>
+2019 Peter Kaukov <peter.kaukov@gmail.com>
+2019 VJ <vj@itsupportme.com>
+2020 James Woodcock <james_woodcock@yahoo.co.uk>
+2020 Nyall Dawson <nyall.dawson@gmail.com>
+2020 Rainer Hurling <rhurlin@gwdg.de>
