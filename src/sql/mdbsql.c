@@ -112,7 +112,10 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 		return NULL;
 	}
 
-	mdb_sql_bind_all (sql);
+	if (mdb_sql_bind_all(sql) == -1) {
+		mdb_sql_error (sql, _("Failed to bind columns for '%s' command"), querystr);
+		return NULL;
+	}
 
 	return sql;
 }
@@ -872,16 +875,20 @@ int found = 0;
 	}
 }
 
-void 
+int
 mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr)
 {
 	MdbSQLColumn *sqlcol;
 
+	if (colnum <= 0 || colnum > sql->num_columns)
+		return -1;
+
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
-	mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr, len_ptr);
+	return mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr, len_ptr);
 }
-void 
+
+int
 mdb_sql_bind_all(MdbSQL *sql)
 {
 	unsigned int i;
@@ -890,8 +897,12 @@ mdb_sql_bind_all(MdbSQL *sql)
 	for (i=0;i<sql->num_columns;i++) {
 		bound_value = g_malloc0(sql->mdb->bind_size);
 		g_ptr_array_add(sql->bound_values, bound_value);
-		mdb_sql_bind_column(sql, i+1, bound_value, NULL);
+		if (mdb_sql_bind_column(sql, i+1, bound_value, NULL) == -1) {
+			mdb_sql_unbind_all(sql);
+			return -1;
+		}
 	}
+	return sql->num_columns;
 }
 
 void mdb_sql_unbind_all(MdbSQL *sql)

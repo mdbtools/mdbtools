@@ -1037,11 +1037,8 @@ bind_columns(struct _hstmt *stmt)
 	if (stmt->rows_affected==0) {
 		cur = stmt->bind_head;
 		while (cur) {
-			if (cur->column_number>0 &&
-			    cur->column_number <= stmt->sql->num_columns) {
-				mdb_sql_bind_column(stmt->sql, cur->column_number,
-				                    cur->varaddr, cur->column_lenbind);
-			} else {
+			if (mdb_sql_bind_column(stmt->sql, cur->column_number,
+						cur->varaddr, cur->column_lenbind) == -1) {
 				/* log error ? */
 			}
 			cur = cur->next;
