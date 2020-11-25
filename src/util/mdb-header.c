@@ -47,6 +47,11 @@ FILE *cfile;
    exit (1);
  }
 
+ fputs("mdb-header is deprecated and will disappear in a future version of mdbtools.\n", stderr);
+ fputs("Please drop us a line if you have any use of it.\n", stderr);
+ fputs("See https://github.com/mdbtools/mdbtools/issues/197\n", stderr);
+ fputs("\n", stderr);
+
  /* open the database */
 
  mdb = mdb_open (argv[1], MDB_NOFLAGS);
