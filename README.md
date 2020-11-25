@@ -4,32 +4,6 @@
 Welcome to the exciting world of MDB Tools! MDB Tools is a set of programs to
 help you extract data from Microsoft Access files in various settings.
 
-After several years of neglect, MDB Tools is under new management as of 2020.
-Update your bookmarks and tell your favorite search engine that this is the new
-address:
-
-    https://github.com/mdbtools/mdbtools
-
-A brief history: the last *official* release (version 0.7.1) occurred in 2016.
-[cyberemissary](https://github.com/cyberemissary) (whose work this fork is
-based on) made a release in December 2018 and called it 0.8.2. In September
-2020, @brianb moved his repository to the current address, and gave
-administrative access to @evanmiller, who acts as the present maintainer.
-
-An official 0.9 release is planned for late 2020. Areas of improvement since
-the 0.7/0.8 days:
-
-- [x] Security / stability / fuzz testing
-- [x] Thread safety
-- [x] In-memory database API
-- [x] GLib is now optional
-- [x] Improved ODBC compliance
-- [x] Continuous integration with Travis and AppVeyor
-- [x] New `mdb-queries` tool
-
-The rest of this README explains what you can find in the project, how to
-install it, and how to contribute.
-
 # Components
 
 The major pieces of MDB Tools are:

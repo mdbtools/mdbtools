@@ -1,3 +1,54 @@
+Version 0.9.0
+=============
+
+MDB Tools is under new management! Update your bookmarks and tell your favorite
+search engine that this is our new home on the WWW:
+
+    https://github.com/mdbtools/mdbtools
+
+MDB Tools 0.9.0 builds off the fork of cyberemissary on GitHub, collects many
+years of unapplied patches, and includes a number of internal improvements.
+Besides a host of security fixes, GLib is now completely optional, files can
+be opened completely in-memory, and many global variables have been eliminated
+to facilitate thread safety.
+
+The core library, libmdb, is believed to be thread-safe in the sense that
+several handles can be opened simultaneously and passed between threads.
+However, individual handles are NOT thread-safe, so don't try to do work
+on a single handle from multiple threads without implementing your own
+locking mechanism.
+
+The auxiliary libraries, libmdbsql and ODBC, still have some non-reentrant
+function calls. Thread safety is not promised, though the situation is
+significantly improved from the 0.7 days.
+
+The ABI has some slight changes (mostly having to do with struct layouts) so
+you'll need to bump your SO numbers and such. The main changes to the API are
+the introduction of a new function for in-memory parsing:
+
+  MdbHandle *mdb_open_buffer(void *buffer, size_t len, MdbFileFlags flags);
+
+And the modification of the "mdb_set_date_fmt" function to include a handle
+parameter, so that date formats can be set in a non-global fashion:
+
+  void mdb_set_date_fmt(MdbHandle *mdb, const char *);
+
+The above function is the most common reason that old projects will fail to
+compile on 0.9, and the fix is straightforward.
+
+This release introduces a new CLI tool (mdb-queries) and deprecates mdb-array,
+mdb-header, and mdb-parsecsv. Several man pages have been added or otherwise
+brought up to date.
+
+The GNOME-based GUI tool that formerly shipped with MDB Tools has been moved to
+a separate project, here:
+
+    https://github.com/mdbtools/gmdb2
+
+It seems to compile but should probably be classified as abandonware. The
+project uses a deprecated GUI toolkit, and as such gmdb2 is no longer included
+in Linux distros that used to carry it.
+
 Version 0.7.1
 =============
 autogen.sh is no more. Use "autoreconf -if" to bootstrap the configuration.
