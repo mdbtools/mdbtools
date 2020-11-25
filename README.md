@@ -110,7 +110,7 @@ Latest version is available at https://github.com/mdbtools/mdbtools
 ## Debian
 
 ```
-apt-get install mdbtools
+apt install mdbtools
 ```
 
 ## Homebrew
