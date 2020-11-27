@@ -29,6 +29,17 @@ ENVIRONMENT
 EXIT STATUS
   mdb-header exits with error code 1 if there was anunsupported type.
 
+FUTURE DIRECTIONS
+  mdb-header is deprecated. Soon, it will no longer be distributed.
+
+  It is the feeling of developers that it is not used, as C code generation
+  is now usually replaced by more generic approaches, including libmdb calls
+  and odbc.
+
+  However, should you find this tool useful, drop us a line at
+  https://github.com/mdbtools/mdbtools/issues/197
+  and we'll consider maintaining it.
+
 SEE ALSO
   mdb-array(1) mdb-count(1) mdb-export(1) mdb-hexdump(1)
   mdb-import(1) mdb-json(1) mdb-parsecsv(1) mdb-prop(1) mdb-queries(1)
