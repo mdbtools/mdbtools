@@ -36,6 +36,10 @@ parameter, so that date formats can be set in a non-global fashion:
 The above function is the most common reason that old projects will fail to
 compile on 0.9, and the fix is straightforward.
 
+The previously-deprecated functions mdb_init() and mdb_exit() have been
+removed. These functions did nothing; any calls to them should be excised with
+prejudice.
+
 This release introduces two new CLI tools (mdb-count and mdb-queries) and
 deprecates mdb-array, mdb-header, and mdb-parsecsv. Several man pages have been
 added or otherwise brought up to date.
