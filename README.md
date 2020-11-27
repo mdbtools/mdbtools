@@ -2,7 +2,8 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/master?svg=true)](https://ci.appveyor.com/project/mdbtools/mdbtools/branch/master)
 
 Welcome to the exciting world of MDB Tools! MDB Tools is a set of programs to
-help you extract data from Microsoft Access files in various settings.
+help you extract data from Microsoft Access files in various settings. See the
+[NEWS](./NEWS) file for information about the latest release.
 
 # Components
 
@@ -28,8 +29,6 @@ Provides command line utilities, including:
 | `mdb-json` | Export table to JSON format. |
 | `mdb-tables` | A simple dump of table names to be used with shell scripts. |
 | `mdb-count` | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
-| `mdb-header` | Generates a C header to be used in exporting mdb data to a C prog. |
-| `mdb-parsecsv` | Generates a C program given a CSV file made with mdb-export. |
 | `mdb-sql` | A simple SQL engine (also used by ODBC and gmdb). |
 | `mdb-queries` | List and print queries stored in the database. |
 | `prcat` | Prints the catalog table from an mdb file. |
@@ -38,6 +37,11 @@ Provides command line utilities, including:
 | `prdata` | Dump of the data given a table name. |
 | `prole` | Dump of ole columns given a table name and sargs. |
 | `mdb-hexdump` | (in src/extras) Simple hex dump utility that I've been using to look at mdb files. |
+| `mdb-array` | Export data in an MDB database table to a C array.\* |
+| `mdb-header` | Generates a C header to be used in exporting mdb data to a C prog.\* |
+| `mdb-parsecsv` | Generates a C program given a CSV file made with mdb-export.\* |
+
+\* Deprecated
 
 ## odbc
 
