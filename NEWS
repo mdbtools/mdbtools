@@ -36,9 +36,9 @@ parameter, so that date formats can be set in a non-global fashion:
 The above function is the most common reason that old projects will fail to
 compile on 0.9, and the fix is straightforward.
 
-This release introduces a new CLI tool (mdb-queries) and deprecates mdb-array,
-mdb-header, and mdb-parsecsv. Several man pages have been added or otherwise
-brought up to date.
+This release introduces two new CLI tools (mdb-count and mdb-queries) and
+deprecates mdb-array, mdb-header, and mdb-parsecsv. Several man pages have been
+added or otherwise brought up to date.
 
 The GNOME-based GUI tool that formerly shipped with MDB Tools has been moved to
 a separate project, here:
