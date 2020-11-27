@@ -32,11 +32,3 @@ SQL Engine:
 ODBC:
 
 . many unimplemented funtions
-
-GMDB:
-
-. Finish debug dissectors
-. Printing not implemented
-. Fix bitmask size bug in debugger
-. sql window section in manual
-. debugger section in manual
