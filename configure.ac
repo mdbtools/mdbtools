@@ -3,7 +3,7 @@ AC_INIT([mdbtools],[0.9.0-beta7],[https://github.com/mdbtools/mdbtools/issues],[
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 MDBTOOLS_VERSION_MAJOR=0
 MDBTOOLS_VERSION_MINOR=9
