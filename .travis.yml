@@ -101,6 +101,7 @@ jobs:
         - bison
         - gawk
         - gtk-doc
+        - pkg-config
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -115,6 +116,7 @@ jobs:
         - bison
         - gawk
         - gtk-doc
+        - pkg-config
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --enable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -128,6 +130,7 @@ jobs:
         - bison
         - gawk
         - gtk-doc
+        - pkg-config
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -142,6 +145,7 @@ jobs:
         - bison
         - gawk
         - gtk-doc
+        - pkg-config
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --enable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -155,6 +159,7 @@ jobs:
         - bison
         - gawk
         - gtk-doc
+        - pkg-config
     env:
       - CONFIGURE_FLAGS="--with-iodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -168,6 +173,7 @@ jobs:
         - bison
         - gawk
         - gtk-doc
+        - pkg-config
     env:
       - CONFIGURE_FLAGS="--with-unixodbc=/usr/local/opt --disable-glib"
       - YACC="/usr/local/opt/bison/bin/bison"
@@ -194,3 +200,6 @@ script:
   - ./src/util/mdb-sql -i test/sql/nwind.sql test/data/nwind.mdb
   - ./src/util/mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwner
   - env MDBPATH=test/data ./src/odbc/unittest
+  - sudo make install
+  - pkg-config libmdb --exists
+  - pkg-config libmdbsql --exists
