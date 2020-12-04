@@ -311,7 +311,6 @@ src/sql/Makefile
 src/odbc/Makefile
 src/fuzz/Makefile
 doc/Makefile
-mdbtools.spec
 include/mdbver.h])
 AC_OUTPUT
 dnl doc/reference/libmdb/Makefile])

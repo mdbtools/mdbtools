@@ -27,7 +27,6 @@ include/mdbver.h
 libmdb.pc
 libmdbsql.pc
 libtool
-mdbtools.spec
 types.h
 src/extras/mdb-hexdump
 src/odbc/unittest
