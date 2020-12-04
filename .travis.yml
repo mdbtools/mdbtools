@@ -200,6 +200,5 @@ script:
   - ./src/util/mdb-sql -i test/sql/nwind.sql test/data/nwind.mdb
   - ./src/util/mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwner
   - env MDBPATH=test/data ./src/odbc/unittest
-  - sudo make install
-  - pkg-config libmdb --exists
-  - pkg-config libmdbsql --exists
+  - env PKG_CONFIG_PATH=. pkg-config libmdb --exists
+  - env PKG_CONFIG_PATH=. pkg-config libmdbsql --exists
