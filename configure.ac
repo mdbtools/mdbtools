@@ -226,37 +226,6 @@ AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 AC_SUBST([OPTDIRS])
 AC_CONFIG_FILES([src/Makefile])
 
-
-##################################################
-# Check for gtk-doc.
-##################################################
-
-AC_ARG_WITH(html-dir,
-  AS_HELP_STRING([--with-html-dir=PATH], [path to installed docs]))
-
-if test "x$with_html_dir" = "x" ; then
-  HTML_DIR='${datadir}/gtk-doc/html'
-else
-  HTML_DIR=$with_html_dir
-fi
-
-AC_SUBST(HTML_DIR)
-
-PKG_CHECK_EXISTS([gtk-doc >= 1.0], GTKDOC=true, GTKDOC=false)
-
-dnl Let people disable the gtk-doc stuff.
-AC_ARG_ENABLE(gtk-doc, AS_HELP_STRING([--enable-gtk-doc], [use gtk-doc to build documentation [default=auto]]), enable_gtk_doc="$enableval", enable_gtk_doc=auto)
-
-if test x$enable_gtk_doc = xauto ; then
-  if test x$GTKDOC = xtrue ; then
-    enable_gtk_doc=yes
-  else
-    enable_gtk_doc=no 
-  fi
-fi
-
-AM_CONDITIONAL(ENABLE_GTK_DOC, test x$enable_gtk_doc = xyes)
-
 ##################################################
 # Check for txt2man
 ##################################################
@@ -292,14 +261,6 @@ fi
 AC_SUBST([BASH_COMPLETION_DIR])
 AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "x$with_bash_completion_dir" != "xno"])
 
-##################################################
-# Check for docbook
-##################################################
-AM_CONDITIONAL(ENABLE_DOCBOOK, test -n "$DOCBOOK_DSL")
-
-localedir=${datadir}/locale
-AC_SUBST(localedir)
-
 AC_CONFIG_FILES([
 libmdb.pc
 libmdbsql.pc
@@ -315,7 +276,6 @@ src/fuzz/Makefile
 doc/Makefile
 include/mdbver.h])
 AC_OUTPUT
-dnl doc/reference/libmdb/Makefile])
 
 ##################################################
 # Print summary
@@ -335,12 +295,8 @@ if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${b
 AC_MSG_NOTICE([   ODBC            : ${summary}${reset}])
 if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   GLib            : ${summary}${reset}])
-if test x$enable_gtk_doc = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   Gtk doc         : ${summary}${reset}])
 if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   man             : ${summary}${reset}])
-if test -n "$DOCBOOK_DSL"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
-AC_MSG_NOTICE([   html docbook    : ${summary}${reset}])
+AC_MSG_NOTICE([   man pages       : ${summary}${reset}])
 if test "x$with_bash_completion_dir" != "xno"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   bash-completion : ${summary}${reset}])
 AC_MSG_NOTICE([])
