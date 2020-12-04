@@ -180,7 +180,7 @@ jobs:
 
 before_script:
   - git clone https://github.com/mdbtools/mdbtestdata.git test
-  - autoreconf -i -f -Wno-portability
+  - autoreconf -i -f
 
 script:
   - ./configure --disable-silent-rules $CONFIGURE_FLAGS
