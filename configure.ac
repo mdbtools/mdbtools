@@ -213,7 +213,7 @@ AC_ARG_ENABLE(glib,
 
 if test "$enable_glib" = "yes"; then
     GLIB_PACKAGE=glib-2.0
-    PKG_CHECK_MODULES([GLIB], [GLIB_PACKAGE], HAVE_GLIB=true, HAVE_GLIB=false)
+    PKG_CHECK_MODULES([GLIB], [$GLIB_PACKAGE], HAVE_GLIB=true, HAVE_GLIB=false)
     if test "x$HAVE_GLIB" = "xtrue"; then
         GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
         AC_SUBST(GLIB_PACKAGE)
