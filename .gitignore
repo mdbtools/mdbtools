@@ -4,7 +4,6 @@
 *.out
 .deps/
 .libs/
-.idea/
 aclocal.m4
 autom4te.cache/
 build-aux/*
@@ -13,12 +12,9 @@ m4/
 !m4/ccalias.m4
 !m4/iconv.m4
 !m4/readline.m4
-!m4/gnome-doc-utils.m4
 config.log
 config.status
 configure
-dumptypes.c
-dumptypes.h
 Makefile.in
 Makefile
 doc/*.1
@@ -27,7 +23,6 @@ include/mdbver.h
 libmdb.pc
 libmdbsql.pc
 libtool
-types.h
 src/extras/mdb-hexdump
 src/odbc/unittest
 src/sql/lexer.c
