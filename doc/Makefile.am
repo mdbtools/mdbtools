@@ -2,7 +2,6 @@ SHELL = /bin/sh
 TXT2MAN = ./txt2man
 PRODUCT = MDBTools
 
-# To make the userguide, export DOCBOOK_DSL TO point to docbook.dsl.
 dist_man_MANS =
 if ENABLE_MAN
   dist_man_MANS += mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
