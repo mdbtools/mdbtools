@@ -3,7 +3,7 @@ AC_INIT([mdbtools],[0.9.0-beta8],[https://github.com/mdbtools/mdbtools/issues],[
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign dist-zip])
 
 MDBTOOLS_VERSION_MAJOR=0
 MDBTOOLS_VERSION_MINOR=9
@@ -14,7 +14,7 @@ VERSION_INFO=`expr $MDBTOOLS_VERSION_MINOR - 6`:$MDBTOOLS_VERSION_MICRO
 AC_SUBST(VERSION_INFO)
 
 AM_MAINTAINER_MODE([enable])
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+AM_SILENT_RULES([yes])
 
 AC_PROG_CC(gcc)
 AC_PROG_CXX
