@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/mdbtools/mdbtools.svg?branch=dev)](https://travis-ci.org/mdbtools/mdbtools)
-[![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/dev?svg=true)](https://ci.appveyor.com/project/mdbtools/mdbtools/branch/dev)
+[![Build status](https://ci.appveyor.com/api/projects/status/22wwy5d0rrmk6e3c/branch/dev?svg=true)](https://ci.appveyor.com/project/evanmiller/mdbtools/branch/dev)
 
 Welcome to the exciting world of MDB Tools! MDB Tools is a set of programs to
 help you extract data from Microsoft Access files in various settings. See the
