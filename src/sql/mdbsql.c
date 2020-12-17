@@ -763,9 +763,14 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 		 * Plain integers are UNIX timestamps for backwards compatibility of parser
 		*/
 		if (col->col_type == MDB_DATETIME && node->val_type == MDB_INT) {
+			struct tm *tmp;
+#ifdef HAVE_GMTIME_R
 			struct tm tm;
-			gmtime_r((time_t*)&node->value.i, &tm);
-			mdb_tm_to_date(&tm, &node->value.d);
+			tmp = gmtime_r((time_t*)&node->value.i, &tm);
+#else		// regular gmtime on Windows uses thread-local storage
+			tmp = gmtime((time_t*)&node->value.i);
+#endif
+			mdb_tm_to_date(tmp, &node->value.d);
 			node->val_type = MDB_DOUBLE;
 		}
 	}
