@@ -301,10 +301,10 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	int row_start;
 	size_t row_size;
 	int delflag, lookupflag;
-	MdbField fields[256];
+	MdbField *fields;
 	int num_fields;
 
-	if (table->num_rows == 0) 
+	if (table->num_rows == 0 || table->num_cols == 0)
 		return 0;
 
 	if (mdb_find_row(mdb, row, &row_start, &row_size)) {
@@ -331,10 +331,13 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 	}
 
+	fields = malloc(sizeof(MdbField) * table->num_cols);
+
 	num_fields = mdb_crack_row(table, row_start, row_size, fields);
-	if (num_fields < 0)
+	if (num_fields < 0 || !mdb_test_sargs(table, fields, num_fields)) {
+		free(fields);
 		return 0;
-	if (!mdb_test_sargs(table, fields, num_fields)) return 0;
+	}
 	
 #if MDB_DEBUG
 	fprintf(stdout,"sarg test passed row %d \n", row);
@@ -351,6 +354,8 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		_mdb_attempt_bind(mdb, col, fields[i].is_null,
 			fields[i].start, fields[i].siz);
 	}
+
+	free(fields);
 
 	return 1;
 }
