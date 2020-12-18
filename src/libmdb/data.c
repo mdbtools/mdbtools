@@ -1001,8 +1001,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			if (size<0) {
 				text = g_strdup("");
 			} else {
-				text = g_malloc(size);
+				text = g_malloc(size+1);
 				memcpy(text, (char*)buf+start, size);
+				text[size] = '\0';
 			}
 		break;
 		case MDB_TEXT:
