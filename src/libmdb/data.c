@@ -863,44 +863,47 @@ mdb_tm_to_date(struct tm *t, double *td)
 void
 mdb_date_to_tm(double td, struct tm *t)
 {
-	long int day, time;
-	int yr, q;
+	long day, time;
+	long yr, q;
 	const int *cal;
 
-	day = (long int)(td);
-	time = (long int)(fabs(td - day) * 86400.0 + 0.5);
+	if (td < 0.0 || td > 1e6) // About 2700 AD
+		return;
+
+	yr = 1;
+	day = (long)(td);
+	time = (long)(fabs(td - day) * 86400.0 + 0.5);
 	t->tm_hour = time / 3600;
 	t->tm_min = (time / 60) % 60;
 	t->tm_sec = time % 60;
-	t->tm_year = 1 - 1900;
 
 	day += 693593; /* Days from 1/1/1 to 12/31/1899 */
 	t->tm_wday = (day+1) % 7;
 
 	q = day / 146097;  /* 146097 days in 400 years */
-	t->tm_year += 400 * q;
+	yr += 400 * q;
 	day -= q * 146097;
 
 	q = day / 36524;  /* 36524 days in 100 years */
 	if (q > 3) q = 3;
-	t->tm_year += 100 * q;
+	yr += 100 * q;
 	day -= q * 36524;
 
 	q = day / 1461;  /* 1461 days in 4 years */
-	t->tm_year += 4 * q;
+	yr += 4 * q;
 	day -= q * 1461;
 
 	q = day / 365;  /* 365 days in 1 year */
 	if (q > 3) q = 3;
-	t->tm_year += q;
+	yr += q;
 	day -= q * 365;
 
-	yr = t->tm_year + 1900;
 	cal = ((yr)%4==0 && ((yr)%100!=0 || (yr)%400==0)) ?
 		leap_cal : noleap_cal;
 	for (t->tm_mon=0; t->tm_mon<12; t->tm_mon++) {
 		if (day < cal[t->tm_mon+1]) break;
 	}
+	t->tm_year = yr - 1900;
 	t->tm_mday = day - cal[t->tm_mon] + 1;
 	t->tm_yday = day;
 	t->tm_isdst = -1;
@@ -909,7 +912,7 @@ mdb_date_to_tm(double td, struct tm *t)
 static char *
 mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 {
-	struct tm t;
+	struct tm t = { 0 };
 	char *text = (char *) g_malloc(mdb->bind_size);
 	double td = mdb_get_double(buf, start);
 
