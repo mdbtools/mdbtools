@@ -70,9 +70,9 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	in_ptr = (tmp) ? tmp : src;
 	out_ptr = dest;
 	len_in = (tmp) ? tlen : slen;
-	len_out = dlen - 1;
 
 #if HAVE_ICONV
+	len_out = dlen - 1;
 	//printf("1 len_in %d len_out %d\n",len_in, len_out);
 	while (1) {
 		iconv(mdb->iconv_in, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
