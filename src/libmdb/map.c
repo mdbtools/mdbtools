@@ -24,6 +24,10 @@ mdb_map_find_next0(MdbHandle *mdb, unsigned char *map, unsigned int map_sz, guin
 	guint32 pgnum, i, usage_bitlen;
 	unsigned char *usage_bitmap;
 
+	if (map_sz < 5) {
+		return 0;
+	}
+
 	pgnum = mdb_get_int32(map, 1);
 	usage_bitmap = map + 5;
 	usage_bitlen = (map_sz - 5) * 8;
