@@ -23,57 +23,34 @@
 #define MIN(a,b) (a>b ? b : a)
 #endif
 
-/*
- * This function is used in reading text data from an MDB table.
- * 'dest' will receive a converted, null-terminated string.
- * dlen is the available size of the destination buffer.
- * Returns the length of the converted string, not including the terminator.
- */
-int
-mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen)
-{
-	char *tmp = NULL;
+static size_t decompress_unicode(const char *src, size_t slen, char *dst, size_t dlen) {
+	unsigned int compress=1;
 	size_t tlen = 0;
-	size_t len_in, len_out;
-	const char *in_ptr = NULL;
-	char *out_ptr = NULL;
-
-	if ((!src) || (!dest) || (!dlen))
-		return 0;
-
-	/* Uncompress 'Unicode Compressed' string into tmp */
-	if (!IS_JET3(mdb) && (slen>=2)
-	 && ((src[0]&0xff)==0xff) && ((src[1]&0xff)==0xfe)) {
-		unsigned int compress=1;
-		src += 2;
-		slen -= 2;
-		tmp = (char *)g_malloc(slen*2);
-		while (slen) {
-			if (*src == 0) {
-				compress = (compress) ? 0 : 1;
-				src++;
-				slen--;
-			} else if (compress) {
-				tmp[tlen++] = *src++;
-				tmp[tlen++] = 0;
-				slen--;
-			} else if (slen >= 2){
-				tmp[tlen++] = *src++;
-				tmp[tlen++] = *src++;
-				slen-=2;
-			} else { // Odd # of bytes
-				break;
-			}
+	while (slen > 0 && tlen < dlen) {
+		if (*src == 0) {
+			compress = (compress) ? 0 : 1;
+			src++;
+			slen--;
+		} else if (compress) {
+			dst[tlen++] = *src++;
+			dst[tlen++] = 0;
+			slen--;
+		} else if (slen >= 2){
+			dst[tlen++] = *src++;
+			dst[tlen++] = *src++;
+			slen-=2;
+		} else { // Odd # of bytes
+			break;
 		}
 	}
-
-	in_ptr = (tmp) ? tmp : src;
-	out_ptr = dest;
-	len_in = (tmp) ? tlen : slen;
-	len_out = dlen - 1;
+	return tlen;
+}
 
 #if HAVE_ICONV
-	//printf("1 len_in %d len_out %d\n",len_in, len_out);
+static size_t decompressed2ascii_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+	char *out_ptr = dest;
+	size_t len_out = dlen - 1;
+
 	while (1) {
 		iconv(mdb->iconv_in, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
 		/* 
@@ -90,27 +67,62 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 		*out_ptr++ = '?';
 		len_out--;
 	}
-	//printf("2 len_in %d len_out %d\n",len_in, len_out);
 	dlen -= len_out + 1;
 	dest[dlen] = '\0';
+	return dlen;
+}
 #else
+static size_t decompressed2ascii_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	if (IS_JET3(mdb)) {
 		int count = 0;
-		snprintf(out_ptr, dlen, "%.*s%n", (int)len_in, src, &count);
-		dlen = count;
-	} else {
-		/* rough UCS-2LE to ISO-8859-1 conversion */
-		/* wcstombs would be better; see libxls implementation for 
-		 * a multi-platform solution */
-		unsigned int i;
-		for (i=0; 2*i+1<len_in && i<dlen-1; i++)
-			dest[i] = (in_ptr[2*i+1] == 0) ? in_ptr[2*i] : '?';
-		dest[(dlen=i)] = '\0';
+		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
+		return count;
 	}
+	/* rough UCS-2LE to ISO-8859-1 conversion */
+	/* wcstombs would be better; see libxls implementation for 
+	 * a multi-platform solution */
+	unsigned int i;
+	for (i=0; 2*i+1<len_in && i<dlen-1; i++)
+		dest[i] = (in_ptr[2*i+1] == 0) ? in_ptr[2*i] : '?';
+	dest[i] = '\0';
+	return i;
+}
+#endif
+
+/*
+ * This function is used in reading text data from an MDB table.
+ * 'dest' will receive a converted, null-terminated string.
+ * dlen is the available size of the destination buffer.
+ * Returns the length of the converted string, not including the terminator.
+ */
+int
+mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen)
+{
+	char *tmp = NULL;
+	size_t len_in;
+	const char *in_ptr = NULL;
+
+	if ((!src) || (!dest) || (!dlen))
+		return 0;
+
+	/* Uncompress 'Unicode Compressed' string into tmp */
+	if (!IS_JET3(mdb) && (slen>=2)
+			&& ((src[0]&0xff)==0xff) && ((src[1]&0xff)==0xfe)) {
+		tmp = (char *)g_malloc(slen*2);
+		len_in = decompress_unicode(src + 2, slen - 2, tmp, slen * 2);
+		in_ptr = tmp;
+	} else {
+		len_in = slen;
+		in_ptr = src;
+	}
+
+#if HAVE_ICONV
+	dlen = decompressed2ascii_with_iconv(mdb, in_ptr, len_in, dest, dlen);
+#else
+	dlen = decompressed2ascii_without_iconv(mdb, in_ptr, len_in, dest, dlen);
 #endif
 
 	if (tmp) g_free(tmp);
-	//printf("dest %s\n",dest);
 	return dlen;
 }
 
