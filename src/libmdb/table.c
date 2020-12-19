@@ -306,7 +306,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			name_sz = read_pg_if_16(mdb, &cur_pos);
 		tmp_buf = (char *) g_malloc(name_sz);
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
-		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, MDB_MAX_OBJ_NAME);
+		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, sizeof(pcol->name));
 		g_free(tmp_buf);
 	}
 

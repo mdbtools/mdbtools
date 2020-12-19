@@ -40,7 +40,7 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 			mdb_buffer_dump(kkd, pos - 2, record_len + 2);
 		}
 		name = g_malloc(3*record_len + 1); /* worst case scenario is 3 bytes out per byte in */
-		mdb_unicode2ascii(mdb, &kkd[pos], record_len, name, 3*record_len);
+		mdb_unicode2ascii(mdb, &kkd[pos], record_len, name, 3*record_len + 1);
 
 		pos += record_len;
 		g_ptr_array_add(names, name);
@@ -107,7 +107,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 	props = mdb_alloc_props();
 	if (name_len) {
 		props->name = g_malloc(3*name_len + 1);
-		mdb_unicode2ascii(mdb, kkd+pos, name_len, props->name, 3*name_len);
+		mdb_unicode2ascii(mdb, kkd+pos, name_len, props->name, 3*name_len + 1);
 		mdb_debug(MDB_DEBUG_PROPS,"prop block named: %s", props->name);
 	}
 	pos += name_len;

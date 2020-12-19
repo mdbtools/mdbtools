@@ -25,6 +25,9 @@
 
 /*
  * This function is used in reading text data from an MDB table.
+ * 'dest' will receive a converted, null-terminated string.
+ * dlen is the available size of the destination buffer.
+ * Returns the length of the converted string, not including the terminator.
  */
 int
 mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size_t dlen)
@@ -58,6 +61,8 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 				tmp[tlen++] = *src++;
 				tmp[tlen++] = *src++;
 				slen-=2;
+			} else { // Odd # of bytes
+				break;
 			}
 		}
 	}
@@ -65,7 +70,7 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	in_ptr = (tmp) ? tmp : src;
 	out_ptr = dest;
 	len_in = (tmp) ? tlen : slen;
-	len_out = dlen;
+	len_out = dlen - 1;
 
 #if HAVE_ICONV
 	//printf("1 len_in %d len_out %d\n",len_in, len_out);
@@ -86,22 +91,25 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 		len_out--;
 	}
 	//printf("2 len_in %d len_out %d\n",len_in, len_out);
-	dlen -= len_out;
+	dlen -= len_out + 1;
+	dest[dlen] = '\0';
 #else
 	if (IS_JET3(mdb)) {
-		dlen = MIN(len_in, len_out);
-		strncpy(out_ptr, in_ptr, dlen);
+		int count = 0;
+		snprintf(out_ptr, dlen, "%.*s%n", (int)len_in, src, &count);
+		dlen = count;
 	} else {
 		/* rough UCS-2LE to ISO-8859-1 conversion */
+		/* wcstombs would be better; see libxls implementation for 
+		 * a multi-platform solution */
 		unsigned int i;
-		for (i=0; i<len_in; i+=2)
-			dest[i/2] = (in_ptr[i+1] == 0) ? in_ptr[i] : '?';
-		dlen = len_in/2;
+		for (i=0; 2*i+1<len_in && i<dlen-1; i++)
+			dest[i] = (in_ptr[2*i+1] == 0) ? in_ptr[2*i] : '?';
+		dest[(dlen=i)] = '\0';
 	}
 #endif
 
 	if (tmp) g_free(tmp);
-	dest[dlen]='\0';
 	//printf("dest %s\n",dest);
 	return dlen;
 }

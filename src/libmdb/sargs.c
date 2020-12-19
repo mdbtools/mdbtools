@@ -237,7 +237,7 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 			ret = mdb_test_double(node->op, node->value.d, mdb_get_double(field->value, 0));
 			break;
 		case MDB_TEXT:
-			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, 256);
+			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, sizeof(tmpbuf));
 			ret = mdb_test_string(node, tmpbuf);
 			break;
 		case MDB_MEMO:
