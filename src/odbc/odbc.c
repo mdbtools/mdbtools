@@ -1587,7 +1587,7 @@ SQLRETURN SQL_API SQLGetData(
 		// returns text if old odbc
 		case MDB_DATETIME:
 		{
-			struct tm tmp_t;
+			struct tm tmp_t = { 0 };
 			mdb_date_to_tm(mdb_get_double(mdb->pg_buf, col->cur_value_start), &tmp_t);
 
 			if (mdb_col_is_shortdate(col)) {
