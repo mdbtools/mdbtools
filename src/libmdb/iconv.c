@@ -91,7 +91,8 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 		len_out--;
 	}
 	//printf("2 len_in %d len_out %d\n",len_in, len_out);
-	dest[dlen-len_out] = '\0';
+	dlen -= len_out + 1;
+	dest[dlen] = '\0';
 #else
 	if (IS_JET3(mdb)) {
 		int count = 0;
