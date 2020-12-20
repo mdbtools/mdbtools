@@ -168,9 +168,6 @@ static char *mdb_find_file(const char *file_name)
  * Return value: The handle on success, NULL on failure
  */
 static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
-	int key[] = {0x86, 0xfb, 0xec, 0x37, 0x5d, 0x44, 0x9c, 0xfa, 0xc6, 0x5e, 0x28, 0xe6, 0x13, 0xb6};
-	int j, pos;
-
 	MdbHandle *mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
     mdb_set_date_fmt(mdb, "%x %X");
@@ -216,26 +213,21 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 		mdb_close(mdb);
 		return NULL; 
 	}
+
+    RC4_KEY rc4_key;
+    unsigned int tmp_key = 0x6b39dac7;
+    RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
+    RC4(&rc4_key, mdb->f->jet_version == MDB_VER_JET3 ? 126 : 128, mdb->pg_buf + 0x18);
+
+	mdb->f->code_page = mdb_get_int16(mdb->pg_buf, 0x3c);
 	mdb->f->db_key = mdb_get_int32(mdb->pg_buf, 0x3e);
-	/* I don't know if this value is valid for some versions?
-	 * it doesn't seem to be valid for the databases I have
-	 *
-	 * f->db_key ^= 0xe15e01b9;
-	 */
-	mdb->f->db_key ^= 0x4ebc8afb;
-	/* fprintf(stderr, "Encrypted file, RC4 key seed= %d\n", mdb->f->db_key); */
+    if (mdb->f->jet_version == MDB_VER_JET3) {
+        /* JET4 needs additional masking with the DB creation date, currently unsupported */
+        /* Bug - JET3 supports 20 byte passwords, this is currently just 14 bytes */
+        memcpy(mdb->f->db_passwd, mdb->pg_buf + 0x42, sizeof(mdb->f->db_passwd));
+    }
     /* write is not supported for encrypted files yet */
     mdb->f->writable = mdb->f->writable && !mdb->f->db_key;
-
-	/* get the db password located at 0x42 bytes into the file */
-	for (pos=0;pos<14;pos++) {
-		j = mdb_get_int32(mdb->pg_buf, 0x42+pos);
-		j ^= key[pos];
-		if ( j != 0)
-			mdb->f->db_passwd[pos] = j;
-		else
-			mdb->f->db_passwd[pos] = '\0';
-	}
 
 	mdb_iconv_init(mdb);
 

@@ -253,13 +253,30 @@ void mdb_iconv_init(MdbHandle *mdb)
 		mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
 		mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
 	} else {
-		/* According to Microsoft Knowledge Base pages 289525 and */
-		/* 202427, code page info is not contained in the database */
-		const char *jet3_iconv_code;
-
 		/* check environment variable */
-		if (!(jet3_iconv_code=getenv("MDB_JET3_CHARSET"))) {
-			jet3_iconv_code="CP1252";
+		const char *jet3_iconv_code = getenv("MDB_JET3_CHARSET");
+
+		if (!jet3_iconv_code) {
+			/* Use code page embedded in the database */
+			/* Note that individual columns can override this value,
+			 * but per-column code pages are not supported by libmdb */
+			switch (mdb->f->code_page) {
+				case 874: jet3_iconv_code="WINDOWS-874"; break;
+				case 932: jet3_iconv_code="SHIFT-JIS"; break;
+				case 936: jet3_iconv_code="WINDOWS-936"; break;
+				case 950: jet3_iconv_code="BIG-5"; break;
+				case 951: jet3_iconv_code="BIG5-HKSCS"; break;
+				case 1250: jet3_iconv_code="WINDOWS-1250"; break;
+				case 1251: jet3_iconv_code="WINDOWS-1251"; break;
+				case 1252: jet3_iconv_code="WINDOWS-1252"; break;
+				case 1253: jet3_iconv_code="WINDOWS-1253"; break;
+				case 1254: jet3_iconv_code="WINDOWS-1254"; break;
+				case 1255: jet3_iconv_code="WINDOWS-1255"; break;
+				case 1256: jet3_iconv_code="WINDOWS-1256"; break;
+				case 1257: jet3_iconv_code="WINDOWS-1257"; break;
+				case 1258: jet3_iconv_code="WINDOWS-1258"; break;
+				default: jet3_iconv_code="CP1252"; break;
+			}
 		}
 
 		mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
