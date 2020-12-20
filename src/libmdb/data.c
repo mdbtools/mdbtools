@@ -16,10 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "mdbtools.h"
+
 #define _XOPEN_SOURCE
 #include <time.h>
 #include <math.h>
-#include "mdbtools.h"
 
 #define OFFSET_MASK 0x1fff
 #define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
