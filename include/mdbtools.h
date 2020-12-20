@@ -39,6 +39,11 @@
 
 #ifdef HAVE_ICONV
 #include <iconv.h>
+#else
+#ifdef HAVE_XLOCALE_H
+#include <xlocale.h>
+#endif
+#include <locale.h>
 #endif
 
 #ifdef _WIN32
@@ -291,6 +296,10 @@ typedef struct {
 #ifdef HAVE_ICONV
 	iconv_t	iconv_in;
 	iconv_t	iconv_out;
+#elif defined(_WIN32)
+    _locale_t locale;
+#else
+    locale_t locale;
 #endif
 } MdbHandle; 
 

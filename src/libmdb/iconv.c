@@ -78,14 +78,32 @@ static size_t decompressed2ascii_without_iconv(MdbHandle *mdb, const char *in_pt
 		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
 		return count;
 	}
-	/* rough UCS-2LE to ISO-8859-1 conversion */
-	/* wcstombs would be better; see libxls implementation for 
-	 * a multi-platform solution */
-	unsigned int i;
-	for (i=0; 2*i+1<len_in && i<dlen-1; i++)
-		dest[i] = (in_ptr[2*i+1] == 0) ? in_ptr[2*i] : '?';
-	dest[i] = '\0';
-	return i;
+    size_t i;
+    size_t count = 0;
+    size_t len_out = dlen - 1;
+    wchar_t *w = malloc((len_in/2+1)*sizeof(wchar_t));
+
+    for(i=0; i<len_in/2; i++)
+    {
+        w[i] = (unsigned char)in_ptr[2*i] + ((unsigned char)in_ptr[2*i+1] << 8);
+    }
+    w[len_in/2] = '\0';
+
+#if defined(_WIN32)
+    count = _wcstombs_l(dest, w, len_out, mdb->locale);
+#elif defined(HAVE_WCSTOMBS_L)
+    count = wcstombs_l(dest, w, len_out, mdb->locale);
+#else
+    locale_t oldlocale = uselocale(mdb->locale);
+    count = wcstombs(dest, w, len_out);
+    uselocale(oldlocale);
+#endif
+    free(w);
+    if (count == (size_t)-1)
+        return 0;
+
+    dest[count] = '\0';
+	return count;
 }
 #endif
 
@@ -247,6 +265,10 @@ void mdb_iconv_init(MdbHandle *mdb)
 		mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
 		mdb->iconv_in = iconv_open(iconv_code, jet3_iconv_code);
 	}
+#elif defined(_WIN32)
+    mdb->locale = _create_locale(LC_CTYPE, ".65001");
+#else
+    mdb->locale = newlocale(LC_CTYPE_MASK, "C.UTF-8", NULL);
 #endif
 }
 void mdb_iconv_close(MdbHandle *mdb)
@@ -254,6 +276,10 @@ void mdb_iconv_close(MdbHandle *mdb)
 #ifdef HAVE_ICONV
     if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
     if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
+#elif defined(_WIN32)
+    if (mdb->locale) _free_locale(mdb->locale);
+#else
+    if (mdb->locale) freelocale(mdb->locale);
 #endif
 }
 
