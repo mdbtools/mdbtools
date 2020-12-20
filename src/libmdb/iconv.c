@@ -89,7 +89,7 @@ static size_t decompressed2ascii_without_iconv(MdbHandle *mdb, const char *in_pt
     }
     w[len_in/2] = '\0';
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     count = _wcstombs_l(dest, w, len_out, mdb->locale);
 #elif defined(HAVE_WCSTOMBS_L)
     count = wcstombs_l(dest, w, len_out, mdb->locale);
@@ -265,7 +265,7 @@ void mdb_iconv_init(MdbHandle *mdb)
 		mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);
 		mdb->iconv_in = iconv_open(iconv_code, jet3_iconv_code);
 	}
-#elif defined(_WIN32)
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     mdb->locale = _create_locale(LC_CTYPE, ".65001");
 #else
     mdb->locale = newlocale(LC_CTYPE_MASK, "C.UTF-8", NULL);
@@ -276,7 +276,7 @@ void mdb_iconv_close(MdbHandle *mdb)
 #ifdef HAVE_ICONV
     if (mdb->iconv_out != (iconv_t)-1) iconv_close(mdb->iconv_out);
     if (mdb->iconv_in != (iconv_t)-1) iconv_close(mdb->iconv_in);
-#elif defined(_WIN32)
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     if (mdb->locale) _free_locale(mdb->locale);
 #else
     if (mdb->locale) freelocale(mdb->locale);

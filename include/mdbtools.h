@@ -296,7 +296,7 @@ typedef struct {
 #ifdef HAVE_ICONV
 	iconv_t	iconv_in;
 	iconv_t	iconv_out;
-#elif defined(_WIN32)
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     _locale_t locale;
 #else
     locale_t locale;
