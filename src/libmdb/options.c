@@ -52,7 +52,10 @@ load_options()
 	char *s;
     char *ctx;
 
-    if (!optset && (s=getenv("MDBOPTS"))) {
+	if (optset)
+		return;
+
+	if ((s=getenv("MDBOPTS"))) {
 		opt = strtok_r(s, ":", &ctx);
 		while (opt) {
         	if (!strcmp(opt, "use_index")) opts |= MDB_USE_INDEX;
@@ -74,6 +77,9 @@ load_options()
 			opt = strtok_r(NULL,":", &ctx);
 		}
     }
+#ifdef HAVE_LIBMSWSTR
+	opts |= MDB_USE_INDEX;
+#endif
 	optset = 1;
 }
 int
