@@ -1,0 +1,85 @@
+name: build
+on: [ push, pull_request ]
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10 ]
+        glib: [ enable-glib, disable-glib ]
+    steps:
+      - name: Install packages
+        run: sudo apt install gettext
+      - uses: actions/checkout@v2
+      - name: Fetch test data
+        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+      - name: Autoconf
+        run: autoreconf -i -f
+      - name: Configure
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr
+        env:
+          CC: ${{ matrix.compiler }}
+      - name: Make
+        run: make
+      - name: CLI tests
+        run: ./test_script.sh
+      - name: ODBC tests
+        run: env MDBPATH=test/data ./src/odbc/unittest
+      - name: pkg-config libmdb test
+        run: env PKG_CONFIG_PATH=. pkg-config libmdb --exists
+      - name: pkg-config libmdbsql test
+        run: env PKG_CONFIG_PATH=. pkg-config libmdbsql --exists
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        compiler: [ clang, gcc ]
+        glib: [ enable-glib, disable-glib ]
+    steps:
+      - name: Install packages
+        run: brew install bison gawk automake
+      - uses: actions/checkout@v2
+      - name: Fetch test data
+        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+      - name: Autoconf
+        run: autoreconf -i -f
+      - name: Configure
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr/local/opt
+        env:
+          CC: ${{ matrix.compiler }}
+          YACC: /usr/local/opt/bison/bin/bison
+      - name: Make
+        run: make
+      - name: CLI tests
+        run: ./test_script.sh
+      - name: ODBC tests
+        run: env MDBPATH=test/data ./src/odbc/unittest
+      - name: pkg-config libmdb test
+        run: env PKG_CONFIG_PATH=. pkg-config libmdb --exists
+      - name: pkg-config libmdbsql test
+        run: env PKG_CONFIG_PATH=. pkg-config libmdbsql --exists
+  macos-iodbc:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        compiler: [ clang, gcc ]
+        glib: [ enable-glib, disable-glib ]
+    steps:
+      - name: Remove packages
+        run: brew unlink unixodbc
+      - name: Install packages
+        run: brew install libiodbc bison gawk automake
+      - uses: actions/checkout@v2
+      - name: Fetch test data
+        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+      - name: Autoconf
+        run: autoreconf -i -f
+      - name: Configure
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt
+        env:
+          CC: ${{ matrix.compiler }}
+          YACC: /usr/local/opt/bison/bin/bison
+      - name: Make
+        run: make
+      - name: ODBC tests
+        run: env MDBPATH=test/data ./src/odbc/unittest
