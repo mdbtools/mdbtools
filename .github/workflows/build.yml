@@ -21,6 +21,8 @@ jobs:
           CC: ${{ matrix.compiler }}
       - name: Make
         run: make
+      - name: CLI tests
+        run: ./test_script.sh
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
       - name: pkg-config libmdb test
@@ -48,6 +50,8 @@ jobs:
           YACC: /usr/local/opt/bison/bin/bison
       - name: Make
         run: make
+      - name: CLI tests
+        run: ./test_script.sh
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
       - name: pkg-config libmdb test
