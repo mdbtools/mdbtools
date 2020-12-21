@@ -47,7 +47,7 @@ static size_t decompress_unicode(const char *src, size_t slen, char *dst, size_t
 }
 
 #if HAVE_ICONV
-static size_t decompressed2ascii_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	char *out_ptr = dest;
 	size_t len_out = dlen - 1;
 
@@ -72,8 +72,27 @@ static size_t decompressed2ascii_with_iconv(MdbHandle *mdb, const char *in_ptr, 
 	return dlen;
 }
 #else
-static size_t decompressed2ascii_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+static size_t latin1_to_utf8_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+	char *out = dest;
+	size_t i;
+	for(i=0; i<len_in && out < dest + dlen - 1 - ((unsigned char)in_ptr[i] >> 7); i++) {
+		unsigned char c = in_ptr[i];
+		if(c & 0x80) {
+			*out++ = 0xC0 | (c >> 6);
+			*out++ = 0x80 | (c & 0x3F);
+		} else {
+			*out++ = c;
+		}
+	}
+	*out = '\0';
+	return out - dest;
+}
+
+static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	if (IS_JET3(mdb)) {
+		if (mdb->f->code_page == 1252) {
+			return latin1_to_utf8_without_iconv(in_ptr, len_in, dest, dlen);
+		}
 		int count = 0;
 		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
 		return count;
@@ -135,9 +154,9 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	}
 
 #if HAVE_ICONV
-	dlen = decompressed2ascii_with_iconv(mdb, in_ptr, len_in, dest, dlen);
+	dlen = decompressed_to_utf8_with_iconv(mdb, in_ptr, len_in, dest, dlen);
 #else
-	dlen = decompressed2ascii_without_iconv(mdb, in_ptr, len_in, dest, dlen);
+	dlen = decompressed_to_utf8_without_iconv(mdb, in_ptr, len_in, dest, dlen);
 #endif
 
 	if (tmp) g_free(tmp);
