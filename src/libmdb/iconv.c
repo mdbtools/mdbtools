@@ -47,7 +47,7 @@ static size_t decompress_unicode(const char *src, size_t slen, char *dst, size_t
 }
 
 #if HAVE_ICONV
-static size_t decompressed2ascii_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	char *out_ptr = dest;
 	size_t len_out = dlen - 1;
 
@@ -72,8 +72,27 @@ static size_t decompressed2ascii_with_iconv(MdbHandle *mdb, const char *in_ptr, 
 	return dlen;
 }
 #else
-static size_t decompressed2ascii_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+static size_t latin1_to_utf8_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+	char *out = dest;
+	size_t i;
+	for(i=0; i<len_in && out < dest + dlen - 1 - ((unsigned char)in_ptr[i] >> 7); i++) {
+		unsigned char c = in_ptr[i];
+		if(c & 0x80) {
+			*out++ = 0xC0 | (c >> 6);
+			*out++ = 0x80 | (c & 0x3F);
+		} else {
+			*out++ = c;
+		}
+	}
+	*out = '\0';
+	return out - dest;
+}
+
+static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	if (IS_JET3(mdb)) {
+		if (mdb->f->code_page == 1252) {
+			return latin1_to_utf8_without_iconv(in_ptr, len_in, dest, dlen);
+		}
 		int count = 0;
 		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
 		return count;
@@ -135,9 +154,9 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	}
 
 #if HAVE_ICONV
-	dlen = decompressed2ascii_with_iconv(mdb, in_ptr, len_in, dest, dlen);
+	dlen = decompressed_to_utf8_with_iconv(mdb, in_ptr, len_in, dest, dlen);
 #else
-	dlen = decompressed2ascii_without_iconv(mdb, in_ptr, len_in, dest, dlen);
+	dlen = decompressed_to_utf8_without_iconv(mdb, in_ptr, len_in, dest, dlen);
 #endif
 
 	if (tmp) g_free(tmp);
@@ -253,13 +272,30 @@ void mdb_iconv_init(MdbHandle *mdb)
 		mdb->iconv_out = iconv_open("UCS-2LE", iconv_code);
 		mdb->iconv_in = iconv_open(iconv_code, "UCS-2LE");
 	} else {
-		/* According to Microsoft Knowledge Base pages 289525 and */
-		/* 202427, code page info is not contained in the database */
-		const char *jet3_iconv_code;
-
 		/* check environment variable */
-		if (!(jet3_iconv_code=getenv("MDB_JET3_CHARSET"))) {
-			jet3_iconv_code="CP1252";
+		const char *jet3_iconv_code = getenv("MDB_JET3_CHARSET");
+
+		if (!jet3_iconv_code) {
+			/* Use code page embedded in the database */
+			/* Note that individual columns can override this value,
+			 * but per-column code pages are not supported by libmdb */
+			switch (mdb->f->code_page) {
+				case 874: jet3_iconv_code="WINDOWS-874"; break;
+				case 932: jet3_iconv_code="SHIFT-JIS"; break;
+				case 936: jet3_iconv_code="WINDOWS-936"; break;
+				case 950: jet3_iconv_code="BIG-5"; break;
+				case 951: jet3_iconv_code="BIG5-HKSCS"; break;
+				case 1250: jet3_iconv_code="WINDOWS-1250"; break;
+				case 1251: jet3_iconv_code="WINDOWS-1251"; break;
+				case 1252: jet3_iconv_code="WINDOWS-1252"; break;
+				case 1253: jet3_iconv_code="WINDOWS-1253"; break;
+				case 1254: jet3_iconv_code="WINDOWS-1254"; break;
+				case 1255: jet3_iconv_code="WINDOWS-1255"; break;
+				case 1256: jet3_iconv_code="WINDOWS-1256"; break;
+				case 1257: jet3_iconv_code="WINDOWS-1257"; break;
+				case 1258: jet3_iconv_code="WINDOWS-1258"; break;
+				default: jet3_iconv_code="CP1252"; break;
+			}
 		}
 
 		mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);

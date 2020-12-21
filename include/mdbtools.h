@@ -246,6 +246,7 @@ typedef struct {
 	unsigned char *free_map;
 	/* reference count */
 	int refs;
+	guint16 code_page;
 } MdbFile; 
 
 /* offset to row count on data pages...version dependant */
