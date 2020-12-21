@@ -389,7 +389,7 @@ mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash)
 			out_ptr[i*2] = text[i];
 			out_ptr[i*2+1] = 0;
 		}
-        if (!(k=DBLCMapStringW(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), 0),
+        if (!(k=DBLCMapStringW(MAKELCID(mdb->f->lang_id, 0),
                 LCMAP_LINGUISTIC_CASING | LCMAP_SORTKEY | NORM_IGNORECASE | NORM_IGNOREKANATYPE | NORM_IGNOREWIDTH,
                 (WCHAR*)out_ptr, len, (LPBYTE)hash, len*2)))
 		{

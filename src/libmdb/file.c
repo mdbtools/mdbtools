@@ -231,6 +231,11 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
     RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
     RC4(&rc4_key, mdb->f->jet_version == MDB_VER_JET3 ? 126 : 128, mdb->pg_buf + 0x18);
 
+	if (mdb->f->jet_version == MDB_VER_JET3) {
+		mdb->f->lang_id = mdb_get_int16(mdb->pg_buf, 0x3a);
+	} else {
+		mdb->f->lang_id = mdb_get_int16(mdb->pg_buf, 0x6e);
+	}
 	mdb->f->code_page = mdb_get_int16(mdb->pg_buf, 0x3c);
 	mdb->f->db_key = mdb_get_int32(mdb->pg_buf, 0x3e);
     if (mdb->f->jet_version == MDB_VER_JET3) {
