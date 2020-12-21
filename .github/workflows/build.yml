@@ -17,7 +17,7 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }}-glib --with-${{ odbc }}=/usr
+        run: ./configure --disable-silent-rules --${{ matrix.glib }}-glib --with-${{ matrix.odbc }}=/usr
         env:
           CC: ${{ matrix.compiler }}
       - name: Make
@@ -44,7 +44,7 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }}-glib --with-${{ odbc }}=/usr/local/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }}-glib --with-${{ matrix.odbc }}=/usr/local/opt
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison
