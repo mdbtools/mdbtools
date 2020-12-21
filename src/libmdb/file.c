@@ -20,33 +20,45 @@
 #include <stddef.h>
 #include "mdbtools.h"
 
-/*
-typedef struct {
-	int		pg_size;
-	guint16		row_count_offset; 
-	guint16		tab_num_rows_offset;
-	guint16		tab_num_cols_offset;
-	guint16		tab_num_idxs_offset;
-	guint16		tab_num_ridxs_offset;
-	guint16		tab_usage_map_offset;
-	guint16		tab_first_dpg_offset;
-	guint16		tab_cols_start_offset;
-	guint16		tab_ridx_entry_size;
-	guint16		col_flags_offset;
-	guint16		col_size_offset;
-	guint16		col_num_offset;
-	guint16		tab_col_entry_size;
-	guint16         tab_free_map_offset;
-	guint16         tab_col_offset_var;
-	guint16         tab_col_offset_fixed;
-	guint16         tab_row_col_num_offset;
-} MdbFormatConstants; 
-*/
 MdbFormatConstants MdbJet4Constants = {
-	4096, 0x0c, 16, 45, 47, 51, 55, 56, 63, 12, 15, 23, 5, 25, 59, 7, 21, 9
+	.pg_size = 4096,
+    .row_count_offset = 0x0c,
+    .tab_num_rows_offset = 16,
+    .tab_num_cols_offset = 45,
+    .tab_num_idxs_offset = 47,
+    .tab_num_ridxs_offset = 51,
+    .tab_usage_map_offset = 55,
+    .tab_first_dpg_offset = 56,
+    .tab_cols_start_offset = 63,
+    .tab_ridx_entry_size = 12,
+    .col_flags_offset = 15,
+    .col_size_offset = 23,
+    .col_num_offset = 5,
+    .tab_col_entry_size = 25,
+    .tab_free_map_offset = 59,
+    .tab_col_offset_var = 7,
+    .tab_col_offset_fixed = 21,
+    .tab_row_col_num_offset = 9
 };
 MdbFormatConstants MdbJet3Constants = {
-	2048, 0x08, 12, 25, 27, 31, 35, 36, 43, 8, 13, 16, 1, 18, 39, 3, 14, 5
+	.pg_size = 2048,
+    .row_count_offset = 0x08,
+    .tab_num_rows_offset = 12,
+    .tab_num_cols_offset = 25,
+    .tab_num_idxs_offset = 27,
+    .tab_num_ridxs_offset = 31,
+    .tab_usage_map_offset = 35,
+    .tab_first_dpg_offset = 36,
+    .tab_cols_start_offset = 43,
+    .tab_ridx_entry_size = 8,
+    .col_flags_offset = 13,
+    .col_size_offset = 16,
+    .col_num_offset = 1,
+    .tab_col_entry_size = 18,
+    .tab_free_map_offset = 39,
+    .tab_col_offset_var = 3,
+    .tab_col_offset_fixed = 14,
+    .tab_row_col_num_offset = 5
 };
 
 typedef struct _RC4_KEY
