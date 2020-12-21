@@ -6,18 +6,17 @@ jobs:
     strategy:
       matrix:
         compiler: [ clang, gcc, gcc-10 ]
-        glib: [ enable, disable ]
-        odbc: [ iodbc, unixodbc ]
+        glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: sudo apt install libglib2.0-dev libiodbc2-dev unixodbc-dev gawk gcc-10
+        run: sudo apt install libglib2.0-dev unixodbc-dev gawk gcc-10
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }}-glib --with-${{ matrix.odbc }}=/usr
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr
         env:
           CC: ${{ matrix.compiler }}
       - name: Make
@@ -33,18 +32,17 @@ jobs:
     strategy:
       matrix:
         compiler: [ clang, gcc ]
-        glib: [ enable, disable ]
-        odbc: [ iodbc, unixodbc ]
+        glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: brew install libiodbc unixodbc glib bison gawk pkg-config
+        run: brew install libiodbc glib bison gawk pkg-config
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }}-glib --with-${{ matrix.odbc }}=/usr/local/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison
