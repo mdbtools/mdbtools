@@ -17,7 +17,6 @@
  */
 
 #include <time.h>
-#include <math.h>
 #include <inttypes.h>
 #include "mdbtools.h"
 
