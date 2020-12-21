@@ -20,7 +20,6 @@
 
 #define _XOPEN_SOURCE
 #include <time.h>
-#include <math.h>
 
 #define OFFSET_MASK 0x1fff
 #define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
@@ -878,7 +877,7 @@ mdb_date_to_tm(double td, struct tm *t)
 
 	yr = 1;
 	day = (long)(td);
-	time = (long)(fabs(td - day) * 86400.0 + 0.5);
+	time = (long)((td - day) * 86400.0 + 0.5);
 	t->tm_hour = time / 3600;
 	t->tm_min = (time / 60) % 60;
 	t->tm_sec = time % 60;
