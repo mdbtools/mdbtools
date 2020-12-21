@@ -61,7 +61,7 @@ main(int argc, char **argv)
 		{"no-quote", 'Q', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &quote_text, "Don't wrap text-like fields in quotes.", NULL},
 		{"quote", 'q', 0, G_OPTION_ARG_STRING, &quote_char, "Use <char> to wrap text-like fields. Default is double quote.", "char"},
 		{"escape", 'X', 0, G_OPTION_ARG_STRING, &escape_char, "Use <char> to escape quoted characters within a field. Default is doubling.", "format"},
-		{"escape-c", 'e', 0, G_OPTION_ARG_NONE, &escape_cr_lf, "Use C-style escaping for return (\\r), tab (\\t), line-feed (\\n), and back-slash (\\\\) characters. Default is to leave as they are.", NULL},
+		{"escape-invisible", 'e', 0, G_OPTION_ARG_NONE, &escape_cr_lf, "Use C-style escaping for return (\\r), tab (\\t), line-feed (\\n), and back-slash (\\\\) characters. Default is to leave as they are.", NULL},
 		{"insert", 'I', 0, G_OPTION_ARG_STRING, &insert_dialect, "INSERT statements (instead of CSV)", "backend"},
 		{"namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},
 		{"batch-size", 'S', 0, G_OPTION_ARG_INT, &batch_size, "Size of insert batches on supported platforms.", "int"},
