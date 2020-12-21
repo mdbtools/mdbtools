@@ -9,7 +9,7 @@ jobs:
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: sudo apt install gcc-10 gettext
+        run: sudo apt install gettext
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test

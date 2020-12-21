@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash -x
 
 # Simple test script; run after performing
 # git clone https://github.com/mdbtools/mdbtestdata.git test
