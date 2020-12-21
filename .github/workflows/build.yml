@@ -9,14 +9,14 @@ jobs:
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: sudo apt install libglib2.0-dev unixodbc-dev gawk gcc-10
+        run: sudo apt install libiodbc2-dev gcc-10 gettext
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr
         env:
           CC: ${{ matrix.compiler }}
       - name: Make
@@ -35,14 +35,14 @@ jobs:
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: brew install libiodbc glib bison gawk pkg-config
+        run: brew install bison gawk
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr/local/opt
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison
