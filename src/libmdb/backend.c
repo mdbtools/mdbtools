@@ -656,8 +656,6 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		backend = MDB_BACKEND_ORACLE;
 	} else if (!strcmp(mdb->backend_name, "postgres")) {
 		backend = MDB_BACKEND_POSTGRES;
-	} else if (!strcmp(mdb->backend_name, "sqlite")) {
-		backend = MDB_BACKEND_SQLITE;
 	} else if (!mdb->relationships_table) {
         return (char *) g_strconcat(
                 "-- relationships are not implemented for ",
@@ -748,7 +746,6 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 
                         break;
 		  case MDB_BACKEND_POSTGRES:
-		  case MDB_BACKEND_SQLITE:
 			text = g_strconcat(
 				"ALTER TABLE ", quoted_table_1,
 				" ADD CONSTRAINT ", quoted_constraint_name,
@@ -756,31 +753,15 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 				" REFERENCES ", quoted_table_2, "(", quoted_column_2, ")",
 				(grbit & 0x00000100) ? " ON UPDATE CASCADE" : "",
 				(grbit & 0x00001000) ? " ON DELETE CASCADE" : "",
+				/* On some databases (eg PostgreSQL) we also want to set
+				 * the constraints to be optionally deferrable, to
+				 * facilitate out of order bulk loading.
+				 */
+				" DEFERRABLE",
+				" INITIALLY IMMEDIATE",
 				";\n", NULL);
 
 			break;
-		}
-
-		/* On some databases (eg PostgreSQL) we also want to set
-		 * the constraints to be optionally deferrable, to
-		 * facilitate out of order bulk loading.
-		 */
-		switch (backend) {
-			case MDB_BACKEND_POSTGRES:
-				{
-					gchar *add_constraint;
-					add_constraint = text;
-					text = g_strconcat(add_constraint,
-						"ALTER TABLE ", quoted_table_1,
-						" ALTER CONSTRAINT ",
-						quoted_constraint_name,
-						" DEFERRABLE"
-						" INITIALLY IMMEDIATE;\n",
-						NULL);
-					g_free(add_constraint);
-				}
-			default:
-				break;
 		}
 	}
 	g_free(quoted_table_1);
