@@ -43,6 +43,7 @@ test_script:
       {
         $env:MSYSTEM="MINGW64"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./test_script.sh"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/mdbtools && ./test_sql.sh"
       }
       else
       {

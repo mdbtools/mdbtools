@@ -22,7 +22,9 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: ./test_script.sh
+        run: bash -x ./test_script.sh
+      - name: SQL tests
+        run: bash -x ./test_sql.sh
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
       - name: pkg-config libmdb test
@@ -51,7 +53,9 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: ./test_script.sh
+        run: bash -x ./test_script.sh
+      - name: SQL tests
+        run: bash -x ./test_sql.sh
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
       - name: pkg-config libmdb test
