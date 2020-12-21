@@ -247,6 +247,7 @@ typedef struct {
 	/* reference count */
 	int refs;
 	guint16 code_page;
+	guint16 lang_id;
 } MdbFile; 
 
 /* offset to row count on data pages...version dependant */
