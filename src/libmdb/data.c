@@ -999,11 +999,11 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_FLOAT:
 			tf = mdb_get_single(buf, start);
-			text = g_strdup_printf("%.8e", tf);
+			text = g_strdup_printf("%.8g", tf);
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(buf, start);
-			text = g_strdup_printf("%.16e", td);
+			text = g_strdup_printf("%.16g", td);
 		break;
 		case MDB_BINARY:
 			if (size<0) {
