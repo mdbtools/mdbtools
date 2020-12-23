@@ -73,14 +73,13 @@ if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
         YFLAGS="$YFLAGS -Wno-yacc"
     fi
 else
-sql=false
+    AC_MSG_WARN([Bison 3.0+ is not available: SQL disabled.])
+    sql=false
 fi
 
 if test "x$sql" = "xtrue"; then
 	CFLAGS="$CFLAGS -DSQL"
 	OPTDIRS="$OPTDIRS sql"
-else
-	AC_MSG_WARN([Bison 3.0+ is not available: SQL disabled.])
 fi
 
 AM_CONDITIONAL(SQL, test x$sql = xtrue)
