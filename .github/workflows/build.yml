@@ -4,6 +4,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10 ]
         glib: [ enable-glib, disable-glib ]
@@ -34,6 +35,7 @@ jobs:
   macos:
     runs-on: macos-latest
     strategy:
+      fail-fast: false
       matrix:
         compiler: [ clang, gcc ]
         glib: [ enable-glib, disable-glib ]
@@ -87,3 +89,21 @@ jobs:
         run: make
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
+  windows:
+    runs-on: windows-latest
+    env:
+      MSYSTEM: MINGW64
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check out test data
+        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+      - name: Autoconf
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && autoreconf -i -f'
+      - name: Configure
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./configure'
+      - name: Make
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make'
+      - name: Test
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./test_script.sh'
+      - name: SQL Test
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./test_sql.sh'
