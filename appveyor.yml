@@ -19,6 +19,8 @@ skip_tags: true
 
 build_script:
   - C:\cygwin64\setup-x86_64.exe -qP bison flex libiodbc-devel
+  - C:\cygwin64\bin\sh -lc "bison --version"
+  - C:\cygwin64\bin\sh -lc "flex --version"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
