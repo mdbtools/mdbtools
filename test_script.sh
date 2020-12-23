@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Simple test script; run after performing
 # git clone https://github.com/mdbtools/mdbtestdata.git test
@@ -14,5 +14,4 @@
 ./src/util/mdb-tables test/data/nwind.mdb
 ./src/util/mdb-ver test/data/ASampleDatabase.accdb
 ./src/util/mdb-ver test/data/nwind.mdb
-./src/util/mdb-sql -i test/sql/nwind.sql test/data/nwind.mdb
 ./src/util/mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwner
