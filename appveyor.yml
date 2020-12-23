@@ -18,7 +18,7 @@ clone_folder: c:\projects\mdbtools
 skip_tags: true
 
 build_script:
-  - C:\cygwin64\setup-x86_64.exe -q -P bison -P flex -P libiodbc-devel -P libiconv-devel
+  - C:\cygwin64\setup-x86_64.exe -q -P bison -P flex -P libiconv-devel
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-iodbc=/usr"
@@ -27,4 +27,3 @@ build_script:
 test_script:
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./test_script.sh"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./test_sql.sh"
-  - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && env MDBPATH=test/data ./src/odbc/unittest"
