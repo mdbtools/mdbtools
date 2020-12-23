@@ -18,7 +18,7 @@ clone_folder: c:\projects\mdbtools
 skip_tags: true
 
 build_script:
-  - C:\cygwin64\setup-x86_64.exe -qvP "bison flex libiodbc-devel"
+  - C:\cygwin64\setup-x86_64.exe -q -P bison -P flex -P libiodbc-devel
   - C:\cygwin64\bin\sh -lc "bison --version"
   - C:\cygwin64\bin\sh -lc "flex --version"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
