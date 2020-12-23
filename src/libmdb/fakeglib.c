@@ -106,7 +106,7 @@ char *g_strconcat(const char *first, ...) {
     return ret;
 }
 
-#if defined _WIN32
+#if defined _WIN32 && !defined(HAVE_VASPRINTF) && !defined(HAVE_VASNPRINTF)
 int vasprintf(char **ret, const char *format, va_list ap) {
     int len;
     int retval;
@@ -134,7 +134,7 @@ char *g_strdup_printf(const char *format, ...) {
     va_list argp;
 
     va_start(argp, format);
-#ifdef __CYGWIN__
+#ifdef HAVE_VASNPRINTF
     size_t len = 0;
     ret = vasnprintf(ret, &len, format, argp);
 #else
