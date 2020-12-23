@@ -21,7 +21,7 @@ build_script:
   - C:\cygwin64\setup-x86_64.exe -q -P bison -P flex -P libiconv-devel
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f"
-  - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules --with-iodbc=/usr"
+  - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && make"
 
 test_script:
