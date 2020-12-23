@@ -1,3 +1,20 @@
+Version 0.9.1 (Beta 1)
+=============
+
+* MDB Tools has migrated from Travis CI to GitHub Actions for automated builds
+* Fix a build error with msys2 (Windows) when GLib was disabled
+* Remove dependency on math.h #228
+* mdb-export now uses scientific notation only for very small numbers #84
+* mdb-schema no longer emits illegal ALTER TABLE statements for SQLite relationships #82
+* mdb-schema now omits the namespace for PostgreSQL indexes and constraints #93
+* Automatically detect character encoding of JET3 databases #224
+* JET3: Transcode Latin-1 text to UTF-8 when iconv is not present
+* JET4: Transcode Unicode text to UTF-8 when iconv is not present (using `wcstombs`) #223
+* Fix a buffer overrun with binary string fields OSS-Fuzz/28779 #216
+* Fix a stack overflow with malformed input OSS-Fuzz/28780 #217
+* Improved validation of date input OSS-Fuzz/28790 #219
+* Fix a potential buffer overrun when compiled without iconv OSS-Fuzz/28773 #220
+
 Version 0.9.0
 =============
 
