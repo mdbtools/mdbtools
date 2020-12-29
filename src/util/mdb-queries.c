@@ -78,8 +78,7 @@ int main (int argc, char **argv) {
 				line_break = 1;
 				break;
 			case 'd':
-            	delimiter = (char *) malloc(strlen(optarg)+1);
-				strcpy(delimiter, optarg);
+				delimiter = g_strdup(optarg);
 				break;
 		}
 	}
