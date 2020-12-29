@@ -55,7 +55,13 @@ load_options()
     if (!optset && (s=getenv("MDBOPTS"))) {
 		opt = strtok_r(s, ":", &ctx);
 		while (opt) {
-        	if (!strcmp(opt, "use_index")) opts |= MDB_USE_INDEX;
+			if (!strcmp(opt, "use_index")) {
+#ifdef HAVE_LIBMSWSTR
+				opts |= MDB_USE_INDEX;
+#else
+				fprintf(stderr, "The 'use_index' argument was supplied to MDBOPTS environment variable. However, this feature requires the libmswstr library, which was not found when libmdb was compiled. As a result, the 'use_index' argument will be ignored.\n\nTo enable indexes, you will need to download libmswstr from https://github.com/leecher1337/libmswstr and then recompile libmdb. Note that the 'use_index' feature is largely untested, and may have unexpected results.\n\nTo suppress this warning, run the program again after removing the 'use_index' argument from the MDBOPTS environment variable.\n");
+#endif
+			}
         	if (!strcmp(opt, "no_memo")) opts |= MDB_NO_MEMO;
         	if (!strcmp(opt, "debug_like")) opts |= MDB_DEBUG_LIKE;
         	if (!strcmp(opt, "debug_write")) opts |= MDB_DEBUG_WRITE;
