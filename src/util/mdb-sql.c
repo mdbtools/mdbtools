@@ -65,7 +65,7 @@ int noexec = 0;
 #ifndef HAVE_LIBREADLINE
 char *readline(char *prompt)
 {
-char *buf, line[1000];
+char line[1000];
 int i = 0;
 
 	fputs(prompt, stdout);
