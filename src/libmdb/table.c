@@ -76,6 +76,8 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 
 	mdb_get_int16(pg_buf, 8); /* len */
 
+	/* Note that num_rows may be zero if the database was improperly closed.
+	 * See https://github.com/mdbtools/mdbtools/issues/120 for discussion. */
 	table->num_rows = mdb_get_int32(pg_buf, fmt->tab_num_rows_offset);
 	table->num_var_cols = mdb_get_int16(pg_buf, fmt->tab_num_cols_offset-2);
 	table->num_cols = mdb_get_int16(pg_buf, fmt->tab_num_cols_offset);

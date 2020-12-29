@@ -304,7 +304,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbField *fields;
 	int num_fields;
 
-	if (table->num_rows == 0 || table->num_cols == 0)
+	if (table->num_cols == 0)
 		return 0;
 
 	if (mdb_find_row(mdb, row, &row_start, &row_size)) {
@@ -437,9 +437,6 @@ mdb_fetch_row(MdbTableDef *table)
 	unsigned int rows;
 	int rc;
 	guint32 pg;
-
-	if (table->num_rows==0)
-		return 0;
 
 	/* initialize */
 	if (!table->cur_pg_num) {
