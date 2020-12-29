@@ -299,7 +299,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbColumn *col;
 	unsigned int i;
 	int row_start;
-	size_t row_size;
+	size_t row_size = 0;
 	int delflag, lookupflag;
 	MdbField *fields;
 	int num_fields;
@@ -307,14 +307,14 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	if (table->num_cols == 0)
 		return 0;
 
-	if (mdb_find_row(mdb, row, &row_start, &row_size)) {
-		fprintf(stderr, "warning: mdb_find_row failed.\n");
+	if (mdb_find_row(mdb, row, &row_start, &row_size) == -1 || row_size == 0) {
+		/* Emitting a warning here isn't especially helpful. The row metadata
+		 * could be bogus for a number of reasons, so just skip to the next one
+		 * without comment. */
+		// fprintf(stderr, "warning: mdb_find_row failed.\n");
+		// fprintf(stderr, "warning: row_size = 0.\n");
 		return 0;
 	}
-    if (row_size == 0) {
-		fprintf(stderr, "warning: row_size = 0.\n");
-		return 0;
-    }
 
 	delflag = lookupflag = 0;
 	if (row_start & 0x8000) lookupflag++;
