@@ -149,8 +149,8 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	//mdb_dump_catalog(mdb, MDB_TABLE);
  
 cleanup:
-    if (table)
-        mdb_free_tabledef(table);
+	if (table)
+		mdb_free_tabledef(table);
 
 	free(obj_id);
 	free(obj_name);
