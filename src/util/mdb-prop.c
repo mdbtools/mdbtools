@@ -25,7 +25,7 @@ main(int argc, char **argv)
 {
 	MdbHandle *mdb;
 	MdbTableDef *table;
-	gchar name[256];
+	char *name;
 	gchar *propColName;
 	void *buf;
 	int col_num;
@@ -54,10 +54,12 @@ main(int argc, char **argv)
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
+	name = g_malloc(mdb->bind_size);
+	buf = g_malloc(mdb->bind_size);
 	mdb_bind_column_by_name(table, "Name", name, NULL);
-	buf = g_malloc(MDB_BIND_SIZE);
 	col_num = mdb_bind_column_by_name(table, propColName, buf, NULL);
 	if (col_num < 1) {
+		g_free(name);
 		g_free(buf);
 		mdb_free_tabledef(table);
 		mdb_close(mdb);
@@ -83,6 +85,7 @@ main(int argc, char **argv)
 		free(kkd);
 	}
 
+	g_free(name);
 	g_free(buf);
 	mdb_free_tabledef(table);
 	mdb_close(mdb);

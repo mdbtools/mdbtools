@@ -151,7 +151,7 @@ main(int argc, char **argv)
 	int i, row;
 	MdbHandle *mdb;
 	MdbTableDef *table;
-	MdbField fields[256];
+	MdbField *fields;
 	char line[MAX_ROW_SIZE];
 	int num_fields;
 	/* doesn't handle tables > 256 columns.  Can that happen? */
@@ -207,13 +207,14 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	for (i=0;i<header_rows;i++)
-		if (!fgets(line, MAX_ROW_SIZE, in)) {
+		if (!fgets(line, sizeof(line), in)) {
 			fprintf(stderr, "Error while reading header column #%d. Check -H parameter.\n", i);
 			exit(1);
 		}
 
 	row = 1;
-	while (fgets(line, MAX_ROW_SIZE, in)) {
+	fields = calloc(table->num_cols, sizeof(MdbField));
+	while (fgets(line, sizeof(line), in)) {
 		num_fields = prep_row(table, line, fields, delimiter);
 		if (!num_fields) {
 			fprintf(stderr, "Aborting import at row %d\n", row);
@@ -231,6 +232,7 @@ main(int argc, char **argv)
 
 	g_option_context_free(opt_context);
 	g_free(delimiter);
+	free(fields);
 	return 0;
 }
 

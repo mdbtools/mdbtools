@@ -51,21 +51,21 @@ int main (int argc, char **argv) {
 	char *query_id;
     size_t bind_size = QUERY_BIND_SIZE;
 	
-	// variables for the msysqueries table. hopefully 256 is big enough
-	char *attribute = (char *) malloc(bind_size);
-	char *expression = (char *) malloc(bind_size);
-	char *flag = (char *) malloc(bind_size);
-	char *name1 = (char *) malloc(bind_size);
-	char *name2 = (char *) malloc(bind_size);
-	char *objectid = (char *) malloc(bind_size);
-	char *order = (char *) malloc(bind_size);
+	// variables for the msysqueries table
+	char *attribute = malloc(bind_size);
+	char *expression = malloc(bind_size);
+	char *flag = malloc(bind_size);
+	char *name1 = malloc(bind_size);
+	char *name2 = malloc(bind_size);
+	char *objectid = malloc(bind_size);
+	char *order = malloc(bind_size);
 	
 	//variables for the generation of sql
-	char *sql_tables = (char *) malloc(bind_size);
-	char *sql_predicate = (char *) malloc(bind_size);
-	char *sql_columns = (char *) malloc(bind_size);
-	char *sql_where = (char *) malloc(bind_size);
-	char *sql_sorting = (char *) malloc(bind_size);
+	char *sql_tables = malloc(bind_size);
+	char *sql_predicate = malloc(bind_size);
+	char *sql_columns = malloc(bind_size);
+	char *sql_where = malloc(bind_size);
+	char *sql_sorting = malloc(bind_size);
 	int flagint;
 	
 	/* see getopt(3) for more information on getopt and this will become clear */
@@ -216,6 +216,7 @@ int main (int argc, char **argv) {
 						
 				mdb_free_tabledef(table);
 			}
+			free(query_id);
 		} else {
 			fprintf(stderr,"Couldn't locate the specified query: %s\n",argv[optind+1]);
 		}
@@ -269,8 +270,8 @@ char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 	unsigned int i;
 	MdbCatalogEntry *entry = NULL;
 	MdbTableDef *table = NULL;
-	static char id[256];
-	char name[256];
+	char *id = malloc(mdb->bind_size);
+	char *name = malloc(mdb->bind_size);
 	
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {
@@ -298,6 +299,8 @@ char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 		}
 		mdb_free_tabledef(table);
 	}
+
+	free(name);
 	
 	return id;
 }

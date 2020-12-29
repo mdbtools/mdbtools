@@ -494,10 +494,10 @@ void mdb_data_dump(MdbTableDef *table)
 {
 	unsigned int i;
 	int ret;
-	char *bound_values[MDB_MAX_COLS]; 
+	char **bound_values = calloc(table->num_cols, sizeof(char *));
 
 	for (i=0;i<table->num_cols;i++) {
-		bound_values[i] = (char *) g_malloc(256);
+		bound_values[i] = (char *) g_malloc(MDB_BIND_SIZE);
 		ret = mdb_bind_column(table, i+1, bound_values[i], NULL);
 		if (ret == -1) {
 			fprintf(stderr, "error binding column %d\n", i+1);
@@ -516,6 +516,7 @@ void mdb_data_dump(MdbTableDef *table)
 	for (i=0;i<table->num_cols;i++) {
 		g_free(bound_values[i]);
 	}
+	free(bound_values);
 }
 
 int mdb_is_fixed_col(MdbColumn *col)
