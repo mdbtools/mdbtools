@@ -2,7 +2,7 @@ NAME
   mdb-export - Export data in an MDB database table to CSV format.
 
 SYNOPSIS
-  mdb-export [--no-header] [--delimiter delim] [--row-delimiter delim] [[--no-quote] | [--quote char [--escape char]]] [--date-format fmt] [--datetime-format fmt] [--bin strip|raw|octal|hex] [--boolean-words] database table
+  mdb-export [--no-header] [--delimiter delim] [--row-delimiter delim] [[--no-quote] | [--quote char [--escape char]]] [--escape-invisible] [--date-format fmt] [--datetime-format fmt] [--bin strip|raw|octal|hex] [--boolean-words] database table
   mdb-export --insert backend [--namespace prefix] [--batch-size int] database table
   mdb-export -h|--help
 
@@ -20,6 +20,7 @@ OPTIONS
   -Q, --no-quote                Don't wrap text-like fields (text, memo, date) in quotes.  If not specified text fiels will be surrounded by " (double quote) characters.
   -q, --quote char              Use char to wrap text-like fields. Default is " (double quote).
   -X, --escape char             Use char to escape quoted characters within a field. Default is doubling.
+  -e, --escape-invisible        Use C-style escaping for return (\\r), tab (\\t), line-feed (\\n), and back-slash (\\\\) characters. Default is to leave as they are.
   -I, --insert backend          INSERT statements (instead of CSV). You must specify which SQL backend dialect to use. Allowed values are: access, sybase, oracle, postgres, mysql and sqlite.
   -N, --namespace prefix        Prefix identifiers with prefix.
   -S, --batch-size int          Size of insert batches on supported platforms.
