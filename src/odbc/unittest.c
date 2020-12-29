@@ -59,6 +59,10 @@ int main(int argc, char **argv)
 int i;
 
 	retcode = SQLAllocEnv(&henv);
+	if (retcode != SQL_SUCCESS) {
+		fprintf(stderr,"SQLAllocEnv failed: %d\n", retcode);
+		return 1;
+	}
 	
 	if (SQLAllocConnect(henv, &hdbc) != SQL_SUCCESS)
 	{
