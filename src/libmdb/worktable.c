@@ -27,7 +27,7 @@ void
 mdb_fill_temp_col(MdbColumn *tcol, char *col_name, int col_size, int col_type, int is_fixed)
 {
 	memset(tcol,0,sizeof(MdbColumn));
-	strcpy(tcol->name, col_name);
+	snprintf(tcol->name, sizeof(tcol->name), "%s", col_name);
 	tcol->col_type = col_type;
 	if ((col_type == MDB_TEXT) || (col_type == MDB_MEMO)) {
 		tcol->col_size = col_size;
@@ -57,7 +57,7 @@ mdb_create_temp_table(MdbHandle *mdb, char *name)
 	entry->mdb = mdb;
 	entry->object_type = MDB_TABLE;
 	entry->table_pg = 0;
-	strcpy(entry->object_name, name);
+	snprintf(entry->object_name, sizeof(entry->object_name), "%s", name);
 
 	table = mdb_alloc_tabledef(entry);
 	table->columns = g_ptr_array_new();

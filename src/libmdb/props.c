@@ -123,9 +123,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		dsize = mdb_get_int16(kkd, pos + 6);
 		if (dsize < 0 || pos + 8 + dsize > len)
 			break;
-		value = g_malloc(dsize + 1);
-		strncpy(value, &kkd[pos + 8], dsize);
-		value[dsize] = '\0';
+		value = g_strdup_printf("%*s", dsize, &kkd[pos+8]);
 		name = g_ptr_array_index(names,elem);
 		if (mdb_get_option(MDB_DEBUG_PROPS)) {
 			fprintf(stderr, "%02d ",i++);

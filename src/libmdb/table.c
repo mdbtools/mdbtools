@@ -34,7 +34,7 @@ MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 
 	table = (MdbTableDef *) g_malloc0(sizeof(MdbTableDef));
 	table->entry=entry;
-	strcpy(table->name, entry->object_name);
+	snprintf(table->name, sizeof(table->name), "%s", entry->object_name);
 
 	return table;	
 }

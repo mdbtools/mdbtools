@@ -188,8 +188,9 @@ mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	dlen -= len_out;
 #else
 	if (IS_JET3(mdb)) {
-		dlen = MIN(len_in, len_out);
-		strncpy(out_ptr, in_ptr, dlen);
+		int count;
+		snprintf(out_ptr, len_out, "%*s%n", (int)len_in, in_ptr, &count);
+		dlen = count;
 	} else {
 		unsigned int i;
 		slen = MIN(len_in, len_out/2);

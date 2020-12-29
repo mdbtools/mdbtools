@@ -493,23 +493,18 @@ mdb_get_index_name(int backend, MdbTableDef *table, MdbIndex *idx)
 	switch(backend){
 		case MDB_BACKEND_MYSQL:
 			// appending table name to index often makes it too long for mysql
-			index_name = malloc(strlen(idx->name)+5+1);
 			if (idx->index_type==1)
 				// for mysql name of primary key is not used
-				strcpy(index_name, "_pkey");
+				index_name = g_strdup("_pkey");
 			else {
-				strcpy(index_name, idx->name);
+				index_name = g_strdup(idx->name);
 			}
 			break;
 		default:
-			index_name = malloc(strlen(table->name)+strlen(idx->name)+5+1);
-			strcpy(index_name, table->name);
 			if (idx->index_type==1)
-				strcat(index_name, "_pkey");
+				index_name = g_strconcat(table->name, "_pkey", NULL);
 			else {
-				strcat(index_name, "_");
-				strcat(index_name, idx->name);
-				strcat(index_name, "_idx");
+				index_name = g_strconcat(table->name, "_", idx->name, "_idx", NULL);
 			}
 	}
 

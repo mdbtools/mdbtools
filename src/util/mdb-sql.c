@@ -78,10 +78,8 @@ int i = 0;
 			break;
 		}
 	}
-	buf = (char *) malloc(strlen(line)+1);
-	strcpy(buf,line);
 
-	return buf;
+	return g_strdup(line);
 }
 #endif
 
@@ -425,7 +423,7 @@ main(int argc, char **argv)
 			} else if (s[strlen(s)-1]=='\n')
 				s[strlen(s)-1]=0;
 		} else {
-			sprintf(prompt, "%d => ", line);
+			snprintf(prompt, sizeof(prompt), "%d => ", line);
 			s=readline(prompt);
 			if (!s)
 				break;

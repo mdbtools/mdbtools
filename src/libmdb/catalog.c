@@ -87,7 +87,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 	msysobj.mdb = mdb;
 	msysobj.object_type = MDB_TABLE;
 	msysobj.table_pg = 2;
-	strcpy(msysobj.object_name, "MSysObjects");
+	snprintf(msysobj.object_name, sizeof(msysobj.object_name), "%s", "MSysObjects");
 
 	/* mdb_table_dump(&msysobj); */
 
@@ -125,7 +125,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 			//	(atol(obj_id) & 0x00FFFFFF), type, type, obj_name);
 			entry = (MdbCatalogEntry *) g_malloc0(sizeof(MdbCatalogEntry));
 			entry->mdb = mdb;
-			strcpy(entry->object_name, obj_name);
+			snprintf(entry->object_name, sizeof(entry->object_name), "%s", obj_name);
 			entry->object_type = (type & 0x7F);
 			entry->table_pg = atol(obj_id) & 0x00FFFFFF;
 			entry->flags = atol(obj_flags);

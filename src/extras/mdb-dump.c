@@ -60,7 +60,7 @@ int main(int argc, char **argv)
    fseek(in,(pg*pg_size),SEEK_SET);
    i = 0;
    while ((length = fread(data,1,16,in))) {
-      sprintf(addr, "%06lx", i);
+      snprintf(addr, sizeof(addr), "%06lx", i);
       //if (!strcmp(&addr[3],"000") || (!jet4 && !strcmp(&addr[3],"800")) &&
 		      //pg) break;
       if (!strcmp(&addr[3],"000") || (!jet4 && !strcmp(&addr[3],"800"))) {

@@ -100,7 +100,7 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 static double poor_mans_trunc(double x)
 {
 	char buf[16];
-	sprintf(buf, "%.6f", x);
+	snprintf(buf, sizeof(buf), "%.6f", x);
 	sscanf(buf, "%lf", &x);
 	return x;
 }
