@@ -212,7 +212,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fiel
 		row_var_cols = IS_JET3(mdb) ?
 			mdb_get_byte(pg_buf, row_end - bitmask_sz) :
 			mdb_get_int16(pg_buf, row_end - bitmask_sz - 1);
-		var_col_offsets = (unsigned int *)g_malloc((row_var_cols+1)*sizeof(int));
+		var_col_offsets = g_malloc((row_var_cols+1)*sizeof(int));
         int success = 0;
 		if (IS_JET3(mdb)) {
 			success = mdb_crack_row3(mdb, row_start, row_end, bitmask_sz,
@@ -401,7 +401,7 @@ mdb_pack_row3(MdbTableDef *table, unsigned char *row_buffer, unsigned int num_fi
 		}
 	}
 
-	offset_high = (unsigned char *) g_malloc(var_cols+1);
+	offset_high = g_malloc(var_cols+1);
 	offset_high[0] = (pos >> 8) & 0xff;
 	j = 1;
 	

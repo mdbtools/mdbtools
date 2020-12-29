@@ -162,11 +162,11 @@ main(int argc, char **argv)
 	mdb_read_columns(table);
 	mdb_rewind_table(table);
 
-	bound_values = (char **) g_malloc(table->num_cols * sizeof(char *));
-	bound_lens = (int *) g_malloc(table->num_cols * sizeof(int));
+	bound_values = g_malloc(table->num_cols * sizeof(char *));
+	bound_lens = g_malloc(table->num_cols * sizeof(int));
 	for (i=0;i<table->num_cols;i++) {
 		/* bind columns */
-		bound_values[i] = (char *) g_malloc0(EXPORT_BIND_SIZE);
+		bound_values[i] = g_malloc0(EXPORT_BIND_SIZE);
 		ret = mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
 		if (ret == -1) {
 			fprintf(stderr, "Failed to bind column %d\n", i + 1);

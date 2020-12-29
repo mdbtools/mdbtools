@@ -398,7 +398,7 @@ main(int argc, char **argv)
 
 	/* give the buffer an initial size */
 	bufsz = 4096;
-	mybuf = (char *) g_malloc(bufsz);
+	mybuf = g_malloc(bufsz);
 	mybuf[0]='\0';
 
 	while (1) {

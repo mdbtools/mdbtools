@@ -137,7 +137,7 @@ static char *array_to_string(unsigned char *array, size_t len, unsigned int scal
        for (top=len;(top>0) && (top-1>scale) && !array[top-1];top--);
 
        /* allocate enough space for all digits + minus sign + decimal point + trailing NULL byte */
-       s = (char *) g_malloc(len+3);
+       s = g_malloc(len+3);
 
 	if (neg)
 		s[j++] = '-';

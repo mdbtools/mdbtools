@@ -497,7 +497,7 @@ void mdb_data_dump(MdbTableDef *table)
 	char **bound_values = calloc(table->num_cols, sizeof(char *));
 
 	for (i=0;i<table->num_cols;i++) {
-		bound_values[i] = (char *) g_malloc(MDB_BIND_SIZE);
+		bound_values[i] = g_malloc(MDB_BIND_SIZE);
 		ret = mdb_bind_column(table, i+1, bound_values[i], NULL);
 		if (ret == -1) {
 			fprintf(stderr, "error binding column %d\n", i+1);
@@ -744,7 +744,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	gint32 row_start, pg_row;
 	size_t len;
 	void *buf, *pg_buf = mdb->pg_buf;
-	char *text = (char *) g_malloc(mdb->bind_size);
+	char *text = g_malloc(mdb->bind_size);
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		strcpy(text, "");
@@ -788,7 +788,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 		guint32 tmpoff = 0;
 		char *tmp;
 
-		tmp = (char *) g_malloc(memo_len);
+		tmp = g_malloc(memo_len);
 		pg_row = mdb_get_int32(pg_buf, start+4);
 		do {
 #if MDB_DEBUG
@@ -919,7 +919,7 @@ static char *
 mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 {
 	struct tm t = { 0 };
-	char *text = (char *) g_malloc(mdb->bind_size);
+	char *text = g_malloc(mdb->bind_size);
 	double td = mdb_get_double(buf, start);
 
 	mdb_date_to_tm(td, &t);
@@ -1019,7 +1019,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			if (size<0) {
 				text = g_strdup("");
 			} else {
-				text = (char *) g_malloc(mdb->bind_size);
+				text = g_malloc(mdb->bind_size);
 				mdb_unicode2ascii(mdb, (char*)buf + start,
 					size, text, mdb->bind_size);
 			}

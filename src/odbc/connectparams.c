@@ -54,7 +54,7 @@ static void cleanup (gpointer key, gpointer value, gpointer user_data);
 
 ConnectParams* NewConnectParams ()
 {
-   ConnectParams* params = (ConnectParams *) g_malloc(sizeof (ConnectParams));
+   ConnectParams* params = g_malloc(sizeof(ConnectParams));
    if (!params)
       return params;
    
@@ -298,7 +298,7 @@ static void cleanup (gpointer key, gpointer value, gpointer user_data)
 int
 ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)
 {
-	hLastProperty->pNext = (HODBCINSTPROPERTY) malloc(sizeof(ODBCINSTPROPERTY));
+	hLastProperty->pNext = malloc(sizeof(ODBCINSTPROPERTY));
 	hLastProperty = hLastProperty->pNext;
 	memset(hLastProperty, 0, sizeof(ODBCINSTPROPERTY));
 	hLastProperty->nPromptType = ODBCINST_PROMPTTYPE_FILENAME;

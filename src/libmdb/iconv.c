@@ -145,7 +145,7 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	/* Uncompress 'Unicode Compressed' string into tmp */
 	if (!IS_JET3(mdb) && (slen>=2)
 			&& ((src[0]&0xff)==0xff) && ((src[1]&0xff)==0xfe)) {
-		tmp = (char *)g_malloc(slen*2);
+		tmp = g_malloc(slen*2);
 		len_in = decompress_unicode(src + 2, slen - 2, tmp, slen * 2);
 		in_ptr = tmp;
 	} else {

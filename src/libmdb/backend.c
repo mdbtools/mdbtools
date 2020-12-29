@@ -399,7 +399,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
         const char *per_table_comment_statement,
         gchar* (*quote_schema_name)(const gchar*, const gchar*))
 {
-	MdbBackend *backend = (MdbBackend *) g_malloc0(sizeof(MdbBackend));
+	MdbBackend *backend = g_malloc0(sizeof(MdbBackend));
 	backend->capabilities = capabilities;
 	backend->types_table = backend_type;
 	backend->type_shortdate = type_shortdate;
@@ -666,7 +666,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 
 		mdb_read_columns(mdb->relationships_table);
 		for (i=0;i<5;i++) {
-			bound[i] = (char *) g_malloc0(mdb->bind_size);
+			bound[i] = g_malloc0(mdb->bind_size);
 		}
 		mdb_bind_column_by_name(mdb->relationships_table, "szColumn", bound[0], NULL);
 		mdb_bind_column_by_name(mdb->relationships_table, "szObject", bound[1], NULL);

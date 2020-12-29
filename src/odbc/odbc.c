@@ -478,7 +478,7 @@ struct _hdbc* dbc;
 
 	TRACE("SQLAllocConnect");
 	env = (struct _henv *) henv;
-	dbc = (SQLHDBC) g_malloc0(sizeof(struct _hdbc));
+	dbc = g_malloc0(sizeof(struct _hdbc));
 	dbc->henv=env;
 	g_ptr_array_add(env->connections, dbc);
 	dbc->params = NewConnectParams ();
@@ -498,7 +498,7 @@ SQLRETURN SQL_API SQLAllocEnv(
 struct _henv *env;
 
 	TRACE("SQLAllocEnv");
-	env = (SQLHENV) g_malloc0(sizeof(struct _henv));
+	env = g_malloc0(sizeof(struct _henv));
 	env->connections = g_ptr_array_new();
 	*phenv=env;
 	return SQL_SUCCESS;
@@ -514,7 +514,7 @@ SQLRETURN SQL_API SQLAllocStmt(
 	TRACE("SQLAllocStmt");
 	dbc = (struct _hdbc *) hdbc;
 
-	stmt = (SQLHSTMT) g_malloc0(sizeof(struct _hstmt));
+	stmt = g_malloc0(sizeof(struct _hstmt));
 	stmt->hdbc=dbc;
 	g_ptr_array_add(dbc->statements, stmt);
 	stmt->sql = mdb_sql_init();
@@ -572,7 +572,7 @@ SQLRETURN SQL_API SQLBindCol(
    		cur->varaddr = (char *) rgbValue;
 	} else {
 		/* didn't find it create a new one */
-		newitem = (struct _sql_bind_info *) g_malloc0(sizeof(struct _sql_bind_info));
+		newitem = g_malloc0(sizeof(struct _sql_bind_info));
 		newitem->column_number = icol;
 		newitem->column_bindtype = fCType;
    		newitem->column_bindlen = cbValueMax;

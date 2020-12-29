@@ -129,7 +129,7 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
 		if (objtype==MDB_ANY || type == objtype) {
 			//fprintf(stderr, "obj_id: %10ld objtype: %-3d (0x%04x) obj_name: %s\n",
 			//	(atol(obj_id) & 0x00FFFFFF), type, type, obj_name);
-			entry = (MdbCatalogEntry *) g_malloc0(sizeof(MdbCatalogEntry));
+			entry = g_malloc0(sizeof(MdbCatalogEntry));
 			entry->mdb = mdb;
 			snprintf(entry->object_name, sizeof(entry->object_name), "%s", obj_name);
 			entry->object_type = (type & 0x7F);

@@ -236,12 +236,12 @@ mdb_read_indices(MdbTableDef *table)
 	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
 
 	table->num_real_idxs = 0;
-	tmpbuf = (gchar *) g_malloc(idx2_sz);
+	tmpbuf = g_malloc(idx2_sz);
 	for (i=0;i<table->num_idxs;i++) {
 		read_pg_if_n(mdb, tmpbuf, &cur_pos, idx2_sz);
                 //fprintf(stderr, "Index defn: ");
                 //hexdump((unsigned char *)tmpbuf, idx2_sz);
-		pidx = (MdbIndex *) g_malloc0(sizeof(MdbIndex));
+		pidx = g_malloc0(sizeof(MdbIndex));
 		pidx->table = table;
 		pidx->index_num = mdb_get_int16(tmpbuf, 4);
 		pidx->index_type = tmpbuf[type_offset];

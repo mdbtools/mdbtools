@@ -30,9 +30,7 @@ static gint mdb_col_comparer(MdbColumn **a, MdbColumn **b)
 
 MdbTableDef *mdb_alloc_tabledef(MdbCatalogEntry *entry)
 {
-	MdbTableDef *table;
-
-	table = (MdbTableDef *) g_malloc0(sizeof(MdbTableDef));
+	MdbTableDef *table = g_malloc0(sizeof(MdbTableDef));
 	table->entry=entry;
 	snprintf(table->name, sizeof(table->name), "%s", entry->object_name);
 
@@ -231,7 +229,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	
 	table->columns = g_ptr_array_new();
 
-	col = (unsigned char *) g_malloc(fmt->tab_col_entry_size);
+	col = g_malloc(fmt->tab_col_entry_size);
 
 	cur_pos = fmt->tab_cols_start_offset + 
 		(table->num_real_idxs * fmt->tab_ridx_entry_size);
@@ -247,7 +245,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	mdb_buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
 #endif
 		read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size);
-		pcol = (MdbColumn *) g_malloc0(sizeof(MdbColumn));
+		pcol = g_malloc0(sizeof(MdbColumn));
 
 		pcol->table = table;
 
@@ -304,7 +302,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			name_sz = read_pg_if_8(mdb, &cur_pos);
 		else
 			name_sz = read_pg_if_16(mdb, &cur_pos);
-		tmp_buf = (char *) g_malloc(name_sz);
+		tmp_buf = g_malloc(name_sz);
 		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
 		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, sizeof(pcol->name));
 		g_free(tmp_buf);

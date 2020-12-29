@@ -63,9 +63,7 @@ va_list ap;
 
 MdbSQL *mdb_sql_init()
 {
-MdbSQL *sql;
-
-	sql = (MdbSQL *) g_malloc0(sizeof(MdbSQL));
+MdbSQL *sql = g_malloc0(sizeof(MdbSQL));
 	sql->columns = g_ptr_array_new();
 	sql->tables = g_ptr_array_new();
 	sql->bound_values = g_ptr_array_new();
@@ -512,9 +510,7 @@ mdb_sql_sel_count(MdbSQL *sql)
 
 int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 {
-	MdbSQLColumn *c;
-
-	c = (MdbSQLColumn *) g_malloc0(sizeof(MdbSQLColumn));
+	MdbSQLColumn *c = g_malloc0(sizeof(MdbSQLColumn));
 	c->name = g_strdup(column_name);
 	g_ptr_array_add(sql->columns, c);
 	sql->num_columns++;
@@ -544,9 +540,7 @@ int mdb_sql_add_function1(MdbSQL *sql, char *func_name, char *arg1)
 }
 int mdb_sql_add_table(MdbSQL *sql, char *table_name)
 {
-	MdbSQLTable *t;
-
-	t = (MdbSQLTable *) g_malloc0(sizeof(MdbSQLTable));
+	MdbSQLTable *t = g_malloc0(sizeof(MdbSQLTable));
 	t->name = g_strdup(table_name);
 	t->alias = NULL;
 	g_ptr_array_add(sql->tables, t);

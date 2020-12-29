@@ -53,7 +53,7 @@ mdb_create_temp_table(MdbHandle *mdb, char *name)
 	MdbTableDef *table;
 
 	/* dummy up a catalog entry */
-	entry = (MdbCatalogEntry *) g_malloc0(sizeof(MdbCatalogEntry));
+	entry = g_malloc0(sizeof(MdbCatalogEntry));
 	entry->mdb = mdb;
 	entry->object_type = MDB_TABLE;
 	entry->table_pg = 0;

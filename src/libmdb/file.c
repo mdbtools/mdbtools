@@ -180,7 +180,7 @@ static char *mdb_find_file(const char *file_name)
  * Return value: The handle on success, NULL on failure
  */
 static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
-	MdbHandle *mdb = (MdbHandle *) g_malloc0(sizeof(MdbHandle));
+	MdbHandle *mdb = g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
     mdb_set_date_fmt(mdb, "%x %X");
     mdb_set_shortdate_fmt(mdb, "%x");
@@ -192,7 +192,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 #endif
 	/* need something to bootstrap with, reassign after page 0 is read */
 	mdb->fmt = &MdbJet3Constants;
-	mdb->f = (MdbFile *) g_malloc0(sizeof(MdbFile));
+	mdb->f = g_malloc0(sizeof(MdbFile));
 	mdb->f->refs = 1;
 	mdb->f->stream = stream;
 	if (flags & MDB_WRITABLE) {
