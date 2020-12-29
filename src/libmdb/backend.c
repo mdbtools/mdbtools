@@ -372,7 +372,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		"COMMENT %s",
 		quote_schema_name_rquotes_merge);
 	mdb_register_backend(mdb, "sqlite",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_sqlite_types, NULL, NULL,
 		"date('now')", "date('now')",
 		"%Y-%m-%d %H:%M:%S",
@@ -652,9 +652,7 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 	} else if (!strcmp(mdb->backend_name, "postgres")) {
 		backend = MDB_BACKEND_POSTGRES;
 	} else if (!mdb->relationships_table) {
-        return (char *) g_strconcat(
-                "-- relationships are not implemented for ",
-                mdb->backend_name, "\n", NULL);
+		return NULL;
 	}
 
 	if (!mdb->relationships_table) {
@@ -988,9 +986,16 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 
 	if (export_options & MDB_SHEXP_RELATIONS) {
 		fputs ("-- CREATE Relationships ...\n", outfile);
-		while ((the_relation=mdb_get_relationships(mdb, dbnamespace, tabname)) != NULL) {
-			fputs(the_relation, outfile);
-			g_free(the_relation);
+		the_relation=mdb_get_relationships(mdb, dbnamespace, tabname);
+		if (!the_relation) {
+			fputs("-- relationships are not implemented for ", outfile);
+			fputs(mdb->backend_name, outfile);
+			fputs("\n", outfile);
+		} else {
+			do {
+				fputs(the_relation, outfile);
+				g_free(the_relation);
+			} while ((the_relation=mdb_get_relationships(mdb, dbnamespace, tabname)) != NULL);
 		}
 	}
 }
