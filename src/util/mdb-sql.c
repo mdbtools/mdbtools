@@ -68,8 +68,8 @@ char *readline(char *prompt)
 char *buf, line[1000];
 int i = 0;
 
-	puts(prompt);
-	if (! fgets(line,1000,stdin)) {
+	fputs(prompt, stdout);
+	if (!fgets(line, sizeof(line), stdin)) {
 		return NULL;
 	}
 	for (i=strlen(line);i>0;i--) {
