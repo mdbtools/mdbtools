@@ -88,7 +88,7 @@ void FreeConnectParams (ConnectParams* params)
 
 gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
 {
-	static char tmp[FILENAME_MAX];
+	static __thread char tmp[FILENAME_MAX];
 
 	/* use old servername */
 	tmp[0] = '\0';
