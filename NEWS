@@ -1,3 +1,10 @@
+Version 0.9.1 (Beta 2)
+=============
+
+* Fix an extra newline that appeared at the `mdb-sql` prompt when Readline was not present
+* Fix potential stack corruption with malformed input
+* Fix an infinite loop when exporting a SQLite schema (bug introduced in 0.9.1 Beta 1)
+
 Version 0.9.1 (Beta 1)
 =============
 
