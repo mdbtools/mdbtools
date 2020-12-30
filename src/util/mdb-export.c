@@ -50,6 +50,7 @@ main(int argc, char **argv)
 	char *str_bin_mode = NULL;
 	char *null_text = NULL;
 	int export_flags = 0;
+	int bin_mode = 0;
 	char *value;
 	size_t length;
 	int ret;
@@ -122,19 +123,19 @@ main(int argc, char **argv)
 
 	if (str_bin_mode) {
 		if (!strcmp(str_bin_mode, "strip"))
-			export_flags |= MDB_EXPORT_BINARY_STRIP;
+			bin_mode = MDB_BINEXPORT_STRIP;
 		else if (!strcmp(str_bin_mode, "raw"))
-			export_flags |= MDB_EXPORT_BINARY_RAW;
+			bin_mode = MDB_BINEXPORT_RAW;
 		else if (!strcmp(str_bin_mode, "octal"))
-			export_flags |= MDB_EXPORT_BINARY_OCTAL;
+			bin_mode = MDB_BINEXPORT_OCTAL;
 		else if (!strcmp(str_bin_mode, "hex"))
-			export_flags |= MDB_EXPORT_BINARY_HEXADECIMAL;
+			bin_mode = MDB_BINEXPORT_HEXADECIMAL;
 		else {
 			fputs("Invalid binary mode\n", stderr);
 			exit(1);
 		}
 	} else {
-		export_flags |= MDB_EXPORT_BINARY_RAW;
+		bin_mode = MDB_BINEXPORT_RAW;
     }
 
 	if (escape_cr_lf) {
@@ -237,7 +238,7 @@ main(int argc, char **argv)
 						value = bound_values[i];
 						length = bound_lens[i];
 					}
-					mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, export_flags);
+					mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode | export_flags);
 					if (col->col_type == MDB_OLE)
 						free(value);
 				}
@@ -291,22 +292,22 @@ main(int argc, char **argv)
 					}
 					/* Correctly handle insertion of binary blobs into SQLite using the string literal notation of X'1234ABCD...' */
 					if (!strcmp(mdb->backend_name, "sqlite") && is_binary_type(col->col_type)
-							&& (export_flags & MDB_EXPORT_BINARY_HEXADECIMAL)) {
+							&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
 						char *quote_char_binary_sqlite = (char *) g_strdup("'");
 						fputs("X", outfile);
-						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_sqlite, escape_char, export_flags);
+						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_sqlite, escape_char, bin_mode | export_flags);
 						g_free (quote_char_binary_sqlite);
 						/* Correctly handle insertion of binary blobs into PostgreSQL using the notation of decode('1234ABCD...', 'hex') */
 					} else if (!strcmp(mdb->backend_name, "postgres") && is_binary_type(col->col_type)
-							&& (export_flags & MDB_EXPORT_BINARY_HEXADECIMAL)) {
+							&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
 						char *quote_char_binary_postgres = (char *) g_strdup("'");
 						fputs("decode(", outfile);
-						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_postgres, escape_char, export_flags);
+						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_postgres, escape_char, bin_mode | export_flags);
 						fputs(", 'hex')", outfile);
 						g_free (quote_char_binary_postgres);
 						/* No special treatment for other backends or when hexadecimal notation hasn't been selected with the -b hex command line option */
 					} else {
-						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, export_flags);
+						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode | export_flags);
 					}
 					if (col->col_type == MDB_OLE)
 						free(value);

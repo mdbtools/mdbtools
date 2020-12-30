@@ -1000,6 +1000,7 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 	}
 }
 
+#define MDB_BINEXPORT_MASK 0x0F
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 #define is_quote_type(x) (is_binary_type(x) || x==MDB_TEXT || x==MDB_MEMO || x==MDB_DATETIME)
 //#define DONT_ESCAPE_ESCAPE
@@ -1013,7 +1014,7 @@ mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int b
 
 	size_t orig_escape_len = escape_char ? strlen(escape_char) : 0;
 	int quoting = quote_text && is_quote_type(col_type);
-    int bin_mode = (flags & 0x0F);
+    int bin_mode = (flags & MDB_BINEXPORT_MASK);
     int escape_cr_lf = !!(flags & MDB_EXPORT_ESCAPE_CONTROL_CHARS);
 
 	/* double the quote char if no escape char passed */
@@ -1025,7 +1026,7 @@ mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int b
 
 	while (1) {
 		if (is_binary_type(col_type)) {
-			if (bin_mode == MDB_EXPORT_BINARY_STRIP)
+			if (bin_mode == MDB_BINEXPORT_STRIP)
 				break;
 			if (!bin_len--)
 				break;
@@ -1033,9 +1034,9 @@ mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int b
 			if (!*col_val)
 				break;
 
-		if (is_binary_type(col_type) && bin_mode == MDB_EXPORT_BINARY_OCTAL) {
+		if (is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_OCTAL) {
 			fprintf(outfile, "\\%03o", *(unsigned char*)col_val++);
-		} else if (is_binary_type(col_type) && bin_mode == MDB_EXPORT_BINARY_HEXADECIMAL) {
+		} else if (is_binary_type(col_type) && bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
 			fprintf(outfile, "%02X", *(unsigned char*)col_val++);
 		} else if (quoting && quote_len && !strncmp(col_val, quote_char, quote_len)) {
 			fprintf(outfile, "%s%s", escape_char, quote_char);

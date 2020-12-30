@@ -190,10 +190,12 @@ enum {
 
 /* csv export binary options */
 enum {
-	MDB_EXPORT_BINARY_STRIP = (1 << 0),
-	MDB_EXPORT_BINARY_RAW = (1 << 1),
-	MDB_EXPORT_BINARY_OCTAL = (1 << 2),
-	MDB_EXPORT_BINARY_HEXADECIMAL = (1 << 3),
+	MDB_BINEXPORT_STRIP,
+	MDB_BINEXPORT_RAW,
+	MDB_BINEXPORT_OCTAL,
+	MDB_BINEXPORT_HEXADECIMAL,
+
+    /* Flags that can be OR'ed into the above when calling mdb_print_col */
 	MDB_EXPORT_ESCAPE_CONTROL_CHARS = (1 << 4)
 };
 
