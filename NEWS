@@ -1,19 +1,4 @@
-Version 0.9.1 (Beta 3)
-=============
-
-* mdb-export has a new --escape-invisible flag for C-style escaping of tabs and newlines #222
-* Print a warning if MDBOPTS=use_index is set at run-time but libmswstr was absent at compile-time #215 #226
-* Improved support for databases that were improperly closed #120
-* Remove warnings about mdb_find_row and row_size that did not necessarily indicate a problem
-
-Version 0.9.1 (Beta 2)
-=============
-
-* Fix an extra newline that appeared at the `mdb-sql` prompt when Readline was not present
-* Fix potential stack corruption with malformed input
-* Fix an infinite loop when exporting a SQLite schema (bug introduced in 0.9.1 Beta 1)
-
-Version 0.9.1 (Beta 1)
+Version 0.9.1
 =============
 
 * MDB Tools has migrated from Travis CI to GitHub Actions for automated builds
@@ -29,6 +14,12 @@ Version 0.9.1 (Beta 1)
 * Fix a stack overflow with malformed input OSS-Fuzz/28780 #217
 * Improved validation of date input OSS-Fuzz/28790 #219
 * Fix a potential buffer overrun when compiled without iconv OSS-Fuzz/28773 #220
+* Fix an extra newline that appeared at the `mdb-sql` prompt when Readline was not present
+* Fix potential stack corruption with malformed input
+* mdb-export has a new --escape-invisible flag for C-style escaping of tabs and newlines #222
+* Print a warning if MDBOPTS=use_index is set at run-time but libmswstr was absent at compile-time #215 #226
+* Improved support for databases that were improperly closed #120
+* Remove warnings about mdb_find_row and row_size that did not necessarily indicate a problem
 
 Version 0.9.0
 =============
