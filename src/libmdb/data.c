@@ -34,6 +34,17 @@ static char *mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int 
 static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size);
 #endif
 
+#ifndef HAVE_REALLOCF
+static void *reallocf(void *ptr, size_t len) {
+	void *ptr2 = realloc(ptr, len);
+	if (!ptr2) {
+		free(ptr);
+		return NULL;
+	}
+	return ptr2;
+}
+#endif
+
 static const int noleap_cal[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
 static const int leap_cal[]   = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
@@ -665,7 +676,10 @@ mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
 			result_buffer_size += OLE_BUFFER_SIZE;
-			result = realloc(result, result_buffer_size);
+			if ((result = reallocf(result, result_buffer_size)) == NULL) {
+				fprintf(stderr, "Out of memory while reading OLE object\n");
+				return NULL;
+			}
 		}
 		memcpy(result + pos, col->bind_ptr, len);
 		pos += len;
