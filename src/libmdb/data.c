@@ -411,6 +411,8 @@ int mdb_read_next_dpg(MdbTableDef *table)
 			break; /* unknow map type: goto fallback */
 		if (!next_pg)
 			return 0;
+		if ((guint32)next_pg == table->cur_phys_pg)
+			return 0; /* Infinite loop */
 
 		if (!mdb_read_pg(mdb, next_pg)) {
 			fprintf(stderr, "error: reading page %d failed.\n", next_pg);
