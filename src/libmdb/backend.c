@@ -661,8 +661,10 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 			fprintf(stderr, "No MSysRelationships\n");
 			return NULL;
 		}
-
-		mdb_read_columns(mdb->relationships_table);
+		if (!mdb_read_columns(mdb->relationships_table)) {
+			fprintf(stderr, "Unable to read columns of MSysRelationships\n");
+			return NULL;
+		}
 		for (i=0;i<5;i++) {
 			bound[i] = g_malloc0(mdb->bind_size);
 		}
@@ -791,7 +793,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	table = mdb_read_table (entry);
 
 	/* get the columns */
-	mdb_read_columns (table);
+	mdb_read_columns(table);
 
 	/* loop over the columns, dumping the names and types */
 	for (i = 0; i < table->num_cols; i++) {

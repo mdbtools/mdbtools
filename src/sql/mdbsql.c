@@ -696,7 +696,12 @@ void mdb_sql_describe_table(MdbSQL *sql)
 		return;
 	}
 
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		mdb_sql_error(sql, "Could not read columns of table %s", sql_tab->name);
+		/* the column and table names are no good now */
+		mdb_sql_reset(sql);
+		return;
+    }
 
 	ttable = mdb_create_temp_table(mdb, "#describe");
 
@@ -794,7 +799,12 @@ int found = 0;
 		mdb_sql_reset(sql);
 		return;
 	}
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		mdb_sql_error(sql, "Could not read columns of table %s", sql_tab->name);
+		/* the column and table names are no good now */
+		mdb_sql_reset(sql);
+		return;
+    }
 
 	if (sql->sel_count && !sql->sarg_tree) {
 		MdbTableDef *ttable = mdb_create_temp_table(mdb, "#count");

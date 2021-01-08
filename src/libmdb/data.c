@@ -77,6 +77,8 @@ int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_pt
 {
 	MdbColumn *col = NULL;
 
+	if (!table->columns)
+		return -1;
 	/* 
 	** the column arrary is 0 based, so decrement to get 1 based parameter 
 	*/
@@ -104,6 +106,9 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
 	unsigned int i;
 	int col_num = -1;
 	MdbColumn *col;
+
+	if (!table->columns)
+		return -1;
 	
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
@@ -304,7 +309,7 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	MdbField *fields;
 	int num_fields;
 
-	if (table->num_cols == 0)
+	if (table->num_cols == 0 || !table->columns)
 		return 0;
 
 	if (mdb_find_row(mdb, row, &row_start, &row_size) == -1 || row_size == 0) {

@@ -104,7 +104,11 @@ GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)
         goto cleanup;
     }
 
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		fprintf(stderr, "Unable to read columns of table %s\n", msysobj.object_name);
+		mdb_free_catalog(mdb);
+		goto cleanup;
+	}
 
     if (mdb_bind_column_by_name(table, "Id", obj_id, NULL) == -1 ||
         mdb_bind_column_by_name(table, "Name", obj_name, NULL) == -1 ||

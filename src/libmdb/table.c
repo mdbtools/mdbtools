@@ -169,25 +169,35 @@ void *
 read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
 {
 	char* _buf = buf;
+	char* _end = buf ? buf + len : NULL;
+
+	if (*cur_pos < 0)
+		return NULL;
 
 	/* Advance to page which contains the first byte */
 	while (*cur_pos >= mdb->fmt->pg_size) {
-		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
+		if (!mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4)))
+			return NULL;
 		*cur_pos -= (mdb->fmt->pg_size - 8);
 	}
 	/* Copy pages into buffer */
 	while (*cur_pos + len >= (size_t)mdb->fmt->pg_size) {
-		int piece_len = mdb->fmt->pg_size - *cur_pos;
+		size_t piece_len = mdb->fmt->pg_size - *cur_pos;
 		if (_buf) {
+			if (_buf + piece_len > _end)
+				return NULL;
 			memcpy(_buf, mdb->pg_buf + *cur_pos, piece_len);
 			_buf += piece_len;
 		}
 		len -= piece_len;
-		mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4));
+		if (!mdb_read_pg(mdb, mdb_get_int32(mdb->pg_buf,4)))
+			return NULL;
 		*cur_pos = 8;
 	}
 	/* Copy into buffer from final page */
 	if (len && _buf) {
+		if (_buf + len > _end)
+			return NULL;
 		memcpy(_buf, mdb->pg_buf + *cur_pos, len);
 	}
 	*cur_pos += len;
@@ -246,7 +256,11 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	/* printf("column %d\n", i);
 	mdb_buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
 #endif
-		read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size);
+		if (!read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size)) {
+			g_free(col);
+			mdb_free_columns(table->columns);
+			return table->columns = NULL;
+		}
 		pcol = g_malloc0(sizeof(MdbColumn));
 
 		pcol->table = table;
@@ -305,8 +319,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		else
 			name_sz = read_pg_if_16(mdb, &cur_pos);
 		tmp_buf = g_malloc(name_sz);
-		read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz);
-		mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, sizeof(pcol->name));
+		if (read_pg_if_n(mdb, tmp_buf, &cur_pos, name_sz))
+			mdb_unicode2ascii(mdb, tmp_buf, name_sz, pcol->name, sizeof(pcol->name));
 		g_free(tmp_buf);
 	}
 

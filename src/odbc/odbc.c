@@ -1344,7 +1344,10 @@ SQLRETURN SQL_API SQLColumns(
 			LogStatementError(stmt, "Could not read table '%s'", szTableName);
 			return SQL_ERROR;
 		}
-		mdb_read_columns(table);
+		if (!mdb_read_columns(table)) {
+			LogStatementError(stmt, "Could not read columns of table '%s'", szTableName);
+			return SQL_ERROR;
+		}
 		for (j=0; j<table->num_cols; j++) {
 			col = g_ptr_array_index(table->columns, j);
 
