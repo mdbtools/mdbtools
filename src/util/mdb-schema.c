@@ -34,6 +34,8 @@ main (int argc, char **argv)
 	int opt_indexes = MDB_SHEXP_DEFAULT & MDB_SHEXP_INDEXES;
 	int opt_relations = MDB_SHEXP_DEFAULT & MDB_SHEXP_RELATIONS;
 
+	setlocale(LC_ALL, "");
+
 	GOptionEntry entries[] = {
 		{ "table", 'T', 0, G_OPTION_ARG_STRING, &tabname, "Only create schema for named table", "table"},
 		{ "namespace", 'N', 0, G_OPTION_ARG_STRING, &namespace, "Prefix identifiers with namespace", "namespace"},

@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <locale.h>
 
 #ifdef HAVE_GLIB
 #include <glib.h>
@@ -43,7 +44,6 @@
 #ifdef HAVE_XLOCALE_H
 #include <xlocale.h>
 #endif
-#include <locale.h>
 #endif
 
 #ifdef _WIN32
