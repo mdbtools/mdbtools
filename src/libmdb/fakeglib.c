@@ -448,7 +448,7 @@ gboolean g_option_context_parse(GOptionContext *context,
     int len = 0;
 #ifdef HAVE_ICONV
     iconv_t converter = NULL;
-    char *locale = setlocale(LC_ALL, NULL);
+    char *locale = setlocale(LC_CTYPE, NULL);
     if (locale) {
         while (*locale && *locale != '.') {
             locale++;
