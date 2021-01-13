@@ -33,6 +33,7 @@ main (int argc, char **argv)
 	int opt_comments = MDB_SHEXP_DEFAULT & MDB_SHEXP_COMMENTS;
 	int opt_indexes = MDB_SHEXP_DEFAULT & MDB_SHEXP_INDEXES;
 	int opt_relations = MDB_SHEXP_DEFAULT & MDB_SHEXP_RELATIONS;
+	int success = 0;
 
 	setlocale(LC_ALL, "");
 
@@ -109,13 +110,17 @@ main (int argc, char **argv)
 		export_options |= MDB_SHEXP_INDEXES;
 	if (opt_relations)
 		export_options |= MDB_SHEXP_RELATIONS;
-	mdb_print_schema(mdb, stdout, tabname, namespace, export_options);
+
+	success = mdb_print_schema(mdb, stdout, tabname, namespace, export_options);
+	if (tabname && !success) {
+		fprintf(stderr, "Error: No table named \"%s\" found in the database\n", tabname);
+	}
 
 	mdb_close (mdb);
 
 	g_option_context_free(opt_context);
 	g_free(namespace);
 	g_free(tabname);
-	return 0;
+	return !success;
 }
 
