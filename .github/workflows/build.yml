@@ -23,9 +23,9 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: bash -x ./test_script.sh
+        run: bash -e -x ./test_script.sh
       - name: SQL tests
-        run: bash -x ./test_sql.sh
+        run: bash -e -x ./test_sql.sh
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
       - name: pkg-config libmdb test
@@ -55,9 +55,9 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: bash -x ./test_script.sh
+        run: bash -e -x ./test_script.sh
       - name: SQL tests
-        run: bash -x ./test_sql.sh
+        run: bash -e -x ./test_sql.sh
       - name: ODBC tests
         run: env MDBPATH=test/data ./src/odbc/unittest
       - name: pkg-config libmdb test
@@ -104,6 +104,6 @@ jobs:
       - name: Make
         run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make'
       - name: Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./test_script.sh'
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && bash -e -x ./test_script.sh'
       - name: SQL Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./test_sql.sh'
+        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && bash -e -x ./test_sql.sh'
