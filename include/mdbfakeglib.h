@@ -84,7 +84,9 @@ typedef struct GError {
 typedef enum GOptionArg {
     G_OPTION_ARG_NONE,
     G_OPTION_ARG_STRING,
-    G_OPTION_ARG_INT
+    G_OPTION_ARG_INT,
+    G_OPTION_ARG_CALLBACK,
+    G_OPTION_ARG_FILENAME
 } GOptionArg;
 
 typedef enum GOptionFlags {

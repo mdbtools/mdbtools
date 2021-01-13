@@ -28,6 +28,9 @@
 #include <string.h>
 #include <getopt.h>
 #include <errno.h>
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
 
 /* string functions */
 
@@ -443,6 +446,24 @@ gboolean g_option_context_parse(GOptionContext *context,
     int i;
     int count = 0;
     int len = 0;
+#ifdef HAVE_ICONV
+    iconv_t converter = NULL;
+    char *locale = setlocale(LC_ALL, NULL);
+    if (locale) {
+        while (*locale && *locale != '.') {
+            locale++;
+        }
+        if (locale[0] == '.') {
+            converter = iconv_open("UTF-8", &locale[1]);
+            if (converter == (iconv_t)-1) {
+                *error = malloc(sizeof(GError));
+                (*error)->message = malloc(100);
+                snprintf((*error)->message, 100, "Unsupported system encoding: %s\n", &locale[1]);
+                return FALSE;
+            }
+        }
+    }
+#endif
     if (*argc == 2 &&
             (strcmp((*argv)[1], "-h") == 0 || strcmp((*argv)[1], "--help") == 0)) {
         fprintf(stderr, "%s", g_option_context_get_help(context, TRUE, NULL));
@@ -452,9 +473,8 @@ gboolean g_option_context_parse(GOptionContext *context,
         GOptionArg arg = context->entries[i].arg;
         count++;
         len++;
-        if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
+        if (arg != G_OPTION_ARG_NONE)
             len++;
-        }
     }
     struct option *long_opts = calloc(count+1, sizeof(struct option));
     char *short_opts = calloc(1, len+1);
@@ -463,9 +483,8 @@ gboolean g_option_context_parse(GOptionContext *context,
         const GOptionEntry *entry = &context->entries[i];
         GOptionArg arg = entry->arg;
         short_opts[j++] = entry->short_name;
-        if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
+        if (arg != G_OPTION_ARG_NONE)
             short_opts[j++] = ':';
-        }
         long_opts[i].name = entry->long_name;
         long_opts[i].has_arg = entry->arg == G_OPTION_ARG_NONE ? no_argument : required_argument;
     }
@@ -509,8 +528,35 @@ gboolean g_option_context_parse(GOptionContext *context,
                 free(long_opts);
                 return FALSE;
             }
-        } else if (entry->arg == G_OPTION_ARG_STRING) {
+        } else if (entry->arg == G_OPTION_ARG_FILENAME) {
             *(char **)entry->arg_data = strdup(optarg);
+        } else if (entry->arg == G_OPTION_ARG_STRING) {
+#ifdef HAVE_ICONV
+            if (converter) {
+                size_t optarg_len = strlen(optarg);
+                size_t utf8_len = 4*optarg_len;
+                char *utf8_optarg = malloc(utf8_len+1);
+                char *output = utf8_optarg;
+                char *input = (char *)optarg;
+                size_t result = iconv(converter, &input, &optarg_len, &output, &utf8_len);
+                if (result == (size_t)-1) {
+                    *error = malloc(sizeof(GError));
+                    (*error)->message = malloc(100);
+                    snprintf((*error)->message, 100, "option parsing failed: Invalid byte sequence in conversion input");
+                    free(short_opts);
+                    free(long_opts);
+                    free(utf8_optarg);
+                    return FALSE;
+                } else {
+                    output[0] = '\0';
+                    *(char **)entry->arg_data = utf8_optarg;
+                }
+            } else {
+                *(char **)entry->arg_data = strdup(optarg);
+            }
+#else
+            *(char **)entry->arg_data = strdup(optarg);
+#endif
         }
     }
     *argc -= (optind - 1);

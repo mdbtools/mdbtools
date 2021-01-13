@@ -340,8 +340,8 @@ main(int argc, char **argv)
 		{ "no-pretty-print", 'P', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &pretty_print, "Don't pretty print", NULL},
 		{ "no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &headers, "Don't print header", NULL},
 		{ "no-footer", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &footers, "Don't print footer", NULL},
-		{ "input", 'i', 0, G_OPTION_ARG_STRING, &filename_in, "Read SQL from specified file", "file"},
-		{ "output", 'o', 0, G_OPTION_ARG_STRING, &filename_out, "Write result to specified file", "file"},
+		{ "input", 'i', 0, G_OPTION_ARG_FILENAME, &filename_in, "Read SQL from specified file", "file"},
+		{ "output", 'o', 0, G_OPTION_ARG_FILENAME, &filename_out, "Write result to specified file", "file"},
 		{ NULL },
 	};
 	GError *error = NULL;

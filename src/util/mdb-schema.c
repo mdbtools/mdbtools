@@ -18,6 +18,7 @@
 
 /* this utility dumps the schema for an existing database */
 #include "mdbtools.h"
+#include <locale.h>
 
 int
 main (int argc, char **argv)
@@ -56,6 +57,7 @@ main (int argc, char **argv)
 	};
 	GError *error = NULL;
 	GOptionContext *opt_context;
+	char *old_locale = setlocale(LC_ALL, "");
 
 	opt_context = g_option_context_new("<file> [<backend>] - Dump schema");
 	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
@@ -66,6 +68,8 @@ main (int argc, char **argv)
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
+
+	setlocale(LC_ALL, old_locale);
 
 	if (argc < 2 || argc > 3) {
 		fputs("Wrong number of arguments.\n\n", stderr);
