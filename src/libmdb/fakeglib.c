@@ -454,7 +454,7 @@ gboolean g_option_context_parse(GOptionContext *context,
             locale++;
         }
         if (locale[0] == '.' && strcmp(locale, ".65001") != 0) {
-            char iconv_name[100];
+            char iconv_name[50];
             snprintf(iconv_name, sizeof(iconv_name),
 #ifdef _WIN32
                     "WINDOWS-"
