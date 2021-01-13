@@ -453,12 +453,20 @@ gboolean g_option_context_parse(GOptionContext *context,
         while (*locale && *locale != '.') {
             locale++;
         }
-        if (locale[0] == '.') {
-            converter = iconv_open("UTF-8", &locale[1]);
+        if (locale[0] == '.' && strcmp(locale, ".65001") != 0) {
+            char iconv_name[100];
+            snprintf(iconv_name, sizeof(iconv_name),
+#ifdef _WIN32
+                    "WINDOWS-"
+                    /* Guessing it's a code page. If you're debugging the error below on Windows, start here.
+                     * See: https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers */
+#endif
+                    "%s", &locale[1]);
+            converter = iconv_open("UTF-8", iconv_name);
             if (converter == (iconv_t)-1) {
                 *error = malloc(sizeof(GError));
                 (*error)->message = malloc(100);
-                snprintf((*error)->message, 100, "Unsupported system encoding: %s\n", &locale[1]);
+                snprintf((*error)->message, 100, "Unsupported system encoding: %s\n", iconv_name);
                 return FALSE;
             }
         }
@@ -542,7 +550,7 @@ gboolean g_option_context_parse(GOptionContext *context,
                 if (result == (size_t)-1) {
                     *error = malloc(sizeof(GError));
                     (*error)->message = malloc(100);
-                    snprintf((*error)->message, 100, "option parsing failed: Invalid byte sequence in conversion input");
+                    snprintf((*error)->message, 100, "Invalid byte sequence in conversion input");
                     free(short_opts);
                     free(long_opts);
                     free(utf8_optarg);
