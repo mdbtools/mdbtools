@@ -89,6 +89,11 @@ main(int argc, char **argv)
 	g_free(buf);
 	mdb_free_tabledef(table);
 	mdb_close(mdb);
+
+	if (!found) {
+		printf("Object %s not found in database file!\n", argv[2]);
+		return 1;
+	}
 	
 	return 0;
 }
