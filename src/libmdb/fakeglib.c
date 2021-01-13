@@ -458,16 +458,17 @@ gboolean g_option_context_parse(GOptionContext *context,
             snprintf(iconv_name, sizeof(iconv_name),
 #ifdef _WIN32
                     "WINDOWS-"
-                    /* Guessing it's a code page. If you're debugging the error below on Windows, start here.
-                     * See: https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers */
+                    /* Guessing it's a Windows code page. If you're debugging
+                     * command-line encoding issues on Windows, start here.
+                     * See:
+                     * https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers
+                     * */
 #endif
                     "%s", &locale[1]);
             converter = iconv_open("UTF-8", iconv_name);
             if (converter == (iconv_t)-1) {
-                *error = malloc(sizeof(GError));
-                (*error)->message = malloc(100);
-                snprintf((*error)->message, 100, "Unsupported system encoding: %s\n", iconv_name);
-                return FALSE;
+                converter = NULL;
+                fprintf(stderr, "Warning: unsupported locale \"%s\". Non-ASCII command-line arguments may work incorrectly.\n", &locale[1]);
             }
         }
     }
