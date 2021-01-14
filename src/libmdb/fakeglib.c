@@ -32,6 +32,9 @@
 #include <iconv.h>
 #endif
 
+/* Linked from libmdb */
+const char *mdb_iconv_name_from_code_page(int code_page);
+
 /* string functions */
 
 void *g_memdup(const void *src, size_t len) {
@@ -229,20 +232,15 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         while (*locale && *locale != '.') {
             locale++;
         }
-        if (locale[0] == '.' && strcmp(locale, ".65001") != 0) {
-            char iconv_name[50];
-            snprintf(iconv_name, sizeof(iconv_name),
-#ifdef _WIN32
-                    "WINDOWS-"
-                    /* Guessing it's a Windows code page. If you're debugging
-                     * command-line encoding issues on Windows, start here.
-                     * See:
-                     * https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers
-                     * */
-#endif
-                    "%s", &locale[1]);
-            converter = iconv_open("UTF-8", iconv_name);
-            if (converter == (iconv_t)-1) {
+        if (locale[0] == '.') {
+            const char *iconv_name = NULL;
+            uint16_t code_page = 0;
+            if (sscanf(locale, ".%hu", &code_page) == 1) {
+                iconv_name = mdb_iconv_name_from_code_page(code_page);
+            } else {
+                iconv_name = &locale[1];
+            }
+            if (iconv_name == NULL || (converter = iconv_open("UTF-8", iconv_name)) == (iconv_t)-1) {
                 converter = NULL;
                 fprintf(stderr, "Warning: unsupported locale \"%s\". Non-ASCII command-line arguments may work incorrectly.\n", &locale[1]);
             }
