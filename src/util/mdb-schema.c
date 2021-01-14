@@ -56,6 +56,7 @@ main (int argc, char **argv)
 	};
 	GError *error = NULL;
 	GOptionContext *opt_context;
+	char *old_locale = setlocale(LC_CTYPE, "");
 
 	opt_context = g_option_context_new("<file> [<backend>] - Dump schema");
 	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
@@ -66,6 +67,8 @@ main (int argc, char **argv)
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
+
+	setlocale(LC_CTYPE, old_locale);
 
 	if (argc < 2 || argc > 3) {
 		fputs("Wrong number of arguments.\n\n", stderr);

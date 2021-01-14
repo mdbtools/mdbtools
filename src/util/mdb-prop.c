@@ -25,6 +25,8 @@ main(int argc, char **argv)
 {
 	MdbHandle *mdb;
 	MdbTableDef *table;
+	char *table_name = NULL;
+	char *locale = NULL;
 	char *name;
 	gchar *propColName;
 	void *buf;
@@ -46,8 +48,16 @@ main(int argc, char **argv)
 		return 1;
 	}
 
+	locale = setlocale(LC_CTYPE, "");
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, NULL);
+	setlocale(LC_CTYPE, locale);
+	if (!table_name) {
+		mdb_close(mdb);
+		return 1;
+	}
 	table = mdb_read_table_by_name(mdb, "MSysObjects", MDB_ANY);
 	if (!table) {
+		g_free(table_name);
 		mdb_close(mdb);
 		return 1;
 	}
@@ -62,13 +72,14 @@ main(int argc, char **argv)
 		g_free(name);
 		g_free(buf);
 		mdb_free_tabledef(table);
+		g_free(table_name);
 		mdb_close(mdb);
 		printf("Column %s not found in MSysObjects!\n", argv[3]);
 		return 1;
 	}
 
 	while(mdb_fetch_row(table)) {
-		if (!strcmp(name, argv[2])) {
+		if (!strcmp(name, table_name)) {
 			found = 1;
 			break;
 		}
@@ -89,6 +100,12 @@ main(int argc, char **argv)
 	g_free(buf);
 	mdb_free_tabledef(table);
 	mdb_close(mdb);
+	g_free(table_name);
+
+	if (!found) {
+		printf("Object %s not found in database file!\n", argv[2]);
+		return 1;
+	}
 	
 	return 0;
 }

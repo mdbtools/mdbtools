@@ -28,6 +28,12 @@
 #include <string.h>
 #include <getopt.h>
 #include <errno.h>
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
+
+/* Linked from libmdb */
+const char *mdb_iconv_name_from_code_page(int code_page);
 
 /* string functions */
 
@@ -56,13 +62,7 @@ char **g_strsplit(const char *haystack, const char *needle, int max_tokens) {
 
     int i = 0;
     while ((found = strstr(haystack, needle))) {
-        // Windows lacks strndup
-        size_t chunk_len = found - haystack;
-        char *chunk = malloc(chunk_len + 1);
-        memcpy(chunk, haystack, chunk_len);
-        chunk[chunk_len] = 0;
-
-        ret[i++] = chunk;
+        ret[i++] = g_strndup(haystack, found - haystack);
         haystack = found + strlen(needle);
     }
     ret[i] = strdup(haystack);
@@ -127,6 +127,18 @@ int vasprintf(char **ret, const char *format, va_list ap) {
 char *g_strdup(const char *input) {
     size_t len = strlen(input);
     return g_memdup(input, len+1);
+}
+
+char *g_strndup(const char *src, size_t len) {
+    if (!src)
+        return NULL;
+    char *result = malloc(len+1);
+    size_t i=0;
+    while (*src && i<len) {
+        result[i++] = *src++;
+    }
+    result[i] = '\0';
+    return result;
 }
 
 char *g_strdup_printf(const char *format, ...) {
@@ -208,6 +220,61 @@ gchar *g_string_free (GString *string, gboolean free_segment) {
         return NULL;
     }
     return data;
+}
+
+/* conversion */
+gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
+        size_t *bytes_read, size_t *bytes_written, GError **error) {
+#ifdef HAVE_ICONV
+    iconv_t converter = NULL;
+    char *locale = setlocale(LC_CTYPE, NULL);
+    if (locale) {
+        while (*locale && *locale != '.') {
+            locale++;
+        }
+        if (locale[0] == '.') {
+            const char *iconv_name = NULL;
+            uint16_t code_page = 0;
+            if (sscanf(locale, ".%hu", &code_page) == 1) {
+                iconv_name = mdb_iconv_name_from_code_page(code_page);
+            } else {
+                iconv_name = &locale[1];
+            }
+            if (iconv_name == NULL || (converter = iconv_open("UTF-8", iconv_name)) == (iconv_t)-1) {
+                converter = NULL;
+                fprintf(stderr, "Warning: unsupported locale \"%s\". Non-ASCII command-line arguments may work incorrectly.\n", &locale[1]);
+            }
+        }
+    }
+    if (converter) {
+        size_t input_len = len == (size_t)-1 ? strlen(opsysstring) : len;
+        size_t utf8_len = 4*input_len;
+        size_t output_len = utf8_len;
+        char *utf8_string = malloc(utf8_len+1);
+        char *output = utf8_string;
+        char *input = (char *)opsysstring;
+        size_t result = iconv(converter, (ICONV_CONST char **)&input, &input_len, &output, &output_len);
+        iconv_close(converter);
+        if (result == (size_t)-1) {
+            if (error) {
+                *error = malloc(sizeof(GError));
+                (*error)->message = malloc(100);
+                snprintf((*error)->message, 100, "Invalid byte sequence in conversion input");
+            }
+            return NULL;
+        }
+        if (bytes_read)
+            *bytes_read = len - input_len;
+        if (bytes_written)
+            *bytes_written = utf8_len - output_len;
+        *output = '\0';
+        return utf8_string;
+    }
+#endif
+    if (len == (size_t)-1)
+        return g_strdup(opsysstring);
+
+    return g_strndup(opsysstring, len);
 }
 
 /* GHashTable */
@@ -452,9 +519,8 @@ gboolean g_option_context_parse(GOptionContext *context,
         GOptionArg arg = context->entries[i].arg;
         count++;
         len++;
-        if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
+        if (arg != G_OPTION_ARG_NONE)
             len++;
-        }
     }
     struct option *long_opts = calloc(count+1, sizeof(struct option));
     char *short_opts = calloc(1, len+1);
@@ -463,9 +529,8 @@ gboolean g_option_context_parse(GOptionContext *context,
         const GOptionEntry *entry = &context->entries[i];
         GOptionArg arg = entry->arg;
         short_opts[j++] = entry->short_name;
-        if (arg == G_OPTION_ARG_STRING || arg == G_OPTION_ARG_INT) {
+        if (arg != G_OPTION_ARG_NONE)
             short_opts[j++] = ':';
-        }
         long_opts[i].name = entry->long_name;
         long_opts[i].has_arg = entry->arg == G_OPTION_ARG_NONE ? no_argument : required_argument;
     }
@@ -509,8 +574,16 @@ gboolean g_option_context_parse(GOptionContext *context,
                 free(long_opts);
                 return FALSE;
             }
-        } else if (entry->arg == G_OPTION_ARG_STRING) {
+        } else if (entry->arg == G_OPTION_ARG_FILENAME) {
             *(char **)entry->arg_data = strdup(optarg);
+        } else if (entry->arg == G_OPTION_ARG_STRING) {
+            char *result = g_locale_to_utf8(optarg, -1, NULL, NULL, error);
+            if (result == NULL) {
+                free(short_opts);
+                free(long_opts);
+                return FALSE;
+            }
+            *(char **)entry->arg_data = result;
         }
     }
     *argc -= (optind - 1);

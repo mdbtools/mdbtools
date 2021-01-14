@@ -84,7 +84,9 @@ typedef struct GError {
 typedef enum GOptionArg {
     G_OPTION_ARG_NONE,
     G_OPTION_ARG_STRING,
-    G_OPTION_ARG_INT
+    G_OPTION_ARG_INT,
+    G_OPTION_ARG_CALLBACK,
+    G_OPTION_ARG_FILENAME
 } GOptionArg;
 
 typedef enum GOptionFlags {
@@ -145,9 +147,14 @@ char **g_strsplit(const char *haystack, const char *needle, int max_tokens);
 void g_strfreev(char **dir);
 char *g_strconcat(const char *first, ...);
 char *g_strdup(const char *src);
+char *g_strndup(const char *src, size_t len);
 char *g_strdup_printf(const char *format, ...);
 gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter);
 void g_printerr(const gchar *format, ...);
+
+/* conversion */
+gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
+        size_t *bytes_read, size_t *bytes_written, GError **error);
 
 /* GString */
 GString *g_string_new(const gchar *init);

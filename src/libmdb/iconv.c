@@ -19,6 +19,8 @@
 #include <errno.h>
 #include "mdbtools.h"
 
+const char *mdb_iconv_name_from_code_page(int code_page);
+
 #ifndef MIN
 #define MIN(a,b) (a>b ? b : a)
 #endif
@@ -259,6 +261,63 @@ mdb_target_charset(MdbHandle *mdb)
 #endif
 }
 
+/* See: https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers */
+const char *mdb_iconv_name_from_code_page(int code_page) {
+	const char *jet3_iconv_code = NULL;
+	switch (code_page) {
+		case 437: jet3_iconv_code="IBM437"; break;
+		case 850: jet3_iconv_code="IBM850"; break;
+		case 852: jet3_iconv_code="IBM852"; break;
+		case 855: jet3_iconv_code="IBM855"; break;
+		case 860: jet3_iconv_code="IBM860"; break;
+		case 861: jet3_iconv_code="IBM861"; break;
+		case 862: jet3_iconv_code="IBM862"; break;
+		case 865: jet3_iconv_code="IBM865"; break;
+		case 866: jet3_iconv_code="IBM866"; break;
+		case 869: jet3_iconv_code="IBM869"; break;
+		case 874: jet3_iconv_code="WINDOWS-874"; break;
+		case 932: jet3_iconv_code="SHIFT-JIS"; break;
+		case 936: jet3_iconv_code="WINDOWS-936"; break;
+		case 950: jet3_iconv_code="BIG-5"; break;
+		case 951: jet3_iconv_code="BIG5-HKSCS"; break;
+		case 1200: jet3_iconv_code="UTF-16LE"; break;
+		case 1201: jet3_iconv_code="UTF-16BE"; break;
+		case 1250: jet3_iconv_code="WINDOWS-1250"; break;
+		case 1251: jet3_iconv_code="WINDOWS-1251"; break;
+		case 1252: jet3_iconv_code="WINDOWS-1252"; break;
+		case 1253: jet3_iconv_code="WINDOWS-1253"; break;
+		case 1254: jet3_iconv_code="WINDOWS-1254"; break;
+		case 1255: jet3_iconv_code="WINDOWS-1255"; break;
+		case 1256: jet3_iconv_code="WINDOWS-1256"; break;
+		case 1257: jet3_iconv_code="WINDOWS-1257"; break;
+		case 1258: jet3_iconv_code="WINDOWS-1258"; break;
+		case 1361: jet3_iconv_code="CP1361"; break;
+		case 12000: jet3_iconv_code="UTF-32LE"; break;
+		case 12001: jet3_iconv_code="UTF-32BE"; break;
+		case 20866: jet3_iconv_code="KOI8-R"; break;
+		case 20932: jet3_iconv_code="EUC-JP"; break;
+		case 21866: jet3_iconv_code="KOI8-U"; break;
+		case 28591: jet3_iconv_code="ISO-8859-1"; break;
+		case 28592: jet3_iconv_code="ISO-8859-2"; break;
+		case 28593: jet3_iconv_code="ISO-8859-3"; break;
+		case 28594: jet3_iconv_code="ISO-8859-4"; break;
+		case 28595: jet3_iconv_code="ISO-8859-5"; break;
+		case 28596: jet3_iconv_code="ISO-8859-6"; break;
+		case 28597: jet3_iconv_code="ISO-8859-7"; break;
+		case 28598: jet3_iconv_code="ISO-8859-8"; break;
+		case 28599: jet3_iconv_code="ISO-8859-9"; break;
+		case 28503: jet3_iconv_code="ISO-8859-13"; break;
+		case 28505: jet3_iconv_code="ISO-8859-15"; break;
+		case 51932: jet3_iconv_code="EUC-JP"; break;
+		case 51936: jet3_iconv_code="EUC-CN"; break;
+		case 51949: jet3_iconv_code="EUC-KR"; break;
+		case 65000: jet3_iconv_code="UTF-7"; break;
+		case 65001: jet3_iconv_code="UTF-8"; break;
+		default: break;
+	}
+	return jet3_iconv_code;
+}
+
 void mdb_iconv_init(MdbHandle *mdb)
 {
 	const char *iconv_code;
@@ -280,23 +339,10 @@ void mdb_iconv_init(MdbHandle *mdb)
 			/* Use code page embedded in the database */
 			/* Note that individual columns can override this value,
 			 * but per-column code pages are not supported by libmdb */
-			switch (mdb->f->code_page) {
-				case 874: jet3_iconv_code="WINDOWS-874"; break;
-				case 932: jet3_iconv_code="SHIFT-JIS"; break;
-				case 936: jet3_iconv_code="WINDOWS-936"; break;
-				case 950: jet3_iconv_code="BIG-5"; break;
-				case 951: jet3_iconv_code="BIG5-HKSCS"; break;
-				case 1250: jet3_iconv_code="WINDOWS-1250"; break;
-				case 1251: jet3_iconv_code="WINDOWS-1251"; break;
-				case 1252: jet3_iconv_code="WINDOWS-1252"; break;
-				case 1253: jet3_iconv_code="WINDOWS-1253"; break;
-				case 1254: jet3_iconv_code="WINDOWS-1254"; break;
-				case 1255: jet3_iconv_code="WINDOWS-1255"; break;
-				case 1256: jet3_iconv_code="WINDOWS-1256"; break;
-				case 1257: jet3_iconv_code="WINDOWS-1257"; break;
-				case 1258: jet3_iconv_code="WINDOWS-1258"; break;
-				default: jet3_iconv_code="CP1252"; break;
-			}
+			jet3_iconv_code = mdb_iconv_name_from_code_page(mdb->f->code_page);
+		}
+		if (!jet3_iconv_code) {
+			jet3_iconv_code = "CP1252";
 		}
 
 		mdb->iconv_out = iconv_open(jet3_iconv_code, iconv_code);

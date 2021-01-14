@@ -25,6 +25,9 @@ int main(int argc, char **argv) {
     MdbCatalogEntry *entry;
     MdbTableDef *table;
     int found = 0;
+    char *locale = NULL;
+    char *table_name = NULL;
+    GError *error = NULL;
 
 	if (argc < 3) {
 		fprintf(stderr, "Usage: %s <file> <table>\n", argv[0]);
@@ -39,9 +42,16 @@ int main(int argc, char **argv) {
 	if (!mdb_read_catalog(mdb, MDB_TABLE)) {
         return 1;
     }
+	locale = setlocale(LC_CTYPE, "");
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
+	setlocale(LC_CTYPE, locale);
+	if (!table_name) {
+		fprintf(stderr, "Error converting table argument: %s\n", error->message);
+		return 1;
+	}
 	for (i = 0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index(mdb->catalog, i);
-		if (entry->object_type == MDB_TABLE && !g_ascii_strcasecmp(entry->object_name, argv[2])) {
+		if (entry->object_type == MDB_TABLE && !g_ascii_strcasecmp(entry->object_name, table_name)) {
             table = mdb_read_table(entry);
             fprintf(stdout, "%d\n", table->num_rows);
             found = 1;
@@ -51,7 +61,7 @@ int main(int argc, char **argv) {
     
     // check was found:
 	if (!found) {
-		fprintf(stderr, "No table named %s found (among %d tables in file).\n", argv[2], mdb->num_catalog);
+		fprintf(stderr, "No table named %s found (among %d tables in file).\n", table_name, mdb->num_catalog);
         return 1;
 	}
 

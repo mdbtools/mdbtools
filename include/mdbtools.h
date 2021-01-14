@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <locale.h>
 
 #ifdef HAVE_GLIB
 #include <glib.h>
@@ -37,13 +38,10 @@
 #include <mdbfakeglib.h>
 #endif
 
-#ifdef HAVE_ICONV
+#if defined(HAVE_ICONV)
 #include <iconv.h>
-#else
-#ifdef HAVE_XLOCALE_H
+#elif defined(HAVE_XLOCALE_H)
 #include <xlocale.h>
-#endif
-#include <locale.h>
 #endif
 
 #ifdef _WIN32
