@@ -17,7 +17,6 @@
  */
 
 #include "mdbtools.h"
-#include <locale.h>
 
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len);
 

@@ -17,7 +17,6 @@
  */
 
 #include "mdbtools.h"
-#include <locale.h>
 
 #include "base64.h"
 
