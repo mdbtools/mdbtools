@@ -6,7 +6,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        locale: [ en_US.ISO8859-1, en_US.UTF-8 ]
         compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10 ]
         glib: [ enable-glib, disable-glib ]
     steps:
@@ -25,8 +24,6 @@ jobs:
         run: make
       - name: CLI tests
         run: bash -e -x ./test_script.sh
-        env:
-          LC_CTYPE: ${{ matrix.locale }}
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
