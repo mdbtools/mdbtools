@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include <locale.h>
 
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len);
 
@@ -26,6 +27,7 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 	MdbTableDef *table;
 	char *table_name = NULL;
+	char *locale = NULL;
 	char *name;
 	gchar *propColName;
 	void *buf;
@@ -47,7 +49,9 @@ main(int argc, char **argv)
 		return 1;
 	}
 
+	locale = setlocale(LC_CTYPE, "");
 	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, NULL);
+	setlocale(LC_CTYPE, locale);
 	if (!table_name) {
 		mdb_close(mdb);
 		return 1;

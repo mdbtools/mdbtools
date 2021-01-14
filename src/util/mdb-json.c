@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include <locale.h>
 
 #include "base64.h"
 
@@ -114,6 +115,7 @@ main(int argc, char **argv)
 	size_t length;
 	int ret;
 	char *table_name = NULL;
+	char *locale = NULL;
 
 	GOptionEntry entries[] = {
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
@@ -127,20 +129,28 @@ main(int argc, char **argv)
 
 	opt_context = g_option_context_new("<file> <table> - export data from Access file to JSON");
 	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	locale = setlocale(LC_CTYPE, "");
 	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
 	{
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
-
 	if (argc != 3) {
 		fputs("Wrong number of arguments.\n\n", stderr);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit(1);
 	}
 
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
+	if (!table_name) {
+		fprintf(stderr, "argument parsing failed: %s\n", error->message);
+		exit(1);
+	}
+	setlocale(LC_CTYPE, locale);
+
 	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
+		g_free(table_name);
 		exit(1);
 	}
 
@@ -152,12 +162,6 @@ main(int argc, char **argv)
 
     mdb_set_bind_size(mdb, EXPORT_BIND_SIZE);
 
-	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
-	if (!table_name) {
-		fprintf(stderr, "argument parsing failed: %s\n", error->message);
-		mdb_close(mdb);
-		exit(1);
-	}
 	table = mdb_read_table_by_name(mdb, table_name, MDB_TABLE);
 	if (!table) {
 		fprintf(stderr, "Error: Table %s does not exist in this database.\n", table_name);
@@ -177,6 +181,7 @@ main(int argc, char **argv)
 		ret = mdb_bind_column(table, i+1, bound_values[i], &bound_lens[i]);
 		if (ret == -1) {
 			fprintf(stderr, "Failed to bind column %d\n", i + 1);
+			mdb_close(mdb);
 			exit(1);
 		}
 	}
