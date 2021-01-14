@@ -6,6 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        locale: [ en_US.ISO8859-1, en_US.UTF-8 ]
         compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10 ]
         glib: [ enable-glib, disable-glib ]
     steps:
@@ -24,14 +25,22 @@ jobs:
         run: make
       - name: CLI tests
         run: bash -e -x ./test_script.sh
+        env:
+          LC_CTYPE: ${{ matrix.locale }}
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
-        run: env MDBPATH=test/data ./src/odbc/unittest
+        run: ./src/odbc/unittest
+        env:
+          MDBPATH: test/data
       - name: pkg-config libmdb test
-        run: env PKG_CONFIG_PATH=. pkg-config libmdb --exists
+        run: pkg-config libmdb --exists
+        env:
+          PKG_CONFIG_PATH: .
       - name: pkg-config libmdbsql test
-        run: env PKG_CONFIG_PATH=. pkg-config libmdbsql --exists
+        run: pkg-config libmdbsql --exists
+        env:
+          PKG_CONFIG_PATH: .
   macos:
     runs-on: macos-latest
     strategy:
@@ -59,11 +68,17 @@ jobs:
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
-        run: env MDBPATH=test/data ./src/odbc/unittest
+        run: ./src/odbc/unittest
+        env:
+          MDBPATH: test/data
       - name: pkg-config libmdb test
-        run: env PKG_CONFIG_PATH=. pkg-config libmdb --exists
+        run: pkg-config libmdb --exists
+        env:
+          PKG_CONFIG_PATH: .
       - name: pkg-config libmdbsql test
-        run: env PKG_CONFIG_PATH=. pkg-config libmdbsql --exists
+        run: pkg-config libmdbsql --exists
+        env:
+          PKG_CONFIG_PATH: .
   macos-iodbc:
     runs-on: macos-latest
     strategy:
@@ -88,7 +103,9 @@ jobs:
       - name: Make
         run: make
       - name: ODBC tests
-        run: env MDBPATH=test/data ./src/odbc/unittest
+        run: ./src/odbc/unittest
+        env:
+          MDBPATH: test/data
   windows:
     runs-on: windows-latest
     env:
