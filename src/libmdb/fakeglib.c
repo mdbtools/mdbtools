@@ -59,13 +59,7 @@ char **g_strsplit(const char *haystack, const char *needle, int max_tokens) {
 
     int i = 0;
     while ((found = strstr(haystack, needle))) {
-        // Windows lacks strndup
-        size_t chunk_len = found - haystack;
-        char *chunk = malloc(chunk_len + 1);
-        memcpy(chunk, haystack, chunk_len);
-        chunk[chunk_len] = 0;
-
-        ret[i++] = chunk;
+        ret[i++] = g_strndup(haystack, found - haystack);
         haystack = found + strlen(needle);
     }
     ret[i] = strdup(haystack);
@@ -135,7 +129,13 @@ char *g_strdup(const char *input) {
 char *g_strndup(const char *src, size_t len) {
     if (!src)
         return NULL;
-    return g_strdup_printf("%*s", (int)len, src);
+    char *result = malloc(len+1);
+    size_t i=0;
+    while (*src && i<len) {
+        result[i++] = *src++;
+    }
+    result[i] = '\0';
+    return result;
 }
 
 char *g_strdup_printf(const char *format, ...) {
@@ -269,6 +269,7 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
             *bytes_read = len - input_len;
         if (bytes_written)
             *bytes_written = utf8_len - output_len;
+        *output = '\0';
         return utf8_string;
     }
 #endif
