@@ -147,6 +147,7 @@ char **g_strsplit(const char *haystack, const char *needle, int max_tokens);
 void g_strfreev(char **dir);
 char *g_strconcat(const char *first, ...);
 char *g_strdup(const char *src);
+char *g_strndup(const char *src, size_t len);
 char *g_strdup_printf(const char *format, ...);
 gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter);
 void g_printerr(const gchar *format, ...);

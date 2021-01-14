@@ -132,6 +132,12 @@ char *g_strdup(const char *input) {
     return g_memdup(input, len+1);
 }
 
+char *g_strndup(const char *src, size_t len) {
+    if (!src)
+        return NULL;
+    return g_strdup_printf("%*s", (int)len, src);
+}
+
 char *g_strdup_printf(const char *format, ...) {
     char *ret = NULL;
     va_list argp;
@@ -267,9 +273,9 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     }
 #endif
     if (len == (size_t)-1)
-        return strdup(opsysstring);
+        return g_strdup(opsysstring);
 
-    return strndup(opsysstring, len);
+    return g_strndup(opsysstring, len);
 }
 
 /* GHashTable */
