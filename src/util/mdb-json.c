@@ -113,6 +113,7 @@ main(int argc, char **argv)
 	char *value;
 	size_t length;
 	int ret;
+	char *table_name = NULL;
 
 	GOptionEntry entries[] = {
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
@@ -151,9 +152,15 @@ main(int argc, char **argv)
 
     mdb_set_bind_size(mdb, EXPORT_BIND_SIZE);
 
-	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
+	if (!table_name) {
+		fprintf(stderr, "argument parsing failed: %s\n", error->message);
+		mdb_close(mdb);
+		exit(1);
+	}
+	table = mdb_read_table_by_name(mdb, table_name, MDB_TABLE);
 	if (!table) {
-		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[argc-1]);
+		fprintf(stderr, "Error: Table %s does not exist in this database.\n", table_name);
 		mdb_close(mdb);
 		exit(1);
 	}
@@ -207,6 +214,7 @@ main(int argc, char **argv)
 	g_free(bound_values);
 	g_free(bound_lens);
 	mdb_free_tabledef(table);
+	g_free(table_name);
 
 	mdb_close(mdb);
 	return 0;

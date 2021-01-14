@@ -213,6 +213,65 @@ gchar *g_string_free (GString *string, gboolean free_segment) {
     return data;
 }
 
+/* conversion */
+gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
+        size_t *bytes_read, size_t *bytes_written, GError **error) {
+#ifdef HAVE_ICONV
+    iconv_t converter = NULL;
+    char *locale = setlocale(LC_CTYPE, NULL);
+    if (locale) {
+        while (*locale && *locale != '.') {
+            locale++;
+        }
+        if (locale[0] == '.' && strcmp(locale, ".65001") != 0) {
+            char iconv_name[50];
+            snprintf(iconv_name, sizeof(iconv_name),
+#ifdef _WIN32
+                    "WINDOWS-"
+                    /* Guessing it's a Windows code page. If you're debugging
+                     * command-line encoding issues on Windows, start here.
+                     * See:
+                     * https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers
+                     * */
+#endif
+                    "%s", &locale[1]);
+            converter = iconv_open("UTF-8", iconv_name);
+            if (converter == (iconv_t)-1) {
+                converter = NULL;
+                fprintf(stderr, "Warning: unsupported locale \"%s\". Non-ASCII command-line arguments may work incorrectly.\n", &locale[1]);
+            }
+        }
+    }
+    if (converter) {
+        size_t input_len = len == (size_t)-1 ? strlen(opsysstring) : len;
+        size_t utf8_len = 4*input_len;
+        size_t output_len = utf8_len;
+        char *utf8_string = malloc(utf8_len+1);
+        char *output = utf8_string;
+        char *input = (char *)opsysstring;
+        size_t result = iconv(converter, (ICONV_CONST char **)&input, &input_len, &output, &output_len);
+        iconv_close(converter);
+        if (result == (size_t)-1) {
+            if (error) {
+                *error = malloc(sizeof(GError));
+                (*error)->message = malloc(100);
+                snprintf((*error)->message, 100, "Invalid byte sequence in conversion input");
+            }
+            return NULL;
+        }
+        if (bytes_read)
+            *bytes_read = len - input_len;
+        if (bytes_written)
+            *bytes_written = utf8_len - output_len;
+        return utf8_string;
+    }
+#endif
+    if (len == (size_t)-1)
+        return strdup(opsysstring);
+
+    return strndup(opsysstring, len);
+}
+
 /* GHashTable */
 
 typedef struct MyNode {
@@ -446,33 +505,6 @@ gboolean g_option_context_parse(GOptionContext *context,
     int i;
     int count = 0;
     int len = 0;
-#ifdef HAVE_ICONV
-    iconv_t converter = NULL;
-    char *locale = setlocale(LC_CTYPE, NULL);
-    if (locale) {
-        while (*locale && *locale != '.') {
-            locale++;
-        }
-        if (locale[0] == '.' && strcmp(locale, ".65001") != 0) {
-            char iconv_name[50];
-            snprintf(iconv_name, sizeof(iconv_name),
-#ifdef _WIN32
-                    "WINDOWS-"
-                    /* Guessing it's a Windows code page. If you're debugging
-                     * command-line encoding issues on Windows, start here.
-                     * See:
-                     * https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers
-                     * */
-#endif
-                    "%s", &locale[1]);
-            converter = iconv_open("UTF-8", iconv_name);
-            if (converter == (iconv_t)-1) {
-                converter = NULL;
-                fprintf(stderr, "Warning: unsupported locale \"%s\". Non-ASCII command-line arguments may work incorrectly.\n", &locale[1]);
-            }
-        }
-    }
-#endif
     if (*argc == 2 &&
             (strcmp((*argv)[1], "-h") == 0 || strcmp((*argv)[1], "--help") == 0)) {
         fprintf(stderr, "%s", g_option_context_get_help(context, TRUE, NULL));
@@ -540,32 +572,13 @@ gboolean g_option_context_parse(GOptionContext *context,
         } else if (entry->arg == G_OPTION_ARG_FILENAME) {
             *(char **)entry->arg_data = strdup(optarg);
         } else if (entry->arg == G_OPTION_ARG_STRING) {
-#ifdef HAVE_ICONV
-            if (converter) {
-                size_t optarg_len = strlen(optarg);
-                size_t utf8_len = 4*optarg_len;
-                char *utf8_optarg = malloc(utf8_len+1);
-                char *output = utf8_optarg;
-                char *input = (char *)optarg;
-                size_t result = iconv(converter, &input, &optarg_len, &output, &utf8_len);
-                if (result == (size_t)-1) {
-                    *error = malloc(sizeof(GError));
-                    (*error)->message = malloc(100);
-                    snprintf((*error)->message, 100, "Invalid byte sequence in conversion input");
-                    free(short_opts);
-                    free(long_opts);
-                    free(utf8_optarg);
-                    return FALSE;
-                } else {
-                    output[0] = '\0';
-                    *(char **)entry->arg_data = utf8_optarg;
-                }
-            } else {
-                *(char **)entry->arg_data = strdup(optarg);
+            char *result = g_locale_to_utf8(optarg, -1, NULL, NULL, error);
+            if (result == NULL) {
+                free(short_opts);
+                free(long_opts);
+                return FALSE;
             }
-#else
-            *(char **)entry->arg_data = strdup(optarg);
-#endif
+            *(char **)entry->arg_data = result;
         }
     }
     *argc -= (optind - 1);

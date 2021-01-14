@@ -151,6 +151,10 @@ char *g_strdup_printf(const char *format, ...);
 gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter);
 void g_printerr(const gchar *format, ...);
 
+/* conversion */
+gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
+        size_t *bytes_read, size_t *bytes_written, GError **error);
+
 /* GString */
 GString *g_string_new(const gchar *init);
 GString *g_string_assign(GString *string, const gchar *rval);
