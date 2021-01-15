@@ -62,7 +62,7 @@ static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr
 			//fprintf(stderr, "Detected invalid number of UCS-2 bytes\n");
 			break;
 		}
-		if ((!len_in) || (errno == E2BIG)) break;
+		if (!len_in || !len_out || errno == E2BIG) break;
 		/* Don't bail if impossible conversion is encountered */
 		in_ptr += (IS_JET3(mdb)) ? 1 : 2;
 		len_in -= (IS_JET3(mdb)) ? 1 : 2;
