@@ -53,7 +53,7 @@ static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr
 	char *out_ptr = dest;
 	size_t len_out = dlen - 1;
 
-	while (1) {
+	while (len_out) {
 		iconv(mdb->iconv_in, (ICONV_CONST char **)&in_ptr, &len_in, &out_ptr, &len_out);
 		/* 
 		 * Have seen database with odd number of bytes in UCS-2, shouldn't happen but protect against it
