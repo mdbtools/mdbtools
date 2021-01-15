@@ -49,3 +49,7 @@ src/util/prkkd
 src/util/prole
 src/util/prtable
 src/util/updrow
+
+## apidocs output
+public/
+
