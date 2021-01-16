@@ -67,6 +67,9 @@
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
 #define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
 
+/**
+ * see \ref pages_overview
+*/
 enum {
 	MDB_PAGE_DB = 0,
 	MDB_PAGE_DATA,

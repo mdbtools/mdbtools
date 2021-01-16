@@ -4,8 +4,7 @@ This file documents the Microsoft MDB file format for Jet3 and Jet4 databases.
 
 [TOC]
 
-General Notes
--------------
+## General Notes
 
 Access (Jet) does not in general initialize pages to zero before writing them,
 so the file will contains a lot of unititialized data.  This makes the task of
@@ -18,70 +17,80 @@ Most multibyte pointer and integers are stored in little endian (LSB-MSB) order.
 There is an exception in the case of indexes, see the section on index pages for
 details.
 
-Terminology
------------
+## Terminology
+
 
 This section contains a mix of information about data structures used in the MDB
 file format along with general database terminology needed to explain these 
 structures.
-```
-Page          - A fixed size region within the file on a 2 or 4K boundry. All 
-                data in the file exists inside pages.
 
-System Table  - Tables in Access generally starting with "MSys".  The 'Flags'
-                field in the table's Catalog Entry will contain a flag in one
-                of two positions (0x80000000 or 0x00000002).  See also the TDEF
-		        (table definition) pages for "System Table" field.
+\warning Some of this info may be outta date or incorrect. Refer to the source code or file a bug.
+
+#### Page
+- A fixed size region within the file on a 2 or 4K boundry.
+- All data in the file exists inside pages.
+- (see \ref MDB_PAGE_DB, \ref MDB_PAGE_TABLE, \ref MDB_PAGE_INDEX)
+
+#### System Table
+- Tables in Access generally starting with "MSys".
+- The 'Flags' field in the table's Catalog Entry will contain a flag in one
+  of two positions (0x80000000 or 0x00000002).
+- See also the \ref tdef_pages for "System Table" field.
 		        
-Catalog Entry - A row from the MSysObjects table describing another database
-                object.  The MSysObjects table definition page is always at 
-                page 2 of the database, and a phony tdef structure is
-                bootstrapped to initially read the database.
+#### Catalog Entry
+- A row from the MSysObjects table describing another database object.
+- The MSysObjects table definition page is always at
+  page 2 of the database, and a phony tdef structure is
+  bootstrapped to initially read the database.
                 
-Page Split    - A process in which a row is added to a page with no space left.
-                A second page is allocated and rows on the original page are 
-		        split between the two pages and then indexes are updated. Pages
-                can use a variety of algorithms for splitting the rows, the 
-                most popular being a 50/50 split in which rows are divided 
-                evenly between pages.
+#### Page Split
+- A process in which a row is added to a page with no space left.
+- A second page is allocated and rows on the original page are
+  split between the two pages and then indexes are updated.
+- Pages can use a variety of algorithms for splitting the rows, the
+  most popular being a 50/50 split in which rows are divided
+  evenly between pages.
                 
-Overflow Page - Instead of doing a full page split with associated index writes,
-                a pointer to an "overflow" page can be stored at the original
-                row's location. Compacting a database would normally rewrite
-                overflow pages back into regular pages.
+#### Overflow Page
+- Instead of doing a full page split with associated index writes,
+  a pointer to an "overflow" page can be stored at the original
+  row's location.
+- Compacting a database would normally rewrite
+  overflow pages back into regular pages.
                 
-Leaf Page     - The lowest page on an index tree.  In Access, leaf pages are of
-                a different type than other index pages.
+#### Leaf Page
+- The lowest page on an index tree.
+- In Access, leaf pages are of a different type than other index pages.
                 
-UCS-2         - a two byte unicode encoding used in Jet4 files.
+#### UCS-2
+- a two byte unicode encoding used in Jet4 files.
 
-Covered Query - a query that can be satisfied by reading only index pages.  For
-                instance if the query 
-		        "SELECT count(*) from Table1 where Column3 = 4" were run and 
-                Column3 was indexed, the query could be satisfied by reading
-                only indexes.  Because of the way Access hashes text columns
-                in indexes, covered queries on text columns are not possible.
-```
+#### Covered Query
+- A query that can be satisfied by reading only index pages.
+- For instance if the query `"SELECT count(*) from Table1 where Column3 = 4"` were run and
+  Column3 was indexed, the query could be satisfied by reading
+  only indexes.
+- Because of the way Access hashes text columns
+  in indexes, covered queries on text columns are not possible.
 
-Pages
------
 
-At its topmost level, a MDB file is organized into a series of fixed-size
-pages.  These are 2K in size for Jet3 (Access 97) and 4K for Jet4 (Access
-2000/2002).  All data in MDB files exists within pages, of which there are 
-a number of types.
+## Pages Overview ## {#pages_overview}
+
+- At its topmost level, a MDB file is organized into a series of fixed-size pages.
+- These are 2K in size for Jet3 (Access 97) and 4K for Jet4 (Access 2000/2002).
+- All data in MDB files exists within pages, of which there are a number of types.
 
 The first byte of each page identifies the page type as follows.
 
-```
-0x00 Database definition page.  (Always page 0)
-0x01 Data page
-0x02 Table definition
-0x03 Intermediate Index pages
-0x04 Leaf Index pages 
-0x05 Page Usage Bitmaps (extended page usage)
-0x08 ??
-```
+
+- 0x00 Database definition page.  (Always page 0) - \ref MDB_PAGE_DB
+- 0x01 Data page - \ref MDB_PAGE_DATA
+- 0x02 Table definition - \ref MDB_PAGE_TABLE
+- 0x03 Intermediate Index pages - \ref MDB_PAGE_INDEX
+- 0x04 Leaf Index pages - \ref MDB_PAGE_LEAF
+- 0x05 Page Usage Bitmaps (extended page usage) - \ref MDB_PAGE_MAP
+- 0x08 ??
+
 
 ##  Database Definition Page ## {#database_definition_page}
 
@@ -540,52 +549,44 @@ bytes respectively).  The first byte of the map is a type field.
 ### Type 0 Page Usage Map
 
 | data | length  | name       | description                                |
-|------|---------|---------------------------------------------------------|
+|------|---------|------------|--------------------------------------------|
 | 0x00 | 1 byte  | map_type   | 0x00 indicates map stored within.          |
 | ???? | 4 byte  | page_start | first page for which this map applies      |
-+------+---------+---------------------------------------------------------+
-| Iterate for the length of map                                            |
-+--------------------------------------------------------------------------+
+| >> Iterate for the length of map||||
 | ???? | 1 byte  | bitmap     | each bit encodes the allocation status of a|
 |      |         |            | page. 1 indicates allocated to this table. |
 |      |         |            | Pages are stored starting with the low     |
 |      |         |            | order bit of the first byte.               |
-+--------------------------------------------------------------------------+
-```
+
 
 If you're paying attention then you'll realize that the relatively small size of
 the map (128*8*2048 or 64*8*4096 = 2 Meg) means that this scheme won't work with
 larger database files although the initial start page helps a bit.  To overcome
 this there is a second page usage map scheme with the map_type of 0x01.
 
-```
-+--------------------------------------------------------------------------+
-| Type 1 Page Usage Map                                                    |
-+------+---------+---------------------------------------------------------+
+
+### Type 1 Page Usage Map
+
 | data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
+|------|---------|------------|--------------------------------------------|
 | 0x01 | 1 byte  | map_type   | 0x01 indicates this is a indirection list. |
-+------+---------+---------------------------------------------------------+
-| Iterate for the length of map                                            |
-+--------------------------------------------------------------------------+
+| >> Iterate for the length of map                                         |
 | ???? | 4 bytes | map_page   | pointer to page type 0x05 containing map   |
-+--------------------------------------------------------------------------+
-```
+
 
 Note that the initial start page is gone and is reused for the first page 
 indirection.  The 0x05 type page header looks like:
 
-```
-+--------------------------------------------------------------------------+
-| Usage Map Page (type 0x05)                                               |
-+------+---------+---------------------------------------------------------+
+
+
+###  Usage Map Page (type 0x05)
+
 | data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
+|------|---------|------------|--------------------------------------------|
 | 0x05 | 1 byte  | page_type  | allocation map page                        |
 | 0x01 | 1 byte  | unknown    | always 1 as with other page types          |
 | 0x00 | 2 bytes | unknown    |                                            |
-+------+---------+---------------------------------------------------------+
-```
+
 
 The rest of the page is the allocation bitmap following the same scheme (lsb
 to msb order, 1 bit per page) as a type 0 map.  This yields a maximum of
@@ -597,17 +598,15 @@ size of each of the database formats comfortably, so there is no reason to
 believe any other page map schemes exist.
 
 
-Indices
--------
+##  Indices ## {#indices}
 
 Indices are not completely understood but here is what we know.
 
-```
-+-------------------------------------------------------------------------+
-| Index Page (type 0x03)                                                  |
-+------+---------+-------------+------------------------------------------+
+### Index Page (type 0x03)
+
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | 0x03 | 1 bytes | page_type   | 0x03 indicate an index page              |
 | 0x01 | 1 bytes | unknown     |                                          |
 | ???? | 2 bytes | free_space  | The free space at the end this page      |
@@ -616,16 +615,15 @@ Indices are not completely understood but here is what we know.
 | ???? | 4 bytes | next_page   | Next page at this index level            |
 | ???? | 4 bytes | tail_page   | Pointer to tail leaf page                |
 | ???? | 2 bytes | pref_len    | Length of the shared entry prefix        |
-+-------------------------------------------------------------------------+
-```
+
 
 Index pages come in two flavors.
 
-0x04 pages are leaf pages which contain one entry for each row in the table.  
+**0x04** pages are leaf pages which contain one entry for each row in the table.  
 Each entry is composed of a flag, the indexed column values and a page/row 
 pointer to the data.
 
-0x03 index pages make up the rest of the index tree and contain a flag, the 
+**0x03** index pages make up the rest of the index tree and contain a flag, the
 indexed columns, the page/row that contains this entry, and the leaf page or 
 intermediate (another 0x03 page) page pointer for which this is the first 
 entry on.
@@ -664,22 +662,16 @@ flexible.
 
 So now we come to the index entries for type 0x03 pages which look like this:
 
-```
-+-------------------------------------------------------------------------+
-| Index Record                                                            |
-+------+---------+-------------+------------------------------------------+
+###  Index Record
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | 0x7f | 1 byte  | flags       | 0x80 LSB, 0x7f MSB, 0x00 null?           |
 | ???? | variable| indexed cols| indexed column data                      |
-| ???? | 3 bytes | data page   | page containing row referred to by this  |
-|      |         |             | index entry                              |
+| ???? | 3 bytes | data page   | page containing row referred to by this index entry|
 | ???? | 1 byte  | data row    | row number on that page of this entry    |
-| ???? | 4 bytes | child page  | next level index page containing this    |
-|      |         |             | entry as last entry.  Could be a leaf    |
-|      |         |             | node.                                    |
-+-------------------------------------------------------------------------+
-```
+| ???? | 4 bytes | child page  | next level index page containing this entry as last entry. Could be a leaf node|
+
 
 The flag field is generally either 0x00, 0x7f, 0x80, or 0xFF.  0x80 is the
 one's complement of 0x7f and all text data in the index would then need to be
@@ -761,8 +753,7 @@ index proper.  In src/libmdb/index.c, the last leaf read is stored, once the
 index search has been exhausted by the normal search routine, it enters a
 "clean up mode" and reads the next leaf page pointer until it's null.
  
-Properties
-----------
+## Properties
 
 Design View table definitions are stored in LvProp column of MSysObjects as OLE
 fields. They contain default values, description, format, required ...
@@ -802,8 +793,7 @@ Next comes one of more chunks of data:
 See ``props.c``` for an example.
 
 
-Text Data Type
---------------
+### Text Data Type
 
 In Jet3, the encoding of text depends on the machine on which it was created.
 So for databases created on U.S. English systems, it can be expected that text
