@@ -1,4 +1,4 @@
-image: buster-slim
+image: debian:buster-slim
 
 pages:
   script:
