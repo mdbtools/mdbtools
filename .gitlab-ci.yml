@@ -1,0 +1,12 @@
+image: ubuntu
+
+pages:
+  script:
+  - apt-get update -qq
+  - apt-get install -y -qq doxygen graphviz python3
+  - ./api_docx/build_docs.sh
+  artifacts:
+    paths:
+    - public
+  only:
+  - dev
