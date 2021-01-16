@@ -6,19 +6,19 @@ Welcome to the exciting world of MDB Tools! MDB Tools is a set of programs to
 help you extract data from Microsoft Access files in various settings. See the
 [NEWS](./NEWS) file for information about the latest release.
 
-# Components
+## Components
 
 The major pieces of MDB Tools are:
 
-## libmdb
+### libmdb
 
 The core library that allows access to MDB files programatically.
 
-## libmdbsql
+### libmdbsql
 
 Builds on libmdb to provide a SQL engine (aka Jet)
 
-## utils
+### utils
 
 Provides command line utilities, including:
 
@@ -44,22 +44,22 @@ Provides command line utilities, including:
 
 \* Deprecated
 
-## odbc
+### odbc
 
 An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use MDB files with PHP for example.
 
-## gmdb2
+### gmdb2
 
 The Gnome MDB File Viewer and debugger. Alpha quality, moved to [mdbtools/gmdb2](https://github.com/mdbtools/gmdb2).
 
-# License
+## License
 
 Files in libmdb, libmdbsql, and libmdbodbc are licensed under LGPL and the
 utilities and gui program are under the GPL, see [COPYING.LIB](./COPYING.LIB)
 and [COPYING](./COPYING) files respectively.
 
 
-# Requirements
+## Requirements
 
 First, you must have reasonably current installations of:
 
@@ -79,23 +79,23 @@ If you want to build man pages, you'll need
 [GNU awk](https://www.gnu.org/software/gawk/).
 
 
-# Installation
+## Installation
 
 Latest version is available at https://github.com/mdbtools/mdbtools
 
-## Debian
+### Debian
 
 ```
 apt install mdbtools
 ```
 
-## Homebrew
+### Homebrew
 
 ```bash
 brew install mdbtools
 ```
 
-## From source
+### From source
 
 ```bash
 $ autoreconf -i -f
@@ -154,12 +154,12 @@ You can do that running:
 $ ldconfig
 ```
 
-# Hacking  
+## Hacking
 
 If you are interested in helping, read the [HACKING](./HACKING) file for a description of 
 where the code stands and what has been gleened of the file format.
 
-# Contact
+## Contact
 
 Please send bug reports to the new github repository.
 https://github.com/mdbtools/mdbtools/issues

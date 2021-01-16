@@ -35,6 +35,10 @@
 extern "C" {
 #endif
 
+/** \addtogroup odbc
+ *  @{
+ */
+
 struct _henv {
 	GPtrArray *connections;
     char sqlState[6];
@@ -81,3 +85,4 @@ struct _sql_bind_info {
 }
 #endif
 #endif
+/** @}*/

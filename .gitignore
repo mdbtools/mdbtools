@@ -49,3 +49,9 @@ src/util/prkkd
 src/util/prole
 src/util/prtable
 src/util/updrow
+
+## apidocs docs related
+public/
+.sass-cache/
+temp-man-pages/
+

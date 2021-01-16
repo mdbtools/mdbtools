@@ -30,6 +30,11 @@
 #endif
 #include "connectparams.h"
 
+
+/** \addtogroup odbc
+ *  @{
+ */
+
 /*
  *  * Last resort place to check for INI file. This is usually set at compile time
  *   * by build scripts.
@@ -312,3 +317,4 @@ ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)
 }
 
 #endif
+/** @}*/

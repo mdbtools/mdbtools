@@ -48,6 +48,10 @@
 #include <io.h>
 #endif
 
+/** \addtogroup mdbtools
+ *  @{
+ */
+
 #define MDB_DEBUG 0
 
 #define MDB_PGSIZE 4096
@@ -635,6 +639,8 @@ int mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, 
 void mdb_iconv_init(MdbHandle *mdb);
 void mdb_iconv_close(MdbHandle *mdb);
 const char* mdb_target_charset(MdbHandle *mdb);
+
+/** @}*/
 
 #ifdef __cplusplus
   }
