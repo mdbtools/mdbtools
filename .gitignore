@@ -50,6 +50,7 @@ src/util/prole
 src/util/prtable
 src/util/updrow
 
-## apidocs output
+## apidocs docs related
 public/
+.sass-cache/
 
