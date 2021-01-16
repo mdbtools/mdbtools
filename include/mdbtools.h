@@ -75,6 +75,10 @@ enum {
 	MDB_PAGE_LEAF,
 	MDB_PAGE_MAP
 };
+
+/**
+ * see \ref database_definition_page
+*/
 enum {
 	MDB_VER_JET3 = 0,
 	MDB_VER_JET4 = 0x01,
@@ -98,6 +102,10 @@ enum {
 	MDB_DATABASE_PROPERTY,
 	MDB_ANY = -1
 };
+
+/**
+ * see \ref column_types
+*/
 enum {
 	MDB_BOOL = 0x01,
 	MDB_BYTE = 0x02,

@@ -1,3 +1,5 @@
+Hacking  {#hacking}
+===================
 This file documents the Microsoft MDB file format for Jet3 and Jet4 databases.
 
 [TOC]
@@ -81,8 +83,7 @@ The first byte of each page identifies the page type as follows.
 0x08 ??
 ```
 
-Database Definition Page
-------------------------
+##  Database Definition Page ## {#database_definition_page}
 
 Each MDB database has a single definition page located at beginning of the
 file.  Not a lot is known about this page, and it is one of the least
@@ -93,10 +94,10 @@ encryption keys, and name of the creating program.  Note, this page is
 
 Offset 0x14 contains the Jet version of this database:
 
-- 0x00 for 3
-- 0x01 for 4
-- 0x02 for 5
-- 0x03 for Access 2010
+- 0x00 for 3 (see \ref MDB_VER_JET3)
+- 0x01 for 4 (see \ref MDB_VER_JET4)
+- 0x02 for 5 (see \ref MDB_VER_ACCDB_2007)
+- 0x03 for Access 2010 (see \ref MDB_VER_ACCDB_2010)
 
 This is used by the `mdb-ver` utility to determine the Jet version.
 
@@ -112,31 +113,26 @@ The 2 bytes at 0x3C are the default database code page (useless in Jet4?).
 The 2 bytes at 0x3A (Jet3) or 4 bytes at 0x6E (Jet4) are the default text
 collating sort order.
 
-Data Pages
-----------
+## Data Pages ## {#data_pages}
 
-Data rows are all stored in data pages.
+- Data rows are all stored in data pages.
+- The header of a Jet3 data page looks like this:
 
-The header of a Jet3 data page looks like this:
-```
-+--------------------------------------------------------------------------+
-| Jet3 Data Page Definition                                                |
-+------+---------+---------------------------------------------------------+
+### Jet3 Data Page Definition
+
 | data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
+|------|---------|------------|--------------------------------------------|
 | 0x01 | 1 byte  | page_type  | 0x01 indicates a data page.                |
 | 0x01 | 1 byte  | unknown    |                                            |
 | ???? | 2 bytes | free_space | Free space in this page                    |
 | ???? | 4 bytes | tdef_pg    | Page pointer to table definition           |
 | ???? | 2 bytes | num_rows   | number of records on this page             |
-+--------------------------------------------------------------------------+
-| Iterate for the number of records                                        |
-+--------------------------------------------------------------------------+
+| Iterate for the number of records|||                                     |
 | ???? | 2 bytes | offset_row | The record's location on this page         |
-+--------------------------------------------------------------------------+
-```
 
-Notes:
+
+
+\note
 
 - In Jet4, an additional four-byte field was added after tdef_pg.  Its purpose
   is currently unknown.
@@ -147,19 +143,18 @@ Notes:
   'delflag' in source code.
 
 
-Rows are stored from the end of the page to the top of the page.  So, the first
-row stored runs from the row's offset to page_size - 1.  The next row runs from
-its offset to the previous row's offset - 1, and so on.
+Rows are stored from the end of the page to the top of the page.
+- So, the first row stored runs from the row's offset to page_size - 1.
+- The next row runs from its offset to the previous row's offset - 1, and so on.
 
 Decoding a row requires knowing the number and types of columns from its TDEF
 page. Decoding is handled by the routine mdb_crack_row().
 
-```
-+--------------------------------------------------------------------------+
-| Jet3 Row Definition                                                      |
-+------+---------+---------------------------------------------------------+
+
+### Jet3 Row Definition
+
 | data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
+|------|---------|------------|--------------------------------------------|
 | ???? | 1 byte  | num_cols   | Number of columns stored on this row.      |
 | ???? | n bytes | fixed_cols | Fixed length columns                       |
 | ???? | n bytes | var_cols   | Variable length columns                    |
@@ -168,15 +163,12 @@ page. Decoding is handled by the routine mdb_crack_row().
 | ???? | n bytes | jump_table | Jump table (see description below)         |
 | ???? | 1 byte  | var_len    | number of variable length columns          |
 | ???? | n bytes | null_mask  | Null indicator.  See notes.                |
-+--------------------------------------------------------------------------+
-```
 
-```
-+--------------------------------------------------------------------------+
-| Jet4 Row Definition                                                      |
-+------+---------+---------------------------------------------------------+
+
+### Jet4 Row Definition
+
 | data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
+|------|---------|------------|--------------------------------------------|
 | ???? | 2 bytes | num_cols   | Number of columns stored on this row.      |
 | ???? | n bytes | fixed_cols | Fixed length columns                       |
 | ???? | n bytes | var_cols   | Variable length columns                    |
@@ -184,10 +176,9 @@ page. Decoding is handled by the routine mdb_crack_row().
 | ???? | n bytes | var_table[]| offset from start of row for each var_col  |
 | ???? | 2 bytes | var_len    | number of variable length columns          |
 | ???? | n bytes | null_mask  | Null indicator.  See notes.                |
-+--------------------------------------------------------------------------+
-```
 
-Notes:
+
+\note
 
 - A row will always have the number of fixed columns as specified in the table
   definition, but may have fewer variable columns, as rows are not updated when
@@ -230,18 +221,16 @@ entries.  Thus, the jump table was (thankfully) ditched in Jet4.
 
 Each memo column (or other long binary data) in a row
 
-```
-+-------------------------------------------------------------------------+
-| Memo Field Definition (12 bytes)                                        |
-+------+---------+-------------+------------------------------------------+
+
+###  Memo Field Definition (12 bytes)
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | ???? | 3 bytes | memo_len    | Total length of the memo                 |
 | ???? | 1 bytes | bitmask     | See values                               |
 | ???? | 4 bytes | lval_dp     | Data pointer to LVAL page (if needed)    |
 | 0x00 | 4 bytes | unknown     |                                          |
-+------+---------+-------------+------------------------------------------+
-```
+
 
 Values for the bitmask:
 
@@ -275,32 +264,26 @@ most 1024 characters when uncompressed can be compressed.  fields longer than
 that _must_ be stored uncompressed.
 
 
-LVAL (Long Value) Pages
------------------------
+##  LVAL (Long Value) Pages ## {#long_value_pages}
 
 The header of a LVAL page is just like that of a regular data page,
 except that in place of the tdef_pg is the word 'LVAL'.
 
-Each memo record type 1 looks like this:
+Each memo record **type 1** looks like this:
 
-```
-+------+---------+-------------+------------------------------------------+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | ???? | n bytes | memo_value  | A string which is the memo               |
-+-------------------------------------------------------------------------+
-```
 
-Each memo record type 2 looks like this:
 
-```
-+------+---------+-------------+------------------------------------------+
+Each memo record **type 2** looks like this:
+
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | ???? | 4 bytes | lval_dp     | Next page LVAL type 2 if memo is too long|
 | ???? | n bytes | memo_value  | A string which is the memo (partial)     |
-+-------------------------------------------------------------------------+
-```
+
 
 In a LVAL type 2 data page, you have 
 - 10 or 14 bytes for the header of the data page,
@@ -311,127 +294,95 @@ So there is a block of 2048 - (10+2+4) = 2032(jet3)
 or 4096 - (14+2+4) = 4076(jet4) bytes max in a page.
 
 
-TDEF (Table Definition) Pages
------------------------------
+## TDEF (Table Definition) Pages ## {#tdef_pages}
 
 Every table in the database has a TDEF page.  It contains a definition of 
 the columns, types, sizes, indexes, and similar information.
 
-```
-+-------------------------------------------------------------------------+
-| Jet3/Jet4 TDEF Header
-+------+---------+-------------+------------------------------------------+
+
+###  Jet3/Jet4 TDEF Header
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | 0x02 | 1 bytes | page_type   | 0x02 indicate a tabledef page            |
 | 0x01 | 1 bytes | unknown     |                                          |
 | ???? | 2 bytes | tdef_id     | (jet3) The word 'VC'                     |
 |      |         |             | (jet4) Free space in this page minus 8   |
 | 0x00 | 4 bytes | next_pg     | Next tdef page pointer (0 if none)       |
-+------+---------+-------------+------------------------------------------+
-```
+
 
 TDEFs can span multiple pages for large tables, this is accomplished using the
 next_pg field.
 
-```
-+-------------------------------------------------------------------------+
-| Jet3 Table Definition Block (35 bytes)                                  |
-+------+---------+-------------+------------------------------------------+
+### Jet3 Table Definition Block (35 bytes)
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | ???? | 4 bytes | tdef_len    | Length of the data for this page         |
 | ???? | 4 bytes | num_rows    | Number of records in this table          |
-| 0x00 | 4 bytes | autonumber  | value for the next value of the          |
-|      |         |             | autonumber column, if any. 0 otherwise   |
+| 0x00 | 4 bytes | autonumber  | value for the next value of the autonumber column, if any. 0 otherwise|
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
 | ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
 | ???? | 4 bytes | num_idx     | Number of logical indexes in table       |
 | ???? | 4 bytes | num_real_idx| Number of index entries                  |
-| ???? | 4 bytes | used_pages  | Points to a record containing the        |
-|      |         |             | usage bitmask for this table.            |
-| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
-|      |         |             | listing pages which contain free space.  |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (8 bytes per idxs)               |
-+-------------------------------------------------------------------------+
+| ???? | 4 bytes | used_pages  | Points to a record containing the usage bitmask for this table |
+| ???? | 4 bytes | free_pages  | Points to a similar record as above, listing pages which contain free space.|
+| >> Iterate for the number of num_real_idx (8 bytes per idxs)||||
 | 0x00 | 4 bytes | ???         |                                          |
 | ???? | 4 bytes | num_idx_rows| (not sure)                               |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_cols (18 bytes per column)                |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_cols (18 bytes per column)||||
 | ???? | 1 byte  | col_type    | Column Type (see table below)            |
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number                            |
 | ???? | 2 bytes | sort_order  | textual column sort order(0x409=General) |
-| ???? | 2 bytes | misc        | prec/scale (1 byte each), or code page   |
-|      |         |             | for textual columns (0x4E4=cp1252)       |
+| ???? | 2 bytes | misc        | prec/scale (1 byte each), or code page for textual columns (0x4E4=cp1252)|
 | ???? | 2 bytes | ???         |                                          |
-| ???? | 1 byte  | bitmask     | See Column flags bellow                  |
+| ???? | 1 byte  | bitmask     | See Column flags below                   |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
 | ???? | 2 bytes | col_len     | Length of the column (0 if memo)         |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_cols (n bytes per column)                 |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_cols (n bytes per column)||||
 | ???? | 1 byte  | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column                       |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (30+9 = 39 bytes)                |
-+-------------------------------------------------------------------------+
-|     Iterate 10 times for 10 possible columns (10*3 = 30 bytes)          |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_real_idx (30+9 = 39 bytes)||||
+| >> Iterate 10 times for 10 possible columns (10*3 = 30 bytes)||||
 | ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
 | ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
-+-------------------------------------------------------------------------+
 | ???? | 4 bytes | used_pages  | Points to usage bitmap for index         |
 | ???? | 4 bytes | first_dp    | Data pointer of the index page           |
 | ???? | 1 byte  | flags       | See flags table for indexes              |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_idx (20 bytes)                            |
-+-------------------------------------------------------------------------+
-| ???? | 4 bytes | index_num   | Number of the index                      |
-|      |         |             |(warn: not always in the sequential order)|
+| >> Iterate for the number of num_idx (20 bytes)||||
+| ???? | 4 bytes | index_num   | Number of the index (warn: not always in the sequential order)|
 | ???? | 4 bytes | index_num2  | Index into index cols list               |
-| 0x00 | 1 byte  | rel_tbl_type| type of the other table in this fk       |
-|      |         |             | (same values as index_type)              |
-| 0xFF | 4 bytes | rel_idx_num | index number of other index in fk        |
-|      |         |             | (or -1 if this index is not a fk)        |
+| 0x00 | 1 byte  | rel_tbl_type| type of the other table in this fk  (same values as index_type)|
+| 0xFF | 4 bytes | rel_idx_num | index number of other index in fk  (or -1 if this index is not a fk)|
 | 0x00 | 4 bytes | rel_tbl_page| page number of other table in fk         |
 | 0x01 | 1 byte  | cascade_ups | flag indicating if updates are cascaded  |
 | 0x01 | 1 byte  | cascade_dels| flag indicating if deletes are cascaded  |
 | ???? | 1 byte  | index_type  | 0x01 if index is primary, 0x02 if foreign|
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_idx                                       |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_idx||||
 | ???? | 1 byte  | idx_name_len| len of the name of the index             |
 | ???? | n bytes | idx_name    | Name of the index                        |
-+-------------------------------------------------------------------------+
-| Iterate while col_num != 0xffff                                         |
-+-------------------------------------------------------------------------+
+| >> Iterate while col_num != 0xffff||||
 | ???? | 2 bytes | col_num     | Column number with variable length       |
-| ???? | 4 bytes | used_pages  | Points to a record containing the        |
-|      |         |             | usage bitmask for this column.           |
-| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
-|      |         |             | listing pages which contain free space.  |
-+-------------------------------------------------------------------------+
+| ???? | 4 bytes | used_pages  | Points to a record containing the usage bitmask for this column.|
+| ???? | 4 bytes | free_pages  | Points to a similar record as above, listing pages which contain free space.|
 
-+-------------------------------------------------------------------------+
-| Jet4 Table Definition Block (55 bytes)                                  |
-+------+---------+-------------+------------------------------------------+
+
+
+### Jet4 Table Definition Block (55 bytes)
+
 | data | length  | name        | description                              |
-+------+---------+-------------+------------------------------------------+
+|------|---------|-------------|------------------------------------------|
 | ???? | 4 bytes | tdef_len    | Length of the data for this page         |
 | ???? | 4 bytes | unknown     | unknown                                  |
 | ???? | 4 bytes | num_rows    | Number of records in this table          |
-| 0x00 | 4 bytes | autonumber  | value for the next value of the          |
-|      |         |             | autonumber column, if any. 0 otherwise   |
+| 0x00 | 4 bytes | autonumber  | value for the next value of the autonumber column, if any. 0 otherwise|
 | 0x01 | 1 byte  | autonum_flag| 0x01 makes autonumbers work in access    |
 | ???? | 3 bytes | unknown     | unknown                                  |
-| 0x00 | 4 bytes | ct_autonum  | autonumber value for complex type column(s) |
-|      |         |             | (shared across all columns in the table) |
+| 0x00 | 4 bytes | ct_autonum  | autonumber value for complex type column(s) (shared across all columns in the table) |
 | ???? | 8 bytes | unknown     | unknown                                  |
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
@@ -439,82 +390,55 @@ next_pg field.
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
 | ???? | 4 bytes | num_idx     | Number of logical indexes in table       |
 | ???? | 4 bytes | num_real_idx| Number of index entries                  |
-| ???? | 4 bytes | used_pages  | Points to a record containing the        |
-|      |         |             | usage bitmask for this table.            |
-| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
-|      |         |             | listing pages which contain free space.  |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (12 bytes per idxs)              |
-+-------------------------------------------------------------------------+
+| ???? | 4 bytes | used_pages  | Points to a record containing the usage bitmask for this table.|
+| ???? | 4 bytes | free_pages  | Points to a similar record as above, listing pages which contain free space.|
+| >> Iterate for the number of num_real_idx (12 bytes per idxs)||||
 | 0x00 | 4 bytes | ???         |                                          |
 | ???? | 4 bytes | num_idx_rows| (not sure)                               |
 | 0x00 | 4 bytes | ???         |                                          |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_cols (25 bytes per column)                |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_cols (25 bytes per column)||||
 | ???? | 1 byte  | col_type    | Column Type (see table below)            |
 | ???? | 4 bytes | unknown     | matches first unknown definition block   |
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_num     | Column Number                            |
-| ???? | 2 bytes | misc        | prec/scale (1 byte each), or sort order  |
-|      |         |             | for textual columns(0x409=General)       |
-|      |         |             | or "complexid" for complex columns (4bytes)|
+| ???? | 2 bytes | misc        | prec/scale (1 byte each), or sort order for textual columns(0x409=General) or "complexid" for complex columns (4bytes)  |
 | ???? | 2 bytes | misc_ext    | text sort order version num is 2nd byte  |
 | ???? | 1 byte  | bitmask     | See column flags below                   |
 | ???? | 1 byte  | misc_flags  | 0x01 for compressed unicode              |
 | 0000 | 4 bytes | ???         |                                          |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
 | ???? | 2 bytes | col_len     | Length of the column (0 if memo/ole)     |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_cols (n*2 bytes per column)               |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_cols (n*2 bytes per column)||||
 | ???? | 2 bytes | col_name_len| len of the name of the column            |
 | ???? | n bytes | col_name    | Name of the column (UCS-2 format)        |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_real_idx (30+22 = 52 bytes)               |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_real_idx (30+22 = 52 bytes)||||
 | ???? | 4 bytes | ???         |                                          |
-+-------------------------------------------------------------------------+
-| Iterate 10 times for 10 possible columns (10*3 = 30 bytes)              |
-+-------------------------------------------------------------------------+
+| >> Iterate 10 times for 10 possible columns (10*3 = 30 bytes)||||
 | ???? | 2 bytes | col_num     | number of a column (0xFFFF= none)        |
 | ???? | 1 byte  | col_order   | 0x01 =  ascendency order                 |
-+-------------------------------------------------------------------------+
 | ???? | 4 bytes | used_pages  | Points to usage bitmap for index         |
 | ???? | 4 bytes | first_dp    | Data pointer of the index page           |
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 | ???? | 9 bytes | unknown     |                                          |
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_idx (28 bytes)                            |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_idx (28 bytes)||||
 | ???? | 4 bytes | unknown     | matches first unknown definition block   |
-| ???? | 4 bytes | index_num   | Number of the index                      |
-|      |         |             |(warn: not always in the sequential order)|
+| ???? | 4 bytes | index_num   | Number of the index (warn: not always in the sequential order)|
 | ???? | 4 bytes | index_num2  | Index into index cols list               |
-| 0x00 | 1 byte  | rel_tbl_type| type of the other table in this fk       |
-|      |         |             | (same values as index_type)              |
-| 0xFF | 4 bytes | rel_idx_num | index number of other index in fk        |
-|      |         |             | (or -1 if this index is not a fk)        |
+| 0x00 | 1 byte  | rel_tbl_type| type of the other table in this fk (same values as index_type)|
+| 0xFF | 4 bytes | rel_idx_num | index number of other index in fk (or -1 if this index is not a fk)|
 | 0x00 | 4 bytes | rel_tbl_page| page number of other table in fk         |
 | 0x01 | 1 byte  | cascade_ups | flag indicating if updates are cascaded  |
 | 0x01 | 1 byte  | cascade_dels| flag indicating if deletes are cascaded  |
 | ???? | 1 byte  | index_type  | 0x01 if index is primary, 0x02 if foreign|
-+-------------------------------------------------------------------------+
-| Iterate for the number of num_idx                                       |
-+-------------------------------------------------------------------------+
+| >> Iterate for the number of num_idx||||
 | ???? | 2 bytes | idx_name_len| len of the name of the index             |
 | ???? | n bytes | idx_name    | Name of the index (UCS-2)                |
-+-------------------------------------------------------------------------+
-| Iterate while col_num != 0xffff                                         |
-+-------------------------------------------------------------------------+
+| >> Iterate while col_num != 0xffff||||
 | ???? | 2 bytes | col_num     | Column number with variable length       |
-| ???? | 4 bytes | used_pages  | Points to a record containing the        |
-|      |         |             | usage bitmask for this column.           |
-| ???? | 4 bytes | free_pages  | Points to a similar record as above,     |
-|      |         |             | listing pages which contain free space.  |
-+-------------------------------------------------------------------------+
-```
+| ???? | 4 bytes | used_pages  | Points to a record containing the usage bitmask for this column.|
+| ???? | 4 bytes | free_pages  | Points to a similar record as above, listing pages which contain free space.|
+
 
 Columns flags (not complete):
 
@@ -535,31 +459,36 @@ Index flags (not complete):
 - 0x02 IgnoreNuls
 - 0x08 Required
 
-Column Type may be one of the following (not complete):
-```
-    BOOL            = 0x01 /* Boolean         ( 1 bit ) */
-    BYTE            = 0x02 /* Byte            ( 8 bits) */
-    INT             = 0x03 /* Integer         (16 bits) */
-    LONGINT         = 0x04 /* Long Integer    (32 bits) */
-    MONEY           = 0x05 /* Currency        (64 bits) */
-    FLOAT           = 0x06 /* Single          (32 bits) */
-    DOUBLE          = 0x07 /* Double          (64 bits) */
-    DATETIME        = 0x08 /* Date/Time       (64 bits) */
-    BINARY          = 0x09 /* Binary        (255 bytes) */
-    TEXT            = 0x0A /* Text          (255 bytes) */
-    OLE             = 0x0B /* OLE = Long binary */
-    MEMO            = 0x0C /* Memo = Long text*/
-    UNKNOWN_0D      = 0x0D
-    UNKNOWN_0E      = 0x0E
-    REPID           = 0x0F /* GUID */
-    NUMERIC         = 0x10 /* Scaled decimal  (17 bytes) */
+### Column Types ## {#column_types}
 
-```
+Column Type may be one of the following (not complete):
+
+- BOOL            = 0x01 - Boolean         ( 1 bit ) - \ref MDB_BOOL
+- BYTE            = 0x02 - Byte            ( 8 bits) - \ref MDB_BYTE
+- INT             = 0x03 - Integer         (16 bits) - \ref MDB_INT
+- LONGINT         = 0x04 - Long Integer    (32 bits) - \ref MDB_LONGINT
+- MONEY           = 0x05 - Currency        (64 bits) - \ref MDB_MONEY
+- FLOAT           = 0x06 - Single          (32 bits) - \ref MDB_FLOAT
+- DOUBLE          = 0x07 - Double          (64 bits) - \ref MDB_DOUBLE
+- DATETIME        = 0x08 - Date/Time       (64 bits) - \ref MDB_DATETIME
+- BINARY          = 0x09 - Binary        (255 bytes) - \ref MDB_BINARY
+- TEXT            = 0x0A - Text          (255 bytes) - \ref MDB_TEXT
+- OLE             = 0x0B - OLE = Long binary - \ref MDB_OLE
+- MEMO            = 0x0C - Memo = Long text - \ref MDB_MEMO
+- UNKNOWN_0D      = 0x0D
+- UNKNOWN_0E      = 0x0E
+- REPID           = 0x0F - GUID
+- NUMERIC         = 0x10 - Scaled decimal  (17 bytes)
+
+
 
 Notes on reading index metadata:
 
-There are 2 types of index metadata, "physical" index info (denoted by
-num_real_idx) and "logical" index info (denoted by num_idx).  Normally, there
+There are two types of index metadata,
+- "physical" index info (denoted by num_real_idx)
+- and "logical" index info (denoted by num_idx).
+
+Normally, there
 is a 1 to 1 relationship between these 2 types of information.  However there
 can be more logical index infos than physical index infos (currently only seen
 for foreign key indexes).  In this situation, one or more of the logical
@@ -595,8 +524,7 @@ For variable length columns, offset_V will hold the position in the offset table
 of that column.  Missing columns are set to null for new rows.
 
 
-Page Usage Maps
----------------
+##  Page Usage Maps ## {#page_usage_maps}
 
 There are three uses for the page usage bitmaps.  There is a global page usage 
 stored on page 1 which tracks allocated pages throughout the database.  
@@ -608,12 +536,11 @@ have free space on them (used for inserting data).
 The table bitmaps appear to be of a fixed size for both Jet 3 and 4 (128 and 64
 bytes respectively).  The first byte of the map is a type field.
 
-```
-+--------------------------------------------------------------------------+
-| Type 0 Page Usage Map                                                    |
-+------+---------+---------------------------------------------------------+
+
+### Type 0 Page Usage Map
+
 | data | length  | name       | description                                |
-+------+---------+---------------------------------------------------------+
+|------|---------|---------------------------------------------------------|
 | 0x00 | 1 byte  | map_type   | 0x00 indicates map stored within.          |
 | ???? | 4 byte  | page_start | first page for which this map applies      |
 +------+---------+---------------------------------------------------------+
