@@ -974,27 +974,9 @@ dl.section dd {
   width: 100%;
   border-bottom: 1px dashed #777777;
   /* fallback/image non-cover color */
-  background-color: #B7473A;
+  background-color: #186FA5;
   /* Standard */
-  background: linear-gradient(to right, #B7473A 0%, #B7473A 1%, #444444 3%, #666666 5%, #444444 50%, #333333 100%); }
-
-.openplc_meta #titlearea {
-  /* fallback/image non-cover color */
-  background-color: pink;
-  /* Standard */
-  background: linear-gradient(to right, pink 0%, pink 1%, #444444 3%, #666666 5%, #444444 50%, #333333 100%); }
-
-.openplc_firmware #titlearea {
-  /* fallback/image non-cover color */
-  background-color: #3AB780;
-  /* Standard */
-  background: linear-gradient(to right, #3AB780 0%, #3AB780 1%, #444444 3%, #666666 5%, #444444 50%, #333333 100%); }
-
-.openplc_schema #titlearea {
-  /* fallback/image non-cover color */
-  background-color: #3A7CB7;
-  /* Standard */
-  background: linear-gradient(to right, #3A7CB7 0%, #3A7CB7 1%, #444444 3%, #666666 5%, #444444 50%, #333333 100%); }
+  background: linear-gradient(to right, #186FA5 0%, #186FA5 1%, #444444 3%, #666666 5%, #444444 50%, #333333 100%); }
 
 .image {
   text-align: center; }
@@ -1422,21 +1404,5 @@ table td {
 
 table th {
   background-color: #444444; }
-
-.digital_inputs table th {
-  background-color: purple;
-  font-family: monospace; }
-
-.digital_outputs table th {
-  background-color: green;
-  font-family: monospace; }
-
-.analog_inputs table th {
-  background-color: blue;
-  font-family: monospace; }
-
-.analog_outputs table th {
-  background-color: brown;
-  font-family: monospace; }
 
 /*# sourceMappingURL=custom.css.map */

@@ -1236,18 +1236,10 @@ dl.section dd {
 	width: 100%;
 	border-bottom: 1px dashed #777777;
 	//background-color: blue;
-	@include topbar-gradient(#B7473A);
+	@include topbar-gradient(#186FA5);
 }
 
-.openplc_meta #titlearea {
-    @include topbar-gradient(pink);
-}
-.openplc_firmware #titlearea {
-    @include topbar-gradient(#3AB780);
-}
-.openplc_schema #titlearea {
-    @include topbar-gradient(#3A7CB7);
-}
+
 
 .image
 {
@@ -1779,20 +1771,3 @@ table td {
 table th {
     background-color: #444444;
 }
-.digital_inputs table th {
-    background-color: purple;
-    font-family: monospace;
-}
-.digital_outputs table th {
-    background-color: green;
-    font-family: monospace;
-}
-.analog_inputs table th {
-    background-color: blue;
-    font-family: monospace;
-}
-.analog_outputs table th {
-    background-color: brown;
-    font-family: monospace;
-}
-
