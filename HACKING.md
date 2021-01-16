@@ -1,6 +1,7 @@
 Hacking  {#hacking}
 ===================
-This file documents the Microsoft MDB file format for Jet3 and Jet4 databases.
+
+This file documents (what we kinda know about) the Microsoft MDB file format for Jet3 and Jet4 databases.
 
 [TOC]
 
@@ -14,8 +15,7 @@ This document will, generally speaking, provide all offsets and constants in
 hex format.  
 
 Most multibyte pointer and integers are stored in little endian (LSB-MSB) order.
-There is an exception in the case of indexes, see the section on index pages for
-details.
+There is an exception in the case of indexes, see \ref indexes.
 
 ## Terminology
 
@@ -273,7 +273,7 @@ most 1024 characters when uncompressed can be compressed.  fields longer than
 that _must_ be stored uncompressed.
 
 
-##  LVAL (Long Value) Pages ## {#long_value_pages}
+###  LVAL (Long Value) Pages ## {#long_value_pages}
 
 The header of a LVAL page is just like that of a regular data page,
 except that in place of the tdef_pg is the word 'LVAL'.
@@ -598,7 +598,7 @@ size of each of the database formats comfortably, so there is no reason to
 believe any other page map schemes exist.
 
 
-##  Indices ## {#indices}
+##  Indices ## {#indexes}
 
 Indices are not completely understood but here is what we know.
 

@@ -974,9 +974,9 @@ dl.section dd {
   width: 100%;
   border-bottom: 1px dashed #777777;
   /* fallback/image non-cover color */
-  background-color: #186FA5;
+  background-color: #41B0F6;
   /* Standard */
-  background: linear-gradient(to right, #186FA5 0%, #186FA5 1%, #444444 3%, #666666 5%, #444444 50%, #333333 100%); }
+  background: linear-gradient(to right, #41B0F6 0%, #41B0F6 1%, #444444 3%, #666666 5%, #444444 50%, #41B0F6 100%); }
 
 .image {
   text-align: center; }
