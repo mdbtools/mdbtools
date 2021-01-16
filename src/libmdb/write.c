@@ -154,14 +154,13 @@ mdb_crack_row3(MdbHandle *mdb, unsigned int row_start, unsigned int row_end,
     return 1;
 }
 /**
- * mdb_crack_row:
- * @table: Table that the row belongs to
- * @row_start: offset to start of row on current page
- * @row_end: offset to end of row on current page
- * @fields: pointer to MdbField array to be populated by mdb_crack_row
+ * @brief Cracks a row buffer apart into its component fields.
+ * @param table: Table that the row belongs to
+ * @param row_start: offset to start of row on current page
+ * @param row_size: offset to end of row on current page
+ * @param fields: pointer to MdbField array to be populated by mdb_crack_row
  *
- * Cracks a row buffer apart into its component fields.  
- * 
+ *
  * A row buffer is that portion of a data page which contains the values for
  * that row.  Its beginning and end can be found in the row offset table.
  *
@@ -172,7 +171,7 @@ mdb_crack_row3(MdbHandle *mdb, unsigned int row_start, unsigned int row_end,
  * This routine is mostly used internally by mdb_fetch_row() but may have some
  * applicability for advanced application programs.
  *
- * Return value: number of fields present, or -1 if the buffer is invalid.
+ * @return: number of fields present, or -1 if the buffer is invalid.
  */
 int
 mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fields)
@@ -743,10 +742,12 @@ mdb_update_row(MdbTableDef *table)
 	return 0; /* FIXME */
 }
 
-/* WARNING the return code is opposite to convention used elsewhere:
- * returns 0 on success
- * returns 1 on failure
- * This might change on next ABI break.
+/**
+ * \warning the return code is opposite to convention used elsewhere:
+ * @return:
+ *       - 0 on success
+ *       - 1 on failure
+ * \note This might change on next ABI break.
  */
 int 
 mdb_replace_row(MdbTableDef *table, int row, void *new_row, int new_row_size)

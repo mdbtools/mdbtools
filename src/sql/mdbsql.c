@@ -81,13 +81,13 @@ MdbSQL *sql = g_malloc0(sizeof(MdbSQL));
 #endif
 
 /**
- * mdb_sql_run_query:
- * @sql: MDB SQL object to execute the query on.
- * @querystr: SQL query string to execute.
  *
- * Parses @querystr and executes it within the given @sql object.
+ * @param sql: MdbSQL object to execute the query on.
+ * @param querystr: SQL query string to execute.
  *
- * Returns: the updated MDB SQL object, or NULL on error
+ * Parses \p querystr and executes it within the given \p sql object.
+ *
+ * @return  the updated MDB SQL object, or NULL on error
  **/
 MdbSQL*
 mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
