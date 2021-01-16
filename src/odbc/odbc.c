@@ -28,6 +28,10 @@
 #include <limits.h>
 #include "mdbodbc.h"
 
+/** \addtogroup odbc
+ *  @{
+ */
+
 //#define TRACE(x) fprintf(stderr,"Function %s\n", x);
 #define TRACE(x)
 
@@ -2375,3 +2379,4 @@ static const char * _odbc_get_client_type_name(MdbColumn *col)
 	return NULL;
 }
 
+/** @}*/

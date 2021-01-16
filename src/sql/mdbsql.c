@@ -32,6 +32,10 @@
 
 #include <locale.h>
 
+/** \addtogroup mdbsql
+ *  @{
+ */
+
 /* Prevent warnings from -Wmissing-prototypes.  */
 #ifdef YYPARSE_PARAM
 #if defined __STDC__ || defined __cplusplus
@@ -980,3 +984,4 @@ mdb_sql_dump_results(MdbSQL *sql)
 	/* the column and table names are no good now */
 	mdb_sql_reset(sql);
 }
+/** @}*/

@@ -13,6 +13,10 @@
 #include <ctype.h>
 #include <string.h>
 
+/** \addtogroup mdb-dump
+ *  @{
+ */
+
 int main(int argc, char **argv)
 {
    unsigned long        i=0;
@@ -85,3 +89,4 @@ int main(int argc, char **argv)
    exit(0);
 } 
 
+/** @}*/

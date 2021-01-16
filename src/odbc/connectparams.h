@@ -25,6 +25,10 @@
 #include <mdbfakeglib.h>
 #endif
 
+/** \addtogroup odbc
+ *  @{
+ */
+
 typedef struct
 {
    GString* dsnName;
@@ -44,3 +48,4 @@ gchar*   ExtractDSN (ConnectParams* params, const gchar* connectString);
 gchar*   ExtractDBQ (ConnectParams* params, const gchar* connectString);
 
 #endif
+/** @}*/
