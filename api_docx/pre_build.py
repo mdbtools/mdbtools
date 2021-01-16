@@ -23,7 +23,7 @@ for fname in sorted(files):
         f.write(s)
         f.close()
         index.append(cmd_name)
-
+    print(" wrote %s" % out_file)
 
 out_file = os.path.join(ROOT_PATH, "temp-man-pages", "index.md")
 
