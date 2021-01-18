@@ -84,6 +84,7 @@ main (int argc, char **argv)
 	int show_type=0;
 	int objtype = MDB_TABLE;
 	char *str_objtype = NULL;
+	char *locale = NULL;
 
 	GOptionEntry entries[] = {
 		{ "system", 'S', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &skip_sys, "Include system tables", NULL},
@@ -99,6 +100,7 @@ main (int argc, char **argv)
 	opt_context = g_option_context_new("<file> - show MDB files tables/entries");
 	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
 	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	locale = setlocale(LC_CTYPE, "");
 	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
 	{
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
@@ -106,6 +108,7 @@ main (int argc, char **argv)
 		fprintf(stderr, "Valid types are: %s\n",valid_types());
 		exit (1);
 	}
+	setlocale(LC_CTYPE, locale);
 
 	if (argc != 2) {
 		fputs("Wrong number of arguments.\n\n", stderr);

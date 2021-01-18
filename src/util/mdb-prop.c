@@ -38,10 +38,6 @@ main(int argc, char **argv)
 			argv[0]);
 		return 1;
 	}
-	if (argc < 4)
-		propColName = "LvProp";
-	else
-		propColName = argv[3];
 
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
 	if (!mdb) {
@@ -50,14 +46,19 @@ main(int argc, char **argv)
 
 	locale = setlocale(LC_CTYPE, "");
 	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, NULL);
+	if (argc < 4)
+		propColName = g_strdup("LvProp");
+	else
+		propColName = g_locale_to_utf8(argv[3], -1, NULL, NULL, NULL);
 	setlocale(LC_CTYPE, locale);
-	if (!table_name) {
+	if (!table_name || !propColName) {
 		mdb_close(mdb);
 		return 1;
 	}
 	table = mdb_read_table_by_name(mdb, "MSysObjects", MDB_ANY);
 	if (!table) {
 		g_free(table_name);
+		g_free(propColName);
 		mdb_close(mdb);
 		return 1;
 	}
@@ -73,8 +74,9 @@ main(int argc, char **argv)
 		g_free(buf);
 		mdb_free_tabledef(table);
 		g_free(table_name);
+		g_free(propColName);
 		mdb_close(mdb);
-		printf("Column %s not found in MSysObjects!\n", argv[3]);
+		printf("Column %s not found in MSysObjects!\n", propColName);
 		return 1;
 	}
 
@@ -103,11 +105,12 @@ main(int argc, char **argv)
 	g_free(table_name);
 
 	if (!found) {
-		printf("Object %s not found in database file!\n", argv[2]);
-		return 1;
+		printf("Object %s not found in database file!\n", propColName);
 	}
 	
-	return 0;
+	g_free(propColName);
+
+	return !found;
 }
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len)
 {

@@ -54,6 +54,8 @@ main(int argc, char **argv)
 	char *value;
 	size_t length;
 	int ret;
+	char *locale = NULL;
+	char *table_name = NULL;
 
 	GOptionEntry entries[] = {
 		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
@@ -78,6 +80,7 @@ main(int argc, char **argv)
 
 	opt_context = g_option_context_new("<file> <table> - export data from MDB file");
 	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	locale = setlocale(LC_CTYPE, "");
 	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
 	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
 	{
@@ -91,6 +94,12 @@ main(int argc, char **argv)
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit(1);
 	}
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
+	if (!table_name) {
+		fprintf(stderr, "argument parsing failed: %s\n", error->message);
+		exit(1);
+	}
+	setlocale(LC_CTYPE, locale);
 
 	/* Process options */
 	if (quote_char)
@@ -166,9 +175,9 @@ main(int argc, char **argv)
 			exit(1);
 		}
 
-	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
+	table = mdb_read_table_by_name(mdb, table_name, MDB_TABLE);
 	if (!table) {
-		fprintf(stderr, "Error: Table %s does not exist in this database.\n", argv[2]);
+		fprintf(stderr, "Error: Table %s does not exist in this database.\n", table_name);
 		/* Don't bother clean up memory before exit */
 		exit(1);
 	}
@@ -206,7 +215,7 @@ main(int argc, char **argv)
 			if (counter % batch_size == 0) {
 				counter = 0; // reset to 0, prevent overflow on extremely large data sets.
 				char *quoted_name;
-				quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[2]);
+				quoted_name = mdb->default_backend->quote_schema_name(namespace, table_name);
 				fprintf(outfile, "INSERT INTO %s (", quoted_name);
 				free(quoted_name);
 				for (i = 0; i < table->num_cols; i++) {
@@ -260,7 +269,7 @@ main(int argc, char **argv)
 
 			if (insert_dialect) {
 				char *quoted_name;
-				quoted_name = mdb->default_backend->quote_schema_name(namespace, argv[2]);
+				quoted_name = mdb->default_backend->quote_schema_name(namespace, table_name);
 				fprintf(outfile, "INSERT INTO %s (", quoted_name);
 				free(quoted_name);
 				for (i = 0; i < table->num_cols; i++) {
@@ -338,6 +347,7 @@ main(int argc, char **argv)
 	g_free(escape_char);
 	g_free(namespace);
 	g_free(str_bin_mode);
+	g_free(table_name);
 	return 0;
 }
 

@@ -333,7 +333,7 @@ main(int argc, char **argv)
 #endif
 	char *delimiter = NULL;
 	int in_from_colon_r = 0;
-
+	char *locale = NULL;
 
 	GOptionEntry entries[] = {
 		{ "delim", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Use this delimiter.", "char"},
@@ -350,12 +350,14 @@ main(int argc, char **argv)
 	opt_context = g_option_context_new("<file> - Run SQL");
 	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
 	// g_option_context_set_strict_posix(opt_context, TRUE); /* options first, requires glib 2.44 */
+	locale = setlocale(LC_CTYPE, "");
 	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
 	{
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
+	setlocale(LC_CTYPE, locale);
 
 	if (argc > 2) {
 		fputs("Wrong number of arguments.\n\n", stderr);
