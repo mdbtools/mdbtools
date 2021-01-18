@@ -47,8 +47,8 @@ int main (int argc, char **argv) {
 	int list_only=0;
 	int found_match=0;
 	int line_break=0;
-	int opt;	
 	char *query_id;
+	char *query_name = NULL;
     size_t bind_size = QUERY_BIND_SIZE;
 	
 	// variables for the msysqueries table
@@ -67,38 +67,44 @@ int main (int argc, char **argv) {
 	char *sql_where = malloc(bind_size);
 	char *sql_sorting = malloc(bind_size);
 	int flagint;
+	char *locale = NULL;
 	
-	/* see getopt(3) for more information on getopt and this will become clear */
-	while ((opt=getopt(argc, argv, "L1d:"))!=-1) {
-        switch (opt) {
-			case 'L':
-				list_only = 1;
-				break;
-			case '1':
-				line_break = 1;
-				break;
-			case 'd':
-				delimiter = g_strdup(optarg);
-				break;
-		}
-	}
+	GError *error = NULL;
+	GOptionContext *opt_context;
 
-	/* we've parsed all the options and we should at least have a database name left */
-	if ((argc - optind) < 1) {
-		fprintf (stderr, "Usage: %s [options] <database filename> <query name>\n",argv[0]);
-		fprintf (stderr, "where options are:\n");
-		fprintf (stderr, "  -L\t\t\tList queries in the database (default if no query name is passed)\n");
-		fprintf (stderr, "  -1\t\t\tUse newline as the delimiter (used in conjunction with listing)\n");
-		fprintf (stderr, "  -d <delimiter>\tSpecify delimiter to use\n");
+	GOptionEntry entries[] = {
+		{"list", 'L', 0, G_OPTION_ARG_NONE, &list_only, "List queries in the database (default if no query name is passed)", NULL},
+		{"newline", '1', 0, G_OPTION_ARG_NONE, &line_break, "Use newline as the delimiter (used in conjunction with listing)", NULL},
+		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify delimiter to use", "delimiter"},
+		{NULL}
+	};
+	opt_context = g_option_context_new("<file> <query name> - list or export queries from an Access database");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	locale = setlocale(LC_CTYPE, "");
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
-	
 	/* let's turn list_only on if only a database filename was passed */
-	if((argc-optind) < 2)
+	if(argc == 2) {
 		list_only=1;
+	} else if (argc == 3) {
+		query_name= g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
+		if (!query_name) {
+			fprintf(stderr, "argument parsing failed: %s\n", error->message);
+			exit(1);
+		}
+	} else {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		exit(1);
+	}
+	setlocale(LC_CTYPE, locale);
 	
  	/* open the database */
- 	if (!(mdb = mdb_open(argv[optind],MDB_NOFLAGS))) {
+	if (!(mdb = mdb_open(argv[1],MDB_NOFLAGS))) {
 		fprintf(stderr,"Couldn't open database.\n");
 		exit(1);
 	}
@@ -120,7 +126,7 @@ int main (int argc, char **argv) {
 		for (i=0; i < mdb->num_catalog; i++) {
 			temp = g_ptr_array_index(mdb->catalog, i);
 			
-			if(strcmp(temp->object_name,argv[optind+1]) == 0) {
+			if(strcmp(temp->object_name,query_name) == 0) {
 				entry = g_ptr_array_index(mdb->catalog,i);
 				found_match=1;
 			} else if(strcmp(temp->object_name,"MSysQueries") == 0) {
@@ -217,15 +223,14 @@ int main (int argc, char **argv) {
 			}
 			free(query_id);
 		} else {
-			fprintf(stderr,"Couldn't locate the specified query: %s\n",argv[optind+1]);
+			fprintf(stderr,"Couldn't locate the specified query: %s\n",query_name);
 		}
 	}
 
 	mdb_close(mdb);
+	g_free(query_name);
 	
-	if(delimiter) free(delimiter);
-
-	exit(0);
+	return 0;
 }
 
 /**************************************************** 	
