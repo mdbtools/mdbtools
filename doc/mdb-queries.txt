@@ -11,18 +11,16 @@ DESCRIPTION
   It produces a list of queries in the database, and dump the SQL associated with a specific query.
 
 OPTIONS
-  -L        List queries in the database (default if no query name is passed)
-  -1        Use newline as the delimiter (used in conjunction with listing)
-  -d delim  Specify delimiter to use
+  -L, --list             List queries in the database (default if no query name is passed)
+  -1, --newline          Use newline as the delimiter (used in conjunction with listing)
+  -d, --delimiter delim  Specify delimiter to use
 
 NOTES 
 
 ENVIRONMENT
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
   MDBICONV            Defines the output charset. Default is UTF-8. mdbtools must have been compiled with iconv.
-  MDBOPTS             semi-column separated list of options:
-                      * use_index
-                      * no_memo
+  MDBOPTS             Colon-separated list of options:
                       * debug_like
                       * debug_write
                       * debug_usage
@@ -30,6 +28,8 @@ ENVIRONMENT
                       * debug_row
                       * debug_props
                       * debug_all is a shortcut for all debug_* options
+                      * no_memo (deprecated; has no effect)
+                      * use_index (experimental; requires libmswstr)
 
 HISTORY
   mdb-queries first appeared in MDB Tools 0.9.

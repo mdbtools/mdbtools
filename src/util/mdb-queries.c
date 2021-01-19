@@ -75,7 +75,7 @@ int main (int argc, char **argv) {
 	GOptionEntry entries[] = {
 		{"list", 'L', 0, G_OPTION_ARG_NONE, &list_only, "List queries in the database (default if no query name is passed)", NULL},
 		{"newline", '1', 0, G_OPTION_ARG_NONE, &line_break, "Use newline as the delimiter (used in conjunction with listing)", NULL},
-		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify delimiter to use", "delimiter"},
+		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify delimiter to use", "delim"},
 		{NULL}
 	};
 	opt_context = g_option_context_new("<file> <query name> - list or export queries from an Access database");
