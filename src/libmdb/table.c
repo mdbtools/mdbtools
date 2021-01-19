@@ -279,10 +279,9 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		pcol->row_col_num = mdb_get_int16(col, fmt->tab_row_col_num_offset);
 		//fprintf(stdout,"row column num %d\n",pcol->row_col_num);
 
-		/* FIXME: can this be right in Jet3 and Jet4? */
 		if (pcol->col_type == MDB_NUMERIC) {
-			pcol->col_scale = col[11];
-			pcol->col_prec = col[12];
+			pcol->col_scale = col[fmt->col_scale_offset];
+			pcol->col_prec = col[fmt->col_prec_offset];
 		}
 
 		// col_flags_offset == 13 or 15

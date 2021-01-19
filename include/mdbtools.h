@@ -275,6 +275,8 @@ typedef struct {
 	guint16		tab_col_offset_var;
 	guint16		tab_col_offset_fixed;
 	guint16		tab_row_col_num_offset;
+	guint16		col_scale_offset;
+	guint16		col_prec_offset;
 } MdbFormatConstants; 
 
 typedef struct {
