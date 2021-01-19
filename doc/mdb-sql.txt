@@ -38,11 +38,15 @@ COMMANDS
 SQL LANGUAGE
   The currently implemented SQL subset is quite small, supporting only single table queries, no aggregates, and limited support for WHERE clauses. Here is a brief synopsis of the supported language.
 
-  select:	SELECT [* | <column list>] FROM <table> WHERE <where clause>
+  select:	SELECT <top clause> [* | <column list>] FROM <table> WHERE <where clause> <limit clause>
+
+  top clause:	TOP <integer> [ PERCENT ]
 
   column list:	<column> [, <column list>]
 
-  where clause:		<column> <operator> <literal> [AND <where clause>]
+  where clause:	<column> <operator> <literal> [AND <where clause>]
+
+  limit clause:	LIMIT <integer>
 
   operator:	=, =>, =<, <>, like, <, >
 
