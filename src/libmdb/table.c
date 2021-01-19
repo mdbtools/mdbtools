@@ -279,7 +279,8 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 		pcol->row_col_num = mdb_get_int16(col, fmt->tab_row_col_num_offset);
 		//fprintf(stdout,"row column num %d\n",pcol->row_col_num);
 
-		if (pcol->col_type == MDB_NUMERIC) {
+		if (pcol->col_type == MDB_NUMERIC || pcol->col_type == MDB_MONEY ||
+				pcol->col_type == MDB_FLOAT || pcol->col_type == MDB_DOUBLE) {
 			pcol->col_scale = col[fmt->col_scale_offset];
 			pcol->col_prec = col[fmt->col_prec_offset];
 		}
