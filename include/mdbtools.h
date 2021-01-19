@@ -210,9 +210,10 @@ typedef struct mdbsargtree MdbSargNode;
 
 typedef struct {
 	char *name;
-	unsigned char needs_length; /* or precision */
+	unsigned char needs_precision;
 	unsigned char needs_scale;
-	unsigned char needs_quotes;
+	unsigned char needs_byte_length;
+	unsigned char needs_char_length;
 } MdbBackendType;
 		
 typedef struct {

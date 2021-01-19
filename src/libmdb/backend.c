@@ -24,90 +24,78 @@
 
 /*    Access data types */
 static const MdbBackendType mdb_access_types[] = {
-    { .name = "Unknown 0x00" },
-    { .name = "Boolean" },
-    { .name = "Byte" },
-    { .name = "Integer" },
-    { .name = "Long Integer" },
-    { .name = "Currency" },
-    { .name = "Single" },
-    { .name = "Double" },
-    { .name = "DateTime", .needs_quotes = 1 },
-    { .name = "Binary" },
-    { .name = "Text", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "OLE", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "Memo/Hyperlink", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "Unknown 0x0d" },
-    { .name = "Unknown 0x0e" },
-    { .name = "Replication ID" },
-    { .name = "Numeric", .needs_length = 1, .needs_scale = 1 },
+    [MDB_BOOL] = { .name = "Boolean" },
+    [MDB_BYTE] = { .name = "Byte" },
+    [MDB_INT] = { .name = "Integer" },
+    [MDB_LONGINT] = { .name = "Long Integer" },
+    [MDB_MONEY] = { .name = "Currency" },
+    [MDB_FLOAT] = { .name = "Single" },
+    [MDB_DOUBLE] = { .name = "Double" },
+    [MDB_DATETIME] = { .name = "DateTime" },
+    [MDB_BINARY] = { .name = "Binary" },
+    [MDB_TEXT] = { .name = "Text", .needs_char_length = 1 },
+    [MDB_OLE] = { .name = "OLE", .needs_byte_length = 1 },
+    [MDB_MEMO] = { .name = "Memo/Hyperlink", .needs_char_length = 1 },
+    [MDB_REPID] = { .name = "Replication ID" },
+    [MDB_NUMERIC] = { .name = "Numeric", .needs_precision = 1, .needs_scale = 1 },
 };
 
 /*    Oracle data types */
 static const MdbBackendType mdb_oracle_types[] = {
-    { .name = "Oracle_Unknown 0x00" },
-    { .name = "NUMBER(1)" },
-    { .name = "NUMBER(3)" },
-    { .name = "NUMBER(5)" },
-    { .name = "NUMBER(11)" },
-    { .name = "NUMBER(15,2)" },
-    { .name = "FLOAT" },
-    { .name = "FLOAT" },
-    { .name = "TIMESTAMP" },
-    { .name = "BINARY" },
-    { .name = "VARCHAR2", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "BLOB" },
-    { .name = "CLOB" },
-    { .name = "Oracle_Unknown 0x0d" },
-    { .name = "Oracle_Unknown 0x0e" },
-    { .name = "NUMBER", .needs_length = 1 },
-    { .name = "NUMBER", .needs_length = 1 },
+    [MDB_BOOL] = { .name = "NUMBER(1)" },
+    [MDB_BYTE] = { .name = "NUMBER(3)" },
+    [MDB_INT] = { .name = "NUMBER(5)" },
+    [MDB_LONGINT] = { .name = "NUMBER(11)" },
+    [MDB_MONEY] = { .name = "NUMBER(15,2)" },
+    [MDB_FLOAT] = { .name = "FLOAT" },
+    [MDB_DOUBLE] = { .name = "FLOAT" },
+    [MDB_DATETIME] = { .name = "TIMESTAMP" },
+    [MDB_BINARY] = { .name = "BINARY" },
+    [MDB_TEXT] = { .name = "VARCHAR2", .needs_char_length= 1 },
+    [MDB_OLE] = { .name = "BLOB" },
+    [MDB_MEMO] = { .name = "CLOB" },
+    [MDB_REPID] = { .name = "NUMBER", .needs_precision = 1 },
+    [MDB_NUMERIC] = { .name = "NUMBER", .needs_precision = 1 },
 };
 static const MdbBackendType mdb_oracle_shortdate_type =
 		    { .name = "DATE" };
 
 /*    Sybase/MSSQL data types */
 static const MdbBackendType mdb_sybase_types[] = {
-    { .name = "Sybase_Unknown 0x00" },
-    { .name = "bit" },
-    { .name = "char", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "smallint" },
-    { .name = "int" },
-    { .name = "money" },
-    { .name = "real" },
-    { .name = "float" },
-    { .name = "smalldatetime" },
-    { .name = "Sybase_Unknown 0x09" },
-    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "varbinary", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "text", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "Sybase_Unknown 0x0d" },
-    { .name = "Sybase_Unknown 0x0e" },
-    { .name = "Sybase_Replication ID" },
-    { .name = "numeric", .needs_length = 1, .needs_scale = 1 },
+    [MDB_BOOL] = { .name = "bit" },
+    [MDB_BYTE] = { .name = "char", .needs_byte_length = 1 },
+    [MDB_INT] = { .name = "smallint" },
+    [MDB_LONGINT] = { .name = "int" },
+    [MDB_MONEY] = { .name = "money" },
+    [MDB_FLOAT] = { .name = "real" },
+    [MDB_DOUBLE] = { .name = "float" },
+    [MDB_DATETIME] = { .name = "smalldatetime" },
+    [MDB_BINARY] = { .name = "varbinary", .needs_byte_length = 1 },
+    [MDB_TEXT] = { .name = "nvarchar", .needs_char_length = 1 },
+    [MDB_OLE] = { .name = "varbinary(max)" },
+    [MDB_MEMO] = { .name = "nvarchar(max)" },
+    [MDB_REPID] = { .name = "Sybase_Replication ID" },
+    [MDB_NUMERIC] = { .name = "numeric", .needs_precision = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_sybase_shortdate_type =
 		    { .name = "DATE" };
 
 /*    Postgres data types */
 static const MdbBackendType mdb_postgres_types[] = {
-    { .name = "Postgres_Unknown 0x00" },
-    { .name = "BOOL" },
-    { .name = "SMALLINT" },
-    { .name = "INTEGER" },
-    { .name = "INTEGER" }, /* bigint */
-    { .name = "NUMERIC(15,2)" }, /* money deprecated ? */
-    { .name = "REAL" },
-    { .name = "DOUBLE PRECISION" },
-    { .name = "TIMESTAMP WITHOUT TIME ZONE" },
-    { .name = "BYTEA" },
-    { .name = "VARCHAR", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "BYTEA" },
-    { .name = "TEXT" },
-    { .name = "Postgres_Unknown 0x0d" },
-    { .name = "Postgres_Unknown 0x0e" },
-    { .name = "UUID" },
-    { .name = "NUMERIC", .needs_length = 1, .needs_scale = 1 },
+    [MDB_BOOL] = { .name = "BOOL" },
+    [MDB_BYTE] = { .name = "SMALLINT" },
+    [MDB_INT] = { .name = "INTEGER" },
+    [MDB_LONGINT] = { .name = "INTEGER" }, /* bigint */
+    [MDB_MONEY] = { .name = "NUMERIC(15,2)" }, /* money deprecated ? */
+    [MDB_FLOAT] = { .name = "REAL" },
+    [MDB_DOUBLE] = { .name = "DOUBLE PRECISION" },
+    [MDB_DATETIME] = { .name = "TIMESTAMP WITHOUT TIME ZONE" },
+    [MDB_BINARY] = { .name = "BYTEA" },
+    [MDB_TEXT] = { .name = "VARCHAR", .needs_char_length = 1 },
+    [MDB_OLE] = { .name = "BYTEA" },
+    [MDB_MEMO] = { .name = "TEXT" },
+    [MDB_REPID] = { .name = "UUID" },
+    [MDB_NUMERIC] = { .name = "NUMERIC", .needs_precision = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_postgres_shortdate_type =
 		    { .name = "DATE" };
@@ -116,46 +104,40 @@ static const MdbBackendType mdb_postgres_serial_type =
 
 /*    MySQL data types */
 static const MdbBackendType mdb_mysql_types[] = {
-    { .name = "text", .needs_quotes = 1 },
-    { .name = "boolean" },
-    { .name = "tinyint" },
-    { .name = "smallint" },
-    { .name = "int" },
-    { .name = "float" },
-    { .name = "float" },
-    { .name = "float" },
-    { .name = "datetime", .needs_quotes = 1 },
-    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "varchar", .needs_length = 1, .needs_quotes = 1 },
-    { .name = "text", .needs_quotes = 1 },
-    { .name = "blob" },
-    { .name = "text", .needs_quotes = 1 },
-    { .name = "char(38)" },
-    { .name = "numeric", .needs_length = 1, .needs_scale = 1 },
+    [MDB_BOOL] = { .name = "boolean" },
+    [MDB_BYTE] = { .name = "tinyint" },
+    [MDB_INT] = { .name = "smallint" },
+    [MDB_LONGINT] = { .name = "int" },
+    [MDB_MONEY] = { .name = "float" },
+    [MDB_FLOAT] = { .name = "float" },
+    [MDB_DOUBLE] = { .name = "float" },
+    [MDB_DATETIME] = { .name = "datetime" },
+    [MDB_BINARY] = { .name = "blob" },
+    [MDB_TEXT] = { .name = "varchar", .needs_char_length = 1 },
+    [MDB_OLE] = { .name = "varbinary", .needs_byte_length = 1 },
+    [MDB_MEMO] = { .name = "text" },
+    [MDB_REPID] = { .name = "char(38)" },
+    [MDB_NUMERIC] = { .name = "numeric", .needs_precision = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_mysql_shortdate_type =
 		    { .name = "date" };
 
 /*    sqlite data types */
 static const MdbBackendType mdb_sqlite_types[] = {
-    { .name = "BLOB" },
-    { .name = "INTEGER" },
-    { .name = "INTEGER" },
-    { .name = "INTEGER" },
-    { .name = "INTEGER" },
-    { .name = "REAL" },
-    { .name = "REAL" },
-    { .name = "REAL" },
-    { .name = "DateTime", .needs_quotes = 1 },
-    { .name = "BLOB", .needs_quotes = 1 },
-    { .name = "varchar", .needs_quotes = 1 },
-    { .name = "BLOB", .needs_quotes = 1 },
-    { .name = "TEXT", .needs_quotes = 1 },
-    { .name = "BLOB", .needs_quotes = 1 },
-    { .name = "BLOB", .needs_quotes = 1 },
-    { .name = "INTEGER" },
-    { .name = "INTEGER" },
+    [MDB_BOOL] = { .name = "INTEGER" },
+    [MDB_BYTE] = { .name = "INTEGER" },
+    [MDB_INT] = { .name = "INTEGER" },
+    [MDB_LONGINT] = { .name = "INTEGER" },
+    [MDB_MONEY] = { .name = "REAL" },
+    [MDB_FLOAT] = { .name = "REAL" },
+    [MDB_DOUBLE] = { .name = "REAL" },
+    [MDB_DATETIME] = { .name = "DateTime" },
+    [MDB_BINARY] = { .name = "BLOB" },
+    [MDB_TEXT] = { .name = "varchar" },
+    [MDB_OLE] = { .name = "BLOB" },
+    [MDB_MEMO] = { .name = "TEXT" },
+    [MDB_REPID] = { .name = "INTEGER" },
+    [MDB_NUMERIC] = { .name = "INTEGER" },
 };
 
 enum {
@@ -257,7 +239,7 @@ const MdbBackendType*
 mdb_get_colbacktype(const MdbColumn *col) {
 	MdbBackend *backend = col->table->entry->mdb->default_backend;
 	int col_type = col->col_type;
-	if (col_type > 0x10 )
+	if (col_type > MDB_NUMERIC)
 		return NULL;
 	if (col_type == MDB_LONGINT && col->is_long_auto && backend->type_autonum)
 		return backend->type_autonum;
@@ -265,6 +247,8 @@ mdb_get_colbacktype(const MdbColumn *col) {
 		if (mdb_col_is_shortdate(col))
 			return backend->type_shortdate;
 	}
+	if (!backend->types_table[col_type].name[0])
+		return NULL;
 	return &backend->types_table[col_type];
 }
 
@@ -275,7 +259,7 @@ mdb_get_colbacktype_string(const MdbColumn *col)
 	if (!type) {
    		// return NULL;
 		static __thread char buf[16];
-		snprintf(buf, sizeof(buf), "type %04x", col->col_type);
+		snprintf(buf, sizeof(buf), "Unknown_%04x", col->col_type);
 		return buf;
 	}
 	return type->name;
@@ -285,7 +269,14 @@ mdb_colbacktype_takes_length(const MdbColumn *col)
 {
 	const MdbBackendType *type = mdb_get_colbacktype(col);
 	if (!type) return 0;
-	return type->needs_length;
+	return type->needs_precision || type->needs_char_length || type->needs_byte_length;
+}
+static int
+mdb_colbacktype_takes_length_in_characters(const MdbColumn *col)
+{
+	const MdbBackendType *type = mdb_get_colbacktype(col);
+	if (!type) return 0;
+	return type->needs_char_length;
 }
 
 /**
@@ -810,6 +801,8 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 				fputs(" (255)", outfile);
 			else if (col->col_scale != 0)
 				fprintf(outfile, " (%d, %d)", col->col_scale, col->col_prec);
+			else if (!IS_JET3(mdb) && mdb_colbacktype_takes_length_in_characters(col))
+				fprintf(outfile, " (%d)", col->col_size/2);
 			else
 				fprintf(outfile, " (%d)", col->col_size);
 		}
