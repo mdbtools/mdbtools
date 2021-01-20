@@ -1,3 +1,29 @@
+Version 0.9.2 (Beta 2)
+=============
+
+* Updated man pages with new SQL features and correct `MDBOPTS` information (#203)
+* Add generated API documentation (#239)
+* `mdb-export`: Fix issue where exported SQL field sizes were sometimes twice the necessary size (#112)
+* `mdb-queries` now has long option names `--list`, `--newline`, and `--delimiter`
+* All CLI tools which accept string arguments are now locale-aware
+* All CLI tools now accept a `--version` argument (#232)
+* libmdb: Add support for numeric scale/precision on JET3 databases and floating-point column types
+* ODBC: `SQLBindCol` now respects its TargetType (fCType) argument and converts bound data to the requested type (#23 #242)
+* ODBC: `SQLFetchCol` now returns `SQL_SUCCESS_WITH_INFO` if a bound column was truncated, and `SQL_ERROR` if a bound value is out of range of the target type.
+
+
+Version 0.9.2 (Beta 1)
+=============
+
+* Make command-line arguments aware of the user's locale (#237)
+* `mdb-schema`: Exit with an error code if the requested table is not found
+* Fuzz-test all pull requests (#230)
+* libmdb: Fix infinite loop with malformed input (oss-fuzz/28789)
+* libmdb: Fix buffer overrun and some out of bounds memory accesses (oss-fuzz/28832 + oss-fuzz/28807)
+* libmdb: Fix potential memory leak (oss-fuzz/28791)
+* libmdb: Improved bounds and return value checking (oss-fuzz/29328 + oss-fuzz/29329)
+
+
 Version 0.9.1
 =============
 
@@ -20,6 +46,7 @@ Version 0.9.1
 * Print a warning if MDBOPTS=use_index is set at run-time but libmswstr was absent at compile-time #215 #226
 * Improved support for databases that were improperly closed #120
 * Remove warnings about mdb_find_row and row_size that did not necessarily indicate a problem
+
 
 Version 0.9.0
 =============
