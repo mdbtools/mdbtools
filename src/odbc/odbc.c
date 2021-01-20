@@ -303,18 +303,20 @@ SQLRETURN SQL_API SQLExtendedFetch(
 		*rgfRowStatus = SQL_SUCCESS; /* what is the row status value? */
 	
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
-		SQLRETURN retval = SQL_SUCCESS;
-		while (cur && retval == SQL_SUCCESS) {
+		SQLRETURN final_retval = SQL_SUCCESS;
+		while (cur && (final_retval == SQL_SUCCESS || final_retval == SQL_SUCCESS_WITH_INFO)) {
 			/* log error ? */
 			SQLLEN lenbind = 0;
-			retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
+			SQLRETURN this_retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
 					cur->varaddr, cur->column_bindlen, &lenbind);
 			if (cur->column_lenbind)
 				*(cur->column_lenbind) = lenbind;
+			if (this_retval != SQL_SUCCESS)
+				final_retval = this_retval;
 			cur = cur->next;
 		}
 		stmt->rows_affected++;
-		return retval;
+		return final_retval;
 	} else {
 		return SQL_NO_DATA_FOUND;
 	}
@@ -1067,19 +1069,21 @@ SQLRETURN SQL_API SQLFetch(
 		return SQL_NO_DATA_FOUND;
 	}
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
-		SQLRETURN retval = SQL_SUCCESS;
-		while (cur && retval == SQL_SUCCESS) {
+		SQLRETURN final_retval = SQL_SUCCESS;
+		while (cur && (final_retval == SQL_SUCCESS || final_retval == SQL_SUCCESS_WITH_INFO)) {
 			/* log error ? */
 			SQLLEN lenbind = 0;
-			retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
+			SQLRETURN this_retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
 					cur->varaddr, cur->column_bindlen, &lenbind);
 			if (cur->column_lenbind)
 				*(cur->column_lenbind) = lenbind;
+			if (this_retval != SQL_SUCCESS)
+				final_retval = this_retval;
 			cur = cur->next;
 		}
 		stmt->rows_affected++;
 		stmt->pos=0;
-		return retval;
+		return final_retval;
 	} else {
 		return SQL_NO_DATA_FOUND;
 	}
