@@ -426,7 +426,7 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 	MdbSargNode *node;
 
 	if (const1[0]=='\'' && const2[0]=='\'') {
-		value = strcmp(const1, const2);
+		value = strcoll(const1, const2);
 		switch (op) {
 			case MDB_EQUAL: compar = (value ? 0 : 1); break;
 			case MDB_GT: compar = (value > 0); break;

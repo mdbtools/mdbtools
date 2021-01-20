@@ -401,7 +401,7 @@ main(int argc, char **argv)
 		}
 	}
 
-
+	setlocale(LC_COLLATE, "");
 	/* initialize the SQL engine */
 	sql = mdb_sql_init();
 	if (argc == 2) {

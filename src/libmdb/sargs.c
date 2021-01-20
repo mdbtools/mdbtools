@@ -46,7 +46,7 @@ int rc;
 	if (node->op == MDB_LIKE) {
 		return mdb_like_cmp(s,node->value.s);
 	}
-	rc = strncmp(node->value.s, s, 255);
+	rc = strcoll(node->value.s, s);
 	switch (node->op) {
 		case MDB_EQUAL:
 			if (rc==0) return 1;
