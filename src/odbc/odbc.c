@@ -41,7 +41,6 @@ static int _odbc_fix_literals(struct _hstmt *stmt);
 //static int _odbc_get_server_type(int clt_type);
 static int _odbc_get_string_size(int size, SQLCHAR *str);
 
-static void bind_columns (struct _hstmt*);
 static void unbind_columns (struct _hstmt*);
 
 #define FILL_FIELD(f,v,s) mdb_fill_temp_field(f,v,s,0,0,0,0)
@@ -291,6 +290,7 @@ SQLRETURN SQL_API SQLExtendedFetch(
     SQLUSMALLINT      *rgfRowStatus)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _sql_bind_info *cur = stmt->bind_head;
 
 	TRACE("SQLExtendedFetch");
 	if (fFetchType!=SQL_FETCH_NEXT) {
@@ -302,11 +302,18 @@ SQLRETURN SQL_API SQLExtendedFetch(
 	if (rgfRowStatus)
 		*rgfRowStatus = SQL_SUCCESS; /* what is the row status value? */
 	
-	bind_columns(stmt);
-
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
+		SQLRETURN retval = SQL_SUCCESS;
+		while (cur && retval == SQL_SUCCESS) {
+			/* log error ? */
+			SQLLEN lenbind = 0;
+			retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
+					cur->varaddr, cur->column_bindlen, &lenbind);
+			*(cur->column_lenbind) = lenbind;
+			cur = cur->next;
+		}
 		stmt->rows_affected++;
-		return SQL_SUCCESS;
+		return retval;
 	} else {
 		return SQL_NO_DATA_FOUND;
 	}
@@ -1032,25 +1039,6 @@ SQLRETURN SQL_API SQLExecDirectW(
 #endif // ENABLE_ODBC_W
 
 static void
-bind_columns(struct _hstmt *stmt)
-{
-	struct _sql_bind_info *cur;
-
-	TRACE("bind_columns");
-
-	if (stmt->rows_affected==0) {
-		cur = stmt->bind_head;
-		while (cur) {
-			if (mdb_sql_bind_column(stmt->sql, cur->column_number,
-						cur->varaddr, cur->column_lenbind) == -1) {
-				/* log error ? */
-			}
-			cur = cur->next;
-		}
-	}
-}
-
-static void
 unbind_columns(struct _hstmt *stmt)
 {
 	struct _sql_bind_info *cur, *next;
@@ -1071,26 +1059,25 @@ SQLRETURN SQL_API SQLFetch(
     SQLHSTMT           hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _sql_bind_info *cur = stmt->bind_head;
 
 	TRACE("SQLFetch");
-	/* if we bound columns, transfer them to res_info now that we have one */
-	bind_columns(stmt);
-	//cur = stmt->bind_head;
-	//while (cur) {
-		//if (cur->column_number>0 &&
-			//cur->column_number <= stmt->sql->num_columns) {
-			// if (cur->column_lenbind) *(cur->column_lenbind) = 4;
-		//}
-		//cur = cur->next;
-	//}
 	if ( stmt->sql->limit >= 0 && stmt->rows_affected == stmt->sql->limit ) {
 		return SQL_NO_DATA_FOUND;
 	}
-
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
+		SQLRETURN retval = SQL_SUCCESS;
+		while (cur && retval == SQL_SUCCESS) {
+			/* log error ? */
+			SQLLEN lenbind = 0;
+			retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
+					cur->varaddr, cur->column_bindlen, &lenbind);
+			*(cur->column_lenbind) = lenbind;
+			cur = cur->next;
+		}
 		stmt->rows_affected++;
 		stmt->pos=0;
-		return SQL_SUCCESS;
+		return retval;
 	} else {
 		return SQL_NO_DATA_FOUND;
 	}
