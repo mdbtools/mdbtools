@@ -309,7 +309,8 @@ SQLRETURN SQL_API SQLExtendedFetch(
 			SQLLEN lenbind = 0;
 			retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
 					cur->varaddr, cur->column_bindlen, &lenbind);
-			*(cur->column_lenbind) = lenbind;
+			if (cur->column_lenbind)
+				*(cur->column_lenbind) = lenbind;
 			cur = cur->next;
 		}
 		stmt->rows_affected++;
@@ -1072,7 +1073,8 @@ SQLRETURN SQL_API SQLFetch(
 			SQLLEN lenbind = 0;
 			retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
 					cur->varaddr, cur->column_bindlen, &lenbind);
-			*(cur->column_lenbind) = lenbind;
+			if (cur->column_lenbind)
+				*(cur->column_lenbind) = lenbind;
 			cur = cur->next;
 		}
 		stmt->rows_affected++;
