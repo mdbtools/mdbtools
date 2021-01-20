@@ -160,6 +160,7 @@ int i;
 			  
 	if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) 
 	{
+		long id_value;
 		UCHAR  szCol1[60];
 		SQLLEN length;
 
@@ -179,8 +180,8 @@ int i;
 				szSqlState, szErrorMsg);
 			return 1;
 		}		
+		SQLBindCol(hstmt, 1, SQL_C_LONG, &id_value, sizeof(id_value), NULL);
 		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, sizeof(szCol1), &length);
-		//SQLBindCol(hstmt, 1, SQL_CHAR, szCol1, 60, NULL);
 	
 		/* Execute statement with first row. */
 
@@ -188,7 +189,7 @@ int i;
 		while ((retcode = SQLFetch(hstmt)) == SQL_SUCCESS)
 		{
 			i++;
-			printf("%d: szCol1 = %s (%d)\n", i, szCol1, (int)length);
+			printf("%d: id = %ld  szCol1 = %s (%d)\n", i, id_value, szCol1, (int)length);
 		}
 		if (retcode != SQL_NO_DATA_FOUND)
 		{
