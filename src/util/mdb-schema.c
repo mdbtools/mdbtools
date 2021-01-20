@@ -18,6 +18,7 @@
 
 /* this utility dumps the schema for an existing database */
 #include "mdbtools.h"
+#include "mdbver.h"
 
 int
 main (int argc, char **argv)
@@ -34,6 +35,7 @@ main (int argc, char **argv)
 	int opt_indexes = MDB_SHEXP_DEFAULT & MDB_SHEXP_INDEXES;
 	int opt_relations = MDB_SHEXP_DEFAULT & MDB_SHEXP_RELATIONS;
 	int success = 0;
+	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
 		{ "table", 'T', 0, G_OPTION_ARG_STRING, &tabname, "Only create schema for named table", "table"},
@@ -52,6 +54,7 @@ main (int argc, char **argv)
 		{ "no-indexes", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_indexes, "Don't include indexes", NULL},
 		{ "relations", 0, 0, G_OPTION_ARG_NONE, &opt_relations, "Include foreign key constraints", NULL},
 		{ "no-relations", 0, G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &opt_relations, "Don't include foreign key constraints", NULL},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -66,6 +69,13 @@ main (int argc, char **argv)
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
 	}
 
 	setlocale(LC_CTYPE, old_locale);

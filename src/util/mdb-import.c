@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbver.h"
 
 #define MAX_ROW_SIZE 4096
 
@@ -158,10 +159,12 @@ main(int argc, char **argv)
 	FILE *in;
 	char *delimiter;
 	int header_rows = 0;
+	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
 		{ "header", 'H', 0, G_OPTION_ARG_INT, &header_rows, "skip <rows> header rows", "row"},
 		{ "delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify a column delimiter", "char"},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -175,6 +178,13 @@ main(int argc, char **argv)
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
 	}
 
 	if (!delimiter)

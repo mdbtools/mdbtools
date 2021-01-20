@@ -5,6 +5,7 @@ SYNOPSIS
   mdb-export [--no-header] [--delimiter delim] [--row-delimiter delim] [[--no-quote] | [--quote char [--escape char]]] [--escape-invisible] [--date-format fmt] [--datetime-format fmt] [--bin strip|raw|octal|hex] [--boolean-words] database table
   mdb-export --insert backend [--namespace prefix] [--batch-size int] database table
   mdb-export -h|--help
+  mdb-export --version
 
 DESCRIPTION
   mdb-export is a utility program distributed with MDB Tools. 
@@ -29,6 +30,7 @@ OPTIONS
   -0, --null char               Use char to represent a NULL value.
   -b, --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \\ooo style octal data or output \\xx style hexadecimal data.
   -B, --boolean-words           Use TRUE/FALSE in Boolean fields (default is 0/1).
+  --version                     Print the mdbtools version and exit.
 
 NOTES 
   Most of the formatting options actually also works with --insert.

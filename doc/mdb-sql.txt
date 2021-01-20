@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
   mdb-sql [-HFp] [-d char] [-i file] [-o file] [database]
   mdb-sql -h|--help
+  mdb-sql --version
 
 DESCRIPTION
   mdb-sql is a utility program distributed with MDB Tools. 
@@ -23,6 +24,7 @@ specified, columns will be delimited by a tab character if pretty printing
 (-p) is turned off. If pretty printing is enabled this option is meaningless.
   -i, --input file             Specify an input file. This option allows an input file containing the SQL to be passed to mdb-sql.  See Notes.
   -o, --output file            Specify an output file. This option allows the name of an output file to be used instead of stdout.
+  --version                    Print the mdbtools version and exit.
 
 COMMANDS
   mdb-sql in interactive mode takes some special commands. 

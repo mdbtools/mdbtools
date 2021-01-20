@@ -3,8 +3,8 @@ NAME
 
 SYNOPSIS
   mdb-ver database
-  mdb-ver -M
   mdb-ver -h|--help
+  mdb-ver -M|--version
 
 DESCRIPTION
   mdb-ver is a utility program distributed with MDB Tools. 
@@ -12,8 +12,7 @@ DESCRIPTION
   It will return a single line of output corresponding to the program that produced the file: 'JET3' (for files produced by Access 97), 'JET4' (Access 2000, XP and 2003), 'ACE12' (Access 2007), 'ACE14' (Access 2010), 'ACE15' (Access 2013), or 'ACE16' (Access 2016).
 
 OPTIONS
-
-  -M, --mdbtools	Prints the version of MDB Tools itself instead of the MDB file.
+  -M, --version     Print the version of mdbtools (rather than the MDB file) and exit.
 
 NOTES 
   Access changed its format between Jet 3 used in Access 97 and Jet 4 used for Access 2000 and XP. The nature of the changes included moving the page size from 2K to 4K and added support for unicode. MDB Tools actively supports both formats. Newer version are very much like Jet4.

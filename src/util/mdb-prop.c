@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbver.h"
 
 void dump_kkd(MdbHandle *mdb, void *kkd, size_t len);
 
@@ -32,10 +33,43 @@ main(int argc, char **argv)
 	void *buf;
 	int col_num;
 	int found = 0;
+	int print_mdbver = 0;
+    GError *error = NULL;
 
-	if (argc < 3) {
-		fprintf(stderr,"Usage: %s <file> <object name> [<prop col>]\n",
-			argv[0]);
+	GOptionContext *opt_context;
+	GOptionEntry entries[] = {
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
+		{NULL}
+	};
+	opt_context = g_option_context_new("<file> <object name> [<prop col>] - display properties of an object in an Access database");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	locale = setlocale(LC_CTYPE, "");
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		return 1;
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
+	}
+	if (argc != 3 && argc != 4) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		return 1;
+	}
+
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, NULL);
+	if (argc < 4)
+		propColName = g_strdup("LvProp");
+	else
+		propColName = g_locale_to_utf8(argv[3], -1, NULL, NULL, NULL);
+	setlocale(LC_CTYPE, locale);
+	if (!table_name || !propColName) {
 		return 1;
 	}
 
@@ -44,17 +78,6 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	locale = setlocale(LC_CTYPE, "");
-	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, NULL);
-	if (argc < 4)
-		propColName = g_strdup("LvProp");
-	else
-		propColName = g_locale_to_utf8(argv[3], -1, NULL, NULL, NULL);
-	setlocale(LC_CTYPE, locale);
-	if (!table_name || !propColName) {
-		mdb_close(mdb);
-		return 1;
-	}
 	table = mdb_read_table_by_name(mdb, "MSysObjects", MDB_ANY);
 	if (!table) {
 		g_free(table_name);

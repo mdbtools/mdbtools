@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
   mdb-import [-H lines] [-d char] database table csvfile
   mdb-import -h|--help
+  mdb-import --version
 
 DESCRIPTION
   mdb-import is a utility program distributed with MDB Tools. 
@@ -13,6 +14,7 @@ DESCRIPTION
 OPTIONS
   -H, --header lines    Skip lines of CSV header.
   -d, --delimiter char  Specify an alternative column delimiter. Default is , (comma).
+  --version             Print the mdbtools version and exit
 
 NOTES 
 

@@ -46,6 +46,7 @@ extern void clear_history ();
 
 #include <string.h>
 #include "mdbsql.h"
+#include "mdbver.h"
 
 void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
 void dump_results_pp(FILE *out, MdbSQL *sql);
@@ -334,6 +335,7 @@ main(int argc, char **argv)
 	char *delimiter = NULL;
 	int in_from_colon_r = 0;
 	char *locale = NULL;
+	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
 		{ "delim", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Use this delimiter.", "char"},
@@ -342,6 +344,7 @@ main(int argc, char **argv)
 		{ "no-footer", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &footers, "Don't print footer", NULL},
 		{ "input", 'i', 0, G_OPTION_ARG_FILENAME, &filename_in, "Read SQL from specified file", "file"},
 		{ "output", 'o', 0, G_OPTION_ARG_FILENAME, &filename_out, "Write result to specified file", "file"},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -356,6 +359,13 @@ main(int argc, char **argv)
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
 	}
 	setlocale(LC_CTYPE, locale);
 

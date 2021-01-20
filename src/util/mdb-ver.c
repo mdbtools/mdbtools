@@ -26,12 +26,8 @@ main(int argc, char **argv)
 	MdbHandle *mdb;
 	int print_mdbver = 0;
 
-  	/* setlocale (LC_ALL, ""); */
-    	bindtextdomain (PACKAGE, LOCALEDIR);
-      	textdomain (PACKAGE);
-
 	GOptionEntry entries[] = {
-		{ "mdbtools", 'M', 0, G_OPTION_ARG_NONE, &print_mdbver, "Show MDBtools version", NULL},
+		{ "version", 'M', 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -48,9 +44,11 @@ main(int argc, char **argv)
 	}
 
 	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
 		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
-		if (argc == 1)
-			exit(0);
+		exit(argc > 1);
 	}
 
 	if (argc != 2) {

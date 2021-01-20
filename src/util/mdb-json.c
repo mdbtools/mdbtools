@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbver.h"
 
 #include "base64.h"
 
@@ -115,11 +116,13 @@ main(int argc, char **argv)
 	int ret;
 	char *table_name = NULL;
 	char *locale = NULL;
+	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"no-unprintable", 'U', 0, G_OPTION_ARG_NONE, &drop_nonascii, "Change unprintable characters to spaces (otherwise escaped as \\u00XX)", NULL},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
         {NULL}
     };
 
@@ -134,6 +137,13 @@ main(int argc, char **argv)
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
 	}
 	if (argc != 3) {
 		fputs("Wrong number of arguments.\n\n", stderr);

@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbver.h"
 
 #define EXPORT_BIND_SIZE 200000
 
@@ -56,6 +57,7 @@ main(int argc, char **argv)
 	int ret;
 	char *locale = NULL;
 	char *table_name = NULL;
+	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
 		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
@@ -73,6 +75,7 @@ main(int argc, char **argv)
 		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
 		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex"},
 		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{NULL},
 	};
 	GError *error = NULL;
@@ -88,7 +91,13 @@ main(int argc, char **argv)
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
 	}
-
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
+	}
 	if (argc != 3) {
 		fputs("Wrong number of arguments.\n\n", stderr);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);

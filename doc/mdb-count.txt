@@ -3,6 +3,7 @@ NAME
 
 SYNOPSIS
   mdb-count file table
+  mdb-count --version
 
 DESCRIPTION
   mdb-count is a utility program distributed with MDB Tools.
@@ -10,6 +11,7 @@ DESCRIPTION
   It outputs the number of rows in a table.
 
 OPTIONS
+  --version           Print the mdbtools version and exit.
 
 NOTES
 

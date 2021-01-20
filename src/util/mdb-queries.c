@@ -32,6 +32,7 @@
 **************************************************************/
 	
 #include "mdbtools.h"
+#include "mdbver.h"
 
 #define QUERY_BIND_SIZE 200000
 
@@ -68,6 +69,7 @@ int main (int argc, char **argv) {
 	char *sql_sorting = malloc(bind_size);
 	int flagint;
 	char *locale = NULL;
+	int print_mdbver = 0;
 	
 	GError *error = NULL;
 	GOptionContext *opt_context;
@@ -76,6 +78,7 @@ int main (int argc, char **argv) {
 		{"list", 'L', 0, G_OPTION_ARG_NONE, &list_only, "List queries in the database (default if no query name is passed)", NULL},
 		{"newline", '1', 0, G_OPTION_ARG_NONE, &line_break, "Use newline as the delimiter (used in conjunction with listing)", NULL},
 		{"delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Specify delimiter to use", "delim"},
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{NULL}
 	};
 	opt_context = g_option_context_new("<file> <query name> - list or export queries from an Access database");
@@ -86,6 +89,13 @@ int main (int argc, char **argv) {
 		fprintf(stderr, "option parsing failed: %s\n", error->message);
 		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
 		exit (1);
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
 	}
 	/* let's turn list_only on if only a database filename was passed */
 	if(argc == 2) {

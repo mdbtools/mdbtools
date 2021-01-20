@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
   mdb-json [-D fmt] [-T fmt] [-U] database table
   mdb-json -h|--help
+  mdb-json --version
 
 DESCRIPTION
   mdb-json is a utility program distributed with MDB Tools. 
@@ -13,7 +14,8 @@ DESCRIPTION
 OPTIONS
   -D, --date-format fmt     Set the date format (see strftime(3) for details).
   -T, --time-format fmt     Set the date/time format (see strftime(3) for details).
-  -U, --no-unprintable      Change unprintable characters to spaces (otherwise escaped as \\u00XX)
+  -U, --no-unprintable      Change unprintable characters to spaces (otherwise escaped as \\u00XX).
+  --version                 Print the mdbtools version and exit.
 
 NOTES 
 

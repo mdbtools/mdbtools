@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
   mdb-schema [options] [-T tablename] [-N prefix] database [backend]
   mdb-schema -h|--help
+  mdb-schema --version
 
 DESCRIPTION
   mdb-schema is a utility program distributed with MDB Tools. 
@@ -27,6 +28,7 @@ OPTIONS
   --no-indexes            Don't export INDEXes.
   --relations             Export foreign keys constraints. This is the default.
   --no-relations          Don't export foreign keys constraints.
+  --version               Print the mdbtools version and exit.
 
   backend	Specifies target DDL dialect. Supported values are access, sybase, oracle, postgres, mysql and sqlite. If not specified the generated DDL will be in access format.
 

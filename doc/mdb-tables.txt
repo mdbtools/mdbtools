@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
   mdb-tables [-S] [-1 | -d delim] [-t form|table|macro|systable|report|query|linkedtable|module|relationship|dbprop|any|all] [-T] database
   mdb-tables -h|--help
+  mdb-tables --version
 
 DESCRIPTION
   mdb-tables is a utility program distributed with MDB Tools. 
@@ -16,6 +17,7 @@ OPTIONS
   -d, --delimiter delim  Specifies an alternative delimiter. If no delimiter is specified, table names will be delimited by a tab character, or by newline if the -1 option was specified.
   -t, --type type        Filters entries to show alternate types. Autorized values are form, table, macro, systable, report, query, linkedtable, module, relationship, dbprop, any, and all. Default value is table.
   -T, --showtype         Display the entry type indentifier before each entry.
+  --version              Print the mdbtools version and exit.
 
 NOTES 
 

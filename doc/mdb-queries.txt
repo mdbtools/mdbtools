@@ -3,6 +3,7 @@ NAME
 
 SYNOPSIS
   mdb-queries [-L] [-1] [-d delim] database query
+  mdb-queries --version
   mdb-queries -h|--help
 
 DESCRIPTION
@@ -13,7 +14,8 @@ DESCRIPTION
 OPTIONS
   -L, --list             List queries in the database (default if no query name is passed)
   -1, --newline          Use newline as the delimiter (used in conjunction with listing)
-  -d, --delimiter delim  Specify delimiter to use
+  -d, --delimiter delim  Specify delimiter to use (defaults to space)
+  --version              Print the mdbtools version and exit
 
 NOTES 
 

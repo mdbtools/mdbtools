@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbver.h"
 
 int main(int argc, char **argv) {
     
@@ -28,10 +29,39 @@ int main(int argc, char **argv) {
     char *locale = NULL;
     char *table_name = NULL;
     GError *error = NULL;
+	int print_mdbver = 0;
 
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s <file> <table>\n", argv[0]);
-        return 1;
+	GOptionContext *opt_context;
+	GOptionEntry entries[] = {
+		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
+		{NULL}
+	};
+	opt_context = g_option_context_new("<file> <table> - print the number of records in an Access database");
+	g_option_context_add_main_entries(opt_context, entries, NULL /*i18n*/);
+	locale = setlocale(LC_CTYPE, "");
+	if (!g_option_context_parse (opt_context, &argc, &argv, &error))
+	{
+		fprintf(stderr, "option parsing failed: %s\n", error->message);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		return 1;
+	}
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
+	}
+	if (argc != 3) {
+		fputs("Wrong number of arguments.\n\n", stderr);
+		fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		return 1;
+	}
+	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
+	setlocale(LC_CTYPE, locale);
+	if (!table_name) {
+		fprintf(stderr, "Error converting table argument: %s\n", error->message);
+		return 1;
 	}
 	
     // open db and try to read table:
@@ -42,13 +72,6 @@ int main(int argc, char **argv) {
 	if (!mdb_read_catalog(mdb, MDB_TABLE)) {
         return 1;
     }
-	locale = setlocale(LC_CTYPE, "");
-	table_name = g_locale_to_utf8(argv[2], -1, NULL, NULL, &error);
-	setlocale(LC_CTYPE, locale);
-	if (!table_name) {
-		fprintf(stderr, "Error converting table argument: %s\n", error->message);
-		return 1;
-	}
 	for (i = 0; i < mdb->num_catalog; i++) {
 		entry = g_ptr_array_index(mdb->catalog, i);
 		if (entry->object_type == MDB_TABLE && !g_ascii_strcasecmp(entry->object_name, table_name)) {
