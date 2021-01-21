@@ -1225,7 +1225,7 @@ SQLRETURN SQL_API SQLPrepare(
 
 	TRACE("SQLPrepare");
 
-	snprintf(stmt->query, sizeof(stmt->query), "%*s", sqllen, (char*)szSqlStr);
+	snprintf(stmt->query, sizeof(stmt->query), "%.*s", sqllen, (char*)szSqlStr);
 
 	return SQL_SUCCESS;
 }

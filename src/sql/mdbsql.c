@@ -486,7 +486,7 @@ mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 	** column definition can be checked for validity
 	*/
 	if (constant[0]=='\'') {
-		snprintf(node->value.s, sizeof(node->value.s), "%*s", (int)strlen(constant) - 2, &constant[1]);
+		snprintf(node->value.s, sizeof(node->value.s), "%.*s", (int)strlen(constant) - 2, &constant[1]);
 		node->val_type = MDB_TEXT;
 	} else if ((p=strchr(constant, '.'))) {
 		*p=localeconv()->decimal_point[0];
