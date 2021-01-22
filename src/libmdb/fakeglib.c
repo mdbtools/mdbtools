@@ -246,8 +246,10 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         len = strlen(opsysstring);
     size_t wlen = mbstowcs(NULL, opsysstring, 0);
     if (wlen == (size_t)-1) {
-        *error = malloc(sizeof(GError));
-        (*error)->message = g_strdup_printf("Invalid multibyte string: %s\n", opsysstring);
+        if (error) {
+            *error = malloc(sizeof(GError));
+            (*error)->message = g_strdup_printf("Invalid multibyte string: %s\n", opsysstring);
+        }
         return NULL;
     }
     wchar_t *utf16 = malloc(sizeof(wchar_t)*(wlen+1));
@@ -263,22 +265,28 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     return utf8;
 }
 
+// Really just a poor man's lower case
 gchar * g_utf8_casefold(const gchar *str, ssize_t len) {
+    ssize_t i = 0;
     if (len == -1)
         len = strlen(str);
-    wchar_t *wlower = malloc(sizeof(wchar_t)*(len+1));
-    if (mbstowcs(wlower, str, len+1) == (size_t)-1) {
-        free(wlower);
-        return g_strndup(str, len);
-    }
-    wchar_t *current = wlower;
-    while (*current) {
-        *current = towlower(*current);
-        current++;
-    }
     gchar *lower = malloc(len+1);
-    wcstombs(lower, wlower, len+1);
-    free(wlower);
+    while (i<len) {
+        wchar_t u = 0;
+        uint8_t c = str[i];
+        if ((c & 0xF0) == 0xE0) {
+            u = (c & 0x0F) << 12;
+            u += (str[i+1] & 0x3F) << 6;
+            u += (str[i+2] & 0x3F);
+        } else if ((c & 0xE0) == 0xC0) {
+            u = (c & 0x1F) << 6;
+            u += (str[i+1] & 0x3F);
+        } else {
+            u = (c & 0x7F);
+        }
+        i += g_unichar_to_utf8(towlower(u), &lower[i]);
+    }
+    lower[len] = '\0';
     return lower;
 }
 
