@@ -71,6 +71,7 @@ null		{ return NUL; }
 "<"		{ return LT; }
 ">"		{ return GT; }
 like		{ return LIKE; }
+ilike		{ return ILIKE; }
 limit		{ return LIMIT; }
 top		{ return TOP; }
 percent		{ return PERCENT; }

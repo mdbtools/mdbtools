@@ -39,11 +39,7 @@ int mdb_like_cmp(char *s, char *r)
 	mdb_debug(MDB_DEBUG_LIKE, "comparing %s and %s", s, r);
 	switch (r[0]) {
 		case '\0':
-			if (s[0]=='\0') {
-				return 1;
-			} else {
-				return 0;
-			}
+			return (s[0]=='\0');
 		case '_':
 			/* skip one character */
 			return mdb_like_cmp(&s[1],&r[1]);
@@ -71,3 +67,25 @@ int mdb_like_cmp(char *s, char *r)
 			}
 	}
 }
+
+/**
+ *
+ * @param s: String to search within.
+ * @param r: Case-insensitive search pattern.
+ *
+ * Tests the string @s to see if it matches the search pattern @r without
+ * regard to case; this mimics the behavior of the Access LIKE operator. In the
+ * search pattern, a percent sign indicates matching on any number of
+ * characters, and an underscore indicates matching any single character.
+ *
+ * @Returns: 1 if the string matches, 0 if the string does not match.
+ */
+int mdb_ilike_cmp(char *s, char *r) {
+	char *s1 = g_utf8_casefold(s, -1);
+	char *r1 = g_utf8_casefold(r, -1);
+	int result = mdb_like_cmp(s1, r1);
+	g_free(s1);
+	g_free(r1);
+	return result;
+}
+
