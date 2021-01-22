@@ -223,6 +223,22 @@ gchar *g_string_free (GString *string, gboolean free_segment) {
 }
 
 /* conversion */
+gint g_unichar_to_utf8(gunichar u, gchar *dst) {
+    if (u >= 0x0800) {
+        *dst++ = 0xE0 | ((u & 0xF000) >> 12);
+        *dst++ = 0x80 | ((u & 0x0FC0) >> 6);
+        *dst++ = 0x80 | ((u & 0x003F) >> 0);
+        return 3;
+    }
+    if (u >= 0x0080) {
+        *dst++ = 0xC0 | ((u & 0x07C0) >> 6);
+        *dst++ = 0x80 | ((u & 0x003F) >> 0);
+        return 2;
+    }
+    *dst++ = (u & 0x7F);
+    return 1;
+}
+
 gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         size_t *bytes_read, size_t *bytes_written, GError **error) {
     if (len == (size_t)-1)
@@ -235,18 +251,8 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     gchar *utf8 = malloc(3*len+1);
     gchar *dst = utf8;
     for (size_t i=0; i<len; i++) {
-        wchar_t u = utf16[i];
         // u >= 0x10000 requires surrogate pairs, ignore
-        if (u >= 0x0800) {
-            *dst++ = 0xE0 | ((u & 0xF000) >> 12);
-            *dst++ = 0x80 | ((u & 0x0FC0) >> 6);
-            *dst++ = 0x80 | ((u & 0x003F) >> 0);
-        } else if (u >= 0x0080) {
-            *dst++ = 0xC0 | ((u & 0x07C0) >> 6);
-            *dst++ = 0x80 | ((u & 0x003F) >> 0);
-        } else {
-            *dst++ = (u & 0x7F);
-        }
+        dst += g_unichar_to_utf8(utf16[i], dst);
     }
     *dst++ = '\0';
     free(utf16);
