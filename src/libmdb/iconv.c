@@ -19,8 +19,6 @@
 #include <errno.h>
 #include "mdbtools.h"
 
-const char *mdb_iconv_name_from_code_page(int code_page);
-
 #ifndef MIN
 #define MIN(a,b) (a>b ? b : a)
 #endif
@@ -262,7 +260,7 @@ mdb_target_charset(MdbHandle *mdb)
 }
 
 /* See: https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers */
-const char *mdb_iconv_name_from_code_page(int code_page) {
+static const char *mdb_iconv_name_from_code_page(int code_page) {
 	const char *jet3_iconv_code = NULL;
 	switch (code_page) {
 		case 437: jet3_iconv_code="IBM437"; break;
