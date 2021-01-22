@@ -248,6 +248,7 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
             *dst++ = (u & 0x7F);
         }
     }
+    *dst++ = '\0';
     free(utf16);
     return utf8;
 }
