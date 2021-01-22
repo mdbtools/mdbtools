@@ -226,56 +226,32 @@ gchar *g_string_free (GString *string, gboolean free_segment) {
 /* conversion */
 gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         size_t *bytes_read, size_t *bytes_written, GError **error) {
-#ifdef HAVE_ICONV
-    iconv_t converter = NULL;
-    char *locale = setlocale(LC_CTYPE, NULL);
-    if (locale) {
-        while (*locale && *locale != '.') {
-            locale++;
-        }
-        if (locale[0] == '.') {
-            const char *iconv_name = NULL;
-            uint16_t code_page = 0;
-            if (sscanf(locale, ".%hu", &code_page) == 1) {
-                iconv_name = mdb_iconv_name_from_code_page(code_page);
-            } else {
-                iconv_name = &locale[1];
-            }
-            if (iconv_name == NULL || (converter = iconv_open("UTF-8", iconv_name)) == (iconv_t)-1) {
-                converter = NULL;
-                fprintf(stderr, "Warning: unsupported locale \"%s\". Non-ASCII command-line arguments may work incorrectly.\n", &locale[1]);
-            }
-        }
-    }
-    if (converter) {
-        size_t input_len = len == (size_t)-1 ? strlen(opsysstring) : len;
-        size_t utf8_len = 4*input_len;
-        size_t output_len = utf8_len;
-        char *utf8_string = malloc(utf8_len+1);
-        char *output = utf8_string;
-        char *input = (char *)opsysstring;
-        size_t result = iconv(converter, (ICONV_CONST char **)&input, &input_len, &output, &output_len);
-        iconv_close(converter);
-        if (result == (size_t)-1) {
-            if (error) {
-                *error = malloc(sizeof(GError));
-                (*error)->message = malloc(100);
-                snprintf((*error)->message, 100, "Invalid byte sequence in conversion input");
-            }
-            return NULL;
-        }
-        if (bytes_read)
-            *bytes_read = len - input_len;
-        if (bytes_written)
-            *bytes_written = utf8_len - output_len;
-        *output = '\0';
-        return utf8_string;
-    }
-#endif
     if (len == (size_t)-1)
-        return g_strdup(opsysstring);
-
-    return g_strndup(opsysstring, len);
+        len = strlen(opsysstring);
+    wchar_t *utf16 = malloc(sizeof(wchar_t)*(len+1));
+    if (mbstowcs(utf16, opsysstring, len+1) == (size_t)-1) {
+        free(utf16);
+        return g_strndup(opsysstring, len);
+    }
+    gchar *utf8 = malloc(3*len+1);
+    gchar *dst = utf8;
+    for (size_t i=0; i<len; i++) {
+        wchar_t u = utf16[i];
+        // u >= 0x10000 requires surrogate pairs, ignore
+        if (u >= 0x0800) {
+            *dst++ = 0xE0 | ((u & 0xF000) >> 12);
+            *dst++ = 0x80 | ((u & 0x0FC0) >> 6);
+            *dst++ = 0x80 | ((u & 0x003F) >> 0);
+        } else if (u >= 0x0080) {
+            *dst++ = 0xC0 | ((u & 0x07C0) >> 6);
+            *dst++ = 0x80 | ((u & 0x003F) >> 0);
+        } else {
+            *dst++ = (u & 0x7F);
+        }
+    }
+    *dst++ = '\0';
+    free(utf16);
+    return utf8;
 }
 
 gchar * g_utf8_casefold(const gchar *str, ssize_t len) {
