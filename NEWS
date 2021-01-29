@@ -1,3 +1,9 @@
+Version 0.9.2 (Beta 3)
+=============
+
+* String literals in SQL statements had an extra quotation mark added during evaluation (bug introduced in 0.9.1)
+* Improved locale handling compared to earlier betas
+
 Version 0.9.2 (Beta 2)
 =============
 
