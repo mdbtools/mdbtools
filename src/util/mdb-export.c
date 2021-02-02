@@ -24,6 +24,7 @@
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 
 static char *escapes(char *s);
+static void format_value(FILE *outfile, char *value, size_t length, int quote_text, int col_type, char *escape_char, char *quote_char, int bin_mode, int export_flags, char *backend_name);
 
 int
 main(int argc, char **argv)
@@ -256,7 +257,11 @@ main(int argc, char **argv)
 						value = bound_values[i];
 						length = bound_lens[i];
 					}
-					mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode | export_flags);
+					format_value(outfile, value, length,
+						     quote_text, col->col_type,
+						     escape_char, quote_char,
+						     bin_mode, export_flags,
+						     mdb->backend_name);
 					if (col->col_type == MDB_OLE)
 						free(value);
 				}
@@ -308,25 +313,11 @@ main(int argc, char **argv)
 						value = bound_values[i];
 						length = bound_lens[i];
 					}
-					/* Correctly handle insertion of binary blobs into SQLite using the string literal notation of X'1234ABCD...' */
-					if (!strcmp(mdb->backend_name, "sqlite") && is_binary_type(col->col_type)
-							&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
-						char *quote_char_binary_sqlite = (char *) g_strdup("'");
-						fputs("X", outfile);
-						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_sqlite, escape_char, bin_mode | export_flags);
-						g_free (quote_char_binary_sqlite);
-						/* Correctly handle insertion of binary blobs into PostgreSQL using the notation of decode('1234ABCD...', 'hex') */
-					} else if (!strcmp(mdb->backend_name, "postgres") && is_binary_type(col->col_type)
-							&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
-						char *quote_char_binary_postgres = (char *) g_strdup("'");
-						fputs("decode(", outfile);
-						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char_binary_postgres, escape_char, bin_mode | export_flags);
-						fputs(", 'hex')", outfile);
-						g_free (quote_char_binary_postgres);
-						/* No special treatment for other backends or when hexadecimal notation hasn't been selected with the -b hex command line option */
-					} else {
-						mdb_print_col(outfile, value, quote_text, col->col_type, length, quote_char, escape_char, bin_mode | export_flags);
-					}
+					format_value(outfile, value, length,
+						     quote_text, col->col_type,
+						     escape_char, quote_char,
+						     bin_mode, export_flags,
+						     mdb->backend_name);
 					if (col->col_type == MDB_OLE)
 						free(value);
 				}
@@ -358,6 +349,30 @@ main(int argc, char **argv)
 	g_free(str_bin_mode);
 	g_free(table_name);
 	return 0;
+}
+
+static void format_value(FILE *outfile, char *value, size_t length, int quote_text, int col_type, char *escape_char, char *quote_char, int bin_mode, int export_flags, char *backend_name)
+{
+	if (!strcmp(backend_name, "sqlite")
+			&& is_binary_type(col_type)
+			&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
+		char *quote_char_binary_sqlite = (char *) g_strdup("'");
+		fputs("X", outfile);
+		mdb_print_col(outfile, value, quote_text, col_type, length, quote_char_binary_sqlite, escape_char, bin_mode | export_flags);
+		g_free (quote_char_binary_sqlite);
+		/* Correctly handle insertion of binary blobs into PostgreSQL using the notation of decode('1234ABCD...', 'hex') */
+	} else if (!strcmp(backend_name, "postgres")
+			&& is_binary_type(col_type)
+			&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
+		char *quote_char_binary_postgres = (char *) g_strdup("'");
+		fputs("decode(", outfile);
+		mdb_print_col(outfile, value, quote_text, col_type, length, quote_char_binary_postgres, escape_char, bin_mode | export_flags);
+		fputs(", 'hex')", outfile);
+		g_free (quote_char_binary_postgres);
+		/* No special treatment for other backends or when hexadecimal notation hasn't been selected with the -b hex command line option */
+	} else {
+		mdb_print_col(outfile, value, quote_text, col_type, length, quote_char, escape_char, bin_mode | export_flags);
+	}
 }
 
 static char *escapes(char *s)
