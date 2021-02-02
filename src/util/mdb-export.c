@@ -362,8 +362,8 @@ static void format_value(FILE *outfile, char *value, size_t length, int quote_te
 		g_free (quote_char_binary_sqlite);
 		/* Correctly handle insertion of binary blobs into PostgreSQL using the notation of decode('1234ABCD...', 'hex') */
 	} else if (!strcmp(backend_name, "mysql")
-		&& is_binary_type(col_type)
-		&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
+			&& is_binary_type(col_type)
+			&& bin_mode == MDB_BINEXPORT_HEXADECIMAL) {
 		char *quote_char_binary_sqlite = (char *) g_strdup("");
 		fputs("0x", outfile);
 		mdb_print_col(outfile, value, quote_text, col_type, length, quote_char_binary_sqlite, escape_char, bin_mode | export_flags);
