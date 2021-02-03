@@ -114,7 +114,7 @@ static const MdbBackendType mdb_mysql_types[] = {
     [MDB_DATETIME] = { .name = "datetime" },
     [MDB_BINARY] = { .name = "blob" },
     [MDB_TEXT] = { .name = "varchar", .needs_char_length = 1 },
-    [MDB_OLE] = { .name = "varbinary", .needs_byte_length = 1 },
+    [MDB_OLE] = { .name = "blob" },
     [MDB_MEMO] = { .name = "text" },
     [MDB_REPID] = { .name = "char(38)" },
     [MDB_NUMERIC] = { .name = "numeric", .needs_precision = 1, .needs_scale = 1 },
