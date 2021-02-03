@@ -260,6 +260,7 @@ mdb_target_charset(MdbHandle *mdb)
 }
 
 /* See: https://docs.microsoft.com/en-us/windows/win32/Intl/code-page-identifiers */
+#ifdef HAVE_ICONV
 static const char *mdb_iconv_name_from_code_page(int code_page) {
 	const char *jet3_iconv_code = NULL;
 	switch (code_page) {
@@ -315,6 +316,7 @@ static const char *mdb_iconv_name_from_code_page(int code_page) {
 	}
 	return jet3_iconv_code;
 }
+#endif
 
 void mdb_iconv_init(MdbHandle *mdb)
 {
