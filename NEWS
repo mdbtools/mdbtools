@@ -1,3 +1,9 @@
+Version 0.9.2 (Beta 4)
+=============
+
+* Fix unused function warning when compiling without iconv (bug introduced in Beta 3)
+* mdb-export: Improved handling of BLOBs (#250)
+
 Version 0.9.2 (Beta 3)
 =============
 
