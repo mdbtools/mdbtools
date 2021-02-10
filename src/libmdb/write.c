@@ -273,7 +273,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fiel
 			fields[i].is_null = 1;
 		}
 		if ((size_t)(fields[i].start + fields[i].siz) > row_start + row_size) {
-			fprintf(stderr, "warning: Invalid data location detected in mdb_crack_row.\n");
+			fprintf(stderr, "warning: Invalid data location detected in mdb_crack_row. Table:%s Column:%i\n",table->name, i);
 			g_free(var_col_offsets);
 			return -1;
 		}
