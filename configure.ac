@@ -13,6 +13,7 @@ MDBTOOLS_VERSION_MICRO=2
 # See https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 VERSION_INFO=3:2:0
 AC_SUBST(VERSION_INFO)
+AC_SUBST(MDBTOOLS_CFLAGS)
 
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
@@ -215,6 +216,7 @@ if test "$enable_glib" = "yes"; then
     GLIB_PACKAGE=glib-2.0
     PKG_CHECK_MODULES([GLIB], [$GLIB_PACKAGE], HAVE_GLIB=true, HAVE_GLIB=false)
     if test "x$HAVE_GLIB" = "xtrue"; then
+        MDBTOOLS_CFLAGS="$MDBTOOLS_CFLAGS -DHAVE_GLIB=1"
         GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
         AC_SUBST(GLIB_PACKAGE)
     else
