@@ -1662,8 +1662,7 @@ SQLRETURN SQL_API SQLGetData(
 				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
 				return SQL_ERROR;
 			}
-			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
-					col->cur_value_start, col->col_type, col->cur_value_len);
+			char *str = mdb_string_from_col(mdb, col);
 			if (str == NULL) {
 				return SQL_NO_DATA;
 			}

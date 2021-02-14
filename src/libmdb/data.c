@@ -972,6 +972,21 @@ int floor_log10(double f, int is_single)
 }
 #endif
 
+char *mdb_string_from_col(MdbHandle *mdb, MdbColumn *col)
+{
+	char *text = NULL;
+	switch (col->col_type) {
+		case MDB_NUMERIC:
+			/* special case for numeric -- we can't rely on mdb_col_to_string because we need to handle the column scale and precision */
+			text = mdb_numeric_to_string(mdb, col->cur_value_start, col->col_scale, col->col_prec);
+		break;
+		default:
+			text = mdb_col_to_string(mdb, mdb->pg_buf, col->cur_value_start, col->col_type, col->cur_value_len);
+		break;
+	}
+	return text;
+}
+
 char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size)
 {
 	char *text = NULL;

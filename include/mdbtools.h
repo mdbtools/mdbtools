@@ -524,6 +524,7 @@ int mdb_rewind_table(MdbTableDef *table);
 int mdb_fetch_row(MdbTableDef *table);
 int mdb_is_fixed_col(MdbColumn *col);
 char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
+char *mdb_string_from_col(MdbHandle *mdb, MdbColumn *col);
 int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);
 int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len);
 int mdb_find_end_of_row(MdbHandle *mdb, int row);
