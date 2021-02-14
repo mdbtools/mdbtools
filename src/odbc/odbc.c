@@ -1664,6 +1664,9 @@ SQLRETURN SQL_API SQLGetData(
 			}
 			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
 					col->cur_value_start, col->col_type, col->cur_value_len);
+			if (str == NULL) {
+				return SQL_NO_DATA;
+			}
 			size_t len = strlen(str);
 
 			if (stmt->pos >= len) {
