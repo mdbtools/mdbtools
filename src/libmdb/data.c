@@ -1029,7 +1029,6 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_MONEY:
 			text = mdb_money_to_string(mdb, start);
-		case MDB_NUMERIC:
 		break;
 		case MDB_REPID:
 		  text = mdb_uuid_to_string(mdb->pg_buf, start);
