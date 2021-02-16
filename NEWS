@@ -1,3 +1,10 @@
+Version 0.9.2 (Beta 5)
+=============
+
+* Fix handling of numeric types in ODBC driver (#255)
+* Add -DHAVE_GLIB to library's pkg-config --cflags if needed (#254)
+* Improved warning with invalid row data (#253)
+
 Version 0.9.2 (Beta 4)
 =============
 
