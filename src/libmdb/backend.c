@@ -121,6 +121,10 @@ static const MdbBackendType mdb_mysql_types[] = {
 };
 static const MdbBackendType mdb_mysql_shortdate_type =
 		    { .name = "date" };
+/* We can't use the MySQL SERIAL type because that uses a bigint which
+ * is 64 bits wide, whereas MDB long ints are 32 bits */
+static const MdbBackendType mdb_mysql_serial_type =
+		    { .name = "int not null auto_increment unique" };
 
 /*    sqlite data types */
 static const MdbBackendType mdb_sqlite_types[] = {
@@ -350,7 +354,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		quote_schema_name_dquote);
 	mdb_register_backend(mdb, "mysql",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
-		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
+		mdb_mysql_types, &mdb_mysql_shortdate_type, &mdb_mysql_serial_type,
 		"current_date", "now()",
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
