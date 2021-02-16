@@ -24,9 +24,6 @@
 #define OFFSET_MASK 0x1fff
 #define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
 
-char *mdb_money_to_string(MdbHandle *mdb, int start);
-char *mdb_numeric_to_string(MdbHandle *mdb, int start, int prec, int scale);
-
 static int _mdb_attempt_bind(MdbHandle *mdb, 
 	MdbColumn *col, unsigned char isnull, int offset, int len);
 static char *mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start);
@@ -1000,9 +997,11 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 	double td;
 
 	switch (datatype) {
+		case MDB_NUMERIC:
 		case MDB_BOOL:
 			/* shouldn't happen.  bools are handled specially
 			** by mdb_xfer_bound_bool() */
+			fprintf(stderr, "Warning: mdb_col_to_string called on an unsupported data type.\n");
 		break;
 		case MDB_BYTE:
 			text = g_strdup_printf("%d", mdb_get_byte(buf, start));
@@ -1050,7 +1049,6 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_MONEY:
 			text = mdb_money_to_string(mdb, start);
-		case MDB_NUMERIC:
 		break;
 		case MDB_REPID:
 		  text = mdb_uuid_to_string(mdb->pg_buf, start);

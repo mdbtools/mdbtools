@@ -544,6 +544,10 @@ void mdb_set_boolean_fmt_words(MdbHandle *mdb);
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb);
 int mdb_read_row(MdbTableDef *table, unsigned int row);
 
+/* money.c */
+char *mdb_money_to_string(MdbHandle *mdb, int start);
+char *mdb_numeric_to_string(MdbHandle *mdb, int start, int scale, int prec);
+
 /* dump.c */
 void mdb_buffer_dump(const void *buf, off_t start, size_t len);
 
