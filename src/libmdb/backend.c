@@ -353,7 +353,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		quote_schema_name_dquote);
 	mdb_register_backend(mdb, "mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_mysql_types, &mdb_mysql_shortdate_type, &mdb_mysql_serial_type,
 		"current_date", "now()",
 		"%Y-%m-%d %H:%M:%S",
@@ -646,6 +646,8 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		backend = MDB_BACKEND_ORACLE;
 	} else if (!strcmp(mdb->backend_name, "postgres")) {
 		backend = MDB_BACKEND_POSTGRES;
+	} else if (!strcmp(mdb->backend_name, "mysql")) {
+		backend = MDB_BACKEND_MYSQL;
 	} else if (!mdb->relationships_table) {
 		return NULL;
 	}
@@ -735,6 +737,16 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
                                 ";\n", NULL);
 
                         break;
+		  case MDB_BACKEND_MYSQL:
+			text = g_strconcat(
+				"ALTER TABLE ", quoted_table_1,
+				" ADD CONSTRAINT ", quoted_constraint_name,
+				" FOREIGN KEY (", quoted_column_1, ")"
+				" REFERENCES ", quoted_table_2, "(", quoted_column_2, ")",
+				(grbit & 0x00000100) ? " ON UPDATE CASCADE" : "",
+				(grbit & 0x00001000) ? " ON DELETE CASCADE" : "",
+				";\n", NULL);
+			break;
 		  case MDB_BACKEND_POSTGRES:
 			text = g_strconcat(
 				"ALTER TABLE ", quoted_table_1,
