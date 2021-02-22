@@ -1,3 +1,9 @@
+Version 0.9.2 (Beta 6)
+=============
+
+* mdb-export: Implement a serial type and relations for MySQL (#257)
+* libmdb: mdb_col_to_string now prints a warning and returns "" for any unsupported data type
+
 Version 0.9.2 (Beta 5)
 =============
 
