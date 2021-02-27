@@ -157,7 +157,7 @@ AC_ARG_WITH(unixodbc,
 if test "$with_unixodbc"; then
 	HAVE_ODBC=true
 	ODBC_CFLAGS="-I$with_unixodbc/include"
-	ODBC_LIBS="-L$with_unixodbc/lib"
+	ODBC_LIBS="-L$with_unixodbc/$libdir"
 	CFLAGS="$CFLAGS -DUNIXODBC"
 
 	dnl SIZEOF_LONG_INT and HAVE_LONG_LONG are required by some versions of unixODBC
