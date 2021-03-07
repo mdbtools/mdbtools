@@ -130,13 +130,17 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 			mdb_debug(MDB_DEBUG_PROPS,"elem %d (%s) dsize %d dtype %d", elem, name, dsize, dtype);
 			mdb_buffer_dump(value, 0, dsize);
 		}
-		if (dtype == MDB_MEMO) dtype = MDB_TEXT;
+		if (dtype == MDB_MEMO) {
+			dtype = MDB_TEXT;
+		} else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
+			dtype = MDB_REPID;
+		}
 		if (dtype == MDB_BOOL) {
 			g_hash_table_insert(props->hash, g_strdup(name),
 				g_strdup(kkd[pos + 8] ? "yes" : "no"));
-        } else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
-            gchar *guid = mdb_uuid_to_string(kkd, pos+8);
-			g_hash_table_insert(props->hash, g_strdup(name), guid);
+		} else if (dtype == MDB_BINARY || dtype == MDB_OLE) {
+			g_hash_table_insert(props->hash, g_strdup(name),
+				g_strdup_printf("(binary data of length %d)", dsize));
 		} else {
 			g_hash_table_insert(props->hash, g_strdup(name),
 			  mdb_col_to_string(mdb, kkd, pos + 8, dtype, dsize));

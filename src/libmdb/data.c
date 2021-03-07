@@ -998,7 +998,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 
 	switch (datatype) {
 		case MDB_BYTE:
-			text = g_strdup_printf("%d", mdb_get_byte(buf, start));
+			text = g_strdup_printf("%hhd", mdb_get_byte(buf, start));
 		break;
 		case MDB_INT:
 			text = g_strdup_printf("%hd",
@@ -1006,7 +1006,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_LONGINT:
 		case MDB_COMPLEX:
-			text = g_strdup_printf("%ld",
+			text = g_strdup_printf("%d",
 				mdb_get_int32(buf, start));
 		break;
 		case MDB_FLOAT:
@@ -1015,7 +1015,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		break;
 		case MDB_DOUBLE:
 			td = mdb_get_double(buf, start);
-			text = g_strdup_printf("%.16g", td);
+			text = g_strdup_printf("%.16lg", td);
 		break;
 		case MDB_BINARY:
 			if (size<0) {
@@ -1045,12 +1045,12 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = mdb_money_to_string(mdb, start);
 		break;
 		case MDB_REPID:
-		  text = mdb_uuid_to_string(mdb->pg_buf, start);
+			text = mdb_uuid_to_string(buf, start);
 		break;
 		default:
 			/* shouldn't happen.  bools are handled specially
 			** by mdb_xfer_bound_bool() */
-			fprintf(stderr, "Warning: mdb_col_to_string called on an unsupported data type.\n");
+			fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
 			text = g_strdup("");
 		break;
 	}
