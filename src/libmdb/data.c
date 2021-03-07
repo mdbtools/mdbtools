@@ -1007,7 +1007,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		case MDB_LONGINT:
 		case MDB_COMPLEX:
 			text = g_strdup_printf("%d",
-				mdb_get_int32(buf, start));
+				(int)mdb_get_int32(buf, start));
 		break;
 		case MDB_FLOAT:
 			tf = mdb_get_single(buf, start);
