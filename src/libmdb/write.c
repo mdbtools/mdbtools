@@ -139,7 +139,7 @@ mdb_crack_row3(MdbHandle *mdb, unsigned int row_start, unsigned int row_end,
 	if (bitmask_sz + num_jumps + 1 > row_end)
 		return 0;
 
-	if (col_ptr >= mdb->fmt->pg_size || col_ptr < row_var_cols)
+	if (col_ptr >= (size_t)mdb->fmt->pg_size || col_ptr < row_var_cols)
 		return 0;
 
 	jumps_used = 0;
