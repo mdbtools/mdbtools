@@ -78,7 +78,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 		return 0;
 	}
 	fseeko(mdb->f->stream, offset, SEEK_SET);
-	len = fwrite(mdb->pg_buf, mdb->fmt->pg_size, 1, mdb->f->stream);
+	len = fwrite(mdb->pg_buf, 1, mdb->fmt->pg_size, mdb->f->stream);
 	if (ferror(mdb->f->stream)) {
 		perror("write");
 		return 0;
@@ -710,7 +710,7 @@ mdb_update_row(MdbTableDef *table)
 			return 0;
 		}
 	}
-	num_fields = mdb_crack_row(table, row_start, row_end, fields);
+	num_fields = mdb_crack_row(table, row_start, old_row_size, fields);
     if (num_fields == -1) {
 		fprintf(stderr, "Invalid row buffer, update will not occur\n");
         return 0;
