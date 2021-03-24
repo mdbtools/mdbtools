@@ -112,7 +112,7 @@ strptime	{ return STRPTIME; }
 (-*[0-9]+|([0-9]*\.[0-9]+)(e[-+]?[0-9]+)?) {
 		yylval->name = g_strdup(yytext); return NUMBER;
 	}
-~?(\/?[a-z0-9\.\xa0-\xff]+)+ {
+~?(\/?[a-z0-9\.\-\xa0-\xff]+)+ {
 		yylval->name = g_strdup(yytext); return PATH;
 	}
 
