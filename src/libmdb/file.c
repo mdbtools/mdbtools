@@ -222,6 +222,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 	case MDB_VER_ACCDB_2010:
 	case MDB_VER_ACCDB_2013:
 	case MDB_VER_ACCDB_2016:
+	case MDB_VER_ACCDB_2019:
 		mdb->fmt = &MdbJet4Constants;
 		break;
 	default:

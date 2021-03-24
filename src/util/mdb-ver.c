@@ -80,6 +80,9 @@ main(int argc, char **argv)
 	case MDB_VER_ACCDB_2016:
 		printf("ACE16\n");
 		break;
+	case MDB_VER_ACCDB_2019:
+		printf("ACE17\n");
+		break;
 	default:
 		printf(_("unknown database version\n"));
 		break;
