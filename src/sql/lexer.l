@@ -66,8 +66,8 @@ not		{ return NOT; }
 is		{ return IS; }
 null		{ return NUL; }
 "="		{ return EQ; }
-(<=)		{ return LTEQ; }
-(>=)		{ return GTEQ; }
+(<=)		{ return GTEQ; }
+(>=)		{ return LTEQ; }
 "<"		{ return LT; }
 ">"		{ return GT; }
 like		{ return LIKE; }
