@@ -151,6 +151,21 @@ sarg:
 				free($3);
 				}
 	| constant operator identifier {
+				switch($2) {
+					case MDB_GT:
+						$2 = MDB_LT;
+						break;
+					case MDB_LT:
+						$2 = MDB_GT;
+						break;
+					case MDB_GTEQ:
+						$2 = MDB_LTEQ;
+						break;
+					case MDB_LTEQ:
+						$2 = MDB_GTEQ;
+						break;
+				}
+
 	                        mdb_sql_add_sarg(parser_ctx->mdb, $3, $2, $1);
 				free($1);
 				free($3);
