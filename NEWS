@@ -1,3 +1,20 @@
+Version 0.9.3, Beta 1
+=============
+
+libmdb:
+* Support files created with Access 2019 #260 #277
+* Fix a warning when reading in binary property values #262
+* Fix signed-unsigned comparison warning #269
+
+libmdbsql:
+* Support negative floating point literals #274 #279
+* Comparison operators behaved incorrectly when the constant was on the left #283 #285
+* Improved support for file paths in `CONNECT TO` statements #275 #280 #282
+
+ODBC:
+* unixODBC now uses the `--libdir` passed at configure-time #261
+* Fix a segfault in PyODBC when `SQLGetTypeInfo` is called on an unsupported data type #278
+
 Version 0.9.2
 =============
 
