@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 static gint mdb_col_comparer(MdbColumn **a, MdbColumn **b)
 {
@@ -91,7 +92,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		mdb_free_tabledef(table);
 		return NULL;
 	}
-	table->usage_map = g_memdup((char*)buf + row_start, table->map_sz);
+	table->usage_map = g_memdup2((char*)buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		mdb_buffer_dump(buf, row_start, table->map_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"usage map found on page %ld row %d start %d len %d",
@@ -104,7 +105,7 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		mdb_free_tabledef(table);
 		return NULL;
 	}
-	table->free_usage_map = g_memdup((char*)buf + row_start, table->freemap_sz);
+	table->free_usage_map = g_memdup2((char*)buf + row_start, table->freemap_sz);
 	mdb_debug(MDB_DEBUG_USAGE,"free map found on page %ld row %d start %d len %d\n",
 		pg_row >> 8, pg_row & 0xff, row_start, table->freemap_sz);
 
@@ -207,7 +208,7 @@ read_pg_if_n(MdbHandle *mdb, void *buf, int *cur_pos, size_t len)
 
 void mdb_append_column(GPtrArray *columns, MdbColumn *in_col)
 {
-	g_ptr_array_add(columns, g_memdup(in_col,sizeof(MdbColumn)));
+	g_ptr_array_add(columns, g_memdup2(in_col,sizeof(MdbColumn)));
 }
 void mdb_free_columns(GPtrArray *columns)
 {

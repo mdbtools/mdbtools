@@ -24,9 +24,8 @@
  * exported to calling programs.
  */
 
-#define _(String) (String)
-#define N_(String) String
-#define textdomain(Domain)
-#define bindtextdomain(Package, Directory)
+#ifndef HAVE_G_MEMDUP2
+#define g_memdup2 g_memdup
+#endif
 
 #endif

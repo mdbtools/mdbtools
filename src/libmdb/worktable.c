@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 /*
  * Temp table routines.  These are currently used to generate mock results for
@@ -73,7 +74,7 @@ mdb_temp_table_add_col(MdbTableDef *table, MdbColumn *col)
 	col->col_num = table->num_cols;
 	if (!col->is_fixed)
 		col->var_col_num = table->num_var_cols++;
-	g_ptr_array_add(table->columns, g_memdup(col, sizeof(MdbColumn)));
+	g_ptr_array_add(table->columns, g_memdup2(col, sizeof(MdbColumn)));
 	table->num_cols++;
 }
 /*

@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 MdbFormatConstants MdbJet4Constants = {
 	.pg_size = 4096,
@@ -360,14 +361,14 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	MdbCatalogEntry *entry, *data;
 	unsigned int i;
 
-	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
+	newmdb = (MdbHandle *) g_memdup2(mdb, sizeof(MdbHandle));
 
 	memset(&newmdb->catalog, 0, sizeof(MdbHandle) - offsetof(MdbHandle, catalog));
 
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
-		data = g_memdup(entry,sizeof(MdbCatalogEntry));
+		data = g_memdup2(entry,sizeof(MdbCatalogEntry));
 		data->mdb = newmdb;
 		data->props = NULL;
 		g_ptr_array_add(newmdb->catalog, data);
