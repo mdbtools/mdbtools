@@ -217,8 +217,8 @@ if test "$enable_glib" = "yes"; then
     PKG_CHECK_MODULES([GLIB], [$GLIB_PACKAGE], HAVE_GLIB=true, HAVE_GLIB=false)
     if test "x$HAVE_GLIB" = "xtrue"; then
         GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_GLIB=1"
+        AC_CHECK_LIB($GLIB_PACKAGE, g_memdup2, [GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_G_MEMDUP2=1"])
         AC_SUBST(GLIB_PACKAGE)
-        AC_CHECK_LIB(glib-2.0, g_memdup2, [GLIB_CFLAGS="$GLIB_CFLAGS -DHAVE_G_MEMDUP2=1"])
     else
         enable_glib=no
     fi
