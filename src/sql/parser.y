@@ -94,7 +94,7 @@ query:
 	SELECT top_clause column_list FROM table where_clause limit_clause {
 	                mdb_sql_select(parser_ctx->mdb);
 		}
-	|	CONNECT TO database { 
+	|	CONNECT TO database {
 	                mdb_sql_open(parser_ctx->mdb, $3); free($3);
 		}
 	|	DISCONNECT { 
@@ -212,7 +212,8 @@ constant:
 
 database:
 	PATH
-	|	NAME 
+	|	NAME
+	|	IDENT
 	;
 
 table:
