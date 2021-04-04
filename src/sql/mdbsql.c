@@ -217,9 +217,9 @@ MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 	}
 #endif
 
-	sql->mdb = mdb_open(db_namep, MDB_NOFLAGS);
+	sql->mdb = mdb_open(db_name, MDB_NOFLAGS);
 	if ((!sql->mdb) && (!strstr(db_namep, ".mdb"))) {
-		char *tmpstr = (char *) g_strconcat(db_namep, ".mdb", NULL);
+		char *tmpstr = (char *) g_strconcat(db_name, ".mdb", NULL);
 		sql->mdb = mdb_open(tmpstr, MDB_NOFLAGS);
 		g_free(tmpstr);
 	}

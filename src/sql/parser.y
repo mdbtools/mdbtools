@@ -197,7 +197,8 @@ constant:
 
 database:
 	PATH
-	|	NAME 
+	|	NAME
+	|	IDENT
 	;
 
 table:
