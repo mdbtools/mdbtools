@@ -29,6 +29,7 @@
 
 #include <time.h>
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 void
 mdb_sql_walk_tree(MdbSargNode *node, MdbSargTreeFunc func, gpointer data)
@@ -338,7 +339,7 @@ MdbSarg *sarg;
         if (!col->sargs) {
 		col->sargs = g_ptr_array_new();
 	}
-	sarg = g_memdup(in_sarg,sizeof(MdbSarg));
+	sarg = g_memdup2(in_sarg,sizeof(MdbSarg));
         g_ptr_array_add(col->sargs, sarg);
 	col->num_sargs++;
 
