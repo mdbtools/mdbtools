@@ -25,9 +25,6 @@ libmdbsql.pc
 libtool
 src/extras/mdb-hexdump
 src/odbc/unittest
-src/sql/lexer.c
-src/sql/parser.c
-src/sql/parser.h
 src/util/mdb-array
 src/util/mdb-count
 src/util/mdb-export

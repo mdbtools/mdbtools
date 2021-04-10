@@ -67,11 +67,6 @@ First, you must have reasonably current installations of:
 * [automake](https://www.gnu.org/software/automake/)
 * [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.58)
 
-If you want to build the SQL engine, you'll need
-[bison](https://www.gnu.org/software/bison/) (version >= 3.0) or
-[byacc](https://invisible-island.net/byacc/byacc.html), and
-[flex](https://github.com/westes/flex).
-
 If you want to build the ODBC driver, you'll need `unixodbc-dev` (version
 2.2.10 or above) or [iodbc](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/WelcomeVisitors).
 
@@ -123,7 +118,7 @@ enivornment variables. Or, you can disable GLib entirely with the
 `--disable-glib` flag, in which case MDB Tools will use an internal
 implementation of GLib's functions.
 
-configure can be passed any of the following flags to turn on other 
+configure can be passed any of the following flags to turn on or off other
 capabilities.  Note that the options `--with-unixodbc` and `--with-iodbc` are
 mutually exclusive.
 
@@ -132,6 +127,7 @@ mutually exclusive.
                  causes the unixODBC driver to be built.
 --with-iodbc     specifies the location of the iODBC driver manager and 
                  causes the iODBC driver to be built.
+--disable-sql    do not build the SQL engine
 ```
 
 A list of general options is available in the [INSTALL](./INSTALL) file, and
