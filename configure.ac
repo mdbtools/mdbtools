@@ -24,8 +24,26 @@ dnl Checks for programs.
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT([win32-dll])
+
 AC_PROG_LEX
+if test "x$LEX" = "xflex"; then
+LFLAGS="$LFLAGS -i -8"
+fi
+AC_SUBST(LFLAGS)
+
 AC_PROG_YACC
+AC_MSG_CHECKING( for bison 3.0+ )
+if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
+    if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-conflicts-sr"
+    fi
+    if $YACC -Wno-yacc -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-yacc"
+    fi
+    AC_MSG_RESULT( yes );
+else
+    AC_MSG_RESULT( no );
+fi
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -56,27 +74,6 @@ dnl ---------------------------------------------------------------------
 dnl Compile time options
 dnl ---------------------------------------------------------------------
 
-AC_MSG_CHECKING( for flex )
-if test "x$LEX" = "xflex"; then
-LFLAGS="$LFLAGS -i -8"
-AC_MSG_RESULT( yes );
-else
-AC_MSG_RESULT( no );
-fi
-
-AC_MSG_CHECKING( for bison 3.0+ )
-if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
-    if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
-        YFLAGS="$YFLAGS -Wno-conflicts-sr"
-    fi
-    if $YACC -Wno-yacc -V >/dev/null 2>&1; then
-        YFLAGS="$YFLAGS -Wno-yacc"
-    fi
-    AC_MSG_RESULT( yes );
-else
-    AC_MSG_RESULT( no );
-fi
-
 AC_ARG_ENABLE(sql,
   AS_HELP_STRING([--disable-sql], [disable SQL support]),
   enable_sql="$enableval", [enable_sql=yes])
@@ -84,8 +81,6 @@ if test "$enable_sql" = yes; then
   OPTDIRS="$OPTDIRS sql"
 fi
 AM_CONDITIONAL(ENABLE_SQL, test "$enable_sql" = yes)
-
-AC_SUBST(LFLAGS)
 
 CFLAGS="$CFLAGS -Wall -Werror"
 AS_CASE([$host],
