@@ -182,7 +182,7 @@ if test "$with_unixodbc"; then
 fi
 
 if test "x$HAVE_ODBC" = "xtrue"; then
-	if test "x$enable_sql" != "xtrue" ; then
+	if test "x$enable_sql" != "xyes" ; then
 		AC_MSG_ERROR([ODBC requires the SQL engine to be enabled])
 	fi
 
