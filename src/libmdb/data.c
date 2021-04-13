@@ -18,7 +18,9 @@
 
 #include "mdbtools.h"
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE
+#endif
 #include <time.h>
 
 #define OFFSET_MASK 0x1fff
