@@ -1,3 +1,9 @@
+Version 0.9.3, Beta 3
+=============
+
+libmdb / libmdbsql:
+* Fix build when _XOPEN_SOURCE was already defined on the platform #298
+
 Version 0.9.3, Beta 2
 =============
 
