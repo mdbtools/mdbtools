@@ -50,12 +50,11 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 	}
 	return names;
 }
-static gboolean
+static void
 free_hash_entry(gpointer key, gpointer value, gpointer user_data)
 {
 	g_free(key);
 	g_free(value);
-	return TRUE;
 }
 void
 mdb_free_props(MdbProperties *props)
@@ -71,8 +70,13 @@ mdb_free_props(MdbProperties *props)
 }
 
 static void
+do_g_free(gpointer ptr, gpointer user_data) {
+	g_free(ptr);
+}
+
+static void
 free_names(GPtrArray *names) {
-	g_ptr_array_foreach(names, (GFunc)g_free, NULL);
+	g_ptr_array_foreach(names, (GFunc)do_g_free, NULL);
 	g_ptr_array_free(names, TRUE);
 }
 MdbProperties *
