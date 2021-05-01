@@ -1,44 +1,27 @@
-Version 0.9.3, Beta 4
-=============
-
-libmdb:
-* Fix build failure with emscripten #299
-
-Version 0.9.3, Beta 3
-=============
-
-libmdb / libmdbsql:
-* Fix build when _XOPEN_SOURCE was already defined on the platform #298
-
-Version 0.9.3, Beta 2
-=============
-
-libmdb:
-* Migrate to g_memdup2 #287 #288
-
-libmdbsql:
-* Allow double quoted (") database names #291
-* Allow spaces in database names #292 #293
-
-Docs:
-* Add JET version for access 2013/2016/2019 to docs #286
-
-Version 0.9.3, Beta 1
+Version 0.9.3
 =============
 
 libmdb:
 * Support files created with Access 2019 #260 #277
 * Fix a warning when reading in binary property values #262
 * Fix signed-unsigned comparison warning #269
+* Migrate to `g_memdup2` #287 #288
+* Fix build when `_XOPEN_SOURCE` was already defined on the platform #298
+* Fix build failure with emscripten #299
 
 libmdbsql:
 * Support negative floating point literals #274 #279
-* Comparison operators behaved incorrectly when the constant was on the left #283 #285
 * Improved support for file paths in `CONNECT TO` statements #275 #280 #282
+* Comparison operators behaved incorrectly when the constant was on the left #283 #285
+* Allow double quoted (") database names #291
+* Allow spaces in database names #292 #293
 
 ODBC:
 * unixODBC now uses the `--libdir` passed at configure-time #261
 * Fix a segfault in PyODBC when `SQLGetTypeInfo` is called on an unsupported data type #278
+
+Docs:
+* Add JET version for access 2013/2016/2019 to docs #286
 
 Version 0.9.2
 =============

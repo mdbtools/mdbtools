@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([mdbtools],[0.9.3-beta4],[https://github.com/mdbtools/mdbtools/issues],[],[https://github.com/mdbtools/mdbtools])
+AC_INIT([mdbtools],[0.9.3],[https://github.com/mdbtools/mdbtools/issues],[],[https://github.com/mdbtools/mdbtools])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
