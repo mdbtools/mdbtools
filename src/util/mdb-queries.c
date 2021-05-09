@@ -209,8 +209,9 @@ int main (int argc, char **argv) {
                                     strcat(sql_tables, name1);
                                     saw_case_5 = 0;
 								} else {
-                                    strcat(sql_tables, " /*7b2*/ ");
+                                    strcat(sql_tables, " /*7b2 ");
                                     strcat(sql_tables, name1);
+                                    strcat(sql_tables, " */ ");
 								}
                                 switch(flagint) {
                                     case 1: strcat(sql_tables, "\n INNER"); break;
