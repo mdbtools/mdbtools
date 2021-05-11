@@ -188,7 +188,7 @@ int main (int argc, char **argv) {
 								if(strcmp(sql_tables,"") == 0) {
 									strcpy(sql_tables,name1);
 								} else {
-									strcat(sql_tables,",");
+									strcat(sql_tables,", /*5b*/ ");
 									strcat(sql_tables,name1);
 								}
 								saw_case_5 = 1;
@@ -209,7 +209,7 @@ int main (int argc, char **argv) {
                                     strcat(sql_tables, name1);
                                     saw_case_5 = 0;
 								} else {
-                                    strcat(sql_tables, " /*7b2 ");
+                                    strcat(sql_tables, " /*7b ");
                                     strcat(sql_tables, name1);
                                     strcat(sql_tables, " */ ");
 								}
