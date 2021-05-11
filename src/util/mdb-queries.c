@@ -67,9 +67,12 @@ int main (int argc, char **argv) {
 	char *sql_columns = malloc(bind_size);
 	char *sql_where = malloc(bind_size);
 	char *sql_sorting = malloc(bind_size);
+	char *sql_group_by = malloc(bind_size);
+	char *sql_having = malloc(bind_size);
 	int flagint;
 	char *locale = NULL;
 	int print_mdbver = 0;
+	int saw_case_5 = 0;
 	
 	GError *error = NULL;
 	GOptionContext *opt_context;
@@ -185,9 +188,10 @@ int main (int argc, char **argv) {
 								if(strcmp(sql_tables,"") == 0) {
 									strcpy(sql_tables,name1);
 								} else {
-									strcat(sql_tables,",");
+									strcat(sql_tables,", /*5b*/ ");
 									strcat(sql_tables,name1);
 								}
+								saw_case_5 = 1;
 								break;
 							case 6:		// column name
 								if(strcmp(sql_columns,"") == 0) {
@@ -198,37 +202,80 @@ int main (int argc, char **argv) {
 								}
 								break;
 							case 7:		// join/relationship where clause
-								//fprintf(stdout,"join tables: %s - %s\n",name1,name2);
-								//fprintf(stdout,"join clause: %s\n",expression);
+								fprintf(stderr,"## join tables: %s - %s\n",name1,name2);
+								fprintf(stderr,"## join clause: %s\n",expression);
+								if(saw_case_5) {
+                                    strcpy(sql_tables, " /*7a*/ ");
+                                    strcat(sql_tables, name1);
+                                    saw_case_5 = 0;
+								} else {
+                                    strcat(sql_tables, " /*7b ");
+                                    strcat(sql_tables, name1);
+                                    strcat(sql_tables, " */ ");
+								}
+                                switch(flagint) {
+                                    case 1: strcat(sql_tables, "\n INNER"); break;
+                                    case 2: strcat(sql_tables, "\n  LEFT"); break;
+                                    case 3: strcat(sql_tables, "\n RIGHT"); break;
+                                    default: sprintf(sql_tables + strlen(sql_tables), " /* unknown flagint: %d */ ", flagint);
+                                }
+                                strcat(sql_tables," JOIN ");
+                                strcat(sql_tables, name2);
+                                strcat(sql_tables,"\n    ON ");
+                                strcat(sql_tables,expression);
+                                fprintf(stderr, "attribute: %s, flagint: %d, name1: %s, name2: %s, expression: %s, order: %s\n",
+                                        attribute, flagint, name1, name2, expression, order);
 								break;
 							case 8:		// where clause
 								strcpy(sql_where,expression);
 								break;
+						    case 9:     // group by
+                                if(strcmp(sql_group_by,"") == 0) {
+                                    strcpy(sql_group_by," GROUP BY ");
+                                } else {
+                                    strcat(sql_group_by,",");
+                                }
+                                strcat(sql_group_by,expression);
+						        break;
+						    case 10:    // having
+						        strcpy(sql_having,"HAVING ");
+                                strcat(sql_having,expression);
+						        break;
 							case 11:		// sorting
 								if(strcmp(sql_sorting,"") == 0) {
-									strcpy(sql_sorting,"ORDER BY ");
+									strcpy(sql_sorting," ORDER BY ");
 									strcat(sql_sorting,expression);
 									if(strcmp(name1,"D") == 0) {
 										strcat(sql_sorting," DESCENDING");
 									}
 								}
 								break;
+						    default:
+						        fprintf(stderr, "attribute: %s, flagint: %d, name1: %s, name2: %s, expression: %s, order: %s\n",
+                                        attribute, flagint, name1, name2, expression, order);
 						}
 					}
 				}
 				
-				/*fprintf(stdout,"sql_tables: %s\n",sql_tables);
-				fprintf(stdout,"sql_columns: %s\n",sql_columns);
-				fprintf(stdout,"sql_where: %s\n",sql_where);
-				fprintf(stdout,"sql_sorting: %s\n",sql_sorting);*/
+				/*fprintf(stderr,"sql_tables: %s\n",sql_tables);
+				fprintf(stderr,"sql_columns: %s\n",sql_columns);
+				fprintf(stderr,"sql_where: %s\n",sql_where);
+				fprintf(stderr,"sql_sorting: %s\n",sql_sorting);*/
 				
 				/* print out the sql statement */
-				if(strcmp(sql_where,"") == 0) {
-					fprintf(stdout,"SELECT%s %s FROM %s %s\n",sql_predicate,sql_columns,sql_tables,sql_sorting);
-				} else {
-					fprintf(stdout,"SELECT%s %s FROM %s WHERE %s %s\n",sql_predicate,sql_columns,sql_tables,sql_where,sql_sorting);
+                fprintf(stdout,"SELECT%s %s\n  FROM %s\n",sql_predicate,sql_columns,sql_tables);
+				if(*sql_where) {
+					fprintf(stdout," WHERE %s\n", sql_where);
 				}
-						
+                if(*sql_group_by) {
+                    fprintf(stdout, "%s\n", sql_group_by);
+                }
+                if(*sql_having) {
+                    fprintf(stdout, "%s\n", sql_having);
+                }
+                if(*sql_sorting) {
+                    fprintf(stdout, "%s\n", sql_sorting);
+                }
 				mdb_free_tabledef(table);
 			}
 			free(query_id);

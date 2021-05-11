@@ -1,0 +1,10 @@
+#! /bin/bash
+
+PATH=.:$PATH
+
+while read view ; do
+  echo "CREATE VIEW [$view] AS"
+  mdb-queries "$1" "$view"
+  echo ";"
+  echo
+done < <(mdb-queries -1 "$1")
