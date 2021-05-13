@@ -60,7 +60,7 @@ jobs:
   macos:
     runs-on: macos-latest
     env:
-      CFLAGS: -mmacosx-version-min=10.13
+      CFLAGS: -arch x86_64 -arch arm64 -mmacosx-version-min=10.13
     strategy:
       fail-fast: false
       matrix:
@@ -115,7 +115,7 @@ jobs:
   macos-iodbc:
     runs-on: macos-latest
     env:
-      CFLAGS: -mmacosx-version-min=10.13
+      CFLAGS: -arch x86_64 -arch arm64 -mmacosx-version-min=10.13
     strategy:
       fail-fast: false
       matrix:
