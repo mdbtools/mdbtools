@@ -191,8 +191,6 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
         /* Bug - JET3 supports 20 byte passwords, this is currently just 14 bytes */
         memcpy(mdb->f->db_passwd, mdb->pg_buf + 0x42, sizeof(mdb->f->db_passwd));
     }
-    /* write is not supported for encrypted files yet */
-    mdb->f->writable = mdb->f->writable && !mdb->f->db_key;
 
 	mdb_iconv_init(mdb);
 

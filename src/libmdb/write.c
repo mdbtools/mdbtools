@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <mdbfakeglib.h>
 #include <time.h>
 #include <inttypes.h>
 #include "mdbtools.h"
@@ -70,6 +71,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 {
 	ssize_t len;
 	off_t offset = pg * mdb->fmt->pg_size;
+	unsigned char *buf = mdb->pg_buf;
 
     fseeko(mdb->f->stream, 0, SEEK_END);
 	/* is page beyond current size + 1 ? */
@@ -78,7 +80,21 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 		return 0;
 	}
 	fseeko(mdb->f->stream, offset, SEEK_SET);
-	len = fwrite(mdb->pg_buf, 1, mdb->fmt->pg_size, mdb->f->stream);
+
+	if (pg != 0 && mdb->f->db_key != 0)
+	{
+		buf = g_malloc(mdb->fmt->pg_size);
+		memcpy(buf, mdb->pg_buf, mdb->fmt->pg_size);
+		unsigned int tmp_key = mdb->f->db_key ^ pg;
+		mdb_rc4((unsigned char*)&tmp_key, 4, buf, mdb->fmt->pg_size);
+	}
+
+	len = fwrite(buf, 1, mdb->fmt->pg_size, mdb->f->stream);
+
+	if (buf != mdb->pg_buf) {
+		g_free(buf);
+	}
+
 	if (ferror(mdb->f->stream)) {
 		perror("write");
 		return 0;
