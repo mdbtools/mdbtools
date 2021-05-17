@@ -648,6 +648,9 @@ void mdb_iconv_init(MdbHandle *mdb);
 void mdb_iconv_close(MdbHandle *mdb);
 const char* mdb_target_charset(MdbHandle *mdb);
 
+/* rc4.c */
+void mdb_rc4(unsigned char *key, guint32 key_len, unsigned char *buf, guint32 buf_len);
+
 /** @}*/
 
 #ifdef __cplusplus
