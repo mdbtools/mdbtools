@@ -18,7 +18,7 @@
 
 #include <time.h>
 #include <inttypes.h>
-#include "mdbtools.h"
+#include "mdbprivate.h"
 
 //static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
 static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields, guint32 pgnum, guint16 rownum);
@@ -82,8 +82,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 
 	if (pg != 0 && mdb->f->db_key != 0)
 	{
-		buf = g_malloc(mdb->fmt->pg_size);
-		memcpy(buf, mdb->pg_buf, mdb->fmt->pg_size);
+		buf = g_memdup2(mdb->pg_buf, mdb->fmt->pg_size);
 		unsigned int tmp_key = mdb->f->db_key ^ pg;
 		mdb_rc4((unsigned char*)&tmp_key, 4, buf, mdb->fmt->pg_size);
 	}
