@@ -16,16 +16,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _mdbprivate_h_
-#define _mdbprivate_h_
+#ifndef MDBPRIVATE_H
+#define MDBPRIVATE_H
+
+#include "mdbtools.h"
 
 /*
- * This header is for stuff lacking a MDB_ or mdb_ something, so they won't be
- * exported to calling programs.
+ * This header is for stuff lacking a MDB_ or mdb_ something, or functions only
+ * used within mdbtools so they won't be exported to calling programs.
  */
 
 #ifndef HAVE_G_MEMDUP2
 #define g_memdup2 g_memdup
+#endif
+
+#ifdef __cplusplus
+  extern "C" {
+#endif
+
+void mdbi_rc4(unsigned char *key, guint32 key_len, unsigned char *buf, guint32 buf_len);
+
+#ifdef __cplusplus
+  }
 #endif
 
 #endif

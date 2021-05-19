@@ -66,68 +66,7 @@ MdbFormatConstants MdbJet3Constants = {
     .tab_row_col_num_offset = 5
 };
 
-typedef struct _RC4_KEY
-{
-	unsigned char state[256];
-	unsigned char x;
-	unsigned char y;
-} RC4_KEY;
-
-#define swap_byte(x,y) t = *(x); *(x) = *(y); *(y) = t
-
 static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg);
-
-static void RC4_set_key(RC4_KEY *key, int key_data_len, unsigned char *key_data_ptr)
-{
-	unsigned char t;
-	unsigned char index1;
-	unsigned char index2;
-	unsigned char* state;
-	short counter;
-
-	state = &key->state[0];
-	for(counter = 0; counter < 256; counter++)
-		state[counter] = counter;
-	key->x = 0;
-	key->y = 0;
-	index1 = 0;
-	index2 = 0;
-	for(counter = 0; counter < 256; counter++) {
-		index2 = (key_data_ptr[index1] + state[counter] + index2) % 256;
-		swap_byte(&state[counter], &state[index2]);
-		index1 = (index1 + 1) % key_data_len;
-	}
-}
-
-/*
- * this algorithm does 'encrypt in place' instead of inbuff/outbuff
- * note also: encryption and decryption use same routine
- * implementation supplied by (Adam Back) at <adam at cypherspace dot org>
- */
-
-static void RC4(RC4_KEY *key, int buffer_len, unsigned char * buff)
-{
-	unsigned char t;
-	unsigned char x;
-	unsigned char y;
-	unsigned char* state;
-	unsigned char xorIndex;
-	short counter;
-
-	x = key->x;
-	y = key->y;
-	state = &key->state[0];
-	for(counter = 0; counter < buffer_len; counter++) {
-		x = (x + 1) % 256;
-		y = (state[x] + y) % 256;
-		swap_byte(&state[x], &state[y]);
-		xorIndex = (state[x] + state[y]) % 256;
-		buff[counter] ^= state[xorIndex];
-	}
-	key->x = x;
-	key->y = y;
-}
-
 
 /**
  * mdb_find_file:
@@ -232,10 +171,13 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 		return NULL; 
 	}
 
-    RC4_KEY rc4_key;
-    unsigned int tmp_key = 0x6b39dac7;
-    RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
-    RC4(&rc4_key, mdb->f->jet_version == MDB_VER_JET3 ? 126 : 128, mdb->pg_buf + 0x18);
+    guint32 tmp_key = 0x6b39dac7;
+	mdbi_rc4(
+		(unsigned char *)&tmp_key,
+		4,
+		mdb->pg_buf + 0x18,
+		mdb->f->jet_version == MDB_VER_JET3 ? 126 : 128
+	);
 
 	if (mdb->f->jet_version == MDB_VER_JET3) {
 		mdb->f->lang_id = mdb_get_int16(mdb->pg_buf, 0x3a);
@@ -249,8 +191,6 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
         /* Bug - JET3 supports 20 byte passwords, this is currently just 14 bytes */
         memcpy(mdb->f->db_passwd, mdb->pg_buf + 0x42, sizeof(mdb->f->db_passwd));
     }
-    /* write is not supported for encrypted files yet */
-    mdb->f->writable = mdb->f->writable && !mdb->f->db_key;
 
 	mdb_iconv_init(mdb);
 
@@ -436,10 +376,8 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	 */
 	if (pg != 0 && mdb->f->db_key != 0)
 	{
-		RC4_KEY rc4_key;
 		unsigned int tmp_key = mdb->f->db_key ^ pg;
-		RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
-		RC4(&rc4_key, mdb->fmt->pg_size, pg_buf);
+		mdbi_rc4((unsigned char*)&tmp_key, 4, pg_buf, mdb->fmt->pg_size);
 	}
 
 	return mdb->fmt->pg_size;
