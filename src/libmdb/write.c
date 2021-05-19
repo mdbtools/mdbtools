@@ -84,7 +84,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 	{
 		buf = g_memdup2(mdb->pg_buf, mdb->fmt->pg_size);
 		unsigned int tmp_key = mdb->f->db_key ^ pg;
-		mdb_rc4((unsigned char*)&tmp_key, 4, buf, mdb->fmt->pg_size);
+		mdbi_rc4((unsigned char*)&tmp_key, 4, buf, mdb->fmt->pg_size);
 	}
 
 	len = fwrite(buf, 1, mdb->fmt->pg_size, mdb->f->stream);

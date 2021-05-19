@@ -172,7 +172,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 	}
 
     guint32 tmp_key = 0x6b39dac7;
-	mdb_rc4(
+	mdbi_rc4(
 		(unsigned char *)&tmp_key,
 		4,
 		mdb->pg_buf + 0x18,
@@ -377,7 +377,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	if (pg != 0 && mdb->f->db_key != 0)
 	{
 		unsigned int tmp_key = mdb->f->db_key ^ pg;
-		mdb_rc4((unsigned char*)&tmp_key, 4, pg_buf, mdb->fmt->pg_size);
+		mdbi_rc4((unsigned char*)&tmp_key, 4, pg_buf, mdb->fmt->pg_size);
 	}
 
 	return mdb->fmt->pg_size;

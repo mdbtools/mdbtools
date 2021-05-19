@@ -18,7 +18,7 @@
 
 #include "mdbprivate.h"
 
-typedef struct _RC4_KEY
+typedef struct
 {
 	unsigned char state[256];
 	unsigned char x;
@@ -78,7 +78,7 @@ static void RC4(RC4_KEY *key, int buffer_len, unsigned char * buff)
 	key->y = y;
 }
 
-void mdb_rc4(unsigned char *key, guint32 key_len, unsigned char *buf, guint32 buf_len) {
+void mdbi_rc4(unsigned char *key, guint32 key_len, unsigned char *buf, guint32 buf_len) {
     RC4_KEY rc4_key;
     RC4_set_key(&rc4_key, key_len, key);
     RC4(&rc4_key, buf_len, buf);
