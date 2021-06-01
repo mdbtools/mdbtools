@@ -185,7 +185,7 @@ int main (int argc, char **argv) {
 								if(strcmp(sql_tables,"") != 0) {
 									strcat(sql_tables,",");
 								}
-								sprintf(sql_tables+strlen(sql_tables),"`%s`",name1);
+								sprintf(sql_tables+strlen(sql_tables),"[%s]",name1);
 								break;
 							case 6:		// column name
 								if(strcmp(sql_columns,"") == 0) {
