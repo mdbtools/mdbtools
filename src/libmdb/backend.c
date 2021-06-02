@@ -463,10 +463,8 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 		} else {
 			mdb_set_shortdate_fmt(mdb, "%x");
 		}
-		return 1;
-	} else {
-		return 0;
 	}
+	return (backend != NULL);
 }
 
 
