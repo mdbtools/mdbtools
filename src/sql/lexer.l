@@ -98,6 +98,8 @@ strptime	{ return STRPTIME; }
 		return IDENT;
 	}
 
+\[[^\]]+\] { yylval->name = g_strndup(yytext+1, yyleng-2); return NAME; }
+
 [a-z\xa0-\xff][a-z0-9_#@\xa0-\xff]*		{ yylval->name = g_strdup(yytext); return NAME; }
 
 '[^']*''  {
