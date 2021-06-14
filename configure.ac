@@ -91,7 +91,7 @@ CFLAGS="$CFLAGS -Wall -Werror"
 AS_CASE([$host],
         [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 AS_CASE([$host],
-        [*mingw*], [LDFLAGS="$LDFLAGS -lWs2_32"], [])
+        [*mingw*], [LDFLAGS="$LDFLAGS -lws2_32"], [])
 
 dnl Fuzz testing
 
