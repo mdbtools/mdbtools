@@ -26,8 +26,9 @@ static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPag
 void
 mdb_put_int16(void *buf, guint32 offset, guint32 value)
 {
-	value = GINT32_TO_LE(value);
-	memcpy((char*)buf + offset, &value, 2);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    u8_buf[0] = (value & 0xFF);
+    u8_buf[1] = (value >> 8) & 0xFF;
 }
 void
 _mdb_put_int16(void *buf, guint32 offset, guint32 value)
@@ -40,8 +41,11 @@ __attribute__((alias("mdb_put_int16")));
 void
 mdb_put_int32(void *buf, guint32 offset, guint32 value)
 {
-	value = GINT32_TO_LE(value);
-	memcpy((char*)buf + offset, &value, 4);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    u8_buf[0] = (value & 0xFF);
+    u8_buf[1] = (value >> 8) & 0xFF;
+    u8_buf[2] = (value >> 16) & 0xFF;
+    u8_buf[3] = (value >> 24) & 0xFF;
 }
 void
 _mdb_put_int32(void *buf, guint32 offset, guint32 value)
@@ -54,8 +58,11 @@ __attribute__((alias("mdb_put_int32")));
 void
 mdb_put_int32_msb(void *buf, guint32 offset, guint32 value)
 {
-	value = GINT32_TO_BE(value);
-	memcpy((char*)buf + offset, &value, 4);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    u8_buf[3] = (value & 0xFF);
+    u8_buf[2] = (value >> 8) & 0xFF;
+    u8_buf[1] = (value >> 16) & 0xFF;
+    u8_buf[0] = (value >> 24) & 0xFF;
 }
 void
 _mdb_put_int32_mdb(void *buf, guint32 offset, guint32 value)

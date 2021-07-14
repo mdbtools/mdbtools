@@ -405,9 +405,8 @@ unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 
 int mdb_get_int16(void *buf, int offset)
 {
-	guint16 l;
-	memcpy(&l, (char*)buf + offset, 2);
-	return (int)GUINT16_FROM_LE(l);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    return u8_buf[0] + (u8_buf[1] << 8);
 }
 int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 {
@@ -418,15 +417,13 @@ int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 
 long mdb_get_int32_msb(void *buf, int offset)
 {
-	gint32 l;
-	memcpy(&l, (char*)buf + offset, 4);
-	return (long)GINT32_FROM_BE(l);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    return (u8_buf[0] << 24) + (u8_buf[1] << 16) + (u8_buf[2] << 8) + u8_buf[3];
 }
 long mdb_get_int32(void *buf, int offset)
 {
-	gint32 l;
-	memcpy(&l, (char*)buf + offset, 4);
-	return (long)GINT32_FROM_LE(l);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    return u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24);
 }
 long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 {
@@ -438,8 +435,8 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 float mdb_get_single(void *buf, int offset)
 {
 	union {guint32 g; float f;} f;
-	memcpy(&f, (char*)buf + offset, 4);
-	f.g = GUINT32_FROM_LE(f.g);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    f.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24);
 	return f.f;
 }
 float mdb_pg_get_single(MdbHandle *mdb, int offset)
@@ -452,8 +449,10 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
 double mdb_get_double(void *buf, int offset)
 {
 	union {guint64 g; double d;} d;
-	memcpy(&d, (char*)buf + offset, 8);
-	d.g = GUINT64_FROM_LE(d.g);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    d.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24) +
+        ((guint64)u8_buf[4] << 32) + ((guint64)u8_buf[5] << 40) +
+        ((guint64)u8_buf[6] << 48) + ((guint64)u8_buf[7] << 56);
 	return d.d;
 }
 double mdb_pg_get_double(MdbHandle *mdb, int offset)

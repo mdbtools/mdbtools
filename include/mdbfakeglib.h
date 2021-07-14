@@ -26,13 +26,6 @@
 #include <inttypes.h>
 #include <strings.h>
 
-// for ntohl
-#ifdef _WIN32
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
-
 typedef uint16_t guint16;
 typedef uint32_t guint32;
 typedef uint64_t guint64;
@@ -132,14 +125,7 @@ typedef struct GOptionContext {
 #define TRUE 1
 #define FALSE 0
 
-#define GUINT16_FROM_LE(l) (uint16_t)l
-#define GUINT32_FROM_LE(l) (uint32_t)l
-#define GUINT64_FROM_LE(l) (uint64_t)l
-#define GINT32_FROM_LE(l) (uint32_t)l
-#define GINT32_FROM_BE(l) (int32_t)ntohl(l)
-#define GUINT32_SWAP_LE_BE(l) (uint32_t)ntohl(l)
-#define GINT32_TO_LE(l) (int32_t)l
-#define GINT32_TO_BE(l) (int32_t)ntohl(l)
+#define GUINT32_SWAP_LE_BE(l) __builtin_bswap32((uint32_t)(l))
 
 /* string functions */
 void *g_memdup(const void *src, size_t len);
