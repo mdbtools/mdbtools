@@ -28,7 +28,6 @@ AC_PROG_LEX
 AC_PROG_YACC
 
 dnl Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h xlocale.h)
 AC_CHECK_LIB(mswstr, DBLCMapStringW)
 AC_CHECK_DECLS([program_invocation_short_name], [], [], [[
