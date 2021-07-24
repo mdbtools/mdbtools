@@ -60,7 +60,7 @@ typedef struct sql_context
 
 %start stmt
 
-%token <name> IDENT NAME PATH STRING NUMBER
+%token <name> IDENT NAME PATH STRING NUMBER OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
 %token DESCRIBE TABLE TOP PERCENT
 %token LTEQ GTEQ LIKE IS NUL
@@ -138,7 +138,7 @@ limit_clause:
 
 sarg_list:
 	sarg 
-	| '(' sarg_list ')'
+	| OPENING sarg_list CLOSING
 	| NOT sarg_list { mdb_sql_add_not(parser_ctx->mdb); }
 	| sarg_list OR sarg_list { mdb_sql_add_or(parser_ctx->mdb); }
 	| sarg_list AND sarg_list { mdb_sql_add_and(parser_ctx->mdb); }
@@ -151,6 +151,21 @@ sarg:
 				free($3);
 				}
 	| constant operator identifier {
+				switch($2) {
+					case MDB_GT:
+						$2 = MDB_LT;
+						break;
+					case MDB_LT:
+						$2 = MDB_GT;
+						break;
+					case MDB_GTEQ:
+						$2 = MDB_LTEQ;
+						break;
+					case MDB_LTEQ:
+						$2 = MDB_GTEQ;
+						break;
+				}
+
 	                        mdb_sql_add_sarg(parser_ctx->mdb, $3, $2, $1);
 				free($1);
 				free($3);
@@ -186,10 +201,10 @@ nulloperator:
 	;
 
 constant:
-	STRPTIME '(' constant ',' constant ')' { 
-	        $$ = mdb_sql_strptime(parser_ctx->mdb, $3, $5);
-		free($3);
-		free($5);
+	STRPTIME constant ',' constant CLOSING {
+	        $$ = mdb_sql_strptime(parser_ctx->mdb, $2, $4);
+		free($2);
+		free($4);
 	}
 	| NUMBER { $$ = $1; }
 	| STRING { $$ = $1; }
@@ -197,7 +212,8 @@ constant:
 
 database:
 	PATH
-	|	NAME 
+	|	NAME
+	|	IDENT
 	;
 
 table:
@@ -205,7 +221,7 @@ table:
 	;
 
 column_list:
-	COUNT '(' '*' ')'	{ mdb_sql_sel_count(parser_ctx->mdb); }
+	COUNT '*' CLOSING	{ mdb_sql_sel_count(parser_ctx->mdb); }
 	| '*'	{ mdb_sql_all_columns(parser_ctx->mdb); }
 	|	column  
 	|	column ',' column_list 

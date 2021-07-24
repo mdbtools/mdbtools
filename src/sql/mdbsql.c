@@ -17,13 +17,10 @@
  */
 
 #include <stdarg.h>
-#define _XOPEN_SOURCE
-#include "mdbsql.h"
-
-#ifdef HAVE_WORDEXP_H
-#define HAVE_WORDEXP
-#include <wordexp.h>
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 #endif
+#include "mdbsql.h"
 
 #ifdef HAVE_STRPTIME
 #include <time.h>
@@ -191,48 +188,15 @@ mdb_sql_close(MdbSQL *sql)
 
 MdbHandle *mdb_sql_open(MdbSQL *sql, char *db_name)
 {
-	char *db_namep = db_name;
-
-#ifdef HAVE_WORDEXP
-	wordexp_t words;
-	int need_free_words = 0;
-
-	switch (wordexp(db_name, &words, 0))
-	{
-		case 0:
-			if (words.we_wordc>0)
-			{
-				db_namep = words.we_wordv[0];
-			}
-			need_free_words = 1;
-			break;
-		case WRDE_NOSPACE:
-			// If the error was WRDE_NOSPACE, then perhaps part of the result was allocated.
-			need_free_words = 1;
-			break;
-		default:
-			// Some other error
-			need_free_words = 0;
-			break;
-	}
-#endif
-
-	sql->mdb = mdb_open(db_namep, MDB_NOFLAGS);
-	if ((!sql->mdb) && (!strstr(db_namep, ".mdb"))) {
-		char *tmpstr = (char *) g_strconcat(db_namep, ".mdb", NULL);
+	sql->mdb = mdb_open(db_name, MDB_NOFLAGS);
+	if ((!sql->mdb) && (!strstr(db_name, ".mdb"))) {
+		char *tmpstr = g_strconcat(db_name, ".mdb", NULL);
 		sql->mdb = mdb_open(tmpstr, MDB_NOFLAGS);
 		g_free(tmpstr);
 	}
 	if (!sql->mdb) {
 		mdb_sql_error(sql, "Unable to locate database %s", db_name);
 	}
-
-#ifdef HAVE_WORDEXP
-	if ( need_free_words )
-	{
-		wordfree(&words);
-	}
-#endif	
 
 	return sql->mdb;
 }

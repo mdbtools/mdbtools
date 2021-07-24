@@ -182,12 +182,10 @@ int main (int argc, char **argv) {
 								}
 								break;
 							case 5:		// table name
-								if(strcmp(sql_tables,"") == 0) {
-									strcpy(sql_tables,name1);
-								} else {
+								if(strcmp(sql_tables,"") != 0) {
 									strcat(sql_tables,",");
-									strcat(sql_tables,name1);
 								}
+								sprintf(sql_tables+strlen(sql_tables),"[%s]",name1);
 								break;
 							case 6:		// column name
 								if(strcmp(sql_columns,"") == 0) {

@@ -18,7 +18,6 @@
 
 #include "mdbtools.h"
 #include "mdbver.h"
-#include "mdbprivate.h"
 
 int
 main(int argc, char **argv)
@@ -58,7 +57,7 @@ main(int argc, char **argv)
 	}
 
 	if (!(mdb = mdb_open(argv[1], MDB_NOFLAGS))) {
-		fprintf(stderr,_("Error: unable to open file %s\n"), argv[1]);
+		fprintf(stderr,"Error: unable to open file %s\n", argv[1]);
 		exit(1);
 	}
 	switch(mdb->f->jet_version) {
@@ -80,8 +79,11 @@ main(int argc, char **argv)
 	case MDB_VER_ACCDB_2016:
 		printf("ACE16\n");
 		break;
+	case MDB_VER_ACCDB_2019:
+		printf("ACE17\n");
+		break;
 	default:
-		printf(_("unknown database version\n"));
+		printf("unknown database version\n");
 		break;
 	}
 	

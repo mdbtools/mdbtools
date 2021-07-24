@@ -18,7 +18,6 @@
 
 #include "mdbtools.h"
 
-#define _XOPEN_SOURCE
 #include <time.h>
 
 #define OFFSET_MASK 0x1fff
@@ -464,6 +463,8 @@ mdb_fetch_row(MdbTableDef *table)
 	do {
 		if (table->is_temp_table) {
 			GPtrArray *pages = table->temp_table_pages;
+			if (pages->len == 0)
+				return 0;
 			rows = mdb_get_int16(
 				g_ptr_array_index(pages, table->cur_pg_num-1),
 				fmt->row_count_offset);

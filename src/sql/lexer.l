@@ -74,8 +74,8 @@ like		{ return LIKE; }
 limit		{ return LIMIT; }
 top		{ return TOP; }
 percent		{ return PERCENT; }
-count		{ return COUNT; }
-strptime	{ return STRPTIME; }
+count\(		{ return COUNT; }
+strptime\(	{ return STRPTIME; }
 [ \t\r]	;
 
 \"[^"]*\"\"  {
@@ -98,6 +98,8 @@ strptime	{ return STRPTIME; }
 		return IDENT;
 	}
 
+\[[^\]]+\] { yylval->name = g_strndup(yytext+1, yyleng-2); return NAME; }
+
 [a-z\xa0-\xff][a-z0-9_#@\xa0-\xff]*		{ yylval->name = g_strdup(yytext); return NAME; }
 
 '[^']*''  {
@@ -109,10 +111,17 @@ strptime	{ return STRPTIME; }
 		return STRING;
 	}
 
-(-*[0-9]+|([0-9]*\.[0-9]+)(e[-+]?[0-9]+)?) {
+(-?[0-9]+|(-?[0-9]*\.[0-9]+)(e[-+]?[0-9]+)?) {
 		yylval->name = g_strdup(yytext); return NUMBER;
 	}
-~?(\/?[a-z0-9\.\xa0-\xff]+)+ {
+~?(\/?[a-z0-9\.\-\_\!\~\'\(\)\%\xa0-\xff]+)+ {
+        if (yytext[0] == ')' && strlen(yytext) == 1) {
+            return CLOSING;
+        }
+
+        if (yytext[0] == '(' && strlen(yytext) == 1) {
+            return OPENING;
+        }
 		yylval->name = g_strdup(yytext); return PATH;
 	}
 
