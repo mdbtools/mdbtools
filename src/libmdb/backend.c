@@ -303,6 +303,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
 		NULL,
@@ -317,6 +318,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
@@ -331,6 +333,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
@@ -345,6 +348,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"SET client_encoding = '%s';\n",
+        "CREATE TABLE IF NOT EXISTS %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
@@ -359,6 +363,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		NULL,
@@ -373,6 +378,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		NULL,
 		NULL,
@@ -386,7 +392,9 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
         const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
         const char *short_now, const char *long_now,
         const char *date_fmt, const char *shortdate_fmt,
-        const char *charset_statement, const char *drop_statement,
+        const char *charset_statement,
+        const char *create_table_statement,
+        const char *drop_statement,
         const char *constaint_not_empty_statement,
         const char *column_comment_statement,
         const char *per_column_comment_statement, 
@@ -404,6 +412,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->date_fmt = date_fmt;
 	backend->shortdate_fmt = shortdate_fmt;
 	backend->charset_statement = charset_statement;
+	backend->create_table_statement = create_table_statement;
 	backend->drop_statement = drop_statement;
 	backend->constaint_not_empty_statement = constaint_not_empty_statement;
 	backend->column_comment_statement = column_comment_statement;
@@ -792,7 +801,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		fprintf (outfile, mdb->default_backend->drop_statement, quoted_table_name);
 
 	/* create the table */
-	fprintf (outfile, "CREATE TABLE %s\n", quoted_table_name);
+	fprintf (outfile, mdb->default_backend->create_table_statement, quoted_table_name);
 	fprintf (outfile, " (\n");
 
 	table = mdb_read_table (entry);
