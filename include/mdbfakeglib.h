@@ -39,6 +39,7 @@ typedef const void * gconstpointer;
 typedef uint8_t guint8;
 typedef guint32 GQuark;
 typedef guint32 gunichar;
+typedef signed int gssize;
 
 typedef guint (*GHashFunc)(gconstpointer);
 typedef int (*GCompareFunc)(gconstpointer, gconstpointer);
@@ -143,6 +144,7 @@ void g_printerr(const gchar *format, ...);
 gint g_unichar_to_utf8(gunichar c, gchar *dst);
 gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         size_t *bytes_read, size_t *bytes_written, GError **error);
+gchar *g_utf8_strdown(const gchar *str, gssize len);
 
 /* GString */
 GString *g_string_new(const gchar *init);
