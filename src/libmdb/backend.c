@@ -82,7 +82,7 @@ static const MdbBackendType mdb_sybase_shortdate_type =
 
 /*    Postgres data types */
 static const MdbBackendType mdb_postgres_types[] = {
-    [MDB_BOOL] = { .name = "BOOL" },
+    [MDB_BOOL] = { .name = "BOOLEAN" },
     [MDB_BYTE] = { .name = "SMALLINT" },
     [MDB_INT] = { .name = "INTEGER" },
     [MDB_LONGINT] = { .name = "INTEGER" }, /* bigint */
