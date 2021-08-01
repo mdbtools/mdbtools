@@ -156,11 +156,11 @@ enum {
 static void mdb_drop_backend(gpointer key, gpointer value, gpointer data);
 
 
-gchar *passthrough_unchanged(const gchar *str) {
+static gchar *passthrough_unchanged(const gchar *str) {
     return (gchar *)str;
 }
 
-gchar *to_lower_case(const gchar *str) {
+static gchar *to_lower_case(const gchar *str) {
     return g_utf8_strdown(str, -1);
 }
 
@@ -174,7 +174,7 @@ gchar *to_lower_case(const gchar *str) {
  * @param str string to normalise
  * @return a pointer to the normalised version of the input string
  */
-gchar *normalise_and_replace(MdbHandle *mdb, gchar **str) {
+gchar *mdb_normalise_and_replace(MdbHandle *mdb, gchar **str) {
     gchar *normalised_str = mdb->default_backend->normalise_case(*str);
     if (normalised_str != *str) {
         /* Free and replace the old string only and only if a new string was created at a different memory location
@@ -458,7 +458,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->table_comment_statement = table_comment_statement;
 	backend->per_table_comment_statement = per_table_comment_statement;
 	backend->quote_schema_name  = quote_schema_name;
-    backend->normalise_case = normalise_case;
+	backend->normalise_case = normalise_case;
 	g_hash_table_insert(mdb->backends, backend_name, backend);
 }
 
@@ -587,7 +587,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 	fprintf (outfile, "-- CREATE INDEXES ...\n");
 
 	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, table->name);
-    quoted_table_name = mdb->default_backend->normalise_case(quoted_table_name);
+	quoted_table_name = mdb->default_backend->normalise_case(quoted_table_name);
 
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
@@ -609,7 +609,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
 		}
 
-        quoted_name = normalise_and_replace(mdb, &quoted_name);
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 
 		if (idx->index_type==1) {
 			switch (backend) {
@@ -646,7 +646,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				fprintf(outfile, ", ");
 			col=g_ptr_array_index(table->columns,idx->key_col_num[j]-1);
 			quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-            quoted_name = normalise_and_replace(mdb, &quoted_name);
+			quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 			fprintf (outfile, "%s", quoted_name);
 			if (idx->index_type!=1 && idx->key_col_order[j])
 				/* no DESC for primary keys */
@@ -754,11 +754,11 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
                          * be namespaced.
 			 */
 			quoted_constraint_name = mdb->default_backend->quote_schema_name(NULL, constraint_name);
-            quoted_constraint_name = normalise_and_replace(mdb, &quoted_constraint_name);
+			quoted_constraint_name = mdb_normalise_and_replace(mdb, &quoted_constraint_name);
 			quoted_column_1 = mdb->default_backend->quote_schema_name(NULL, bound[0]);
-            quoted_column_1 = normalise_and_replace(mdb, &quoted_column_1);
+			quoted_column_1 = mdb_normalise_and_replace(mdb, &quoted_column_1);
 			quoted_column_2 = mdb->default_backend->quote_schema_name(NULL, bound[2]);
-            quoted_column_2 = normalise_and_replace(mdb, &quoted_column_2);
+			quoted_column_2 = mdb_normalise_and_replace(mdb, &quoted_column_2);
 			break;
 
 		default:
@@ -841,7 +841,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	const char *prop_value;
 
 	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, entry->object_name);
-    quoted_table_name = normalise_and_replace(mdb, &quoted_table_name);
+	quoted_table_name = mdb_normalise_and_replace(mdb, &quoted_table_name);
 
 	/* drop the table if it exists */
 	if (export_options & MDB_SHEXP_DROPTABLE)
@@ -861,7 +861,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		col = g_ptr_array_index (table->columns, i);
 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-        quoted_name = normalise_and_replace(mdb, &quoted_name);
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 		fprintf (outfile, "\t%s\t\t\t%s", quoted_name,
 			mdb_get_colbacktype_string (col));
 		g_free(quoted_name);
@@ -964,7 +964,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			continue;
 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
-        quoted_name = normalise_and_replace(mdb, &quoted_name);
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 
 		if (export_options & MDB_SHEXP_CST_NOTEMPTY) {
 			prop_value = mdb_col_get_prop(col, "AllowZeroLength");

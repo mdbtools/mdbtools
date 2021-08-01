@@ -39,7 +39,7 @@ typedef const void * gconstpointer;
 typedef uint8_t guint8;
 typedef guint32 GQuark;
 typedef guint32 gunichar;
-typedef signed int gssize;
+typedef signed long gssize;
 
 typedef guint (*GHashFunc)(gconstpointer);
 typedef int (*GCompareFunc)(gconstpointer, gconstpointer);
