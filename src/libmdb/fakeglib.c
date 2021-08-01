@@ -28,6 +28,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <errno.h>
+#include <wctype.h>
 #ifdef HAVE_ICONV
 #include <iconv.h>
 #endif
@@ -257,6 +258,30 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     *dst++ = '\0';
     free(utf16);
     return utf8;
+}
+
+gchar *g_utf8_strdown(const gchar *str, gssize len) {
+    gssize i = 0;
+    if (len == -1)
+        len = strlen(str);
+    gchar *lower = malloc(len+1);
+    while (i<len) {
+        wchar_t u = 0;
+        uint8_t c = str[i];
+        if ((c & 0xF0) == 0xE0) {
+            u = (c & 0x0F) << 12;
+            u += (str[i+1] & 0x3F) << 6;
+            u += (str[i+2] & 0x3F);
+        } else if ((c & 0xE0) == 0xC0) {
+            u = (c & 0x1F) << 6;
+            u += (str[i+1] & 0x3F);
+        } else {
+            u = (c & 0x7F);
+        }
+        i += g_unichar_to_utf8(towlower(u), &lower[i]);
+    }
+    lower[len] = '\0';
+    return lower;
 }
 
 /* GHashTable */
