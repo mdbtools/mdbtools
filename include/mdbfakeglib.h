@@ -26,13 +26,6 @@
 #include <inttypes.h>
 #include <strings.h>
 
-// for ntohl
-#ifdef _WIN32
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#endif
-
 typedef uint16_t guint16;
 typedef uint32_t guint32;
 typedef uint64_t guint64;
@@ -46,6 +39,7 @@ typedef const void * gconstpointer;
 typedef uint8_t guint8;
 typedef guint32 GQuark;
 typedef guint32 gunichar;
+typedef signed long gssize;
 
 typedef guint (*GHashFunc)(gconstpointer);
 typedef int (*GCompareFunc)(gconstpointer, gconstpointer);
@@ -132,14 +126,7 @@ typedef struct GOptionContext {
 #define TRUE 1
 #define FALSE 0
 
-#define GUINT16_FROM_LE(l) (uint16_t)l
-#define GUINT32_FROM_LE(l) (uint32_t)l
-#define GUINT64_FROM_LE(l) (uint64_t)l
-#define GINT32_FROM_LE(l) (uint32_t)l
-#define GINT32_FROM_BE(l) (int32_t)ntohl(l)
-#define GUINT32_SWAP_LE_BE(l) (uint32_t)ntohl(l)
-#define GINT32_TO_LE(l) (int32_t)l
-#define GINT32_TO_BE(l) (int32_t)ntohl(l)
+#define GUINT32_SWAP_LE_BE(l) __builtin_bswap32((uint32_t)(l))
 
 /* string functions */
 void *g_memdup(const void *src, size_t len);
@@ -157,7 +144,7 @@ void g_printerr(const gchar *format, ...);
 gint g_unichar_to_utf8(gunichar c, gchar *dst);
 gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         size_t *bytes_read, size_t *bytes_written, GError **error);
-gchar * g_utf8_casefold(const gchar *str, ssize_t len);
+gchar *g_utf8_strdown(const gchar *str, gssize len);
 
 /* GString */
 GString *g_string_new(const gchar *init);

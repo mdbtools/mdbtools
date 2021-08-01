@@ -82,7 +82,7 @@ static const MdbBackendType mdb_sybase_shortdate_type =
 
 /*    Postgres data types */
 static const MdbBackendType mdb_postgres_types[] = {
-    [MDB_BOOL] = { .name = "BOOL" },
+    [MDB_BOOL] = { .name = "BOOLEAN" },
     [MDB_BYTE] = { .name = "SMALLINT" },
     [MDB_INT] = { .name = "INTEGER" },
     [MDB_LONGINT] = { .name = "INTEGER" }, /* bigint */
@@ -114,13 +114,17 @@ static const MdbBackendType mdb_mysql_types[] = {
     [MDB_DATETIME] = { .name = "datetime" },
     [MDB_BINARY] = { .name = "blob" },
     [MDB_TEXT] = { .name = "varchar", .needs_char_length = 1 },
-    [MDB_OLE] = { .name = "varbinary", .needs_byte_length = 1 },
+    [MDB_OLE] = { .name = "blob" },
     [MDB_MEMO] = { .name = "text" },
     [MDB_REPID] = { .name = "char(38)" },
     [MDB_NUMERIC] = { .name = "numeric", .needs_precision = 1, .needs_scale = 1 },
 };
 static const MdbBackendType mdb_mysql_shortdate_type =
 		    { .name = "date" };
+/* We can't use the MySQL SERIAL type because that uses a bigint which
+ * is 64 bits wide, whereas MDB long ints are 32 bits */
+static const MdbBackendType mdb_mysql_serial_type =
+		    { .name = "int not null auto_increment unique" };
 
 /*    sqlite data types */
 static const MdbBackendType mdb_sqlite_types[] = {
@@ -150,6 +154,37 @@ enum {
 };
 
 static void mdb_drop_backend(gpointer key, gpointer value, gpointer data);
+
+
+static gchar *passthrough_unchanged(const gchar *str) {
+    return (gchar *)str;
+}
+
+static gchar *to_lower_case(const gchar *str) {
+    return g_utf8_strdown(str, -1);
+}
+
+/**
+ * Convenience function to replace an input string with its database specific normalised version.
+ *
+ * This function throws away the input string after normalisation, freeing its memory, and replaces it with a new
+ * normalised version allocated on the stack.
+ *
+ * @param mdb  Database specific MDB handle containing pointers to utility methods
+ * @param str string to normalise
+ * @return a pointer to the normalised version of the input string
+ */
+gchar *mdb_normalise_and_replace(MdbHandle *mdb, gchar **str) {
+    gchar *normalised_str = mdb->default_backend->normalise_case(*str);
+    if (normalised_str != *str) {
+        /* Free and replace the old string only and only if a new string was created at a different memory location
+         * so that we can account for the case where strings a just passed through unchanged.
+         */
+        free(*str);
+        *str = normalised_str;
+    }
+    return *str;
+}
 
 static gchar*
 quote_generic(const gchar *value, gchar quote_char, gchar escape_char) {
@@ -299,13 +334,15 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
 		NULL,
 		NULL,
 		NULL,
 		NULL,
-		quote_schema_name_bracket_merge);
+		quote_schema_name_bracket_merge,
+        passthrough_unchanged);
 	mdb_register_backend(mdb, "sybase",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
@@ -313,13 +350,15 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
 		NULL,
-		quote_schema_name_dquote);
+		quote_schema_name_dquote,
+        passthrough_unchanged);
 	mdb_register_backend(mdb, "oracle",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
 		mdb_oracle_types, &mdb_oracle_shortdate_type, NULL,
@@ -327,13 +366,15 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
 		NULL,
-		quote_schema_name_dquote);
+		quote_schema_name_dquote,
+        passthrough_unchanged);
 	mdb_register_backend(mdb, "postgres",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
@@ -341,27 +382,31 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"SET client_encoding = '%s';\n",
+        "CREATE TABLE IF NOT EXISTS %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
 		NULL,
-		quote_schema_name_dquote);
+		quote_schema_name_dquote,
+        to_lower_case);
 	mdb_register_backend(mdb, "mysql",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
-		mdb_mysql_types, &mdb_mysql_shortdate_type, NULL,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
+		mdb_mysql_types, &mdb_mysql_shortdate_type, &mdb_mysql_serial_type,
 		"current_date", "now()",
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		NULL,
 		"COMMENT %s",
 		NULL,
 		"COMMENT %s",
-		quote_schema_name_rquotes_merge);
+		quote_schema_name_rquotes_merge,
+        passthrough_unchanged);
 	mdb_register_backend(mdb, "sqlite",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_sqlite_types, NULL, NULL,
@@ -369,26 +414,31 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
+		"CREATE TABLE %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		NULL,
 		NULL,
 		NULL,
 		NULL,
 		NULL,
-		quote_schema_name_rquotes_merge);
+		quote_schema_name_rquotes_merge,
+        passthrough_unchanged);
 }
 
 void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabilities,
         const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
         const char *short_now, const char *long_now,
         const char *date_fmt, const char *shortdate_fmt,
-        const char *charset_statement, const char *drop_statement,
+        const char *charset_statement,
+        const char *create_table_statement,
+        const char *drop_statement,
         const char *constaint_not_empty_statement,
         const char *column_comment_statement,
         const char *per_column_comment_statement, 
         const char *table_comment_statement,
         const char *per_table_comment_statement,
-        gchar* (*quote_schema_name)(const gchar*, const gchar*))
+        gchar* (*quote_schema_name)(const gchar*, const gchar*),
+        gchar* (*normalise_case)(const gchar*))
 {
 	MdbBackend *backend = g_malloc0(sizeof(MdbBackend));
 	backend->capabilities = capabilities;
@@ -400,6 +450,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->date_fmt = date_fmt;
 	backend->shortdate_fmt = shortdate_fmt;
 	backend->charset_statement = charset_statement;
+	backend->create_table_statement = create_table_statement;
 	backend->drop_statement = drop_statement;
 	backend->constaint_not_empty_statement = constaint_not_empty_statement;
 	backend->column_comment_statement = column_comment_statement;
@@ -407,6 +458,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->table_comment_statement = table_comment_statement;
 	backend->per_table_comment_statement = per_table_comment_statement;
 	backend->quote_schema_name  = quote_schema_name;
+	backend->normalise_case = normalise_case;
 	g_hash_table_insert(mdb->backends, backend_name, backend);
 }
 
@@ -459,10 +511,8 @@ int mdb_set_default_backend(MdbHandle *mdb, const char *backend_name)
 		} else {
 			mdb_set_shortdate_fmt(mdb, "%x");
 		}
-		return 1;
-	} else {
-		return 0;
 	}
+	return (backend != NULL);
 }
 
 
@@ -537,6 +587,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 	fprintf (outfile, "-- CREATE INDEXES ...\n");
 
 	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, table->name);
+	quoted_table_name = mdb->default_backend->normalise_case(quoted_table_name);
 
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
@@ -557,6 +608,8 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
                          default:
 				quoted_name = mdb->default_backend->quote_schema_name(dbnamespace, index_name);
 		}
+
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 
 		if (idx->index_type==1) {
 			switch (backend) {
@@ -593,6 +646,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 				fprintf(outfile, ", ");
 			col=g_ptr_array_index(table->columns,idx->key_col_num[j]-1);
 			quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+			quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 			fprintf (outfile, "%s", quoted_name);
 			if (idx->index_type!=1 && idx->key_col_order[j])
 				/* no DESC for primary keys */
@@ -642,6 +696,8 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 		backend = MDB_BACKEND_ORACLE;
 	} else if (!strcmp(mdb->backend_name, "postgres")) {
 		backend = MDB_BACKEND_POSTGRES;
+	} else if (!strcmp(mdb->backend_name, "mysql")) {
+		backend = MDB_BACKEND_MYSQL;
 	} else if (!mdb->relationships_table) {
 		return NULL;
 	}
@@ -698,8 +754,11 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
                          * be namespaced.
 			 */
 			quoted_constraint_name = mdb->default_backend->quote_schema_name(NULL, constraint_name);
+			quoted_constraint_name = mdb_normalise_and_replace(mdb, &quoted_constraint_name);
 			quoted_column_1 = mdb->default_backend->quote_schema_name(NULL, bound[0]);
+			quoted_column_1 = mdb_normalise_and_replace(mdb, &quoted_column_1);
 			quoted_column_2 = mdb->default_backend->quote_schema_name(NULL, bound[2]);
+			quoted_column_2 = mdb_normalise_and_replace(mdb, &quoted_column_2);
 			break;
 
 		default:
@@ -731,6 +790,16 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
                                 ";\n", NULL);
 
                         break;
+		  case MDB_BACKEND_MYSQL:
+			text = g_strconcat(
+				"ALTER TABLE ", quoted_table_1,
+				" ADD CONSTRAINT ", quoted_constraint_name,
+				" FOREIGN KEY (", quoted_column_1, ")"
+				" REFERENCES ", quoted_table_2, "(", quoted_column_2, ")",
+				(grbit & 0x00000100) ? " ON UPDATE CASCADE" : "",
+				(grbit & 0x00001000) ? " ON DELETE CASCADE" : "",
+				";\n", NULL);
+			break;
 		  case MDB_BACKEND_POSTGRES:
 			text = g_strconcat(
 				"ALTER TABLE ", quoted_table_1,
@@ -772,13 +841,14 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	const char *prop_value;
 
 	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, entry->object_name);
+	quoted_table_name = mdb_normalise_and_replace(mdb, &quoted_table_name);
 
 	/* drop the table if it exists */
 	if (export_options & MDB_SHEXP_DROPTABLE)
 		fprintf (outfile, mdb->default_backend->drop_statement, quoted_table_name);
 
 	/* create the table */
-	fprintf (outfile, "CREATE TABLE %s\n", quoted_table_name);
+	fprintf (outfile, mdb->default_backend->create_table_statement, quoted_table_name);
 	fprintf (outfile, " (\n");
 
 	table = mdb_read_table (entry);
@@ -791,6 +861,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		col = g_ptr_array_index (table->columns, i);
 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 		fprintf (outfile, "\t%s\t\t\t%s", quoted_name,
 			mdb_get_colbacktype_string (col));
 		g_free(quoted_name);
@@ -893,6 +964,7 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 			continue;
 
 		quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 
 		if (export_options & MDB_SHEXP_CST_NOTEMPTY) {
 			prop_value = mdb_col_get_prop(col, "AllowZeroLength");

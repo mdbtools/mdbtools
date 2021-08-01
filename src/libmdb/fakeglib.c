@@ -265,9 +265,8 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     return utf8;
 }
 
-// Really just a poor man's lower case
-gchar * g_utf8_casefold(const gchar *str, ssize_t len) {
-    ssize_t i = 0;
+gchar *g_utf8_strdown(const gchar *str, gssize len) {
+    gssize i = 0;
     if (len == -1)
         len = strlen(str);
     gchar *lower = malloc(len+1);

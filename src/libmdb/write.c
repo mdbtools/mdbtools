@@ -18,7 +18,7 @@
 
 #include <time.h>
 #include <inttypes.h>
-#include "mdbtools.h"
+#include "mdbprivate.h"
 
 //static int mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg);
 static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg, MdbField *idx_fields, guint32 pgnum, guint16 rownum);
@@ -26,8 +26,9 @@ static int mdb_add_row_to_leaf_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPag
 void
 mdb_put_int16(void *buf, guint32 offset, guint32 value)
 {
-	value = GINT32_TO_LE(value);
-	memcpy((char*)buf + offset, &value, 2);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    u8_buf[0] = (value & 0xFF);
+    u8_buf[1] = (value >> 8) & 0xFF;
 }
 void
 _mdb_put_int16(void *buf, guint32 offset, guint32 value)
@@ -40,8 +41,11 @@ __attribute__((alias("mdb_put_int16")));
 void
 mdb_put_int32(void *buf, guint32 offset, guint32 value)
 {
-	value = GINT32_TO_LE(value);
-	memcpy((char*)buf + offset, &value, 4);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    u8_buf[0] = (value & 0xFF);
+    u8_buf[1] = (value >> 8) & 0xFF;
+    u8_buf[2] = (value >> 16) & 0xFF;
+    u8_buf[3] = (value >> 24) & 0xFF;
 }
 void
 _mdb_put_int32(void *buf, guint32 offset, guint32 value)
@@ -54,8 +58,11 @@ __attribute__((alias("mdb_put_int32")));
 void
 mdb_put_int32_msb(void *buf, guint32 offset, guint32 value)
 {
-	value = GINT32_TO_BE(value);
-	memcpy((char*)buf + offset, &value, 4);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    u8_buf[3] = (value & 0xFF);
+    u8_buf[2] = (value >> 8) & 0xFF;
+    u8_buf[1] = (value >> 16) & 0xFF;
+    u8_buf[0] = (value >> 24) & 0xFF;
 }
 void
 _mdb_put_int32_mdb(void *buf, guint32 offset, guint32 value)
@@ -70,6 +77,7 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 {
 	ssize_t len;
 	off_t offset = pg * mdb->fmt->pg_size;
+	unsigned char *buf = mdb->pg_buf;
 
     fseeko(mdb->f->stream, 0, SEEK_END);
 	/* is page beyond current size + 1 ? */
@@ -78,7 +86,20 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 		return 0;
 	}
 	fseeko(mdb->f->stream, offset, SEEK_SET);
-	len = fwrite(mdb->pg_buf, mdb->fmt->pg_size, 1, mdb->f->stream);
+
+	if (pg != 0 && mdb->f->db_key != 0)
+	{
+		buf = g_memdup2(mdb->pg_buf, mdb->fmt->pg_size);
+		unsigned int tmp_key = mdb->f->db_key ^ pg;
+		mdbi_rc4((unsigned char*)&tmp_key, 4, buf, mdb->fmt->pg_size);
+	}
+
+	len = fwrite(buf, 1, mdb->fmt->pg_size, mdb->f->stream);
+
+	if (buf != mdb->pg_buf) {
+		g_free(buf);
+	}
+
 	if (ferror(mdb->f->stream)) {
 		perror("write");
 		return 0;
@@ -139,7 +160,7 @@ mdb_crack_row3(MdbHandle *mdb, unsigned int row_start, unsigned int row_end,
 	if (bitmask_sz + num_jumps + 1 > row_end)
 		return 0;
 
-	if (col_ptr >= mdb->fmt->pg_size || col_ptr < row_var_cols)
+	if (col_ptr >= (size_t)mdb->fmt->pg_size || col_ptr < row_var_cols)
 		return 0;
 
 	jumps_used = 0;
@@ -273,7 +294,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fiel
 			fields[i].is_null = 1;
 		}
 		if ((size_t)(fields[i].start + fields[i].siz) > row_start + row_size) {
-			fprintf(stderr, "warning: Invalid data location detected in mdb_crack_row.\n");
+			fprintf(stderr, "warning: Invalid data location detected in mdb_crack_row. Table:%s Column:%i\n",table->name, i);
 			g_free(var_col_offsets);
 			return -1;
 		}
@@ -710,7 +731,7 @@ mdb_update_row(MdbTableDef *table)
 			return 0;
 		}
 	}
-	num_fields = mdb_crack_row(table, row_start, row_end, fields);
+	num_fields = mdb_crack_row(table, row_start, old_row_size, fields);
     if (num_fields == -1) {
 		fprintf(stderr, "Invalid row buffer, update will not occur\n");
         return 0;

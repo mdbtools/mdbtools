@@ -97,6 +97,9 @@ Offset 0x14 contains the Jet version of this database:
 - 0x01 for 4
 - 0x02 for 5
 - 0x03 for Access 2010
+- 0x04 for Access 2013
+- 0x05 for Access 2016
+- 0x06 for Access 2019
 
 This is used by the `mdb-ver` utility to determine the Jet version.
 

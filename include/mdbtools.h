@@ -81,7 +81,8 @@ enum {
 	MDB_VER_ACCDB_2007 = 0x02,
 	MDB_VER_ACCDB_2010 = 0x03,
 	MDB_VER_ACCDB_2013 = 0x04,
-	MDB_VER_ACCDB_2016 = 0x05
+	MDB_VER_ACCDB_2016 = 0x05,
+	MDB_VER_ACCDB_2019 = 0x06
 };
 enum {
 	MDB_FORM = 0,
@@ -228,6 +229,7 @@ typedef struct {
 	const char *date_fmt;
 	const char *shortdate_fmt;
 	const char *charset_statement;
+    const char *create_table_statement;
 	const char *drop_statement;
 	const char *constaint_not_empty_statement;
 	const char *column_comment_statement;
@@ -235,6 +237,7 @@ typedef struct {
 	const char *table_comment_statement;
 	const char *per_table_comment_statement;
 	gchar* (*quote_schema_name)(const gchar*, const gchar*);
+    gchar* (*normalise_case)(const gchar*);
 } MdbBackend;
 
 typedef struct {
@@ -546,6 +549,10 @@ void mdb_set_boolean_fmt_words(MdbHandle *mdb);
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb);
 int mdb_read_row(MdbTableDef *table, unsigned int row);
 
+/* money.c */
+char *mdb_money_to_string(MdbHandle *mdb, int start);
+char *mdb_numeric_to_string(MdbHandle *mdb, int start, int scale, int prec);
+
 /* dump.c */
 void mdb_buffer_dump(const void *buf, off_t start, size_t len);
 
@@ -561,13 +568,16 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
         const MdbBackendType *type_autonum,
         const char *short_now, const char *long_now,
         const char *date_fmt, const char *shortdate_fmt,
-        const char *charset_statement, const char *drop_statement, const char *constaint_not_empty_statement,
+        const char *charset_statement, const char *create_table_statement,
+        const char *drop_statement, const char *constaint_not_empty_statement,
         const char *column_comment_statement, const char *per_column_comment_statement,
         const char *table_comment_statement, const char *per_table_comment_statement,
-        gchar* (*quote_schema_name)(const gchar*, const gchar*));
+        gchar* (*quote_schema_name)(const gchar*, const gchar*),
+        gchar* (*normalise_case)(const gchar*));
 int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 int  mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 void mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int flags);
+gchar *mdb_normalise_and_replace(MdbHandle *mdb, gchar **str);
 
 /* sargs.c */
 int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);

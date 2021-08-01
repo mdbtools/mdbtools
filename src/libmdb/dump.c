@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <sys/types.h>
 
 void mdb_buffer_dump(const void* buf, off_t start, size_t len)
 {

@@ -97,6 +97,9 @@ brew install mdbtools
 
 ### From source
 
+If you have cloned the Git repository, you will first need to generate the
+`configure` file (skip this step if you have downloaded a formal release):
+
 ```bash
 $ autoreconf -i -f
 ```

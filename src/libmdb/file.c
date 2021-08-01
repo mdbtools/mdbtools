@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 MdbFormatConstants MdbJet4Constants = {
 	.pg_size = 4096,
@@ -65,68 +66,7 @@ MdbFormatConstants MdbJet3Constants = {
     .tab_row_col_num_offset = 5
 };
 
-typedef struct _RC4_KEY
-{
-	unsigned char state[256];
-	unsigned char x;
-	unsigned char y;
-} RC4_KEY;
-
-#define swap_byte(x,y) t = *(x); *(x) = *(y); *(y) = t
-
 static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg);
-
-static void RC4_set_key(RC4_KEY *key, int key_data_len, unsigned char *key_data_ptr)
-{
-	unsigned char t;
-	unsigned char index1;
-	unsigned char index2;
-	unsigned char* state;
-	short counter;
-
-	state = &key->state[0];
-	for(counter = 0; counter < 256; counter++)
-		state[counter] = counter;
-	key->x = 0;
-	key->y = 0;
-	index1 = 0;
-	index2 = 0;
-	for(counter = 0; counter < 256; counter++) {
-		index2 = (key_data_ptr[index1] + state[counter] + index2) % 256;
-		swap_byte(&state[counter], &state[index2]);
-		index1 = (index1 + 1) % key_data_len;
-	}
-}
-
-/*
- * this algorithm does 'encrypt in place' instead of inbuff/outbuff
- * note also: encryption and decryption use same routine
- * implementation supplied by (Adam Back) at <adam at cypherspace dot org>
- */
-
-static void RC4(RC4_KEY *key, int buffer_len, unsigned char * buff)
-{
-	unsigned char t;
-	unsigned char x;
-	unsigned char y;
-	unsigned char* state;
-	unsigned char xorIndex;
-	short counter;
-
-	x = key->x;
-	y = key->y;
-	state = &key->state[0];
-	for(counter = 0; counter < buffer_len; counter++) {
-		x = (x + 1) % 256;
-		y = (state[x] + y) % 256;
-		swap_byte(&state[x], &state[y]);
-		xorIndex = (state[x] + state[y]) % 256;
-		buff[counter] ^= state[xorIndex];
-	}
-	key->x = x;
-	key->y = y;
-}
-
 
 /**
  * mdb_find_file:
@@ -222,6 +162,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 	case MDB_VER_ACCDB_2010:
 	case MDB_VER_ACCDB_2013:
 	case MDB_VER_ACCDB_2016:
+	case MDB_VER_ACCDB_2019:
 		mdb->fmt = &MdbJet4Constants;
 		break;
 	default:
@@ -230,10 +171,11 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 		return NULL; 
 	}
 
-    RC4_KEY rc4_key;
-    unsigned int tmp_key = 0x6b39dac7;
-    RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
-    RC4(&rc4_key, mdb->f->jet_version == MDB_VER_JET3 ? 126 : 128, mdb->pg_buf + 0x18);
+	unsigned char tmp_key[4] = { 0xC7, 0xDA, 0x39, 0x6B };
+	mdbi_rc4(tmp_key, sizeof(tmp_key),
+		mdb->pg_buf + 0x18,
+		mdb->f->jet_version == MDB_VER_JET3 ? 126 : 128
+	);
 
 	if (mdb->f->jet_version == MDB_VER_JET3) {
 		mdb->f->lang_id = mdb_get_int16(mdb->pg_buf, 0x3a);
@@ -247,8 +189,6 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
         /* Bug - JET3 supports 20 byte passwords, this is currently just 14 bytes */
         memcpy(mdb->f->db_passwd, mdb->pg_buf + 0x42, sizeof(mdb->f->db_passwd));
     }
-    /* write is not supported for encrypted files yet */
-    mdb->f->writable = mdb->f->writable && !mdb->f->db_key;
 
 	mdb_iconv_init(mdb);
 
@@ -359,14 +299,14 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	MdbCatalogEntry *entry, *data;
 	unsigned int i;
 
-	newmdb = (MdbHandle *) g_memdup(mdb, sizeof(MdbHandle));
+	newmdb = (MdbHandle *) g_memdup2(mdb, sizeof(MdbHandle));
 
 	memset(&newmdb->catalog, 0, sizeof(MdbHandle) - offsetof(MdbHandle, catalog));
 
 	newmdb->catalog = g_ptr_array_new();
 	for (i=0;i<mdb->num_catalog;i++) {
 		entry = g_ptr_array_index(mdb->catalog,i);
-		data = g_memdup(entry,sizeof(MdbCatalogEntry));
+		data = g_memdup2(entry,sizeof(MdbCatalogEntry));
 		data->mdb = newmdb;
 		data->props = NULL;
 		g_ptr_array_add(newmdb->catalog, data);
@@ -434,10 +374,11 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	 */
 	if (pg != 0 && mdb->f->db_key != 0)
 	{
-		RC4_KEY rc4_key;
-		unsigned int tmp_key = mdb->f->db_key ^ pg;
-		RC4_set_key(&rc4_key, 4, (unsigned char *)&tmp_key);
-		RC4(&rc4_key, mdb->fmt->pg_size, pg_buf);
+		guint32 tmp_key_i = mdb->f->db_key ^ pg;
+		unsigned char tmp_key[4] = {
+			tmp_key_i & 0xFF, (tmp_key_i >> 8) & 0xFF,
+			(tmp_key_i >> 16) & 0xFF, (tmp_key_i >> 24) & 0xFF };
+		mdbi_rc4(tmp_key, sizeof(tmp_key), pg_buf, mdb->fmt->pg_size);
 	}
 
 	return mdb->fmt->pg_size;
@@ -465,9 +406,8 @@ unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 
 int mdb_get_int16(void *buf, int offset)
 {
-	guint16 l;
-	memcpy(&l, (char*)buf + offset, 2);
-	return (int)GUINT16_FROM_LE(l);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    return u8_buf[0] + (u8_buf[1] << 8);
 }
 int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 {
@@ -478,15 +418,13 @@ int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 
 long mdb_get_int32_msb(void *buf, int offset)
 {
-	gint32 l;
-	memcpy(&l, (char*)buf + offset, 4);
-	return (long)GINT32_FROM_BE(l);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    return (u8_buf[0] << 24) + (u8_buf[1] << 16) + (u8_buf[2] << 8) + u8_buf[3];
 }
 long mdb_get_int32(void *buf, int offset)
 {
-	gint32 l;
-	memcpy(&l, (char*)buf + offset, 4);
-	return (long)GINT32_FROM_LE(l);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    return u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24);
 }
 long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 {
@@ -498,8 +436,8 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 float mdb_get_single(void *buf, int offset)
 {
 	union {guint32 g; float f;} f;
-	memcpy(&f, (char*)buf + offset, 4);
-	f.g = GUINT32_FROM_LE(f.g);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    f.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24);
 	return f.f;
 }
 float mdb_pg_get_single(MdbHandle *mdb, int offset)
@@ -512,8 +450,10 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
 double mdb_get_double(void *buf, int offset)
 {
 	union {guint64 g; double d;} d;
-	memcpy(&d, (char*)buf + offset, 8);
-	d.g = GUINT64_FROM_LE(d.g);
+    unsigned char *u8_buf = (unsigned char *)buf + offset;
+    d.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24) +
+        ((guint64)u8_buf[4] << 32) + ((guint64)u8_buf[5] << 40) +
+        ((guint64)u8_buf[6] << 48) + ((guint64)u8_buf[7] << 56);
 	return d.d;
 }
 double mdb_pg_get_double(MdbHandle *mdb, int offset)

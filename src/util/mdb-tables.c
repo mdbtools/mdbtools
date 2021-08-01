@@ -19,6 +19,7 @@
 /* this utility dumps the schema for an existing database */
 
 #include "mdbtools.h"
+#include "mdbver.h"
 
 struct type_struct {
 	char *name;
@@ -85,6 +86,7 @@ main (int argc, char **argv)
 	int objtype = MDB_TABLE;
 	char *str_objtype = NULL;
 	char *locale = NULL;
+	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
 		{ "system", 'S', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &skip_sys, "Include system tables", NULL},
@@ -92,6 +94,7 @@ main (int argc, char **argv)
 		{ "delimiter", 'd', 0, G_OPTION_ARG_STRING, &delimiter, "Table name delimiter", "char"},
 		{ "type", 't', 0, G_OPTION_ARG_STRING, &str_objtype, "Type of entry", "type"},
 		{ "showtype", 'T', 0, G_OPTION_ARG_NONE, &show_type, "Show type", NULL},
+		{ "version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
 	GError *error = NULL;
@@ -109,6 +112,14 @@ main (int argc, char **argv)
 		exit (1);
 	}
 	setlocale(LC_CTYPE, locale);
+
+	if (print_mdbver) {
+		if (argc > 1) {
+			fputs(g_option_context_get_help(opt_context, TRUE, NULL), stderr);
+		}
+		fprintf(stdout,"%s\n", MDB_FULL_VERSION);
+		exit(argc > 1);
+	}
 
 	if (argc != 2) {
 		fputs("Wrong number of arguments.\n\n", stderr);

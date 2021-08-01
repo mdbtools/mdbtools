@@ -17,6 +17,7 @@
  */
 
 #include "mdbtools.h"
+#include "mdbprivate.h"
 #ifdef HAVE_LIBMSWSTR
 #include <mswstr/mswstr.h>
 #endif
@@ -524,7 +525,7 @@ mdb_index_test_sargs(MdbHandle *mdb, MdbIndex *idx, char *buf, int len)
 			col->idx_sarg_cache = g_ptr_array_new();
 			for (j=0;j<col->num_sargs;j++) {
 				sarg = g_ptr_array_index (col->sargs, j);
-				idx_sarg = g_memdup(sarg,sizeof(MdbSarg));
+				idx_sarg = g_memdup2(sarg,sizeof(MdbSarg));
 				//printf("calling mdb_index_cache_sarg\n");
 				mdb_index_cache_sarg(col, sarg, idx_sarg);
 				g_ptr_array_add(col->idx_sarg_cache, idx_sarg);

@@ -979,12 +979,13 @@ SQLRETURN SQL_API SQLErrorW(
 	result = SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
 	if (result == SQL_SUCCESS) {
         struct _hdbc *dbc = hstmt ? ((struct _hstmt *)hstmt)->hdbc : hdbc;
-		size_t l=6, z=6*sizeof(SQLWCHAR);
-		ascii2unicode(dbc, (char*)szSqlState8, &l, (char*)szSqlState, &z);
-		l = cbErrorMsgMax;
-		ascii2unicode(dbc, (char*)szErrorMsg8, (size_t*)&pcbErrorMsg8, (char*)szErrorMsg, &l);
+		size_t lin=6, lout=6*sizeof(SQLWCHAR);
+		ascii2unicode(dbc, (char*)szSqlState8, &lin, (char*)szSqlState, &lout);
+		lin = pcbErrorMsg8;
+		lout = cbErrorMsgMax;
+		ascii2unicode(dbc, (char*)szErrorMsg8, &lin, (char*)szErrorMsg, &lout);
 		if (pcbErrorMsg)
-			*pcbErrorMsg = l;
+			*pcbErrorMsg = lout;
 	}
 	return result;
 }
@@ -1662,8 +1663,14 @@ SQLRETURN SQL_API SQLGetData(
 				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
 				return SQL_ERROR;
 			}
-			char *str = mdb_col_to_string(mdb, mdb->pg_buf,
-					col->cur_value_start, col->col_type, col->cur_value_len);
+			char *str = NULL;
+			if (col->col_type == MDB_NUMERIC) {
+				str = mdb_numeric_to_string(mdb, col->cur_value_start,
+						col->col_scale, col->col_prec);
+			} else {
+				str = mdb_col_to_string(mdb, mdb->pg_buf,
+						col->cur_value_start, col->col_type, col->cur_value_len);
+			}
 			size_t len = strlen(str);
 
 			if (stmt->pos >= len) {

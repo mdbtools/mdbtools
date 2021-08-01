@@ -50,12 +50,11 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 	}
 	return names;
 }
-static gboolean
+static void
 free_hash_entry(gpointer key, gpointer value, gpointer user_data)
 {
 	g_free(key);
 	g_free(value);
-	return TRUE;
 }
 void
 mdb_free_props(MdbProperties *props)
@@ -64,15 +63,20 @@ mdb_free_props(MdbProperties *props)
 
 	if (props->name) g_free(props->name);
 	if (props->hash) {
-		g_hash_table_foreach(props->hash, (GHFunc)free_hash_entry, 0);
+		g_hash_table_foreach(props->hash, free_hash_entry, 0);
 		g_hash_table_destroy(props->hash);
 	}
 	g_free(props);
 }
 
 static void
+do_g_free(gpointer ptr, gpointer user_data) {
+	g_free(ptr);
+}
+
+static void
 free_names(GPtrArray *names) {
-	g_ptr_array_foreach(names, (GFunc)g_free, NULL);
+	g_ptr_array_foreach(names, do_g_free, NULL);
 	g_ptr_array_free(names, TRUE);
 }
 MdbProperties *
@@ -118,7 +122,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 		record_len = mdb_get_int16(kkd, pos);
 		dtype = kkd[pos + 3];
 		elem = mdb_get_int16(kkd, pos + 4);
-		if (elem < 0 || elem >= names->len)
+		if (elem >= names->len)
 			break;
 		dsize = mdb_get_int16(kkd, pos + 6);
 		if (dsize < 0 || pos + 8 + dsize > len)
@@ -130,13 +134,17 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 			mdb_debug(MDB_DEBUG_PROPS,"elem %d (%s) dsize %d dtype %d", elem, name, dsize, dtype);
 			mdb_buffer_dump(value, 0, dsize);
 		}
-		if (dtype == MDB_MEMO) dtype = MDB_TEXT;
+		if (dtype == MDB_MEMO) {
+			dtype = MDB_TEXT;
+		} else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
+			dtype = MDB_REPID;
+		}
 		if (dtype == MDB_BOOL) {
 			g_hash_table_insert(props->hash, g_strdup(name),
 				g_strdup(kkd[pos + 8] ? "yes" : "no"));
-        } else if (dtype == MDB_BINARY && dsize == 16 && strcmp(name, "GUID") == 0) {
-            gchar *guid = mdb_uuid_to_string(kkd, pos+8);
-			g_hash_table_insert(props->hash, g_strdup(name), guid);
+		} else if (dtype == MDB_BINARY || dtype == MDB_OLE) {
+			g_hash_table_insert(props->hash, g_strdup(name),
+				g_strdup_printf("(binary data of length %d)", dsize));
 		} else {
 			g_hash_table_insert(props->hash, g_strdup(name),
 			  mdb_col_to_string(mdb, kkd, pos + 8, dtype, dsize));
