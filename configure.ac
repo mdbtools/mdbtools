@@ -24,8 +24,26 @@ dnl Checks for programs.
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT([win32-dll])
+
 AC_PROG_LEX
+if test "x$LEX" = "xflex"; then
+LFLAGS="$LFLAGS -i -8"
+fi
+AC_SUBST(LFLAGS)
+
 AC_PROG_YACC
+AC_MSG_CHECKING( for bison 3.0+ )
+if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
+    if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-conflicts-sr"
+    fi
+    if $YACC -Wno-yacc -V >/dev/null 2>&1; then
+        YFLAGS="$YFLAGS -Wno-yacc"
+    fi
+    AC_MSG_RESULT( yes );
+else
+    AC_MSG_RESULT( no );
+fi
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h xlocale.h)
@@ -55,36 +73,13 @@ dnl ---------------------------------------------------------------------
 dnl Compile time options
 dnl ---------------------------------------------------------------------
 
-sql=true
-AC_MSG_CHECKING( Are we using flex )
-if test "x$LEX" = "xflex"; then
-LFLAGS="$LFLAGS -i -8"
-AC_MSG_RESULT( yes );
-else
-AC_MSG_RESULT( no - SQL engine disable);
-sql=false
+AC_ARG_ENABLE(sql,
+  AS_HELP_STRING([--disable-sql], [disable SQL support]),
+  enable_sql="$enableval", [enable_sql=yes])
+if test "$enable_sql" = yes; then
+  OPTDIRS="$OPTDIRS sql"
 fi
-
-if $YACC -V | grep "bison.* 3[.]" >/dev/null 2>&1; then
-    if $YACC -Wno-conflicts-sr -V >/dev/null 2>&1; then
-        YFLAGS="$YFLAGS -Wno-conflicts-sr"
-    fi
-    if $YACC -Wno-yacc -V >/dev/null 2>&1; then
-        YFLAGS="$YFLAGS -Wno-yacc"
-    fi
-else
-    AC_MSG_WARN([Bison 3.0+ is not available: SQL disabled.])
-    sql=false
-fi
-
-if test "x$sql" = "xtrue"; then
-	CFLAGS="$CFLAGS -DSQL"
-	OPTDIRS="$OPTDIRS sql"
-fi
-
-AM_CONDITIONAL(SQL, test x$sql = xtrue)
-AC_SUBST(SQL)
-AC_SUBST(LFLAGS)
+AM_CONDITIONAL(ENABLE_SQL, test "$enable_sql" = yes)
 
 CFLAGS="$CFLAGS -Wall -Werror"
 AS_CASE([$host],
@@ -179,8 +174,8 @@ if test "$with_unixodbc"; then
 fi
 
 if test "x$HAVE_ODBC" = "xtrue"; then
-	if test "x$sql" != "xtrue" ; then
-		AC_MSG_ERROR([ODBC requires flex and bison for the SQL engine])
+	if test "x$enable_sql" != "xyes" ; then
+		AC_MSG_ERROR([ODBC requires the SQL engine to be enabled])
 	fi
 
 	AC_SUBST(ODBC_CFLAGS)
@@ -287,7 +282,7 @@ reset=$(tput sgr0 2>/dev/null)
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([${bold}MDB Tools $VERSION - Configuration summary${reset}])
 AC_MSG_NOTICE([])
-if test x$sql = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+if test x$enable_sql = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   SQL             : ${summary}${reset}])
 if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   ODBC            : ${summary}${reset}])

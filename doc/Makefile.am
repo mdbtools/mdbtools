@@ -4,9 +4,12 @@ PRODUCT = MDBTools
 
 dist_man_MANS =
 if ENABLE_MAN
-  dist_man_MANS += mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 mdb-sql.1 \
+  dist_man_MANS += mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 \
 	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 mdb-import.1 \
 	mdb-count.1 mdb-json.1 mdb-queries.1
+if ENABLE_SQL
+  dist_man_MANS += mdb-sql.1
+endif
 endif
 CLEANFILES = ${dist_man_MANS}
 EXTRA_DIST	= mdb-tables.txt mdb-ver.txt mdb-export.txt mdb-schema.txt mdb-sql.txt \
