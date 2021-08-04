@@ -46,7 +46,7 @@ static size_t decompress_unicode(const char *src, size_t slen, char *dst, size_t
 	return tlen;
 }
 
-#if HAVE_ICONV
+#ifdef HAVE_ICONV
 static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	char *out_ptr = dest;
 	size_t len_out = dlen - 1;
@@ -153,7 +153,7 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 		in_ptr = src;
 	}
 
-#if HAVE_ICONV
+#ifdef HAVE_ICONV
 	dlen = decompressed_to_utf8_with_iconv(mdb, in_ptr, len_in, dest, dlen);
 #else
 	dlen = decompressed_to_utf8_without_iconv(mdb, in_ptr, len_in, dest, dlen);
