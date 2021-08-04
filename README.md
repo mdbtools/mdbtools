@@ -41,7 +41,7 @@ Provides command line utilities, including:
 
 See the man page of each program for usage instructions.
 
-The [src/utils](./src/utils) directory also contains a number of debugging tools, intended for developers. They are:
+The [src/util](./src/util) directory also contains a number of debugging tools, intended for developers. They are:
 
 | Command | Description |
 | ------- | ----------- |
