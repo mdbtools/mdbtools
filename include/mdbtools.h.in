@@ -30,19 +30,9 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
-#include <locale.h>
-
-#ifdef HAVE_GLIB
-#include <glib.h>
-#else
-#include <mdbfakeglib.h>
-#endif
-
-#if defined(HAVE_ICONV)
-#include <iconv.h>
-#elif defined(HAVE_XLOCALE_H)
-#include <xlocale.h>
-#endif
+#include <@ICONV_INCLUDE_HEADER@>
+#include <@LOCALE_INCLUDE_HEADER@>
+#include <@GLIB_INCLUDE_HEADER@>
 
 #ifdef _WIN32
 #include <io.h>
@@ -308,10 +298,9 @@ typedef struct {
 	char        *relationships_values[5];
 	MdbStatistics *stats;
     GHashTable *backends;
-#ifdef HAVE_ICONV
-	iconv_t	iconv_in;
-	iconv_t	iconv_out;
-#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+	@ICONV_TYPE@ iconv_in;
+	@ICONV_TYPE@ iconv_out;
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     _locale_t locale;
 #else
     locale_t locale;

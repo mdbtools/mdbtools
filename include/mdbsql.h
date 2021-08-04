@@ -25,11 +25,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#ifdef HAVE_GLIB
-#include <glib.h>
-#else
-#include <mdbfakeglib.h>
-#endif
 #include <mdbtools.h>
 
 typedef struct MdbSQL

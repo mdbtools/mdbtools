@@ -221,8 +221,33 @@ if test "$enable_glib" = "yes"; then
 fi
 AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
+dnl Set up substitution variables
+if test "$am_cv_func_iconv" = "yes"; then
+    ICONV_INCLUDE_HEADER=iconv.h
+    ICONV_TYPE=iconv_t
+else
+    ICONV_INCLUDE_HEADER=locale.h
+    ICONV_TYPE=[void *]
+fi
+AC_SUBST(ICONV_INCLUDE_HEADER)
+AC_SUBST(ICONV_TYPE)
+
+if test "$ac_cv_header_xlocale_h" = "yes"; then
+    LOCALE_INCLUDE_HEADER=xlocale.h
+else
+    LOCALE_INCLUDE_HEADER=locale.h
+fi
+AC_SUBST(LOCALE_INCLUDE_HEADER)
+
+if test "$enable_glib" = "yes"; then
+    GLIB_INCLUDE_HEADER=glib.h
+else
+    GLIB_INCLUDE_HEADER=mdbfakeglib.h
+fi
+AC_SUBST(GLIB_INCLUDE_HEADER)
+
 AC_SUBST([OPTDIRS])
-AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([src/Makefile include/mdbtools.h])
 
 ##################################################
 # Check for txt2man
