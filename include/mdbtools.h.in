@@ -30,8 +30,9 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <locale.h>
 #include <@ICONV_INCLUDE_HEADER@>
-#include <@LOCALE_INCLUDE_HEADER@>
+#include <@XLOCALE_INCLUDE_HEADER@>
 #include <@GLIB_INCLUDE_HEADER@>
 
 #ifdef _WIN32
