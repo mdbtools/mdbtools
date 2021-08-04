@@ -32,7 +32,7 @@ Provides command line utilities, including:
 | `mdb-count` | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
 | `mdb-sql` | A simple SQL engine (also used by ODBC and gmdb). |
 | `mdb-queries` | List and print queries stored in the database. |
-| `mdb-hexdump`\* | (in src/extras) Simple hex dump utility to look at mdb files. |
+| `mdb-hexdump`\* | (in [src/extras](./src/extras)) Simple hex dump utility to look at mdb files. |
 | `mdb-array`\* | Export data in an MDB database table to a C array. |
 | `mdb-header`\* | Generates a C header to be used in exporting mdb data to a C prog. |
 | `mdb-parsecsv`\* | Generates a C program given a CSV file made with mdb-export. |
@@ -41,8 +41,10 @@ Provides command line utilities, including:
 
 See the man page of each program for usage instructions.
 
-The src/utils directory also contains a number of debugging tools, intended for developers. They are:
+The [src/utils](./src/utils) directory also contains a number of debugging tools, intended for developers. They are:
 
+| Command | Description |
+| ------- | ----------- |
 | `prcat` | Prints the catalog table from an mdb file. |
 | `prkkd` | Dump of information about design view data given the offset to it. |
 | `prtable` | Dump of a table definition. |
