@@ -1,17 +1,17 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([mdbtools],[0.9.4-beta1],[https://github.com/mdbtools/mdbtools/issues],[],[https://github.com/mdbtools/mdbtools])
+AC_INIT([mdbtools],[1.0.0-beta1],[https://github.com/mdbtools/mdbtools/issues],[],[https://github.com/mdbtools/mdbtools])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR(src/extras/mdb-dump.c)
 AM_INIT_AUTOMAKE([foreign dist-zip])
 
-MDBTOOLS_VERSION_MAJOR=0
-MDBTOOLS_VERSION_MINOR=9
-MDBTOOLS_VERSION_MICRO=4
+MDBTOOLS_VERSION_MAJOR=1
+MDBTOOLS_VERSION_MINOR=0
+MDBTOOLS_VERSION_MICRO=0
 
 # Update these numbers with every release
 # See https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-VERSION_INFO=3:4:0
+VERSION_INFO=4:0:0
 AC_SUBST(VERSION_INFO)
 AC_SUBST(MDBTOOLS_CFLAGS)
 
