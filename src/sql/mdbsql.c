@@ -324,6 +324,9 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 		case MDB_LIKE: 
 			printf(" like %s\n", node->value.s); 
 			break;
+		case MDB_ILIKE:
+			printf(" ilike %s\n", node->value.s);
+			break;
 		case MDB_EQUAL: 
 			printf(" = %d\n", node->value.i); 
 			break;
@@ -398,6 +401,7 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 			case MDB_LT: compar = (value < 0); break;
 			case MDB_LTEQ: compar = (value <= 0); break;
 			case MDB_LIKE: compar = mdb_like_cmp(const1,const2); break;
+			case MDB_ILIKE: compar = mdb_ilike_cmp(const1,const2); break;
 			default: illop = 1;
 		}
 	} else if (const1[0]!='\'' && const2[0]!='\'') {

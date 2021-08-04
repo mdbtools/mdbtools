@@ -50,7 +50,7 @@ SQL LANGUAGE
 
   limit clause:	LIMIT <integer>
 
-  operator:	=, =>, =<, <>, like, <, >
+  operator:	=, =>, =<, <>, like, ilike, <, >
 
   literal:	integers, floating point numbers, or string literal in single quotes
 
@@ -62,6 +62,10 @@ NOTES
   to work correctly.
 
   The -i command can be passed the string 'stdin' to test entering text as if using a pipe.
+
+  The 'like' operator performs a case-sensitive pattern match, with ANSI-style wildcards. An underscore in the pattern will match any single character, and a percent sign will match any run of characters.
+
+  The 'ilike' operator is similar, but performs a case-insensitive pattern match.
 
 ENVIRONMENT
   LC_COLLATE          Defines the locale for string-comparison operations. See locale(1).

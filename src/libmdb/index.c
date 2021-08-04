@@ -1014,7 +1014,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 
 	/*
 	 * a like with a wild card first is useless as a sarg */
-	if (sarg->op == MDB_LIKE && sarg->value.s[0]=='%')
+	if ((sarg->op == MDB_LIKE || sarg->op == MDB_ILIKE) && sarg->value.s[0]=='%')
 		return 0;
 
 	/*
@@ -1027,6 +1027,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 				case MDB_EQUAL:
 					return 1; break;
 				case MDB_LIKE:
+				case MDB_ILIKE:
 					return 4; break;
 				case MDB_ISNULL:
 					return 12; break;
@@ -1040,6 +1041,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 					else return 1;
 					break;
 				case MDB_LIKE:
+				case MDB_ILIKE:
 					return 6; break;
 				case MDB_ISNULL:
 					return 12; break;
@@ -1053,6 +1055,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 				case MDB_EQUAL:
 					return 2; break;
 				case MDB_LIKE:
+				case MDB_ILIKE:
 					return 5; break;
 				case MDB_ISNULL:
 					return 12; break;
@@ -1066,6 +1069,7 @@ int mdb_index_compute_cost(MdbTableDef *table, MdbIndex *idx)
 					else return 2;
 					break;
 				case MDB_LIKE:
+				case MDB_ILIKE:
 					return 7; break;
 				case MDB_ISNULL:
 					return 12; break;

@@ -129,7 +129,8 @@ enum {
 	MDB_LTEQ,
 	MDB_LIKE,
 	MDB_ISNULL,
-	MDB_NOTNULL
+	MDB_NOTNULL,
+	MDB_ILIKE,
 };
 
 typedef enum {
@@ -164,6 +165,7 @@ enum {
 				x == MDB_GTEQ || \
 				x == MDB_LTEQ || \
 				x == MDB_LIKE || \
+				x == MDB_ILIKE || \
 				x == MDB_ISNULL || \
 				x == MDB_NOTNULL )
 
@@ -611,6 +613,7 @@ void mdb_dump_stats(MdbHandle *mdb);
 
 /* like.c */
 int mdb_like_cmp(char *s, char *r);
+int mdb_ilike_cmp(char *s, char *r);
 
 /* write.c */
 void mdb_put_int16(void *buf, guint32 offset, guint32 value);

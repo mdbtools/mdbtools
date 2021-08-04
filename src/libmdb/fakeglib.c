@@ -244,11 +244,16 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
         size_t *bytes_read, size_t *bytes_written, GError **error) {
     if (len == (size_t)-1)
         len = strlen(opsysstring);
-    wchar_t *utf16 = malloc(sizeof(wchar_t)*(len+1));
-    if (mbstowcs(utf16, opsysstring, len+1) == (size_t)-1) {
-        free(utf16);
-        return g_strndup(opsysstring, len);
+    size_t wlen = mbstowcs(NULL, opsysstring, 0);
+    if (wlen == (size_t)-1) {
+        if (error) {
+            *error = malloc(sizeof(GError));
+            (*error)->message = g_strdup_printf("Invalid multibyte string: %s\n", opsysstring);
+        }
+        return NULL;
     }
+    wchar_t *utf16 = malloc(sizeof(wchar_t)*(wlen+1));
+    mbstowcs(utf16, opsysstring, wlen+1);
     gchar *utf8 = malloc(3*len+1);
     gchar *dst = utf8;
     for (size_t i=0; i<len; i++) {
@@ -258,6 +263,10 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     *dst++ = '\0';
     free(utf16);
     return utf8;
+}
+
+gchar *g_utf8_casefold(const gchar *str, gssize len) {
+    return g_utf8_strdown(str, len);
 }
 
 gchar *g_utf8_strdown(const gchar *str, gssize len) {
@@ -547,11 +556,10 @@ gboolean g_option_context_parse(GOptionContext *context,
     while ((c = getopt_long(*argc, *argv, short_opts, long_opts, &longindex)) != -1) {
         if (c == '?') {
             *error = malloc(sizeof(GError));
-            (*error)->message = malloc(100);
             if (optopt) {
-                snprintf((*error)->message, 100, "Unrecognized option: -%c", optopt);
+                (*error)->message = g_strdup_printf("Unrecognized option: -%c", optopt);
             } else {
-                snprintf((*error)->message, 100, "Unrecognized option: %s", (*argv)[optind-1]);
+                (*error)->message = g_strdup_printf("Unrecognized option: %s", (*argv)[optind-1]);
             }
             free(short_opts);
             free(long_opts);
