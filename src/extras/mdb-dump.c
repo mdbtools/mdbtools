@@ -33,6 +33,10 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Usage: mdb-dump <filename> [<page number>]\n\n");
 	exit(1);
    }
+   fputs("mdb-hexdump is deprecated and will disappear in a future version of mdbtools.\n", stderr);
+   fputs("Please drop us a line if you have any use of it.\n", stderr);
+   fputs("See https://github.com/mdbtools/mdbtools/issues/197\n", stderr);
+   fputs("\n", stderr);
    if (argc>2) {
 	   if (!strncmp(argv[2],"0x",2)) {
 		   for (i=2;i<strlen(argv[2]);i++) {
