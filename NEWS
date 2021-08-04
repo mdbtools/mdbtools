@@ -1,3 +1,20 @@
+Version 0.9.4
+=============
+
+libmdb:
+* Write encrypted pages #305
+* Improved support for big-endian platforms
+* Remove obsolete `AC_HEADER_STDC` macro from configure.ac
+
+SQL:
+* Fix compilation on RHEL 7.9 #301
+* Add brackets around table names in `mdb-query` output #307
+* Support for brackets around table names in SQL parser
+* Fix regression in 0.9.3 where `COUNT(*)` resulted in a parse error #318 #319
+
+ODBC:
+* Fix `-Werror=array-bounds` compile error #313
+
 Version 0.9.3
 =============
 
