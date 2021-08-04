@@ -81,8 +81,8 @@ int mdb_like_cmp(char *s, char *r)
  * @Returns: 1 if the string matches, 0 if the string does not match.
  */
 int mdb_ilike_cmp(char *s, char *r) {
-	char *s1 = g_utf8_strdown(s, -1);
-	char *r1 = g_utf8_strdown(r, -1);
+	char *s1 = g_utf8_casefold(s, -1);
+	char *r1 = g_utf8_casefold(r, -1);
 	int result = mdb_like_cmp(s1, r1);
 	g_free(s1);
 	g_free(r1);

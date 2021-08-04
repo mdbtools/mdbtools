@@ -265,6 +265,10 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     return utf8;
 }
 
+gchar *g_utf8_casefold(const gchar *str, gssize len) {
+    return g_utf8_strdown(str, len);
+}
+
 gchar *g_utf8_strdown(const gchar *str, gssize len) {
     gssize i = 0;
     if (len == -1)
