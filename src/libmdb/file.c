@@ -315,6 +315,11 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	mdb_iconv_init(newmdb);
 	mdb_set_default_backend(newmdb, mdb->backend_name);
 
+	// date formats for the source handle may have been changed from
+	// the backend's default formats, so we need to explicitly copy them here
+	mdb_set_date_fmt(newmdb, mdb->date_fmt);
+	mdb_set_shortdate_fmt(mdb, mdb->shortdate_fmt);
+
 	if (mdb->f) {
 		mdb->f->refs++;
 	}
