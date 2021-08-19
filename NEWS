@@ -1,3 +1,14 @@
+Version 1.0.0 (Beta 2)
+=============
+
+Build:
+* Ensure compiler supports thread-local storage
+
+libmdb:
+* Copy date formats when cloning handles #326
+* Restore previous `mdb_register_backend` API
+* Restore previous `MdbBackend` struct layout
+
 Version 1.0.0 (Beta 1)
 =============
 
