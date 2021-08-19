@@ -20,6 +20,7 @@ AM_SILENT_RULES([yes])
 
 AC_PROG_CC(gcc)
 AC_PROG_CXX
+AX_TLS([FOO=bar], AC_MSG_ERROR([$CC does not support thread-local storage. A newer compiler is required.]))
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR], [AM_PROG_AR])
