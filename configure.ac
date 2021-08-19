@@ -39,10 +39,6 @@ dnl Checks for library functions.
 VL_LIB_READLINE
 AC_CHECK_FUNCS(strptime fmemopen gmtime_r reallocf wcstombs_l vasprintf vasnprintf)
 
-dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_TYPE_SIZE_T
-
 AM_ICONV
 AM_GCC_ATTRIBUTE_ALIAS
 
