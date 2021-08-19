@@ -22,6 +22,7 @@ Makefile
 doc/*.1
 INSTALL
 include/mdbver.h
+include/mdbtools.h
 libmdb.pc
 libmdbsql.pc
 libtool
