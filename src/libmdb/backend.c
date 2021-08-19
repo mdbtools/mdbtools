@@ -21,6 +21,7 @@
 */
 
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 /*    Access data types */
 static const MdbBackendType mdb_access_types[] = {
@@ -334,15 +335,13 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
-		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
 		NULL,
 		NULL,
 		NULL,
 		NULL,
-		quote_schema_name_bracket_merge,
-        passthrough_unchanged);
+		quote_schema_name_bracket_merge);
 	mdb_register_backend(mdb, "sybase",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_DEFVALUES,
 		mdb_sybase_types, &mdb_sybase_shortdate_type, NULL,
@@ -350,15 +349,13 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
-		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
 		NULL,
-		quote_schema_name_dquote,
-        passthrough_unchanged);
+		quote_schema_name_dquote);
 	mdb_register_backend(mdb, "oracle",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES,
 		mdb_oracle_types, &mdb_oracle_shortdate_type, NULL,
@@ -366,16 +363,14 @@ void mdb_init_backends(MdbHandle *mdb)
 		NULL,
 		NULL,
 		"-- That file uses encoding %s\n",
-		"CREATE TABLE %s\n",
 		"DROP TABLE %s;\n",
 		NULL,
 		"COMMENT ON COLUMN %s.%s IS %s;\n",
 		NULL,
 		"COMMENT ON TABLE %s IS %s;\n",
 		NULL,
-		quote_schema_name_dquote,
-        passthrough_unchanged);
-	mdb_register_backend(mdb, "postgres",
+		quote_schema_name_dquote);
+	mdbi_register_backend2(mdb, "postgres",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_CST_NOTEMPTY|MDB_SHEXP_COMMENTS|MDB_SHEXP_INDEXES|MDB_SHEXP_RELATIONS|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_postgres_types, &mdb_postgres_shortdate_type, &mdb_postgres_serial_type,
 		"current_date", "now()",
@@ -398,15 +393,13 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
-		"CREATE TABLE %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		"ALTER TABLE %s ADD CHECK (%s <>'');\n",
 		NULL,
 		"COMMENT %s",
 		NULL,
 		"COMMENT %s",
-		quote_schema_name_rquotes_merge,
-        passthrough_unchanged);
+		quote_schema_name_rquotes_merge);
 	mdb_register_backend(mdb, "sqlite",
 		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
 		mdb_sqlite_types, NULL, NULL,
@@ -414,32 +407,29 @@ void mdb_init_backends(MdbHandle *mdb)
 		"%Y-%m-%d %H:%M:%S",
 		"%Y-%m-%d",
 		"-- That file uses encoding %s\n",
-		"CREATE TABLE %s\n",
 		"DROP TABLE IF EXISTS %s;\n",
 		NULL,
 		NULL,
 		NULL,
 		NULL,
 		NULL,
-		quote_schema_name_rquotes_merge,
-        passthrough_unchanged);
+		quote_schema_name_rquotes_merge);
 }
 
-void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabilities,
+MdbBackend *mdbi_register_backend2(MdbHandle *mdb, char *backend_name, guint32 capabilities,
         const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
         const char *short_now, const char *long_now,
         const char *date_fmt, const char *shortdate_fmt,
         const char *charset_statement,
         const char *create_table_statement,
         const char *drop_statement,
-        const char *constaint_not_empty_statement,
+        const char *constraint_not_empty_statement,
         const char *column_comment_statement,
-        const char *per_column_comment_statement, 
+        const char *per_column_comment_statement,
         const char *table_comment_statement,
         const char *per_table_comment_statement,
         gchar* (*quote_schema_name)(const gchar*, const gchar*),
-        gchar* (*normalise_case)(const gchar*))
-{
+        gchar* (*normalise_case)(const gchar*)) {
 	MdbBackend *backend = g_malloc0(sizeof(MdbBackend));
 	backend->capabilities = capabilities;
 	backend->types_table = backend_type;
@@ -452,7 +442,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->charset_statement = charset_statement;
 	backend->create_table_statement = create_table_statement;
 	backend->drop_statement = drop_statement;
-	backend->constaint_not_empty_statement = constaint_not_empty_statement;
+	backend->constaint_not_empty_statement = constraint_not_empty_statement;
 	backend->column_comment_statement = column_comment_statement;
 	backend->per_column_comment_statement = per_column_comment_statement;
 	backend->table_comment_statement = table_comment_statement;
@@ -460,6 +450,36 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 	backend->quote_schema_name  = quote_schema_name;
 	backend->normalise_case = normalise_case;
 	g_hash_table_insert(mdb->backends, backend_name, backend);
+    return backend;
+}
+
+void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabilities,
+        const MdbBackendType *backend_type, const MdbBackendType *type_shortdate, const MdbBackendType *type_autonum,
+        const char *short_now, const char *long_now,
+        const char *date_fmt, const char *shortdate_fmt,
+        const char *charset_statement,
+        const char *drop_statement,
+        const char *constraint_not_empty_statement,
+        const char *column_comment_statement,
+        const char *per_column_comment_statement,
+        const char *table_comment_statement,
+        const char *per_table_comment_statement,
+        gchar* (*quote_schema_name)(const gchar*, const gchar*))
+{
+    mdbi_register_backend2(mdb, backend_name, capabilities,
+            backend_type, type_shortdate, type_autonum,
+            short_now, long_now,
+            date_fmt, shortdate_fmt,
+            charset_statement,
+            drop_statement,
+            "CREATE TABLE %s\n",
+            constraint_not_empty_statement,
+            column_comment_statement,
+            per_column_comment_statement,
+            table_comment_statement,
+            per_table_comment_statement,
+            quote_schema_name,
+            passthrough_unchanged);
 }
 
 /**
