@@ -10,6 +10,7 @@ autom4te.cache/
 build-aux/*
 !build-aux/config.rpath
 m4/
+!m4/ax_tls.m4
 !m4/ccalias.m4
 !m4/iconv.m4
 !m4/readline.m4
