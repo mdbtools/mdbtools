@@ -17,7 +17,7 @@ ODBC:
 * Format boolean values correctly as SQL_C_CHAR #327
 
 mdb-schema:
-* Fix incorrect treatment of CREATE TABLE and DROP TABLE #318 (Bug introduced in Beta 2)
+* Fix incorrect treatment of CREATE TABLE and DROP TABLE #328 (Bug introduced in Beta 2)
 
 Version 1.0.0 (Beta 2)
 =============
