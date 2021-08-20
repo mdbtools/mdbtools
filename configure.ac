@@ -220,21 +220,14 @@ AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
 dnl Set up substitution variables
 if test "$am_cv_func_iconv" = "yes"; then
-    ICONV_INCLUDE_HEADER=iconv.h
-    ICONV_TYPE=iconv_t
-else
-    ICONV_INCLUDE_HEADER=stdbool.h
-    ICONV_TYPE=[void *]
+    HAVE_ICONV=1
 fi
-AC_SUBST(ICONV_INCLUDE_HEADER)
-AC_SUBST(ICONV_TYPE)
+AC_SUBST(HAVE_ICONV)
 
 if test "$ac_cv_header_xlocale_h" = "yes"; then
-    XLOCALE_INCLUDE_HEADER=xlocale.h
-else
-    XLOCALE_INCLUDE_HEADER=stdbool.h
+    HAVE_XLOCALE_H=1
 fi
-AC_SUBST(XLOCALE_INCLUDE_HEADER)
+AC_SUBST(HAVE_XLOCALE_H)
 
 if test "$enable_glib" = "yes"; then
     GLIB_INCLUDE_HEADER=glib.h

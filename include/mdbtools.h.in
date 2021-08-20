@@ -18,6 +18,9 @@
 #ifndef _mdbtools_h_
 #define _mdbtools_h_
 
+#define MDBTOOLS_H_HAVE_ICONV @HAVE_ICONV@
+#define MDBTOOLS_H_HAVE_XLOCALE_H @HAVE_XLOCALE_H@
+
 #ifdef __cplusplus
   extern "C" {
 #endif
@@ -31,9 +34,13 @@
 #include <ctype.h>
 #include <string.h>
 #include <locale.h>
-#include <@ICONV_INCLUDE_HEADER@>
-#include <@XLOCALE_INCLUDE_HEADER@>
 #include <@GLIB_INCLUDE_HEADER@>
+
+#if MDBTOOLS_H_HAVE_ICONV
+#include <iconv.h>
+#elif MDBTOOLS_H_HAVE_XLOCALE_H
+#include <xlocale.h>
+#endif
 
 #ifdef _WIN32
 #include <io.h>
@@ -299,9 +306,10 @@ typedef struct {
 	char        *relationships_values[5];
 	MdbStatistics *stats;
     GHashTable *backends;
-	@ICONV_TYPE@ iconv_in;
-	@ICONV_TYPE@ iconv_out;
-#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+#if MDBTOOLS_H_HAVE_ICONV
+	iconv_t iconv_in;
+	iconv_t iconv_out;
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     _locale_t locale;
 #else
     locale_t locale;
