@@ -1465,9 +1465,19 @@ SQLRETURN SQL_API SQLGetData(
 
 	if (col->col_type == MDB_BOOL) {
 		// bool cannot be null
-		*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
-		if (pcbValue)
-			*pcbValue = 1;
+		if (fCType == SQL_C_CHAR) {
+			if ( col->cur_value_len )
+				((char *)rgbValue)[0] = '0';
+			else
+				((char *)rgbValue)[0] = '1';
+			((char *)rgbValue)[1] = '\0';
+			if (pcbValue)
+				*pcbValue = sizeof(SQLCHAR);
+		} else {
+			*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
+			if (pcbValue)
+				*pcbValue = 1;
+	        }
 		return SQL_SUCCESS;
 	}
 	if (col->cur_value_len == 0) {
