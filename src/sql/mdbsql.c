@@ -17,9 +17,6 @@
  */
 
 #include <stdarg.h>
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 700
-#endif
 #include "mdbsql.h"
 
 #ifdef HAVE_STRPTIME

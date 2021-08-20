@@ -17,6 +17,8 @@ AC_SUBST(VERSION_INFO)
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
+AC_USE_SYSTEM_EXTENSIONS
+
 AC_PROG_CC(gcc)
 AC_PROG_CXX
 AX_TLS([FOO=bar], AC_MSG_ERROR([$CC does not support thread-local storage. A newer compiler is required.]))
