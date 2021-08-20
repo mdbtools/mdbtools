@@ -1472,7 +1472,7 @@ SQLRETURN SQL_API SQLGetData(
 				((char *)rgbValue)[0] = '1';
 			((char *)rgbValue)[1] = '\0';
 			if (pcbValue)
-				*pcbValue = sizeof(SQLCHAR) * 2;
+				*pcbValue = sizeof(SQLCHAR);
 		} else {
 			*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
 			if (pcbValue)
