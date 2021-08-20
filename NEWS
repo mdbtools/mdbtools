@@ -1,3 +1,24 @@
+Version 1.0.0 (Beta 3)
+=============
+
+Build:
+* Fix warning with autoconf 2.70
+* Rely on autoconf to define appropriate values of `_XOPEN_SOURCE` and friends
+* Simplify configure script
+
+libmdb:
+* Restore previous `MdbHandle` struct layout
+* Simplify `pkg-config --cflags`
+
+libmdbsql:
+* Provide correct `pkg-config --cflags`
+
+ODBC:
+* Format boolean values correctly as SQL_C_CHAR #327
+
+mdb-schema:
+* Fix incorrect treatment of CREATE TABLE and DROP TABLE #318 (Bug introduced in Beta 2)
+
 Version 1.0.0 (Beta 2)
 =============
 
