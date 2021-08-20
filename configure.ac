@@ -13,7 +13,6 @@ MDBTOOLS_VERSION_MICRO=0
 # See https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 VERSION_INFO=4:0:0
 AC_SUBST(VERSION_INFO)
-AC_SUBST(MDBTOOLS_CFLAGS)
 
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
