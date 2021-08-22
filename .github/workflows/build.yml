@@ -7,6 +7,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [ clang, gcc, gcc-9, gcc-10 ]
+        iconv: [ enable-iconv, disable-iconv]
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
@@ -17,7 +18,7 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/usr
         env:
           CC: ${{ matrix.compiler }}
       - name: Make
@@ -44,6 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [ clang, gcc ]
+        iconv: [ enable-iconv, disable-iconv]
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
@@ -54,7 +56,7 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-unixodbc=/usr/local/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/usr/local/opt
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison

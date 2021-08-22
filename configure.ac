@@ -40,7 +40,6 @@ dnl Checks for library functions.
 VL_LIB_READLINE
 AC_CHECK_FUNCS(strptime fmemopen gmtime_r reallocf wcstombs_l vasprintf vasnprintf)
 
-AM_ICONV
 AM_GCC_ATTRIBUTE_ALIAS
 
 dnl Enable large files on 32-bit systems
@@ -88,9 +87,25 @@ CFLAGS="$CFLAGS -Wall -Werror"
 AS_CASE([$host],
         [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 
-dnl Fuzz testing
+dnl See if iconv is present and wanted
+AC_ARG_ENABLE(iconv,
+    AS_HELP_STRING([--disable-iconv], [do not use iconv for character conversions (use locale.h where possible)]),
+        [enable_iconv=$enableval], [enable_iconv=yes])
 
-AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], ["Enable fuzz testing (requires Clang 6 or later)"]), [
+HAVE_ICONV_H=0
+if test "$enable_iconv" = "yes"; then
+    AM_ICONV
+    if test "$am_cv_func_iconv" = "yes"; then
+        HAVE_ICONV_H=1
+    fi
+fi
+AC_SUBST(HAVE_ICONV_H)
+
+dnl Wide-char ODBC driver still requires iconv
+AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
+
+dnl Fuzz testing
+AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], [enable fuzz testing (requires Clang 6 or later)]), [
    AC_MSG_CHECKING([whether $CC accepts -fsanitize=fuzzer])
    tmp_saved_flags=$[]_AC_LANG_PREFIX[]FLAGS
    _AC_LANG_PREFIX[]FLAGS="$[]_AC_LANG_PREFIX[]FLAGS -fsanitize=fuzzer"
@@ -187,9 +202,6 @@ if test "x$HAVE_ODBC" = "xtrue"; then
 	OPTDIRS="$OPTDIRS odbc"
 fi
 
-dnl Conditionally build odbc wide version
-AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
-
 dnl Testing presence of pkg-config
 AC_MSG_CHECKING([pkg-config m4 macros])
 if test m4_ifdef([PKG_CHECK_MODULES], [yes], [no]) = yes; then
@@ -220,13 +232,10 @@ fi
 AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
 dnl Set up substitution variables
-if test "$am_cv_func_iconv" = "yes"; then
-    HAVE_ICONV_H=1
-fi
-AC_SUBST(HAVE_ICONV_H)
-
 if test "$ac_cv_header_xlocale_h" = "yes"; then
     HAVE_XLOCALE_H=1
+else
+    HAVE_XLOCALE_H=0
 fi
 AC_SUBST(HAVE_XLOCALE_H)
 
@@ -309,7 +318,7 @@ if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${b
 AC_MSG_NOTICE([   ODBC            : ${summary}${reset}])
 if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   GLib            : ${summary}${reset}])
-if test x$am_cv_func_iconv = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+if test x$enable_iconv = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   iconv           : ${summary}${reset}])
 if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   man pages       : ${summary}${reset}])
