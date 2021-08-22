@@ -18,7 +18,7 @@
 #ifndef _mdbtools_h_
 #define _mdbtools_h_
 
-#define MDBTOOLS_H_HAVE_ICONV @HAVE_ICONV@
+#define MDBTOOLS_H_HAVE_ICONV_H @HAVE_ICONV_H@
 #define MDBTOOLS_H_HAVE_XLOCALE_H @HAVE_XLOCALE_H@
 
 #ifdef __cplusplus
@@ -36,7 +36,7 @@
 #include <locale.h>
 #include <@GLIB_INCLUDE_HEADER@>
 
-#if MDBTOOLS_H_HAVE_ICONV
+#if MDBTOOLS_H_HAVE_ICONV_H
 #include <iconv.h>
 #elif MDBTOOLS_H_HAVE_XLOCALE_H
 #include <xlocale.h>
@@ -308,7 +308,7 @@ typedef struct {
 	char        *relationships_values[5];
 	MdbStatistics *stats;
     GHashTable *backends;
-#if MDBTOOLS_H_HAVE_ICONV
+#if MDBTOOLS_H_HAVE_ICONV_H
 	iconv_t iconv_in;
 	iconv_t iconv_out;
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)

@@ -221,9 +221,9 @@ AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
 dnl Set up substitution variables
 if test "$am_cv_func_iconv" = "yes"; then
-    HAVE_ICONV=1
+    HAVE_ICONV_H=1
 fi
-AC_SUBST(HAVE_ICONV)
+AC_SUBST(HAVE_ICONV_H)
 
 if test "$ac_cv_header_xlocale_h" = "yes"; then
     HAVE_XLOCALE_H=1
@@ -309,6 +309,8 @@ if test x$HAVE_ODBC = xtrue; then summary=${bold_green}enabled; else summary=${b
 AC_MSG_NOTICE([   ODBC            : ${summary}${reset}])
 if test x$enable_glib = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   GLib            : ${summary}${reset}])
+if test x$am_cv_func_iconv = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   iconv           : ${summary}${reset}])
 if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   man pages       : ${summary}${reset}])
 if test "x$with_bash_completion_dir" != "xno"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
