@@ -129,6 +129,7 @@ enum {
 	MDB_ISNULL,
 	MDB_NOTNULL,
 	MDB_ILIKE,
+	MDB_NEQ,
 };
 
 typedef enum {
@@ -162,6 +163,7 @@ enum {
 				x == MDB_LT || \
 				x == MDB_GTEQ || \
 				x == MDB_LTEQ || \
+				x == MDB_NEQ || \
 				x == MDB_LIKE || \
 				x == MDB_ILIKE || \
 				x == MDB_ISNULL || \

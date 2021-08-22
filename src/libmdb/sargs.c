@@ -67,6 +67,9 @@ int rc;
 		case MDB_LTEQ:
 			if (rc>=0) return 1;
 			break;
+		case MDB_NEQ:
+			if (rc!=0) return 1;
+			break;
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_string() for operator %d\n",node->op);
 			break;
@@ -91,6 +94,9 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 			break;
 		case MDB_LTEQ:
 			if (node->value.i >= i) return 1;
+			break;
+		case MDB_NEQ:
+			if (node->value.i != i) return 1;
 			break;
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_int() for operator %d\n",node->op);
@@ -128,6 +134,9 @@ int mdb_test_double(int op, double vd, double d)
 			break;
 		case MDB_LTEQ:
 			ret = (vd >= d);
+			break;
+		case MDB_NEQ:
+			ret = (vd != d);
 			break;
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_double() for operator %d\n",op);

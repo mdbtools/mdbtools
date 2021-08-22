@@ -68,6 +68,7 @@ null		{ return NUL; }
 "="		{ return EQ; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
+(<>)		{ return NEQ; }
 "<"		{ return LT; }
 ">"		{ return GT; }
 like		{ return LIKE; }
