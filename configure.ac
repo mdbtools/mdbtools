@@ -84,8 +84,10 @@ AC_SUBST(SQL)
 AC_SUBST(LFLAGS)
 
 CFLAGS="$CFLAGS -Wall -Werror"
+LOCALE_T=locale_t
 AS_CASE([$host],
-        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
+        [*mingw*|*cygwin*], [LDFLAGS="$LDFLAGS -no-undefined" LOCALE_T=_locale_t], [])
+AC_SUBST(LOCALE_T)
 
 dnl See if iconv is present and wanted
 AC_ARG_ENABLE(iconv,
