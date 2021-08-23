@@ -38,7 +38,9 @@
 
 #if MDBTOOLS_H_HAVE_ICONV_H
 #include <iconv.h>
-#elif MDBTOOLS_H_HAVE_XLOCALE_H
+#endif
+
+#if MDBTOOLS_H_HAVE_XLOCALE_H
 #include <xlocale.h>
 #endif
 
@@ -65,9 +67,7 @@
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
 #define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
 
-#if !MDBTOOLS_H_HAVE_ICONV_H
 typedef @LOCALE_T@ mdb_locale_t;
-#endif
 
 enum {
 	MDB_PAGE_DB = 0,

@@ -103,9 +103,6 @@ if test "$enable_iconv" = "yes"; then
 fi
 AC_SUBST(HAVE_ICONV_H)
 
-dnl Wide-char ODBC driver still requires iconv
-AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
-
 dnl Fuzz testing
 AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], [enable fuzz testing (requires Clang 6 or later)]), [
    AC_MSG_CHECKING([whether $CC accepts -fsanitize=fuzzer])
