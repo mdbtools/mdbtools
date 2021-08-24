@@ -66,7 +66,7 @@ static size_t ascii2unicode(struct _hdbc* dbc, const char *_in, size_t _in_len, 
     size_t count = 0, i;
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
     count = _mbstowcs_l(w, _in, _out_count, dbc->locale);
-#elif defined(HAVE_WCSTOMBS_L)
+#elif defined(HAVE_MBSTOWCS_L)
     count = mbstowcs_l(w, _in, _out_count, dbc->locale);
 #else
     locale_t oldlocale = uselocale(dbc->locale);
