@@ -97,7 +97,10 @@ AC_ARG_ENABLE(iconv,
 HAVE_ICONV_H=0
 if test "$enable_iconv" = "yes"; then
     AM_ICONV
-    if test "$am_cv_func_iconv" = "yes"; then
+    # Use the "working iconv" test instead of the "iconv" ($am_cv_func_iconv) test
+    # so that our HAVE_ICONV_H substitution variable has the same value as the HAVE_ICONV
+    # C macro
+    if test "$am_func_iconv" = "yes"; then
         HAVE_ICONV_H=1
     fi
 fi
