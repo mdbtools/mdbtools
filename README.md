@@ -74,7 +74,7 @@ First, you must have reasonably current installations of:
 
 * [libtool](https://www.gnu.org/software/libtool/)
 * [automake](https://www.gnu.org/software/automake/)
-* [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.58)
+* [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.64)
 
 If you want to build the SQL engine, you'll need
 [bison](https://www.gnu.org/software/bison/) (version >= 3.0) or

@@ -1,3 +1,17 @@
+Version 1.0.0 (Beta 4)
+=============
+
+Build:
+* New `--disable-iconv` configure option (falls back to `wcstombs` where possible)
+* Fix a build error when `./configure` detected iconv, but thought it was not working
+* Generating the configure script now requires autoconf 2.64 or later
+
+ODBC:
+* The Unicode driver (`libmdbodbcW.so`) no longer uses iconv #332 #333
+
+SQL:
+* New `<>` (not equal) operator #329
+
 Version 1.0.0 (Beta 3)
 =============
 
