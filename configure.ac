@@ -38,7 +38,7 @@ AC_CHECK_DECLS([program_invocation_short_name], [], [], [[
 
 dnl Checks for library functions.
 VL_LIB_READLINE
-AC_CHECK_FUNCS(strptime fmemopen gmtime_r reallocf wcstombs_l vasprintf vasnprintf)
+AC_CHECK_FUNCS(strptime fmemopen gmtime_r reallocf wcstombs_l mbstowcs_l vasprintf vasnprintf)
 
 AM_GCC_ATTRIBUTE_ALIAS
 
@@ -97,14 +97,14 @@ AC_ARG_ENABLE(iconv,
 HAVE_ICONV_H=0
 if test "$enable_iconv" = "yes"; then
     AM_ICONV
-    if test "$am_cv_func_iconv" = "yes"; then
+    # Use the "working iconv" test instead of the "iconv" ($am_cv_func_iconv) test
+    # so that our HAVE_ICONV_H substitution variable has the same value as the HAVE_ICONV
+    # C macro
+    if test "$am_func_iconv" = "yes"; then
         HAVE_ICONV_H=1
     fi
 fi
 AC_SUBST(HAVE_ICONV_H)
-
-dnl Wide-char ODBC driver still requires iconv
-AM_CONDITIONAL(ICONV, test "$am_cv_func_iconv" = "yes")
 
 dnl Fuzz testing
 AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], [enable fuzz testing (requires Clang 6 or later)]), [
