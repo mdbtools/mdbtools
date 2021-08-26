@@ -2088,7 +2088,7 @@ static const char * _odbc_get_client_type_name(MdbColumn *col)
 		case MDB_COMPLEX:
 			return "COMPLEX";
 		default:
-			// fprintf(stderr,"Unknown type %d\n",srv_type);
+			fprintf(stderr,"Unknown type for column %s: %d\n",col->name,col->col_type);
 			break;
 	}
 	return NULL;
