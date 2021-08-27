@@ -245,10 +245,10 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 			ret = mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
 			break;
 		case MDB_FLOAT:
-			ret = mdb_test_double(node->op, node->value.d, mdb_get_single(field->value, 0));
+			ret = mdb_test_double(node->op, node->val_type == MDB_INT ? node->value.i : node->value.d, mdb_get_single(field->value, 0));
 			break;
 		case MDB_DOUBLE:
-			ret = mdb_test_double(node->op, node->value.d, mdb_get_double(field->value, 0));
+			ret = mdb_test_double(node->op, node->val_type == MDB_INT ? node->value.i : node->value.d, mdb_get_double(field->value, 0));
 			break;
 		case MDB_TEXT:
 			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, sizeof(tmpbuf));
