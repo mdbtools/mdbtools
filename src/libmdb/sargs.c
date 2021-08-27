@@ -78,25 +78,26 @@ int rc;
 }
 int mdb_test_int(MdbSargNode *node, gint32 i)
 {
+	gint32 val = node->val_type == MDB_INT ? node->value.i : node->value.d;
 	switch (node->op) {
 		case MDB_EQUAL:
 			//fprintf(stderr, "comparing %ld and %ld\n", i, node->value.i);
-			if (node->value.i == i) return 1;
+			if (val == i) return 1;
 			break;
 		case MDB_GT:
-			if (node->value.i < i) return 1;
+			if (val < i) return 1;
 			break;
 		case MDB_LT:
-			if (node->value.i > i) return 1;
+			if (val > i) return 1;
 			break;
 		case MDB_GTEQ:
-			if (node->value.i <= i) return 1;
+			if (val <= i) return 1;
 			break;
 		case MDB_LTEQ:
-			if (node->value.i >= i) return 1;
+			if (val >= i) return 1;
 			break;
 		case MDB_NEQ:
-			if (node->value.i != i) return 1;
+			if (val != i) return 1;
 			break;
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown operator.  Add code to mdb_test_int() for operator %d\n",node->op);
