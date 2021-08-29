@@ -236,7 +236,7 @@ mdb_read_indices(MdbTableDef *table)
 	 */
 	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
 
-	table->num_real_idxs = 0;
+	unsigned int num_idxs_type_other_than_2 = 0;
 	tmpbuf = g_malloc(idx2_sz);
 	for (i=0;i<table->num_idxs;i++) {
 		if (!read_pg_if_n(mdb, tmpbuf, &cur_pos, idx2_sz)) {
@@ -264,8 +264,11 @@ mdb_read_indices(MdbTableDef *table)
 			fprintf(stderr, "idx #%d: %d %d %d %d %d/%d\n", i, idx_marker, rel_idx_type, rel_idx_number, rel_idx_page, update_action_flags, delete_action_flags);
 		}*/
 		if (pidx->index_type!=2)
-			table->num_real_idxs++;
+			num_idxs_type_other_than_2++;
 	}
+	if (num_idxs_type_other_than_2<table->num_real_idxs)
+		table->num_real_idxs=num_idxs_type_other_than_2;
+
 	//fprintf(stderr, "num_idxs:%d num_real_idxs:%d\n", table->num_idxs, table->num_real_idxs);
 	g_free(tmpbuf);
 
