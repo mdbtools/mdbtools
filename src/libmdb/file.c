@@ -456,9 +456,14 @@ double mdb_get_double(void *buf, int offset)
 {
 	union {guint64 g; double d;} d;
     unsigned char *u8_buf = (unsigned char *)buf + offset;
-    d.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24) +
-        ((guint64)u8_buf[4] << 32) + ((guint64)u8_buf[5] << 40) +
-        ((guint64)u8_buf[6] << 48) + ((guint64)u8_buf[7] << 56);
+    d.g = ((guint64)u8_buf[0]) +
+           ((guint64)u8_buf[1] << 8) +
+           ((guint64)u8_buf[2] << 16) +
+           ((guint64)u8_buf[3] << 24) +
+           ((guint64)u8_buf[4] << 32) +
+           ((guint64)u8_buf[5] << 40) +
+           ((guint64)u8_buf[6] << 48) +
+           ((guint64)u8_buf[7] << 56);
 	return d.d;
 }
 double mdb_pg_get_double(MdbHandle *mdb, int offset)
