@@ -1425,12 +1425,33 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_ERROR;
 			}
 			char *str = NULL;
-			if (col->col_type == MDB_NUMERIC) {
-				str = mdb_numeric_to_string(mdb, col->cur_value_start,
+			switch (col->col_type ) {
+				case MDB_NUMERIC:
+					str = mdb_numeric_to_string(mdb, col->cur_value_start,
 						col->col_scale, col->col_prec);
-			} else {
-				str = mdb_col_to_string(mdb, mdb->pg_buf,
+					break;
+				case MDB_REPID:
+				{
+					// we don't use mdb_col_to_string here, as we want to reproduce how the Microsoft Access
+					// ODBC driver formats repid fields (i.e. without the surrounding {} braces)
+					const unsigned char *kkd = (const unsigned char *)mdb->pg_buf;
+					const int pos = col->cur_value_start;
+					str = g_strdup_printf("%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X"
+						"-" "%02X%02X" "-" "%02X%02X%02X%02X%02X%02X",
+					kkd[pos+3], kkd[pos+2], kkd[pos+1], kkd[pos], // little-endian
+					kkd[pos+5], kkd[pos+4], // little-endian
+					kkd[pos+7], kkd[pos+6], // little-endian
+					kkd[pos+8], kkd[pos+9], // big-endian
+
+					kkd[pos+10], kkd[pos+11],
+					kkd[pos+12], kkd[pos+13],
+					kkd[pos+14], kkd[pos+15]); // big-endian
+					break;
+				}
+				default:
+					str = mdb_col_to_string(mdb, mdb->pg_buf,
 						col->cur_value_start, col->col_type, col->cur_value_len);
+					break;
 			}
 			size_t len = strlen(str);
 
