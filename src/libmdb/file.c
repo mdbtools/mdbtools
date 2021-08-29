@@ -130,6 +130,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
     mdb_set_shortdate_fmt(mdb, "%x");
     mdb_set_bind_size(mdb, MDB_BIND_SIZE);
     mdb_set_boolean_fmt_numbers(mdb);
+    mdb_set_repid_fmt(mdb, MDB_BRACES_4_2_2_8);
 #ifdef HAVE_ICONV
 	mdb->iconv_in = (iconv_t)-1;
 	mdb->iconv_out = (iconv_t)-1;
@@ -315,10 +316,11 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	mdb_iconv_init(newmdb);
 	mdb_set_default_backend(newmdb, mdb->backend_name);
 
-	// date formats for the source handle may have been changed from
+	// formats for the source handle may have been changed from
 	// the backend's default formats, so we need to explicitly copy them here
 	mdb_set_date_fmt(newmdb, mdb->date_fmt);
 	mdb_set_shortdate_fmt(newmdb, mdb->shortdate_fmt);
+	mdb_set_repid_fmt(newmdb, mdb->repid_fmt);
 
 	if (mdb->f) {
 		mdb->f->refs++;

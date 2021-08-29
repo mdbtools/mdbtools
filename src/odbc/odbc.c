@@ -108,6 +108,8 @@ static SQLRETURN do_connect (
 		// https://docs.microsoft.com/en-us/sql/relational-databases/native-client-odbc-date-time/datetime-data-type-conversions-odbc?view=sql-server-ver15
 		mdb_set_date_fmt( dbc->sqlconn->mdb, "%F %H:%M:%S" );
 		mdb_set_shortdate_fmt( dbc->sqlconn->mdb, "%F" );
+		// Match formatting of REPID type values to MS Access ODBC driver
+		mdb_set_repid_fmt( dbc->sqlconn->mdb, MDB_NOBRACES_4_2_2_2_6 );
 		return SQL_SUCCESS;
 	}
 	else
