@@ -267,7 +267,8 @@ SQLRETURN SQL_API SQLGetDataW(
     SQLLEN             cbValueMax,
     SQLLEN             *pcbValue)
 {
-	//todo: treat numbers correctly
+	if (fCType != SQL_C_CHAR)
+		return SQLGetData(hstmt, icol, fCType, rgbValue, cbValueMax, pcbValue);
 
 	size_t l=cbValueMax*4+1;
 	SQLCHAR *tmp=calloc(l,1);
@@ -275,6 +276,12 @@ SQLRETURN SQL_API SQLGetDataW(
 	*pcbValue = ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, l, (SQLWCHAR*)rgbValue, cbValueMax);
 	free(tmp);
 	return ret;
+}
+
+SQLRETURN SQL_API SQLFetchW(
+    SQLHSTMT           hstmt) {
+	TRACE("SQLFetchW");
+    return _mdb_SQLFetch(hstmt, SQLGetDataW);
 }
 
 SQLRETURN SQL_API SQLGetInfoW(

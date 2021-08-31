@@ -78,6 +78,18 @@ struct _sql_bind_info {
 	struct _sql_bind_info *next;
 };
 
+typedef SQLRETURN (*_mdb_odbc_sql_data_callback)
+   (SQLHSTMT           hstmt,
+    SQLUSMALLINT       icol,
+    SQLSMALLINT        fCType,
+    SQLPOINTER         rgbValue,
+    SQLLEN             cbValueMax,
+    SQLLEN             *pcbValue);
+
+SQLRETURN _mdb_SQLFetch(
+    SQLHSTMT           hstmt,
+    _mdb_odbc_sql_data_callback DataCallback);
+
 #ifdef __cplusplus
 }
 #endif

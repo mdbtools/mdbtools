@@ -833,13 +833,13 @@ unbind_columns(struct _hstmt *stmt)
 	stmt->bind_head = NULL;
 }
 
-SQLRETURN SQL_API SQLFetch(
-    SQLHSTMT           hstmt)
+SQLRETURN _mdb_SQLFetch(
+    SQLHSTMT           hstmt,
+    _mdb_odbc_sql_data_callback DataCallback)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 	struct _sql_bind_info *cur = stmt->bind_head;
 
-	TRACE("SQLFetch");
 	if ( stmt->sql->limit >= 0 && stmt->rows_affected == stmt->sql->limit ) {
 		return SQL_NO_DATA_FOUND;
 	}
@@ -848,7 +848,7 @@ SQLRETURN SQL_API SQLFetch(
 		while (cur && (final_retval == SQL_SUCCESS || final_retval == SQL_SUCCESS_WITH_INFO)) {
 			/* log error ? */
 			SQLLEN lenbind = 0;
-			SQLRETURN this_retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
+			SQLRETURN this_retval = DataCallback(hstmt, cur->column_number, cur->column_bindtype,
 					cur->varaddr, cur->column_bindlen, &lenbind);
 			if (cur->column_lenbind)
 				*(cur->column_lenbind) = lenbind;
@@ -862,6 +862,12 @@ SQLRETURN SQL_API SQLFetch(
 	} else {
 		return SQL_NO_DATA_FOUND;
 	}
+}
+
+SQLRETURN SQL_API SQLFetch(
+    SQLHSTMT           hstmt) {
+	TRACE("SQLFetch");
+    return _mdb_SQLFetch(hstmt, SQLGetData);
 }
 
 SQLRETURN SQL_API SQLFreeConnect(
