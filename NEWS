@@ -1,3 +1,22 @@
+Version 1.0.0 (Beta 5)
+=============
+
+libmdb:
+
+* Fix incorrect reading of double values #339 #342
+* Fix accidental reads of non-index data #335 #343
+* New `mdb_set_repid_fmt()` for setting the format of Rep IDs (UUIDs)  #344
+
+SQL:
+
+* Improved support for comparing floating-point values to integers
+* Improved support for floating point literals with no fractional digits (e.g. "3.")
+* Add support for querying Rep IDs
+
+ODBC:
+
+* Implement `SQLFetchW` in the Unicode driver #347 #348
+
 Version 1.0.0 (Beta 4)
 =============
 
