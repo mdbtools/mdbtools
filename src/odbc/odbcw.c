@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* For a full list of functions that could be implemented, see:
+ * https://docs.microsoft.com/en-us/sql/odbc/reference/develop-app/unicode-function-arguments?view=sql-server-ver15 */
+
 #define SQL_NOUNICODEMAP
 #define UNICODE
 
@@ -58,27 +61,6 @@ static size_t unicode2ascii(struct _hdbc* dbc, const SQLWCHAR *_in, size_t _in_c
     if (count < _out_len)
         _out[count] = '\0';
 
-    return count;
-}
-
-static size_t ascii2unicode(struct _hdbc* dbc, const char *_in, size_t _in_len, SQLWCHAR *_out, size_t _out_count){
-    wchar_t *w = malloc(_out_count * sizeof(wchar_t));
-    size_t count = 0, i;
-#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
-    count = _mbstowcs_l(w, _in, _out_count, dbc->locale);
-#elif defined(HAVE_MBSTOWCS_L)
-    count = mbstowcs_l(w, _in, _out_count, dbc->locale);
-#else
-    locale_t oldlocale = uselocale(dbc->locale);
-    count = mbstowcs(w, _in, _out_count);
-    uselocale(oldlocale);
-#endif
-    for (i=0; i<count; i++) {
-        _out[i] = (SQLWCHAR)w[i];
-    }
-    free(w);
-    if (count < _out_count)
-        _out[count] = '\0';
     return count;
 }
 
@@ -161,7 +143,7 @@ SQLRETURN SQL_API SQLDescribeColW(
 		size_t l=cbColNameMax*4+1;
 		SQLCHAR *tmp=calloc(l,1);
 		SQLRETURN ret = SQLDescribeCol(hstmt, icol, tmp, l, (SQLSMALLINT*)&l, pfSqlType, pcbColDef, pibScale, pfNullable);
-		*pcbColName = ascii2unicode(((struct _hstmt*)hstmt)->hdbc, (char*)tmp, l, szColName, cbColNameMax);
+		*pcbColName = _mdb_odbc_ascii2unicode(((struct _hstmt*)hstmt)->hdbc, (char*)tmp, l, szColName, cbColNameMax);
 		free(tmp);
 		return ret;
 	}
@@ -183,7 +165,7 @@ SQLRETURN SQL_API SQLColAttributesW(
 		size_t l=cbDescMax*4+1;
 		SQLCHAR *tmp=calloc(l,1);
 		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,l,(SQLSMALLINT*)&l,pfDesc);
-		*pcbDesc = ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, l, (SQLWCHAR*)rgbDesc, cbDescMax);
+		*pcbDesc = _mdb_odbc_ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, l, (SQLWCHAR*)rgbDesc, cbDescMax);
 		free(tmp);
 		return ret;
 	}
@@ -210,8 +192,8 @@ SQLRETURN SQL_API SQLErrorW(
 	if (result == SQL_SUCCESS) {
         struct _hdbc *dbc = hstmt ? ((struct _hstmt *)hstmt)->hdbc : hdbc;
 		size_t pcb;
-		ascii2unicode(dbc, (char*)szSqlState8, sizeof(szSqlState8), szSqlState, sizeof(szSqlState8));
-		pcb = ascii2unicode(dbc, (char*)szErrorMsg8, pcbErrorMsg8, szErrorMsg, cbErrorMsgMax);
+		_mdb_odbc_ascii2unicode(dbc, (char*)szSqlState8, sizeof(szSqlState8), szSqlState, sizeof(szSqlState8));
+		pcb = _mdb_odbc_ascii2unicode(dbc, (char*)szErrorMsg8, pcbErrorMsg8, szErrorMsg, cbErrorMsgMax);
 		if (pcbErrorMsg) *pcbErrorMsg = pcb;
 	}
 	return result;
@@ -259,31 +241,6 @@ SQLRETURN SQL_API SQLColumnsW(
 	}
 }
 
-SQLRETURN SQL_API SQLGetDataW(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLSMALLINT        fCType,
-    SQLPOINTER         rgbValue,
-    SQLLEN             cbValueMax,
-    SQLLEN             *pcbValue)
-{
-	if (fCType != SQL_C_CHAR)
-		return SQLGetData(hstmt, icol, fCType, rgbValue, cbValueMax, pcbValue);
-
-	size_t l=cbValueMax*4+1;
-	SQLCHAR *tmp=calloc(l,1);
-	SQLRETURN ret = SQLGetData(hstmt, icol, fCType, tmp, l, (SQLLEN*)&l);
-	*pcbValue = ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, l, (SQLWCHAR*)rgbValue, cbValueMax);
-	free(tmp);
-	return ret;
-}
-
-SQLRETURN SQL_API SQLFetchW(
-    SQLHSTMT           hstmt) {
-	TRACE("SQLFetchW");
-    return _mdb_SQLFetch(hstmt, SQLGetDataW);
-}
-
 SQLRETURN SQL_API SQLGetInfoW(
     SQLHDBC            hdbc,
     SQLUSMALLINT       fInfoType,
@@ -299,7 +256,7 @@ SQLRETURN SQL_API SQLGetInfoW(
 	size_t l=cbInfoValueMax*4+1;
 	SQLCHAR *tmp=calloc(l,1);
 	SQLRETURN ret = SQLGetInfo(hdbc, fInfoType, tmp, l, (SQLSMALLINT*)&l);
-	size_t pcb = ascii2unicode((struct _hdbc *)hdbc, (char*)tmp, l, (SQLWCHAR*)rgbInfoValue, cbInfoValueMax);
+	size_t pcb = _mdb_odbc_ascii2unicode((struct _hdbc *)hdbc, (char*)tmp, l, (SQLWCHAR*)rgbInfoValue, cbInfoValueMax);
 	if(pcbInfoValue)*pcbInfoValue=pcb;
 	free(tmp);
 	return ret;
