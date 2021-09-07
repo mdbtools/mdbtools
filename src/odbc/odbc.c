@@ -116,6 +116,27 @@ static SQLRETURN do_connect (
 		return SQL_ERROR;
 }
 
+size_t _mdb_odbc_ascii2unicode(struct _hdbc* dbc, const char *_in, size_t _in_len, SQLWCHAR *_out, size_t _out_count){
+    wchar_t *w = malloc(_out_count * sizeof(wchar_t));
+    size_t count = 0, i;
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+    count = _mbstowcs_l(w, _in, _out_count, dbc->locale);
+#elif defined(HAVE_MBSTOWCS_L)
+    count = mbstowcs_l(w, _in, _out_count, dbc->locale);
+#else
+    locale_t oldlocale = uselocale(dbc->locale);
+    count = mbstowcs(w, _in, _out_count);
+    uselocale(oldlocale);
+#endif
+    for (i=0; i<count; i++) {
+        _out[i] = (SQLWCHAR)w[i];
+    }
+    free(w);
+    if (count < _out_count)
+        _out[count] = '\0';
+    return count;
+}
+
 SQLRETURN SQL_API SQLDriverConnect(
     SQLHDBC            hdbc,
     SQLHWND            hwnd,
@@ -835,12 +856,12 @@ unbind_columns(struct _hstmt *stmt)
 	stmt->bind_head = NULL;
 }
 
-SQLRETURN _mdb_SQLFetch(
-    SQLHSTMT           hstmt,
-    _mdb_odbc_sql_data_callback DataCallback)
+SQLRETURN SQLFetch(
+    SQLHSTMT           hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 	struct _sql_bind_info *cur = stmt->bind_head;
+	TRACE("SQLFetch");
 
 	if ( stmt->sql->limit >= 0 && stmt->rows_affected == stmt->sql->limit ) {
 		return SQL_NO_DATA_FOUND;
@@ -850,7 +871,7 @@ SQLRETURN _mdb_SQLFetch(
 		while (cur && (final_retval == SQL_SUCCESS || final_retval == SQL_SUCCESS_WITH_INFO)) {
 			/* log error ? */
 			SQLLEN lenbind = 0;
-			SQLRETURN this_retval = DataCallback(hstmt, cur->column_number, cur->column_bindtype,
+			SQLRETURN this_retval = SQLGetData(hstmt, cur->column_number, cur->column_bindtype,
 					cur->varaddr, cur->column_bindlen, &lenbind);
 			if (cur->column_lenbind)
 				*(cur->column_lenbind) = lenbind;
@@ -864,12 +885,6 @@ SQLRETURN _mdb_SQLFetch(
 	} else {
 		return SQL_NO_DATA_FOUND;
 	}
-}
-
-SQLRETURN SQL_API SQLFetch(
-    SQLHSTMT           hstmt) {
-	TRACE("SQLFetch");
-    return _mdb_SQLFetch(hstmt, SQLGetData);
 }
 
 SQLRETURN SQL_API SQLFreeConnect(
@@ -1225,13 +1240,15 @@ SQLRETURN SQL_API SQLGetData(
 	if (col->col_type == MDB_BOOL) {
 		// bool cannot be null
 		if (fCType == SQL_C_CHAR) {
-			if ( col->cur_value_len )
-				((char *)rgbValue)[0] = '0';
-			else
-				((char *)rgbValue)[0] = '1';
-			((char *)rgbValue)[1] = '\0';
+			((SQLCHAR *)rgbValue)[0] = col->cur_value_len ? '0' : '1';
+			((SQLCHAR *)rgbValue)[1] = '\0';
 			if (pcbValue)
 				*pcbValue = sizeof(SQLCHAR);
+		} else if (fCType == SQL_C_WCHAR) {
+			((SQLWCHAR *)rgbValue)[0] = col->cur_value_len ? '0' : '1';
+			((SQLWCHAR *)rgbValue)[1] = '\0';
+			if (pcbValue)
+				*pcbValue = sizeof(SQLWCHAR);
 		} else {
 			*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
 			if (pcbValue)
@@ -1265,7 +1282,7 @@ SQLRETURN SQL_API SQLGetData(
 	found_bound_type:
 	if (fCType==SQL_C_DEFAULT)
 		fCType = _odbc_get_client_type(col);
-	if (fCType == SQL_C_CHAR)
+	if (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR)
 		goto to_c_char;
 	switch(col->col_type) {
 		case MDB_BYTE:
@@ -1425,7 +1442,7 @@ SQLRETURN SQL_API SQLGetData(
 			free(stmt->ole_str);
 			stmt->ole_str = NULL;
 			break;
-		default: /* FIXME here we assume fCType == SQL_C_CHAR */
+		default: /* FIXME here we assume fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR */
 		to_c_char:
 		{
 			if (cbValueMax < 0) {
@@ -1433,6 +1450,7 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_ERROR;
 			}
 			char *str = NULL;
+			SQLWCHAR *wstr = NULL;
 			if (col->col_type == MDB_NUMERIC) {
 				str = mdb_numeric_to_string(mdb, col->cur_value_start,
 						col->col_scale, col->col_prec);
@@ -1441,37 +1459,47 @@ SQLRETURN SQL_API SQLGetData(
 						col->cur_value_start, col->col_type, col->cur_value_len);
 			}
 			size_t len = strlen(str);
+			size_t charsize = 1;
+			if (fCType == SQL_C_WCHAR) {
+				wstr = calloc(len+1, charsize = sizeof(SQLWCHAR));
+				len = _mdb_odbc_ascii2unicode(((struct _hstmt *)hstmt)->hdbc, str, len, wstr, len+1);
+			}
 
 			if (stmt->pos >= len) {
-				free(str);
-				str = NULL;
+				free(wstr); wstr = NULL;
+				free(str); str = NULL;
 				return SQL_NO_DATA;
 			}
 			if (pcbValue) {
-				*pcbValue = len - stmt->pos;
+				*pcbValue = (len - stmt->pos) * charsize;
 			}
 			if (cbValueMax == 0) {
-				free(str);
-				str = NULL;
+				free(wstr); wstr = NULL;
+				free(str); str = NULL;
 				return SQL_SUCCESS_WITH_INFO;
 			}
 
-			const int totalSizeRemaining = len - stmt->pos;
-			const int partsRemain = cbValueMax - 1 < totalSizeRemaining;
-			const int sizeToReadThisPart = partsRemain ? cbValueMax - 1 : totalSizeRemaining;
-			memcpy(rgbValue, str + stmt->pos, sizeToReadThisPart);
+			const int totalCharactersRemaining = len - stmt->pos;
+			const int partsRemain = cbValueMax/charsize - 1 < totalCharactersRemaining;
+			const int charactersToReadThisPart = partsRemain ? cbValueMax/charsize - 1 : totalCharactersRemaining;
 
-			((char *)rgbValue)[sizeToReadThisPart] = '\0';
+			if (wstr) {
+				memcpy(rgbValue, wstr + stmt->pos, charactersToReadThisPart * sizeof(SQLWCHAR));
+				((SQLWCHAR *)rgbValue)[charactersToReadThisPart] = '\0';
+			} else {
+				memcpy(rgbValue, str + stmt->pos, charactersToReadThisPart);
+				((SQLCHAR *)rgbValue)[charactersToReadThisPart] = '\0';
+			}
+
+			free(wstr); wstr = NULL;
+			free(str); str = NULL;
 
 			if (partsRemain) {
-				stmt->pos += cbValueMax - 1;
-				free(str); str = NULL;
+				stmt->pos += charactersToReadThisPart;
 				strcpy(stmt->sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			stmt->pos = len;
-			free(str);
-			str = NULL;
 			break;
 		}
 	}
