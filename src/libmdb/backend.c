@@ -294,7 +294,7 @@ mdb_get_colbacktype_string(const MdbColumn *col)
 	const MdbBackendType *type = mdb_get_colbacktype(col);
 	if (!type) {
    		// return NULL;
-		static __thread char buf[16];
+		static TLS char buf[16];
 		snprintf(buf, sizeof(buf), "Unknown_%04x", col->col_type);
 		return buf;
 	}

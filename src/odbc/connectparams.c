@@ -93,7 +93,7 @@ void FreeConnectParams (ConnectParams* params)
 
 gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
 {
-	static __thread char tmp[FILENAME_MAX];
+	static TLS char tmp[FILENAME_MAX];
 
 	/* use old servername */
 	tmp[0] = '\0';
