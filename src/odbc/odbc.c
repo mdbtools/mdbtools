@@ -1984,14 +1984,14 @@ SQLRETURN SQL_API SQLDataSources(
 
 static int _odbc_fix_literals(struct _hstmt *stmt)
 {
-	char tmp[4096],begin_tag[11];
+	char tmp[4096];
 	char *s, *d, *p;
 	int i, quoted = 0, find_end = 0;
 	char quote_char;
 
 	s=stmt->query;
 	d=tmp;
-	while (*s) {
+	while (*s && d<tmp+sizeof(tmp)) {
 		if (!quoted && (*s=='"' || *s=='\'')) {
 			quoted = 1;
 			quote_char = *s;
@@ -2006,9 +2006,7 @@ static int _odbc_fix_literals(struct _hstmt *stmt)
 				/* garbage */
 				*d++=*s++;
 			} else {
-				strncpy(begin_tag, s, i);
-				begin_tag[i] = '\0';
-				/* printf("begin tag %s\n", begin_tag); */
+				/* printf("begin tag %.*s\n", i, s); */
 				s += i;
 				find_end = 1;
 			}
@@ -2016,8 +2014,8 @@ static int _odbc_fix_literals(struct _hstmt *stmt)
 			*d++=*s++;	
 		}
 	}
-	*d='\0';
-	strcpy(stmt->query,tmp);
+
+	snprintf(stmt->query, sizeof(stmt->query), "%.*s", (int)(d-tmp), tmp);
 
 	return 0;
 }
