@@ -21,9 +21,9 @@
 
 #include <sql.h>
 #include <sqlext.h>
-#if defined(UNIXODBC)
+#if defined(HAVE_ODBCINST_H)
 # include <odbcinst.h>
-#elif defined(IODBC)
+#elif defined(HAVE_IODBCINST_H)
 # include <iodbcinst.h>
 #endif
 

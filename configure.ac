@@ -153,7 +153,6 @@ if test "$with_iodbc"; then
 	ODBC_CFLAGS=$(iodbc-config --prefix="$with_iodbc" --cflags)
 	ODBC_LIBS=$(iodbc-config --prefix="$with_iodbc" --libs)
 	ODBC_LDFLAGS=""
-	CFLAGS="$CFLAGS -DIODBC"
 
 	OLDLDFLAGS=$LDFLAGS
 	LDFLAGS="$LDFLAGS $ODBC_LIBS"
@@ -169,7 +168,6 @@ if test "$with_unixodbc"; then
 	HAVE_ODBC=true
 	ODBC_CFLAGS="-I$with_unixodbc/include"
 	ODBC_LIBS="-L$with_unixodbc/$libdir"
-	CFLAGS="$CFLAGS -DUNIXODBC"
 
 	dnl SIZEOF_LONG_INT and HAVE_LONG_LONG are required by some versions of unixODBC
 	dnl https://github.com/lurcher/unixODBC/issues/40
@@ -192,11 +190,17 @@ if test "$with_unixodbc"; then
 				ODBC_LDFLAGS=""])
 	LDFLAGS=$OLDLDFLAGS
 fi
+AM_CONDITIONAL([UNIXODBC], test "$with_unixodbc")
 
 if test "x$HAVE_ODBC" = "xtrue"; then
 	if test "x$sql" != "xtrue" ; then
 		AC_MSG_ERROR([ODBC requires flex and bison for the SQL engine])
 	fi
+
+	OLDCFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS $ODBC_CFLAGS"
+	AC_CHECK_HEADERS(odbcinst.h iodbcinst.h)
+	CFLAGS=$OLDCFLAGS
 
 	AC_SUBST(ODBC_CFLAGS)
 	AC_SUBST(ODBC_LIBS)
