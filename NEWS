@@ -1,3 +1,17 @@
+Version 1.0.0 (Beta 6)
+=============
+
+libmdb:
+
+* Improved support for pre-C11 compilers
+
+ODBC:
+
+* Remove `SQLFetchW` (introduced in Beta 5) in favor of the `SQL_C_WCHAR` return type
+* Fix an issue where Chinese characters were returned instead of ASCII using the Unicode driver on some platforms
+* Add support for older iODBC installations lacking odbcinst.h
+* Improved bounds checking
+
 Version 1.0.0 (Beta 5)
 =============
 
