@@ -1009,7 +1009,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 
 	switch (datatype) {
 		case MDB_BYTE:
-			text = g_strdup_printf("%hhd", mdb_get_byte(buf, start));
+			text = g_strdup_printf("%hhu", mdb_get_byte(buf, start));
 		break;
 		case MDB_INT:
 			text = g_strdup_printf("%hd",
