@@ -1,3 +1,10 @@
+Version 1.0.0 (Beta 7)
+=============
+
+mdb-export:
+
+* Fix issue where byte columns with values > 127 were exported as negative numbers (regression introduced in v0.9.3-beta1) #350
+
 Version 1.0.0 (Beta 6)
 =============
 
