@@ -23,11 +23,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <ctype.h>
-#ifdef UNIXODBC
-#include <odbcinstext.h>
-#else
+#if defined(HAVE_ODBCINST_H)
 #include <odbcinst.h>
-#endif
+#elif defined(HAVE_IODBCINST_H)
+#include <iodbcinst.h>
+#endif /* HAVE_ODBCINST_H */
 #include "connectparams.h"
 
 
@@ -93,7 +93,7 @@ void FreeConnectParams (ConnectParams* params)
 
 gchar* GetConnectParam (ConnectParams* params, const gchar* paramName)
 {
-	static __thread char tmp[FILENAME_MAX];
+	static TLS char tmp[FILENAME_MAX];
 
 	/* use old servername */
 	tmp[0] = '\0';
@@ -297,24 +297,4 @@ static void cleanup (gpointer key, gpointer value, gpointer user_data)
    g_free (value);
 }
 
-
-#ifdef UNIXODBC
-
-int
-ODBCINSTGetProperties(HODBCINSTPROPERTY hLastProperty)
-{
-	hLastProperty->pNext = malloc(sizeof(ODBCINSTPROPERTY));
-	hLastProperty = hLastProperty->pNext;
-	memset(hLastProperty, 0, sizeof(ODBCINSTPROPERTY));
-	hLastProperty->nPromptType = ODBCINST_PROMPTTYPE_FILENAME;
-	strncpy(hLastProperty->szName, "Database", INI_MAX_PROPERTY_NAME);
-	strncpy(hLastProperty->szValue, "", INI_MAX_PROPERTY_VALUE);
-	hLastProperty->pszHelp = (char *) g_strdup("Filename and Path of MDB file to connect to.\n"
-						 "Use the full path to the database file.");
-
-
-	return 1;
-}
-
-#endif
 /** @}*/

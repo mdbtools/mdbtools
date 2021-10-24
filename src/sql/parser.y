@@ -63,7 +63,7 @@ typedef struct sql_context
 %token <name> IDENT NAME PATH STRING NUMBER OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
 %token DESCRIBE TABLE TOP PERCENT
-%token LTEQ GTEQ LIKE IS NUL
+%token LTEQ GTEQ NEQ LIKE ILIKE IS NUL
 
 %type <name> database
 %type <name> constant
@@ -81,7 +81,7 @@ typedef struct sql_context
 %left OR
 %left AND
 %right NOT
-%left EQ LTEQ GTEQ LT GT LIKE IS
+%left EQ LTEQ GTEQ NEQ LT GT LIKE ILIKE IS
 
 %%
 
@@ -192,7 +192,9 @@ operator:
 	| LT	{ $$ = MDB_LT; }
 	| LTEQ	{ $$ = MDB_LTEQ; }
 	| GTEQ	{ $$ = MDB_GTEQ; }
+	| NEQ	{ $$ = MDB_NEQ; }
 	| LIKE	{ $$ = MDB_LIKE; }
+	| ILIKE	{ $$ = MDB_ILIKE; }
 	;
 
 nulloperator:

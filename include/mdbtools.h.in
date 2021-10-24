@@ -18,6 +18,9 @@
 #ifndef _mdbtools_h_
 #define _mdbtools_h_
 
+#define MDBTOOLS_H_HAVE_ICONV_H @HAVE_ICONV_H@
+#define MDBTOOLS_H_HAVE_XLOCALE_H @HAVE_XLOCALE_H@
+
 #ifdef __cplusplus
   extern "C" {
 #endif
@@ -31,16 +34,13 @@
 #include <ctype.h>
 #include <string.h>
 #include <locale.h>
+#include <@GLIB_INCLUDE_HEADER@>
 
-#ifdef HAVE_GLIB
-#include <glib.h>
-#else
-#include <mdbfakeglib.h>
+#if MDBTOOLS_H_HAVE_ICONV_H
+#include <iconv.h>
 #endif
 
-#if defined(HAVE_ICONV)
-#include <iconv.h>
-#elif defined(HAVE_XLOCALE_H)
+#if MDBTOOLS_H_HAVE_XLOCALE_H
 #include <xlocale.h>
 #endif
 
@@ -66,6 +66,8 @@
 // This attribute is not supported by all compilers:
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
 #define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
+
+typedef @LOCALE_T@ mdb_locale_t;
 
 enum {
 	MDB_PAGE_DB = 0,
@@ -129,7 +131,9 @@ enum {
 	MDB_LTEQ,
 	MDB_LIKE,
 	MDB_ISNULL,
-	MDB_NOTNULL
+	MDB_NOTNULL,
+	MDB_ILIKE,
+	MDB_NEQ,
 };
 
 typedef enum {
@@ -154,6 +158,11 @@ enum {
 	MDB_NO_MEMO = 0x0080, /* don't follow memo fields */
 };
 
+typedef enum {
+    MDB_BRACES_4_2_2_8, /* "{XXXX-XX-XX-XXXXXXXX}" format */
+    MDB_NOBRACES_4_2_2_2_6, /* "XXXX-XX-XX-XX-XXXXXX" format (matches MS Access ODBC driver) */
+} MdbUuidFormat;
+
 #define mdb_is_logical_op(x) (x == MDB_OR || \
 				x == MDB_AND || \
 				x == MDB_NOT )
@@ -163,7 +172,9 @@ enum {
 				x == MDB_LT || \
 				x == MDB_GTEQ || \
 				x == MDB_LTEQ || \
+				x == MDB_NEQ || \
 				x == MDB_LIKE || \
+				x == MDB_ILIKE || \
 				x == MDB_ISNULL || \
 				x == MDB_NOTNULL )
 
@@ -234,6 +245,8 @@ typedef struct {
 	const char *table_comment_statement;
 	const char *per_table_comment_statement;
 	gchar* (*quote_schema_name)(const gchar*, const gchar*);
+    const char *create_table_statement;
+    gchar* (*normalise_case)(const gchar*);
 } MdbBackend;
 
 typedef struct {
@@ -292,6 +305,7 @@ typedef struct {
     size_t bind_size;
     char date_fmt[64];
     char shortdate_fmt[64];
+    MdbUuidFormat repid_fmt;
     const char *boolean_false_value;
     const char *boolean_true_value;
 	unsigned int  num_catalog;
@@ -304,13 +318,11 @@ typedef struct {
 	char        *relationships_values[5];
 	MdbStatistics *stats;
     GHashTable *backends;
-#ifdef HAVE_ICONV
-	iconv_t	iconv_in;
-	iconv_t	iconv_out;
-#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
-    _locale_t locale;
+#if MDBTOOLS_H_HAVE_ICONV_H
+	iconv_t iconv_in;
+	iconv_t iconv_out;
 #else
-    locale_t locale;
+    mdb_locale_t locale;
 #endif
 } MdbHandle; 
 
@@ -524,7 +536,8 @@ int mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr,
 void mdb_data_dump(MdbTableDef *table);
 void mdb_date_to_tm(double td, struct tm *t);
 void mdb_tm_to_date(struct tm *t, double *td);
-char *mdb_uuid_to_string(const void *buf, int start);
+char *mdb_uuid_to_string(const void *buf, int start); /* Uses default MDB_BRACES_4_2_2_8 format */
+char *mdb_uuid_to_string_fmt(const void *buf, int start, MdbUuidFormat format);
 int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
 int mdb_rewind_table(MdbTableDef *table);
 int mdb_fetch_row(MdbTableDef *table);
@@ -541,9 +554,11 @@ void* mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size);
 void mdb_set_bind_size(MdbHandle *mdb, size_t bind_size);
 void mdb_set_date_fmt(MdbHandle *mdb, const char *);
 void mdb_set_shortdate_fmt(MdbHandle *mdb, const char *);
+void mdb_set_repid_fmt(MdbHandle *mdb, MdbUuidFormat format);
 void mdb_set_boolean_fmt_words(MdbHandle *mdb);
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb);
 int mdb_read_row(MdbTableDef *table, unsigned int row);
+int mdb_read_next_dpg(MdbTableDef *table);
 
 /* money.c */
 char *mdb_money_to_string(MdbHandle *mdb, int start);
@@ -571,6 +586,7 @@ void mdb_register_backend(MdbHandle *mdb, char *backend_name, guint32 capabiliti
 int  mdb_set_default_backend(MdbHandle *mdb, const char *backend_name);
 int  mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace, guint32 export_options);
 void mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int bin_len, char *quote_char, char *escape_char, int flags);
+gchar *mdb_normalise_and_replace(MdbHandle *mdb, gchar **str);
 
 /* sargs.c */
 int mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields);
@@ -605,6 +621,7 @@ void mdb_dump_stats(MdbHandle *mdb);
 
 /* like.c */
 int mdb_like_cmp(char *s, char *r);
+int mdb_ilike_cmp(char *s, char *r);
 
 /* write.c */
 void mdb_put_int16(void *buf, guint32 offset, guint32 value);

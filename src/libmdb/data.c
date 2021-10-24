@@ -68,6 +68,11 @@ void mdb_set_shortdate_fmt(MdbHandle *mdb, const char *fmt)
     snprintf(mdb->shortdate_fmt, sizeof(mdb->shortdate_fmt), "%s", fmt);
 }
 
+void mdb_set_repid_fmt(MdbHandle *mdb, MdbUuidFormat format)
+{
+    mdb->repid_fmt = format;
+}
+
 void mdb_set_boolean_fmt_numbers(MdbHandle *mdb)
 {
 	mdb->boolean_false_value = boolean_false_number;
@@ -947,14 +952,19 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 
 char *mdb_uuid_to_string(const void *buf, int pos)
 {
+	return mdb_uuid_to_string_fmt(buf,pos,MDB_BRACES_4_2_2_8);
+}
+
+char *mdb_uuid_to_string_fmt(const void *buf, int pos, MdbUuidFormat format)
+{
 	const unsigned char *kkd = (const unsigned char *)buf;
-	return g_strdup_printf("{%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X"
-			"-" "%02X%02X" "%02X%02X%02X%02X%02X%02X}",
+	return g_strdup_printf(format == MDB_BRACES_4_2_2_8
+			? "{%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X" "-" "%02X%02X%02X%02X%02X%02X%02X%02X}"
+			: "%02X%02X%02X%02X" "-" "%02X%02X" "-" "%02X%02X" "-" "%02X%02X" "-" "%02X%02X%02X%02X%02X%02X",
 			kkd[pos+3], kkd[pos+2], kkd[pos+1], kkd[pos], // little-endian
 			kkd[pos+5], kkd[pos+4], // little-endian
 			kkd[pos+7], kkd[pos+6], // little-endian
 			kkd[pos+8], kkd[pos+9], // big-endian
-
 			kkd[pos+10], kkd[pos+11],
 			kkd[pos+12], kkd[pos+13],
 			kkd[pos+14], kkd[pos+15]); // big-endian
@@ -999,7 +1009,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 
 	switch (datatype) {
 		case MDB_BYTE:
-			text = g_strdup_printf("%hhd", mdb_get_byte(buf, start));
+			text = g_strdup_printf("%hhu", mdb_get_byte(buf, start));
 		break;
 		case MDB_INT:
 			text = g_strdup_printf("%hd",
@@ -1046,7 +1056,7 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 			text = mdb_money_to_string(mdb, start);
 		break;
 		case MDB_REPID:
-			text = mdb_uuid_to_string(buf, start);
+			text = mdb_uuid_to_string_fmt(buf, start, mdb->repid_fmt);
 		break;
 		default:
 			/* shouldn't happen.  bools are handled specially

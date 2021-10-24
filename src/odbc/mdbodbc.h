@@ -21,9 +21,9 @@
 
 #include <sql.h>
 #include <sqlext.h>
-#if defined(UNIXODBC)
+#if defined(HAVE_ODBCINST_H)
 # include <odbcinst.h>
-#elif defined(IODBC)
+#elif defined(HAVE_IODBCINST_H)
 # include <iodbcinst.h>
 #endif
 
@@ -50,10 +50,7 @@ struct _hdbc {
 	GPtrArray *statements;
     char lastError[256];
     char sqlState[6];
-#ifdef ENABLE_ODBC_W
-    iconv_t iconv_in;
-    iconv_t iconv_out;
-#endif
+    mdb_locale_t locale;
 };
 struct _hstmt {
 	MdbSQL *sql;
@@ -80,6 +77,10 @@ struct _sql_bind_info {
 	char *varaddr;
 	struct _sql_bind_info *next;
 };
+
+size_t _mdb_odbc_ascii2unicode(struct _hdbc* dbc,
+        const char *_in, size_t _in_len,
+        SQLWCHAR *_out, size_t _out_count);
 
 #ifdef __cplusplus
 }

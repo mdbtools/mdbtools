@@ -68,9 +68,11 @@ null		{ return NUL; }
 "="		{ return EQ; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
+(<>)		{ return NEQ; }
 "<"		{ return LT; }
 ">"		{ return GT; }
 like		{ return LIKE; }
+ilike		{ return ILIKE; }
 limit		{ return LIMIT; }
 top		{ return TOP; }
 percent		{ return PERCENT; }
@@ -111,7 +113,7 @@ strptime\(	{ return STRPTIME; }
 		return STRING;
 	}
 
-(-?[0-9]+|(-?[0-9]*\.[0-9]+)(e[-+]?[0-9]+)?) {
+(-?[0-9]+|(-?[0-9]*\.[0-9]*)(e[-+]?[0-9]+)?) {
 		yylval->name = g_strdup(yytext); return NUMBER;
 	}
 ~?(\/?[a-z0-9\.\-\_\!\~\'\(\)\%\xa0-\xff]+)+ {

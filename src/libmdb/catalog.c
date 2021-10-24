@@ -193,7 +193,7 @@ mdb_dump_catalog(MdbHandle *mdb, int obj_type)
                 entry = g_ptr_array_index(mdb->catalog,i);
 		if (obj_type==MDB_ANY || entry->object_type==obj_type) {
 			printf("Type: %-12s Name: %-48s Page: %06lx\n",
-			mdb_get_objtype_string(entry->object_type),
+			mdb_get_objtype_string(entry->object_type) ?: "Unknown",
 			entry->object_name,
 			entry->table_pg);
 		}

@@ -130,6 +130,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
     mdb_set_shortdate_fmt(mdb, "%x");
     mdb_set_bind_size(mdb, MDB_BIND_SIZE);
     mdb_set_boolean_fmt_numbers(mdb);
+    mdb_set_repid_fmt(mdb, MDB_BRACES_4_2_2_8);
 #ifdef HAVE_ICONV
 	mdb->iconv_in = (iconv_t)-1;
 	mdb->iconv_out = (iconv_t)-1;
@@ -315,6 +316,12 @@ MdbHandle *mdb_clone_handle(MdbHandle *mdb)
 	mdb_iconv_init(newmdb);
 	mdb_set_default_backend(newmdb, mdb->backend_name);
 
+	// formats for the source handle may have been changed from
+	// the backend's default formats, so we need to explicitly copy them here
+	mdb_set_date_fmt(newmdb, mdb->date_fmt);
+	mdb_set_shortdate_fmt(newmdb, mdb->shortdate_fmt);
+	mdb_set_repid_fmt(newmdb, mdb->repid_fmt);
+
 	if (mdb->f) {
 		mdb->f->refs++;
 	}
@@ -374,7 +381,7 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	 */
 	if (pg != 0 && mdb->f->db_key != 0)
 	{
-		guint32 tmp_key_i = mdb->f->db_key ^ pg;
+		uint32_t tmp_key_i = mdb->f->db_key ^ pg;
 		unsigned char tmp_key[4] = {
 			tmp_key_i & 0xFF, (tmp_key_i >> 8) & 0xFF,
 			(tmp_key_i >> 16) & 0xFF, (tmp_key_i >> 24) & 0xFF };
@@ -407,7 +414,7 @@ unsigned char mdb_pg_get_byte(MdbHandle *mdb, int offset)
 int mdb_get_int16(void *buf, int offset)
 {
     unsigned char *u8_buf = (unsigned char *)buf + offset;
-    return u8_buf[0] + (u8_buf[1] << 8);
+    return ((uint32_t)u8_buf[0] << 0) + ((uint32_t)u8_buf[1] << 8);
 }
 int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 {
@@ -419,12 +426,20 @@ int mdb_pg_get_int16(MdbHandle *mdb, int offset)
 long mdb_get_int32_msb(void *buf, int offset)
 {
     unsigned char *u8_buf = (unsigned char *)buf + offset;
-    return (u8_buf[0] << 24) + (u8_buf[1] << 16) + (u8_buf[2] << 8) + u8_buf[3];
+    return
+        ((uint32_t)u8_buf[0] << 24) +
+        ((uint32_t)u8_buf[1] << 16) +
+        ((uint32_t)u8_buf[2] << 8) +
+        ((uint32_t)u8_buf[3] << 0);
 }
 long mdb_get_int32(void *buf, int offset)
 {
     unsigned char *u8_buf = (unsigned char *)buf + offset;
-    return u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24);
+    return
+        ((uint32_t)u8_buf[0] << 0) +
+        ((uint32_t)u8_buf[1] << 8) +
+        ((uint32_t)u8_buf[2] << 16) +
+        ((uint32_t)u8_buf[3] << 24);
 }
 long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 {
@@ -435,9 +450,12 @@ long mdb_pg_get_int32(MdbHandle *mdb, int offset)
 
 float mdb_get_single(void *buf, int offset)
 {
-	union {guint32 g; float f;} f;
+	union {uint32_t g; float f;} f;
     unsigned char *u8_buf = (unsigned char *)buf + offset;
-    f.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24);
+    f.g = ((uint32_t)u8_buf[0] << 0) +
+        ((uint32_t)u8_buf[1] << 8) +
+        ((uint32_t)u8_buf[2] << 16) +
+        ((uint32_t)u8_buf[3] << 24);
 	return f.f;
 }
 float mdb_pg_get_single(MdbHandle *mdb, int offset)
@@ -449,20 +467,25 @@ float mdb_pg_get_single(MdbHandle *mdb, int offset)
 
 double mdb_get_double(void *buf, int offset)
 {
-	union {guint64 g; double d;} d;
+	union {uint64_t g; double d;} d;
     unsigned char *u8_buf = (unsigned char *)buf + offset;
-    d.g = u8_buf[0] + (u8_buf[1] << 8) + (u8_buf[2] << 16) + (u8_buf[3] << 24) +
-        ((guint64)u8_buf[4] << 32) + ((guint64)u8_buf[5] << 40) +
-        ((guint64)u8_buf[6] << 48) + ((guint64)u8_buf[7] << 56);
+    d.g = ((uint64_t)u8_buf[0] << 0) +
+           ((uint64_t)u8_buf[1] << 8) +
+           ((uint64_t)u8_buf[2] << 16) +
+           ((uint64_t)u8_buf[3] << 24) +
+           ((uint64_t)u8_buf[4] << 32) +
+           ((uint64_t)u8_buf[5] << 40) +
+           ((uint64_t)u8_buf[6] << 48) +
+           ((uint64_t)u8_buf[7] << 56);
 	return d.d;
 }
+
 double mdb_pg_get_double(MdbHandle *mdb, int offset)
 {
 	if (offset <0 || offset+8 > mdb->fmt->pg_size) return -1;
 	mdb->cur_pos+=8;
 	return mdb_get_double(mdb->pg_buf, offset);
 }
-
 
 int 
 mdb_set_pos(MdbHandle *mdb, int pos)

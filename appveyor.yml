@@ -17,8 +17,10 @@ clone_folder: c:\projects\mdbtools
 
 skip_tags: true
 
+# Installing packages leads to the error:
+# Can't locate threads.pm in @INC (you may need to install the threads module)
+# So disable the SQL tests on this platform for now
 build_script:
-  - C:\cygwin64\setup-x86_64.exe -q -P bison -P flex -P libiconv-devel
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && git clone https://github.com/mdbtools/mdbtestdata.git test"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && autoreconf -i -f"
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./configure --disable-man --disable-silent-rules"
@@ -26,4 +28,3 @@ build_script:
 
 test_script:
   - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./test_script.sh"
-  - C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/mdbtools && ./test_sql.sh"

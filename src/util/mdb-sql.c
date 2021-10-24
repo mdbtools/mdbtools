@@ -51,8 +51,6 @@ extern void clear_history ();
 void dump_results(FILE *out, MdbSQL *sql, char *delimiter);
 void dump_results_pp(FILE *out, MdbSQL *sql);
 
-#if SQL
-
 int headers = 1;
 int footers = 1;
 int pretty_print = 1;
@@ -415,7 +413,10 @@ main(int argc, char **argv)
 
 	while (1) {
 		line ++;
-		if (s) free(s);
+		if (s) {
+			free(s);
+			s = NULL;
+		}
 
 		if (in) {
 			s=calloc(bufsz, 1);
@@ -436,9 +437,13 @@ main(int argc, char **argv)
 				s[strlen(s)-1]=0;
 		} else {
 			snprintf(prompt, sizeof(prompt), "%d => ", line);
-			s=readline(prompt);
-			if (!s)
+			locale = setlocale(LC_CTYPE, "");
+			char *l = readline(prompt);
+			setlocale(LC_CTYPE, locale);
+			if (!l)
 				break;
+			s=g_locale_to_utf8(l, -1, NULL, NULL, NULL);
+			free(l);
 		}
 
 		if (!strcmp(s,"exit") || !strcmp(s,"quit") || !strcmp(s,"bye"))
@@ -516,11 +521,3 @@ main(int argc, char **argv)
 
 	return 0;
 }
-#else
-int main(int argc, char **argv)
-{
-	fprintf(stderr,"You must configure using --enable-sql to get SQL support\n");
-
-	return -1;
-}
-#endif

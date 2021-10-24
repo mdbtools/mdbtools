@@ -16,11 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef ENABLE_ODBC_W
-#define SQL_NOUNICODEMAP
-#define UNICODE
-#endif //ENABLE_ODBC_W
-
 #include <sql.h>
 #include <sqlext.h>
 #include <string.h>
@@ -85,64 +80,6 @@ TypeInfo type_info[] = {
 #define NUM_TYPE_INFO_COLS 19
 #define MAX_TYPE_INFO 11
 
-#ifdef ENABLE_ODBC_W
-static void _init_iconv(struct _hdbc* dbc)
-{
-	TRACE("_init_iconv");
-	int endian = 1;
-	const char* wcharset;
-	if (sizeof(SQLWCHAR) == 2)
-		if (*(char*)&endian == 1)
-			wcharset = "UCS-2LE";
-		else
-			wcharset = "UCS-2BE";
-	else if (sizeof(SQLWCHAR) == 4)
-		if (*(char*)&endian == 1)
-			wcharset = "UCS-4LE";
-		else
-			wcharset = "UCS-4BE";
-	else
-		fprintf(stderr, "Unsupported SQLWCHAR width %zd\n", sizeof(SQLWCHAR));
-
-	dbc->iconv_out = iconv_open(wcharset, "UTF-8");
-	dbc->iconv_in = iconv_open("UTF-8", wcharset);
-}
-
-static void _free_iconv(struct _hdbc *dbc)
-{
-	TRACE("_free_iconv");
-	if(dbc->iconv_out != (iconv_t)-1)iconv_close(dbc->iconv_out);
-	if(dbc->iconv_in != (iconv_t)-1)iconv_close(dbc->iconv_in);
-}
-
-static int unicode2ascii(struct _hdbc* dbc, char *_in, size_t *_lin, char *_out, size_t *_lout){
-	char *in=_in, *out=_out;
-	size_t lin=*_lin, lout=*_lout;
-	int ret = iconv(dbc->iconv_in, &in, &lin, &out, &lout);
-	*_lin -= lin;
-	*_lout -= lout;
-	return ret;
-}
-
-static int ascii2unicode(struct _hdbc* dbc, char *_in, size_t *_lin, char *_out, size_t *_lout){
-	//fprintf(stderr,"ascii2unicode %08x %08x %08x %08x\n",_in,_lin,_out,_lout);
-	char *in=_in, *out=_out;
-	size_t lin=*_lin, lout=*_lout;
-	//fprintf(stderr,"ascii2unicode %zd %zd\n",lin,lout);
-	int ret = iconv(dbc->iconv_out, &in, &lin, &out, &lout);
-	*_lin -= lin;
-	*_lout -= lout;
-	return ret;
-}
-
-static int sqlwlen(SQLWCHAR *p){
-	int r=0;
-	for(;*p;r++)
-		p++;
-	return r;
-}
-#endif // ENABLE_ODBC_W
-
 static void LogHandleError(struct _hdbc* dbc, const char* format, ...)
 {
     va_list argp;
@@ -171,10 +108,33 @@ static SQLRETURN do_connect (
 		// https://docs.microsoft.com/en-us/sql/relational-databases/native-client-odbc-date-time/datetime-data-type-conversions-odbc?view=sql-server-ver15
 		mdb_set_date_fmt( dbc->sqlconn->mdb, "%F %H:%M:%S" );
 		mdb_set_shortdate_fmt( dbc->sqlconn->mdb, "%F" );
+		// Match formatting of REPID type values to MS Access ODBC driver
+		mdb_set_repid_fmt( dbc->sqlconn->mdb, MDB_NOBRACES_4_2_2_2_6 );
 		return SQL_SUCCESS;
 	}
 	else
 		return SQL_ERROR;
+}
+
+size_t _mdb_odbc_ascii2unicode(struct _hdbc* dbc, const char *_in, size_t _in_len, SQLWCHAR *_out, size_t _out_count){
+    wchar_t *w = malloc(_out_count * sizeof(wchar_t));
+    size_t count = 0, i;
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+    count = _mbstowcs_l(w, _in, _out_count, dbc->locale);
+#elif defined(HAVE_MBSTOWCS_L)
+    count = mbstowcs_l(w, _in, _out_count, dbc->locale);
+#else
+    locale_t oldlocale = uselocale(dbc->locale);
+    count = mbstowcs(w, _in, _out_count);
+    uselocale(oldlocale);
+#endif
+    for (i=0; i<count; i++) {
+        _out[i] = (SQLWCHAR)w[i];
+    }
+    free(w);
+    if (count < _out_count)
+        _out[count] = '\0';
+    return count;
 }
 
 SQLRETURN SQL_API SQLDriverConnect(
@@ -212,36 +172,6 @@ SQLRETURN SQL_API SQLDriverConnect(
 	LogHandleError(hdbc, "Could not find DSN nor DBQ in connect string '%s'", szConnStrIn);
 	return SQL_ERROR;
 }
-
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLDriverConnectW(
-    SQLHDBC            hdbc,
-    SQLHWND            hwnd,
-    SQLWCHAR           *szConnStrIn,
-    SQLSMALLINT        cbConnStrIn,
-    SQLWCHAR           *szConnStrOut,
-    SQLSMALLINT        cbConnStrOutMax,
-    SQLSMALLINT       *pcbConnStrOut,
-    SQLUSMALLINT       fDriverCompletion)
-{
-	TRACE("SQLDriverConnectW");
-	if(cbConnStrIn==SQL_NTS)cbConnStrIn=sqlwlen(szConnStrIn);
-	{
-		size_t l = cbConnStrIn*sizeof(SQLWCHAR), z = (cbConnStrIn+1)*3;
-		SQLCHAR *tmp = malloc(z);
-		SQLRETURN ret;
-		unicode2ascii((struct _hdbc *)hdbc, (char*)szConnStrIn, &l, (char*)tmp, &z);
-		tmp[z] = 0;
-		ret = SQLDriverConnect(hdbc,hwnd,tmp,SQL_NTS,NULL,0,pcbConnStrOut,fDriverCompletion);
-		free(tmp);
-		if (szConnStrOut && cbConnStrOutMax>0)
-			szConnStrOut[0] = 0;
-		if (pcbConnStrOut)
-			*pcbConnStrOut = 0;
-		return ret;
-	}
-}
-#endif // ENABLE_ODBC_W
 
 SQLRETURN SQL_API SQLBrowseConnect(
     SQLHDBC            hdbc,
@@ -498,8 +428,10 @@ struct _hdbc* dbc;
 	dbc->params = NewConnectParams ();
 	dbc->statements = g_ptr_array_new();
 	dbc->sqlconn = mdb_sql_init();
-#ifdef ENABLE_ODBC_W
-    _init_iconv(dbc);
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+    dbc->locale = _create_locale(LC_CTYPE, ".65001");
+#else
+    dbc->locale = newlocale(LC_CTYPE_MASK, "C.UTF-8", NULL);
 #endif
 	*phdbc=dbc;
 
@@ -645,36 +577,6 @@ SQLRETURN SQL_API SQLConnect(
 	return ret;
 }
 
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLConnectW(
-    SQLHDBC            hdbc,
-    SQLWCHAR           *szDSN,
-    SQLSMALLINT        cbDSN,
-    SQLWCHAR           *szUID,
-    SQLSMALLINT        cbUID,
-    SQLWCHAR           *szAuthStr,
-    SQLSMALLINT        cbAuthStr)
-{
-	TRACE("SQLConnectW");
-	if(cbDSN==SQL_NTS)cbDSN=sqlwlen(szDSN);
-	if(cbUID==SQL_NTS)cbUID=sqlwlen(szUID);
-	if(cbAuthStr==SQL_NTS)cbAuthStr=sqlwlen(szAuthStr);
-	{
-		SQLCHAR *tmp1=calloc(cbDSN*4,1),*tmp2=calloc(cbUID*4,1),*tmp3=calloc(cbAuthStr*4,1);
-		size_t l1=cbDSN*4,z1=cbDSN*2;
-		size_t l2=cbUID*4,z2=cbUID*2;
-		size_t l3=cbAuthStr*4,z3=cbAuthStr*2;
-		SQLRETURN ret;
-		unicode2ascii((struct _hdbc *)hdbc, (char*)szDSN, &z1, (char*)tmp1, &l1);
-		unicode2ascii((struct _hdbc *)hdbc, (char*)szUID, &z2, (char*)tmp2, &l2);
-		unicode2ascii((struct _hdbc *)hdbc, (char*)szAuthStr, &z3, (char*)tmp3, &l3);
-		ret = SQLConnect(hdbc, tmp1, l1, tmp2, l2, tmp3, l3);
-		free(tmp1),free(tmp2),free(tmp3);
-		return ret;
-	}
-}
-#endif //ENABLE_ODBC_W
-
 SQLRETURN SQL_API SQLDescribeCol(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       icol,
@@ -742,32 +644,6 @@ SQLRETURN SQL_API SQLDescribeCol(
 
 	return ret;
 }
-
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLDescribeColW(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLWCHAR           *szColName,
-    SQLSMALLINT        cbColNameMax,
-    SQLSMALLINT       *pcbColName,
-    SQLSMALLINT       *pfSqlType,
-    SQLULEN           *pcbColDef, /* precision */
-    SQLSMALLINT       *pibScale,
-    SQLSMALLINT       *pfNullable)
-{
-	TRACE("SQLDescribeColW");
-	if(cbColNameMax==SQL_NTS)cbColNameMax=sqlwlen(szColName);
-	{
-		SQLCHAR *tmp=calloc(cbColNameMax*4,1);
-		size_t l=cbColNameMax*4;
-		SQLRETURN ret = SQLDescribeCol(hstmt, icol, tmp, cbColNameMax*4, (SQLSMALLINT*)&l, pfSqlType, pcbColDef, pibScale, pfNullable);
-		ascii2unicode(((struct _hstmt*)hstmt)->hdbc, (char*)tmp, &l, (char*)szColName, (size_t*)pcbColName);
-		*pcbColName/=sizeof(SQLWCHAR);
-		free(tmp);
-		return ret;
-	}
-}
-#endif //ENABLE_ODBC_W
 
 SQLRETURN SQL_API SQLColAttributes(
     SQLHSTMT           hstmt,
@@ -874,31 +750,6 @@ SQLRETURN SQL_API SQLColAttributes(
 	return ret;
 }
 
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLColAttributesW(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLUSMALLINT       fDescType,
-    SQLPOINTER         rgbDesc,
-    SQLSMALLINT        cbDescMax,
-    SQLSMALLINT       *pcbDesc,
-    SQLLEN            *pfDesc)
-{
-	TRACE("SQLColAttributesW");
-	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL)
-		return SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
-	else{
-		SQLCHAR *tmp=calloc(cbDescMax*4,1);
-		size_t l=cbDescMax*4;
-		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,cbDescMax*4,(SQLSMALLINT*)&l,pfDesc);
-		ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, &l, (char*)rgbDesc, (size_t*)pcbDesc);
-		*pcbDesc/=sizeof(SQLWCHAR);
-		free(tmp);
-		return ret;
-	}
-}
-#endif //ENABLE_ODBC_W
-
 SQLRETURN SQL_API SQLDisconnect(
     SQLHDBC            hdbc)
 {
@@ -958,39 +809,6 @@ SQLRETURN SQL_API SQLError(
 	return result;
 }
 
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLErrorW(
-    SQLHENV            henv,
-    SQLHDBC            hdbc,
-    SQLHSTMT           hstmt,
-    SQLWCHAR          *szSqlState,
-    SQLINTEGER        *pfNativeError,
-    SQLWCHAR          *szErrorMsg,
-    SQLSMALLINT        cbErrorMsgMax,
-    SQLSMALLINT       *pcbErrorMsg)
-{
-	SQLCHAR szSqlState8[6];
-	SQLCHAR szErrorMsg8[3*cbErrorMsgMax+1];
-	SQLSMALLINT pcbErrorMsg8;
-	SQLRETURN result;
-
-	TRACE("SQLErrorW");
-
-	result = SQLError(henv, hdbc, hstmt, szSqlState8, pfNativeError, szErrorMsg8, 3*cbErrorMsgMax+1, &pcbErrorMsg8);
-	if (result == SQL_SUCCESS) {
-        struct _hdbc *dbc = hstmt ? ((struct _hstmt *)hstmt)->hdbc : hdbc;
-		size_t lin=6, lout=6*sizeof(SQLWCHAR);
-		ascii2unicode(dbc, (char*)szSqlState8, &lin, (char*)szSqlState, &lout);
-		lin = pcbErrorMsg8;
-		lout = cbErrorMsgMax;
-		ascii2unicode(dbc, (char*)szErrorMsg8, &lin, (char*)szErrorMsg, &lout);
-		if (pcbErrorMsg)
-			*pcbErrorMsg = lout;
-	}
-	return result;
-}
-#endif // ENABLE_ODBC_W
-
 SQLRETURN SQL_API SQLExecute(SQLHSTMT hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
@@ -1021,27 +839,6 @@ SQLRETURN SQL_API SQLExecDirect(
 	return SQLExecute(hstmt);
 }
 
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLExecDirectW(
-    SQLHSTMT           hstmt,
-    SQLWCHAR           *szSqlStr,
-    SQLINTEGER         cbSqlStr)
-{
-	TRACE("SQLExecDirectW");
-	if(cbSqlStr==SQL_NTS)cbSqlStr=sqlwlen(szSqlStr);
-	{
-		SQLCHAR *tmp=calloc(cbSqlStr*4,1);
-		size_t l=cbSqlStr*4,z=cbSqlStr*2;
-		SQLRETURN ret;
-		unicode2ascii(((struct _hstmt *)hstmt)->hdbc, (char*)szSqlStr, &z, (char*)tmp, &l);
-		ret = SQLExecDirect(hstmt, tmp, l);
-		TRACE("SQLExecDirectW end");
-		free(tmp);
-		return ret;
-	}
-}
-#endif // ENABLE_ODBC_W
-
 static void
 unbind_columns(struct _hstmt *stmt)
 {
@@ -1059,13 +856,13 @@ unbind_columns(struct _hstmt *stmt)
 	stmt->bind_head = NULL;
 }
 
-SQLRETURN SQL_API SQLFetch(
+SQLRETURN SQLFetch(
     SQLHSTMT           hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
 	struct _sql_bind_info *cur = stmt->bind_head;
-
 	TRACE("SQLFetch");
+
 	if ( stmt->sql->limit >= 0 && stmt->rows_affected == stmt->sql->limit ) {
 		return SQL_NO_DATA_FOUND;
 	}
@@ -1111,8 +908,10 @@ SQLRETURN SQL_API SQLFreeConnect(
 	FreeConnectParams(dbc->params);
 	g_ptr_array_free(dbc->statements, TRUE);
 	mdb_sql_exit(dbc->sqlconn);
-#ifdef ENABLE_ODBC_W
-    _free_iconv(dbc);
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+    if (dbc->locale) _free_locale(dbc->locale);
+#else
+    if (dbc->locale) freelocale(dbc->locale);
 #endif
 	g_free(dbc);
 
@@ -1382,31 +1181,6 @@ SQLRETURN SQL_API SQLColumns(
 	return SQL_SUCCESS;
 }
 
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLColumnsW(
-    SQLHSTMT           hstmt,
-    SQLWCHAR           *szCatalogName,
-    SQLSMALLINT        cbCatalogName,
-    SQLWCHAR           *szSchemaName,
-    SQLSMALLINT        cbSchemaName,
-    SQLWCHAR           *szTableName,
-    SQLSMALLINT        cbTableName,
-    SQLWCHAR           *szColumnName,
-    SQLSMALLINT        cbColumnName)
-{
-	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
-	{
-		SQLCHAR *tmp=calloc(cbTableName*4,1);
-		size_t l=cbTableName*4,z=cbTableName*2;
-		SQLRETURN ret;
-		unicode2ascii(((struct _hstmt* )hstmt)->hdbc, (char*)szTableName, &z, (char*)tmp, &l);
-		ret = SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);
-		free(tmp);
-		return ret;
-	}
-}
-#endif //ENABLE_ODBC_W
-
 SQLRETURN SQL_API SQLGetConnectOption(
     SQLHDBC            hdbc,
     SQLUSMALLINT       fOption,
@@ -1465,9 +1239,21 @@ SQLRETURN SQL_API SQLGetData(
 
 	if (col->col_type == MDB_BOOL) {
 		// bool cannot be null
-		*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
-		if (pcbValue)
-			*pcbValue = 1;
+		if (fCType == SQL_C_CHAR) {
+			((SQLCHAR *)rgbValue)[0] = col->cur_value_len ? '0' : '1';
+			((SQLCHAR *)rgbValue)[1] = '\0';
+			if (pcbValue)
+				*pcbValue = sizeof(SQLCHAR);
+		} else if (fCType == SQL_C_WCHAR) {
+			((SQLWCHAR *)rgbValue)[0] = col->cur_value_len ? '0' : '1';
+			((SQLWCHAR *)rgbValue)[1] = '\0';
+			if (pcbValue)
+				*pcbValue = sizeof(SQLWCHAR);
+		} else {
+			*(BOOL*)rgbValue = col->cur_value_len ? 0 : 1;
+			if (pcbValue)
+				*pcbValue = 1;
+	        }
 		return SQL_SUCCESS;
 	}
 	if (col->cur_value_len == 0) {
@@ -1496,7 +1282,7 @@ SQLRETURN SQL_API SQLGetData(
 	found_bound_type:
 	if (fCType==SQL_C_DEFAULT)
 		fCType = _odbc_get_client_type(col);
-	if (fCType == SQL_C_CHAR)
+	if (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR)
 		goto to_c_char;
 	switch(col->col_type) {
 		case MDB_BYTE:
@@ -1656,7 +1442,7 @@ SQLRETURN SQL_API SQLGetData(
 			free(stmt->ole_str);
 			stmt->ole_str = NULL;
 			break;
-		default: /* FIXME here we assume fCType == SQL_C_CHAR */
+		default: /* FIXME here we assume fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR */
 		to_c_char:
 		{
 			if (cbValueMax < 0) {
@@ -1664,6 +1450,7 @@ SQLRETURN SQL_API SQLGetData(
 				return SQL_ERROR;
 			}
 			char *str = NULL;
+			SQLWCHAR *wstr = NULL;
 			if (col->col_type == MDB_NUMERIC) {
 				str = mdb_numeric_to_string(mdb, col->cur_value_start,
 						col->col_scale, col->col_prec);
@@ -1672,63 +1459,52 @@ SQLRETURN SQL_API SQLGetData(
 						col->cur_value_start, col->col_type, col->cur_value_len);
 			}
 			size_t len = strlen(str);
+			size_t charsize = 1;
+			if (fCType == SQL_C_WCHAR) {
+				wstr = calloc(len+1, charsize = sizeof(SQLWCHAR));
+				len = _mdb_odbc_ascii2unicode(((struct _hstmt *)hstmt)->hdbc, str, len, wstr, len+1);
+			}
 
 			if (stmt->pos >= len) {
-				free(str);
-				str = NULL;
+				free(wstr); wstr = NULL;
+				free(str); str = NULL;
 				return SQL_NO_DATA;
 			}
 			if (pcbValue) {
-				*pcbValue = len - stmt->pos;
+				*pcbValue = (len - stmt->pos) * charsize;
 			}
 			if (cbValueMax == 0) {
-				free(str);
-				str = NULL;
+				free(wstr); wstr = NULL;
+				free(str); str = NULL;
 				return SQL_SUCCESS_WITH_INFO;
 			}
 
-			const int totalSizeRemaining = len - stmt->pos;
-			const int partsRemain = cbValueMax - 1 < totalSizeRemaining;
-			const int sizeToReadThisPart = partsRemain ? cbValueMax - 1 : totalSizeRemaining;
-			memcpy(rgbValue, str + stmt->pos, sizeToReadThisPart);
+			const int totalCharactersRemaining = len - stmt->pos;
+			const int partsRemain = cbValueMax/charsize - 1 < totalCharactersRemaining;
+			const int charactersToReadThisPart = partsRemain ? cbValueMax/charsize - 1 : totalCharactersRemaining;
 
-			((char *)rgbValue)[sizeToReadThisPart] = '\0';
+			if (wstr) {
+				memcpy(rgbValue, wstr + stmt->pos, charactersToReadThisPart * sizeof(SQLWCHAR));
+				((SQLWCHAR *)rgbValue)[charactersToReadThisPart] = '\0';
+			} else {
+				memcpy(rgbValue, str + stmt->pos, charactersToReadThisPart);
+				((SQLCHAR *)rgbValue)[charactersToReadThisPart] = '\0';
+			}
+
+			free(wstr); wstr = NULL;
+			free(str); str = NULL;
 
 			if (partsRemain) {
-				stmt->pos += cbValueMax - 1;
-				free(str); str = NULL;
+				stmt->pos += charactersToReadThisPart;
 				strcpy(stmt->sqlState, "01004"); // truncated
 				return SQL_SUCCESS_WITH_INFO;
 			}
 			stmt->pos = len;
-			free(str);
-			str = NULL;
 			break;
 		}
 	}
 	return SQL_SUCCESS;
 }
-
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLGetDataW(
-    SQLHSTMT           hstmt,
-    SQLUSMALLINT       icol,
-    SQLSMALLINT        fCType,
-    SQLPOINTER         rgbValue,
-    SQLLEN             cbValueMax,
-    SQLLEN             *pcbValue)
-{
-	//todo: treat numbers correctly
-
-	SQLCHAR *tmp=calloc(cbValueMax*4,1);
-	size_t l=cbValueMax*4;
-	SQLRETURN ret = SQLGetData(hstmt, icol, fCType, tmp, cbValueMax*4, (SQLLEN*)&l);
-	ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, &l, (char*)rgbValue, (size_t*)pcbValue);
-	*pcbValue/=sizeof(SQLWCHAR);
-	free(tmp);
-	return ret;
-}
-#endif //ENABLE_ODBC_W
 
 static void _set_func_exists(SQLUSMALLINT *pfExists, SQLUSMALLINT fFunction)
 {
@@ -1963,31 +1739,6 @@ SQLRETURN SQL_API SQLGetInfo(
 
 	return SQL_SUCCESS;
 }
-
-#ifdef ENABLE_ODBC_W
-SQLRETURN SQL_API SQLGetInfoW(
-    SQLHDBC            hdbc,
-    SQLUSMALLINT       fInfoType,
-    SQLPOINTER         rgbInfoValue,
-    SQLSMALLINT        cbInfoValueMax,
-    SQLSMALLINT   *pcbInfoValue)
-{
-	TRACE("SQLGetInfoW");
-
-	if(fInfoType==SQL_MAX_STATEMENT_LEN||fInfoType==SQL_SCHEMA_USAGE||fInfoType==SQL_CATALOG_LOCATION)
-		return SQLGetInfo(hdbc,fInfoType,rgbInfoValue,cbInfoValueMax,pcbInfoValue);
-
-	SQLCHAR *tmp=calloc(cbInfoValueMax*4,1);
-	size_t l=cbInfoValueMax*4;
-	SQLRETURN ret = SQLGetInfo(hdbc, fInfoType, tmp, cbInfoValueMax*4,(SQLSMALLINT*)&l);
-	size_t pcb=cbInfoValueMax;
-	ascii2unicode((struct _hdbc *)hdbc, (char*)tmp, &l, (char*)rgbInfoValue, &pcb);
-	pcb/=sizeof(SQLWCHAR);
-	if(pcbInfoValue)*pcbInfoValue=pcb;
-	free(tmp);
-	return ret;
-}
-#endif //ENABLE_ODBC_W
 
 SQLRETURN SQL_API SQLGetStmtOption(
     SQLHSTMT           hstmt,
@@ -2233,14 +1984,14 @@ SQLRETURN SQL_API SQLDataSources(
 
 static int _odbc_fix_literals(struct _hstmt *stmt)
 {
-	char tmp[4096],begin_tag[11];
+	char tmp[4096];
 	char *s, *d, *p;
 	int i, quoted = 0, find_end = 0;
 	char quote_char;
 
 	s=stmt->query;
 	d=tmp;
-	while (*s) {
+	while (*s && d<tmp+sizeof(tmp)) {
 		if (!quoted && (*s=='"' || *s=='\'')) {
 			quoted = 1;
 			quote_char = *s;
@@ -2255,9 +2006,7 @@ static int _odbc_fix_literals(struct _hstmt *stmt)
 				/* garbage */
 				*d++=*s++;
 			} else {
-				strncpy(begin_tag, s, i);
-				begin_tag[i] = '\0';
-				/* printf("begin tag %s\n", begin_tag); */
+				/* printf("begin tag %.*s\n", i, s); */
 				s += i;
 				find_end = 1;
 			}
@@ -2265,8 +2014,8 @@ static int _odbc_fix_literals(struct _hstmt *stmt)
 			*d++=*s++;	
 		}
 	}
-	*d='\0';
-	strcpy(stmt->query,tmp);
+
+	snprintf(stmt->query, sizeof(stmt->query), "%.*s", (int)(d-tmp), tmp);
 
 	return 0;
 }
@@ -2373,7 +2122,7 @@ static const char * _odbc_get_client_type_name(MdbColumn *col)
 		case MDB_COMPLEX:
 			return "COMPLEX";
 		default:
-			// fprintf(stderr,"Unknown type %d\n",srv_type);
+			fprintf(stderr,"Unknown type for column %s: %d\n",col->name,col->col_type);
 			break;
 	}
 	return NULL;

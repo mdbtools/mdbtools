@@ -46,7 +46,7 @@ static size_t decompress_unicode(const char *src, size_t slen, char *dst, size_t
 	return tlen;
 }
 
-#if HAVE_ICONV
+#ifdef HAVE_ICONV
 static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	char *out_ptr = dest;
 	size_t len_out = dlen - 1;
@@ -88,15 +88,7 @@ static size_t latin1_to_utf8_without_iconv(const char *in_ptr, size_t len_in, ch
 	return out - dest;
 }
 
-static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
-	if (IS_JET3(mdb)) {
-		if (mdb->f->code_page == 1252) {
-			return latin1_to_utf8_without_iconv(in_ptr, len_in, dest, dlen);
-		}
-		int count = 0;
-		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
-		return count;
-	}
+static size_t unicode2ascii_locale(mdb_locale_t locale, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
     size_t i;
     size_t count = 0;
     size_t len_out = dlen - 1;
@@ -109,11 +101,11 @@ static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_
     w[len_in/2] = '\0';
 
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
-    count = _wcstombs_l(dest, w, len_out, mdb->locale);
+    count = _wcstombs_l(dest, w, len_out, locale);
 #elif defined(HAVE_WCSTOMBS_L)
-    count = wcstombs_l(dest, w, len_out, mdb->locale);
+    count = wcstombs_l(dest, w, len_out, locale);
 #else
-    locale_t oldlocale = uselocale(mdb->locale);
+    locale_t oldlocale = uselocale(locale);
     count = wcstombs(dest, w, len_out);
     uselocale(oldlocale);
 #endif
@@ -123,6 +115,18 @@ static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_
 
     dest[count] = '\0';
 	return count;
+}
+
+static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+	if (IS_JET3(mdb)) {
+		if (mdb->f->code_page == 1252) {
+			return latin1_to_utf8_without_iconv(in_ptr, len_in, dest, dlen);
+		}
+		int count = 0;
+		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
+		return count;
+	}
+    return unicode2ascii_locale(mdb->locale, in_ptr, len_in, dest, dlen);
 }
 #endif
 
@@ -153,7 +157,7 @@ mdb_unicode2ascii(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 		in_ptr = src;
 	}
 
-#if HAVE_ICONV
+#ifdef HAVE_ICONV
 	dlen = decompressed_to_utf8_with_iconv(mdb, in_ptr, len_in, dest, dlen);
 #else
 	dlen = decompressed_to_utf8_without_iconv(mdb, in_ptr, len_in, dest, dlen);

@@ -12,4 +12,4 @@ Description: core MDB file support library
 Requires: @GLIB_PACKAGE@
 Version: @VERSION@
 Libs: -L${libdir} -lmdb
-Cflags: @MDBTOOLS_CFLAGS@
+Cflags: -I${includedir}

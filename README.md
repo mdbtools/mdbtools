@@ -12,11 +12,11 @@ The major pieces of MDB Tools are:
 
 ### libmdb
 
-The core library that allows access to MDB files programatically.
+The core library that allows access to MDB files programatically. See [mdbtools.h](./include/mdbtools.h.in) for the complete API.
 
 ### libmdbsql
 
-Builds on libmdb to provide a SQL engine (aka Jet)
+Builds on libmdb to provide a SQL engine (aka Jet). See [mdbsql.h](./include/mdbsql.h) for the complete API.
 
 ### utils
 
@@ -32,17 +32,26 @@ Provides command line utilities, including:
 | `mdb-count` | A simple count of number of rows in a table, to be used in shell scripts and ETL pipelines. |
 | `mdb-sql` | A simple SQL engine (also used by ODBC and gmdb). |
 | `mdb-queries` | List and print queries stored in the database. |
+| `mdb-hexdump`\* | (in [src/extras](./src/extras)) Simple hex dump utility to look at mdb files. |
+| `mdb-array`\* | Export data in an MDB database table to a C array. |
+| `mdb-header`\* | Generates a C header to be used in exporting mdb data to a C prog. |
+| `mdb-parsecsv`\* | Generates a C program given a CSV file made with mdb-export. |
+
+\* Deprecated
+
+See the man page of each program for usage instructions.
+
+The [src/util](./src/util) directory also contains a number of debugging tools, intended for developers. They are:
+
+| Command | Description |
+| ------- | ----------- |
 | `prcat` | Prints the catalog table from an mdb file. |
 | `prkkd` | Dump of information about design view data given the offset to it. |
 | `prtable` | Dump of a table definition. |
 | `prdata` | Dump of the data given a table name. |
 | `prole` | Dump of ole columns given a table name and sargs. |
-| `mdb-hexdump` | (in src/extras) Simple hex dump utility that I've been using to look at mdb files. |
-| `mdb-array` | Export data in an MDB database table to a C array.\* |
-| `mdb-header` | Generates a C header to be used in exporting mdb data to a C prog.\* |
-| `mdb-parsecsv` | Generates a C program given a CSV file made with mdb-export.\* |
 
-\* Deprecated
+These tools are not installed on the host system.
 
 ### odbc
 
@@ -50,7 +59,7 @@ An ODBC driver for use with unixODBC or iODBC driver manager. Allows one to use 
 
 ### gmdb2
 
-The Gnome MDB File Viewer and debugger. Alpha quality, moved to [mdbtools/gmdb2](https://github.com/mdbtools/gmdb2).
+The Gnome MDB File Viewer and debugger. Recently ported to GTK+3 and moved to [mdbtools/gmdb2](https://github.com/mdbtools/gmdb2).
 
 ## License
 
@@ -65,7 +74,7 @@ First, you must have reasonably current installations of:
 
 * [libtool](https://www.gnu.org/software/libtool/)
 * [automake](https://www.gnu.org/software/automake/)
-* [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.58)
+* [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.64)
 
 If you want to build the SQL engine, you'll need
 [bison](https://www.gnu.org/software/bison/) (version >= 3.0) or
@@ -93,6 +102,12 @@ apt install mdbtools
 
 ```bash
 brew install mdbtools
+```
+
+### MacPorts
+
+```bash
+port install mdbtools
 ```
 
 ### From source
@@ -133,6 +148,9 @@ mutually exclusive.
 --with-iodbc     specifies the location of the iODBC driver manager and 
                  causes the iODBC driver to be built.
 ```
+
+By default, the ODBC driver will be installed as /usr/local/lib/odbc/libmdbodbc.so,
+with a Unicode-capable driver at /usr/local/lib/odbc/libmdbodbcW.so.
 
 A list of general options is available in the [INSTALL](./INSTALL) file, and
 `configure --help` will give you the list of mdbtools specific options.

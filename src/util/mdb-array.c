@@ -35,16 +35,16 @@ char quote_text = 1;
 int count = 0;
 int started;
 
+ fputs("mdb-array is deprecated and will disappear in a future version of mdbtools.\n", stderr);
+ fputs("Please drop us a line if you have any use of it.\n", stderr);
+ fputs("See https://github.com/mdbtools/mdbtools/issues/197\n", stderr);
+ fputs("\n", stderr);
+
  if  (argc < 3) 
    {
      fprintf (stderr, "Usage: %s <file> <table>\n", argv [0]);
      exit (1);
    }
-
- fputs("mdb-array is deprecated and will disappear in a future version of mdbtools.\n", stderr);
- fputs("Please drop us a line if you have any use of it.\n", stderr);
- fputs("See https://github.com/mdbtools/mdbtools/issues/197\n", stderr);
- fputs("\n", stderr);
 
  mdb = mdb_open (argv [1], MDB_NOFLAGS);
  if (!mdb)

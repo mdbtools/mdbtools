@@ -3,12 +3,14 @@
 *.la
 *.out
 .deps/
+.idea/
 .libs/
 aclocal.m4
 autom4te.cache/
 build-aux/*
 !build-aux/config.rpath
 m4/
+!m4/ax_tls.m4
 !m4/ccalias.m4
 !m4/iconv.m4
 !m4/readline.m4
@@ -20,6 +22,7 @@ Makefile
 doc/*.1
 INSTALL
 include/mdbver.h
+include/mdbtools.h
 libmdb.pc
 libmdbsql.pc
 libtool

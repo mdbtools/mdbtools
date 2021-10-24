@@ -226,12 +226,14 @@ main(int argc, char **argv)
 				counter = 0; // reset to 0, prevent overflow on extremely large data sets.
 				char *quoted_name;
 				quoted_name = mdb->default_backend->quote_schema_name(namespace, table_name);
+				quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 				fprintf(outfile, "INSERT INTO %s (", quoted_name);
 				free(quoted_name);
 				for (i = 0; i < table->num_cols; i++) {
 					if (i > 0) fputs(", ", outfile);
 					col = g_ptr_array_index(table->columns, i);
 					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+					quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 					fputs(quoted_name, outfile);
 					free(quoted_name);
 				}
@@ -284,12 +286,14 @@ main(int argc, char **argv)
 			if (insert_dialect) {
 				char *quoted_name;
 				quoted_name = mdb->default_backend->quote_schema_name(namespace, table_name);
+				quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 				fprintf(outfile, "INSERT INTO %s (", quoted_name);
 				free(quoted_name);
 				for (i = 0; i < table->num_cols; i++) {
 					if (i > 0) fputs(", ", outfile);
 					col = g_ptr_array_index(table->columns, i);
 					quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+					quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
 					fputs(quoted_name, outfile);
 					free(quoted_name);
 				}
