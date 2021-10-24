@@ -1,108 +1,62 @@
-Version 1.0.0 (Beta 7)
+Version 1.0.0
 =============
 
-mdb-export:
+MDB Tools 1.0 includes a number of new features compared to the 0.9 series. The
+most significant change is that mdbtools.h is now generated at build time, and
+its internal HAVE_ macros have been removed. This means that it is now safe for
+clients to compile against mdbtools.h without needing to provide the same
+HAVE_ICONV and HAVE_GLIB flags that were present when the library was first
+compiled. For most users, MDB Tools 1.0 will be ABI and API compatible with the
+0.9 series but see the notes in the "Install" section below.
 
-* Fix issue where byte columns with values > 127 were exported as negative numbers (regression introduced in v0.9.3-beta1) #350
+The SQL engine has two new operators: ILIKE (case-insensitive pattern matching)
+and <> (not equals).
 
-Version 1.0.0 (Beta 6)
-=============
+Changes since 0.9.4:
+
+Build:
+* Generate platform-specific `mdbtools.h` at configure-time #316
+* Ensure compiler supports thread-local storage
+* Fix `AC_PROG_LEX` warning with autoconf 2.70
+* Rely on autoconf to define appropriate values of `_XOPEN_SOURCE` and friends
+* New `--disable-iconv` configure option (falls back to `wcstombs` where possible)
+* Fix a build error when `./configure` detected iconv, but thought it was not working
+* Generating the configure script now requires autoconf 2.64 or later
+
+Install:
+* Install `libmdbodbc.so` and `libmdbodbcW.so` into ${libdir}/odbc #315
+* Do not install `mdb-sql` if SQL support was not built #276
+* Do not install `libmdbsql.pc` if SQL support was not built
+
+`pkg-config`:
+* Simplify `--cflags` for libmdb
+* Provide correct `--cflags` for libmdbsql
 
 libmdb:
-
-* Improved support for pre-C11 compilers
-
-ODBC:
-
-* Remove `SQLFetchW` (introduced in Beta 5) in favor of the `SQL_C_WCHAR` return type
-* Fix an issue where Chinese characters were returned instead of ASCII using the Unicode driver on some platforms
-* Add support for older iODBC installations lacking odbcinst.h
-* Improved bounds checking
-
-Version 1.0.0 (Beta 5)
-=============
-
-libmdb:
-
+* Copy date formats when cloning handles #326
 * Fix incorrect reading of double values #339 #342
 * Fix accidental reads of non-index data #335 #343
 * New `mdb_set_repid_fmt()` for setting the format of Rep IDs (UUIDs)  #344
 
 SQL:
-
+* New case-insensitive, Unicode-aware `ILIKE` operator #244
+* New `<>` (not equal) operator #329
 * Improved support for comparing floating-point values to integers
 * Improved support for floating point literals with no fractional digits (e.g. "3.")
 * Add support for querying Rep IDs
 
 ODBC:
-
-* Implement `SQLFetchW` in the Unicode driver #347 #348
-
-Version 1.0.0 (Beta 4)
-=============
-
-Build:
-* New `--disable-iconv` configure option (falls back to `wcstombs` where possible)
-* Fix a build error when `./configure` detected iconv, but thought it was not working
-* Generating the configure script now requires autoconf 2.64 or later
-
-ODBC:
+* Format boolean values correctly as `SQL_C_CHAR` #327
+* Add support for the `SQL_C_WCHAR` (UTF-16) return type #347 #348
 * The Unicode driver (`libmdbodbcW.so`) no longer uses iconv #332 #333
+* Add support for older iODBC installations lacking `odbcinst.h`
 
-SQL:
-* New `<>` (not equal) operator #329
-
-Version 1.0.0 (Beta 3)
-=============
-
-Build:
-* Fix warning with autoconf 2.70
-* Rely on autoconf to define appropriate values of `_XOPEN_SOURCE` and friends
-* Simplify configure script
-
-libmdb:
-* Restore previous `MdbHandle` struct layout
-* Simplify `pkg-config --cflags`
-
-libmdbsql:
-* Provide correct `pkg-config --cflags`
-
-ODBC:
-* Format boolean values correctly as SQL_C_CHAR #327
-
-mdb-schema:
-* Fix incorrect treatment of CREATE TABLE and DROP TABLE #328 (Bug introduced in Beta 2)
-
-Version 1.0.0 (Beta 2)
-=============
-
-Build:
-* Ensure compiler supports thread-local storage
-
-libmdb:
-* Copy date formats when cloning handles #326
-* Restore previous `mdb_register_backend` API
-* Restore previous `MdbBackend` struct layout
-
-Version 1.0.0 (Beta 1)
-=============
-
-libmdb:
-* Generate platform-specific `mdbtools.h` at configure-time #316
-
-SQL:
-* New case-insensitive, Unicode-aware `ILIKE` operator #244
-* Do not install `mdb-sql` if SQL support was not built #276
-* Do not install `libmdbsql.pc` if SQL support was not built
-
-ODBC:
-* Install libmdbodbc.so and libmdbodbcW.so into ${libdir}/odbc #315
-
-mdb-export:
+`mdb-export`:
 * Convert table names to lower case when exporting to PostgreSQL #322
 * Use `CREATE IF NOT EXISTS` when exporting to PostgreSQL #321
+* Fix issue where byte columns with values > 127 were exported as negative numbers (regression introduced in v0.9.3-beta1) #350
 
-mdb-hexdump:
+`mdb-hexdump`:
 * Deprecate tool
 
 Version 0.9.4
