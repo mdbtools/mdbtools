@@ -256,6 +256,8 @@ typedef struct {
 
 typedef struct {
 	FILE        *stream;
+	void		*data;
+	size_t		data_len;
 	gboolean      writable;
 	guint32		jet_version;
 	guint32		db_key;

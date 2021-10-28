@@ -79,13 +79,20 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 	off_t offset = pg * mdb->fmt->pg_size;
 	unsigned char *buf = mdb->pg_buf;
 
-    fseeko(mdb->f->stream, 0, SEEK_END);
-	/* is page beyond current size + 1 ? */
-	if (ftello(mdb->f->stream) < offset + mdb->fmt->pg_size) {
-		fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
-		return 0;
+	if (mdb->f->data) {
+		if ((off_t)mdb->f->data_len < offset + mdb->fmt->pg_size) {
+			fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
+			return 0;
+		}
+	} else {
+		fseeko(mdb->f->stream, 0, SEEK_END);
+		/* is page beyond current size + 1 ? */
+		if (ftello(mdb->f->stream) < offset + mdb->fmt->pg_size) {
+			fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
+			return 0;
+		}
+		fseeko(mdb->f->stream, offset, SEEK_SET);
 	}
-	fseeko(mdb->f->stream, offset, SEEK_SET);
 
 	if (pg != 0 && mdb->f->db_key != 0)
 	{
@@ -94,13 +101,18 @@ mdb_write_pg(MdbHandle *mdb, unsigned long pg)
 		mdbi_rc4((unsigned char*)&tmp_key, 4, buf, mdb->fmt->pg_size);
 	}
 
-	len = fwrite(buf, 1, mdb->fmt->pg_size, mdb->f->stream);
+	if (mdb->f->data) {
+		memcpy((char*)mdb->f->data + offset, mdb->pg_buf, mdb->fmt->pg_size);
+		len = mdb->fmt->pg_size;
+	} else {
+		len = fwrite(buf, 1, mdb->fmt->pg_size, mdb->f->stream);
+	}
 
 	if (buf != mdb->pg_buf) {
 		g_free(buf);
 	}
 
-	if (ferror(mdb->f->stream)) {
+	if (!mdb->f->data && ferror(mdb->f->stream)) {
 		perror("write");
 		return 0;
 	} else if (len<mdb->fmt->pg_size) {
