@@ -56,5 +56,6 @@ src/util/updrow
 ## apidocs docs related
 public/
 .sass-cache/
+*.css.map
 temp-man-pages/
 
