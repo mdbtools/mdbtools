@@ -16,3 +16,4 @@
 ./src/util/mdb-ver test/data/ASampleDatabase.accdb
 ./src/util/mdb-ver test/data/nwind.mdb
 ./src/util/mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwner
+./src/util/mdb-export -X '@' -d '|' -D %F -T '%F %T' -R "\n" -q '"' -H -e test/data/DateTestDatabase.mdb DateTest
