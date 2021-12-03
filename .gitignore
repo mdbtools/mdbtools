@@ -14,6 +14,7 @@ m4/
 !m4/ccalias.m4
 !m4/iconv.m4
 !m4/readline.m4
+/test/
 config.log
 config.status
 configure
