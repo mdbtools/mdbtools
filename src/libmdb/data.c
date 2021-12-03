@@ -23,7 +23,7 @@
 #define OFFSET_MASK 0x1fff
 #define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
 
-static int _mdb_attempt_bind(MdbHandle *mdb, 
+static int _mdb_attempt_bind(MdbHandle *mdb,
 	MdbColumn *col, unsigned char isnull, int offset, int len);
 static char *mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start);
 #ifdef MDB_COPY_OLE
@@ -91,8 +91,8 @@ int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_pt
 
 	if (!table->columns)
 		return -1;
-	/* 
-	** the column arrary is 0 based, so decrement to get 1 based parameter 
+	/*
+	** the column arrary is 0 based, so decrement to get 1 based parameter
 	*/
 	col_num--;
 
@@ -121,7 +121,7 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
 
 	if (!table->columns)
 		return -1;
-	
+
 	for (i=0;i<table->num_cols;i++) {
 		col=g_ptr_array_index(table->columns,i);
 		if (!g_ascii_strcasecmp(col->name,col_name)) {
@@ -144,7 +144,7 @@ mdb_bind_column_by_name(MdbTableDef *table, gchar *col_name, void *bind_ptr, int
  * @buf: Pointer for returning a pointer to the page
  * @off: Pointer for returning an offset to the row
  * @len: Pointer for returning the length of the row
- * 
+ *
  * Returns: 0 on success. -1 on failure.
  */
 int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len)
@@ -183,7 +183,7 @@ int mdb_find_row(MdbHandle *mdb, int row, int *start, size_t *len)
 	return 0;
 }
 
-int 
+int
 mdb_find_end_of_row(MdbHandle *mdb, int row)
 {
 	int rco = mdb->fmt->row_count_offset;
@@ -226,9 +226,9 @@ int bit_num = (col_num - 1) % 8;
 		return 1;
 	}
 }
-/* bool has to be handled specially because it uses the null bit to store its 
+/* bool has to be handled specially because it uses the null bit to store its
 ** value*/
-static size_t 
+static size_t
 mdb_xfer_bound_bool(MdbHandle *mdb, MdbColumn *col, int value)
 {
 	col->cur_value_len = value;
@@ -338,11 +338,11 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 	if (row_start & 0x4000) delflag++;
 	row_start &= OFFSET_MASK; /* remove flags */
 #if MDB_DEBUG
-	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
+	fprintf(stdout,"Row %d bytes %d to %d %s %s\n",
 		row, row_start, row_start + row_size - 1,
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
-#endif	
+#endif
 
 	if (!table->noskip_del && delflag) {
 		return 0;
@@ -355,10 +355,10 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		free(fields);
 		return 0;
 	}
-	
+
 #if MDB_DEBUG
 	fprintf(stdout,"sarg test passed row %d \n", row);
-#endif 
+#endif
 
 #if MDB_DEBUG
 	mdb_buffer_dump(mdb->pg_buf, row_start, row_size);
@@ -376,10 +376,10 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 
 	return 1;
 }
-static int _mdb_attempt_bind(MdbHandle *mdb, 
-	MdbColumn *col, 
-	unsigned char isnull, 
-	int offset, 
+static int _mdb_attempt_bind(MdbHandle *mdb,
+	MdbColumn *col,
+	unsigned char isnull,
+	int offset,
 	int len)
 {
 	if (col->col_type == MDB_BOOL) {
@@ -431,7 +431,7 @@ int mdb_read_next_dpg(MdbTableDef *table)
 			next_pg, mdb->pg_buf[0], mdb_get_int32(mdb->pg_buf, 4), entry->table_pg);
 	}
 	fprintf(stderr, "Warning: defaulting to brute force read\n");
-#endif 
+#endif
 	/* can't do a fast read, go back to the old way */
 	do {
 		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
@@ -448,7 +448,7 @@ int mdb_rewind_table(MdbTableDef *table)
 
 	return 0;
 }
-int 
+int
 mdb_fetch_row(MdbTableDef *table)
 {
 	MdbHandle *mdb = table->entry->mdb;
@@ -482,7 +482,7 @@ mdb_fetch_row(MdbTableDef *table)
 				g_ptr_array_index(pages, table->cur_pg_num-1),
 				fmt->pg_size);
 		} else if (table->strategy==MDB_INDEX_SCAN) {
-		
+
 			if (!mdb_index_find_next(table->mdbidx, table->scan_idx, table->chain, &pg, (guint16 *) &(table->cur_row))) {
 				mdb_index_scan_free(table);
 				return 0;
@@ -494,7 +494,7 @@ mdb_fetch_row(MdbTableDef *table)
 			/* if at end of page, find a new data page */
 			if (table->cur_row >= rows) {
 				table->cur_row=0;
-	
+
 				if (!mdb_read_next_dpg(table)) {
 					return 0;
 				}
@@ -542,7 +542,7 @@ int mdb_is_fixed_col(MdbColumn *col)
 	return col->is_fixed;
 }
 #if 0
-static char *mdb_data_to_hex(MdbHandle *mdb, char *text, int start, int size) 
+static char *mdb_data_to_hex(MdbHandle *mdb, char *text, int start, int size)
 {
 int i;
 
@@ -560,7 +560,7 @@ int i;
  * responsible for not calling this function. Then, it doesn't have to
  * preserve the original value.
  */
-size_t 
+size_t
 mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 {
 	guint32 ole_len;
@@ -595,7 +595,7 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 
 	return len - 4;
 }
-size_t 
+size_t
 mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 {
 	guint32 ole_len;
@@ -648,7 +648,7 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
-		if (col->bind_ptr) 
+		if (col->bind_ptr)
 			memcpy(col->bind_ptr, (char*)buf + row_start + 4, len - 4);
 		col->cur_blob_pg_row = mdb_get_int32(buf, row_start);
 		mdb_debug(MDB_DEBUG_OLE, "next pg_row %d", col->cur_blob_pg_row);
@@ -704,7 +704,7 @@ static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size)
 
 	if (size<MDB_MEMO_OVERHEAD) {
 		return 0;
-	} 
+	}
 
 	/* The 16 bit integer at offset 0 is the length of the memo field.
 	 * The 32 bit integer at offset 4 contains page and row information.
@@ -745,7 +745,7 @@ static size_t mdb_copy_ole(MdbHandle *mdb, void *dest, int start, int size)
 			mdb_debug(MDB_DEBUG_OLE,"row num %d start %d len %d",
 				pg_row & 0xff, row_start, len);
 
-			if (dest) 
+			if (dest)
 				memcpy(dest+cur, buf + row_start + 4, len - 4);
 			cur += len - 4;
 
@@ -770,7 +770,7 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 	if (size<MDB_MEMO_OVERHEAD) {
 		strcpy(text, "");
 		return text;
-	} 
+	}
 
 #if MDB_DEBUG
 	mdb_buffer_dump(pg_buf, start, MDB_MEMO_OVERHEAD);
@@ -894,10 +894,9 @@ mdb_date_to_tm(double td, struct tm *t)
 	long yr, q;
 	const int *cal;
 
-	// if you want to limit 1900--2700, do this
-	// but it's not necessary
-	// if (td < 0.0 || td > 1e6) // About 2700 AD
-	// 	return;
+	// limit to ~1100AD--2700A to protect from overflow
+	if (td < -1e6 || td > 1e6)
+		return;
 
 	yr = 1;
 	day = (long)(td);
@@ -947,6 +946,8 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 
 	mdb_date_to_tm(td, &t);
 
+	// check if t is still unchanged, return empty string?
+
 	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
 
 	return text;
@@ -980,7 +981,7 @@ int floor_log10(double f, int is_single)
 
 	if (f < 0.0)
 		f = -f;
-	
+
 	if ((f == 0.0) || (f == 1.0) || isinf(f)) {
 		return 0;
 	} else if (f < 1.0) {
@@ -1098,7 +1099,7 @@ int mdb_col_disp_size(MdbColumn *col)
 			return 20;
 		break;
 		case MDB_MEMO:
-			return 64000; 
+			return 64000;
 		break;
 		case MDB_MONEY:
 			return 21;
@@ -1138,7 +1139,7 @@ int mdb_col_fixed_size(MdbColumn *col)
 			return -1;
 		break;
 		case MDB_MEMO:
-			return -1; 
+			return -1;
 		break;
 		case MDB_MONEY:
 			return 8;
