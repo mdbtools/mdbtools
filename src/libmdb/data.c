@@ -894,10 +894,6 @@ mdb_date_to_tm(double td, struct tm *t)
 	long yr, q;
 	const int *cal;
 
-	// limit to ~1100AD--2700A to protect from overflow
-	if (td < -1e6 || td > 1e6)
-		return;
-
 	yr = 1;
 	day = (long)(td);
 	time = (long)((td - day) * 86400.0 + 0.5);
@@ -944,9 +940,11 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 	char *text = g_malloc(mdb->bind_size);
 	double td = mdb_get_double(buf, start);
 
-	mdb_date_to_tm(td, &t);
+	// limit to ~1100AD--2700A to protect from overflow
+	if (td < -1e6 || td > 1e6)
+		return strdup("");
 
-	// check if t is still unchanged, return empty string?
+	mdb_date_to_tm(td, &t);
 
 	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
 
