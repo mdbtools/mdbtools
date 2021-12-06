@@ -945,11 +945,12 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 	// Sunday, February 4, 839 BC to Tuesday, November 28, 4637
 	if (td < -1e6 || td > 1e6) {
 		// an "invalid date" would perhaps be better than null (TODO)
+		// fprintf(stderr, "Warning: mdb_date_to_string called on unsupported date with %f days.\n", td);
 		text = g_strdup("");
 	} else {
 		text = g_malloc(mdb->bind_size);
 		mdb_date_to_tm(td, &t);
-		strftime(text, mdb->bind_size, mdb->date_fmt, &t);
+		strftime(text, mdb->bind_size, fmt, &t);
 	}
 
 	return text;
@@ -1050,9 +1051,6 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 				mdb_unicode2ascii(mdb, (char*)buf + start,
 					size, text, mdb->bind_size);
 			}
-		break;
-		case MDB_DATETIME:
-			text = mdb_date_to_string(mdb, mdb->date_fmt, buf, start);
 		break;
 		case MDB_MEMO:
 			text = mdb_memo_to_string(mdb, start, size);
