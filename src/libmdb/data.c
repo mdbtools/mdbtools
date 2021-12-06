@@ -937,16 +937,20 @@ static char *
 mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 {
 	struct tm t = { 0 };
-	char *text = g_malloc(mdb->bind_size);
+	char *text = NULL;
 	double td = mdb_get_double(buf, start);
 
-	// limit to ~1100AD--2700A to protect from overflow
-	if (td < -1e6 || td > 1e6)
-		return strdup("");
-
-	mdb_date_to_tm(td, &t);
-
-	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
+	// limit dates to protect from overflow.
+	// 1e6 days is ~2700 years, centered at 1900, so this range is:
+	// Sunday, February 4, 839 BC to Tuesday, November 28, 4637
+	if (td < -1e6 || td > 1e6) {
+		// an "invalid date" would perhaps be better than null (TODO)
+		text = g_strdup("");
+	} else {
+		text = g_malloc(mdb->bind_size);
+		mdb_date_to_tm(td, &t);
+		strftime(text, mdb->bind_size, mdb->date_fmt, &t);
+	}
 
 	return text;
 }
