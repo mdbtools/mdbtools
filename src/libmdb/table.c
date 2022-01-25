@@ -92,6 +92,12 @@ MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)
 		mdb_free_tabledef(table);
 		return NULL;
 	}
+	/* First byte of usage_map is the map-type and must always be present */
+	if (table->map_sz < 1) {
+		fprintf(stderr, "mdb_read_table: invalid map-size: %zu\n", table->map_sz);
+		mdb_free_tabledef(table);
+		return NULL;
+	}
 	table->usage_map = g_memdup2((char*)buf + row_start, table->map_sz);
 	if (mdb_get_option(MDB_DEBUG_USAGE)) 
 		mdb_buffer_dump(buf, row_start, table->map_sz);
