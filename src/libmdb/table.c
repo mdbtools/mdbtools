@@ -361,6 +361,9 @@ unsigned int i, bitn;
 guint32 pgnum;
 
 	table = mdb_read_table(entry);
+	if (!table)
+		return;
+
 	fprintf(stdout,"definition page     = %lu\n",entry->table_pg);
 	fprintf(stdout,"number of datarows  = %d\n",table->num_rows);
 	fprintf(stdout,"number of columns   = %d\n",table->num_cols);

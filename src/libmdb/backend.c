@@ -872,6 +872,10 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	fprintf (outfile, " (\n");
 
 	table = mdb_read_table (entry);
+	if (!table) {
+		fprintf(stderr, "Error: Table %s does not exist\n", entry->object_name);
+		return;
+	}
 
 	/* get the columns */
 	mdb_read_columns(table);
