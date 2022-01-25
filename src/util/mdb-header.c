@@ -92,6 +92,11 @@ FILE *cfile;
 			entry->object_name, entry->object_name);
 	       fprintf (cfile, "\tfprintf (stdout, \"**************** %s ****************\\n\");\n", entry->object_name);
 	       table = mdb_read_table (entry);
+	       if (!table) {
+			fprintf(stderr, "Error: Table %s does not exist in this database.\n", entry->object_name);
+			/* Don't bother clean up memory before exit */
+			exit(1);
+	       }
 
 	       /* get the columns */
 	       mdb_read_columns (table);
