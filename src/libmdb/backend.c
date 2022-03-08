@@ -111,7 +111,7 @@ static const MdbBackendType mdb_mysql_types[] = {
     [MDB_LONGINT] = { .name = "int" },
     [MDB_MONEY] = { .name = "float" },
     [MDB_FLOAT] = { .name = "float" },
-    [MDB_DOUBLE] = { .name = "float" },
+    [MDB_DOUBLE] = { .name = "double" },
     [MDB_DATETIME] = { .name = "datetime" },
     [MDB_BINARY] = { .name = "blob" },
     [MDB_TEXT] = { .name = "varchar", .needs_char_length = 1 },
