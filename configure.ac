@@ -237,6 +237,13 @@ if test "$enable_glib" = "yes"; then
 fi
 AM_CONDITIONAL(FAKE_GLIB, test "x$enable_glib" != "xyes")
 
+# Check if building experimental utilities (mdb-import)
+AC_ARG_ENABLE(experimental,
+    AS_HELP_STRING([--enable-experimental], [build experimental programs @<:@default=no@:>@]),
+        [enable_experimental=$enableval], [enable_experimental=no])
+AM_CONDITIONAL(ENABLE_EXPERIMENTAL, test x$enable_experimental = xyes)
+AC_SUBST(ENABLE_EXPERIMENTAL)
+
 dnl Set up substitution variables
 if test "$ac_cv_header_xlocale_h" = "yes"; then
     HAVE_XLOCALE_H=1
@@ -330,4 +337,6 @@ if test x$enable_man = xyes; then summary=${bold_green}enabled; else summary=${b
 AC_MSG_NOTICE([   man pages       : ${summary}${reset}])
 if test "x$with_bash_completion_dir" != "xno"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
 AC_MSG_NOTICE([   bash-completion : ${summary}${reset}])
+if test "x$enable_experimental" = "xyes"; then summary=${bold_green}enabled; else summary=${bold_red}disabled; fi
+AC_MSG_NOTICE([   experimental    : ${summary}${reset}])
 AC_MSG_NOTICE([])
