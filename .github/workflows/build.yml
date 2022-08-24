@@ -19,6 +19,7 @@ jobs:
         run: autoreconf -i -f
       - name: Configure
         run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/usr
+          --enable-experimental
         env:
           CC: ${{ matrix.compiler }}
       - name: Make
@@ -57,6 +58,7 @@ jobs:
         run: autoreconf -i -f
       - name: Configure
         run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/usr/local/opt
+          --enable-experimental
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison
@@ -97,6 +99,7 @@ jobs:
         run: autoreconf -i -f
       - name: Configure
         run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt
+          --enable-experimental
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison
