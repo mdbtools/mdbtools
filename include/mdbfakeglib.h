@@ -117,6 +117,7 @@ typedef struct GOptionContext {
 #define g_malloc malloc
 #define g_free free
 #define g_realloc realloc
+#define g_memdup2 g_memdup
 
 #define	G_STR_DELIMITERS "_-|> <."
 

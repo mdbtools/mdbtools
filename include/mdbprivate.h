@@ -26,10 +26,6 @@
  * used within mdbtools so they won't be exported to calling programs.
  */
 
-#ifndef HAVE_G_MEMDUP2
-#define g_memdup2 g_memdup
-#endif
-
 #ifdef __cplusplus
   extern "C" {
 #endif
