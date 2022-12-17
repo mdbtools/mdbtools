@@ -117,6 +117,8 @@ jobs:
           update: true
           install: >-
             autotools
+            base-devel
+            gcc
             git
       - uses: actions/checkout@v2
       - name: Check out test data
