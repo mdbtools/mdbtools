@@ -108,10 +108,13 @@ jobs:
           MDBPATH: test/data
   windows:
     runs-on: windows-latest
-    env:
-      MSYSTEM: MINGW64
     steps:
       - uses: actions/checkout@v2
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            autotools
       - name: Check out test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
