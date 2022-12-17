@@ -108,6 +108,11 @@ jobs:
           MDBPATH: test/data
   windows:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        iconv: [ enable-iconv, disable-iconv]
+        glib: [ enable-glib, disable-glib ]
     defaults:
       run:
         shell: msys2 {0}
@@ -120,13 +125,16 @@ jobs:
             base-devel
             gcc
             git
+            glib2
       - uses: actions/checkout@v2
       - name: Check out test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
         run: autoreconf -i -f
+      - name: Fix libtool
+        run: sed -i s/_spawnv/spawn/ libtool
       - name: Configure
-        run: ./configure
+        run: ./configure --${{ matrix.glib }} --${{ matrix.iconv }}
       - name: Make
         run: make
       - name: Test
