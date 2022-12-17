@@ -86,7 +86,7 @@ AC_SUBST(LFLAGS)
 CFLAGS="$CFLAGS -Wall -Werror"
 LOCALE_T=locale_t
 AS_CASE([$host],
-        [*mingw*], [LDFLAGS="$LDFLAGS -no-undefined" LOCALE_T=_locale_t], [])
+        [*mingw*], [LDFLAGS="$LDFLAGS -no-undefined"], [])
 AC_SUBST(LOCALE_T)
 
 dnl See if iconv is present and wanted
