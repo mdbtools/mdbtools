@@ -304,7 +304,7 @@ find_sql_terminator(char *s)
 	}
 
 	sp = &s[len-1];
-	while (sp > s && isspace(*sp)) {
+	while (sp > s && isspace((int)*sp)) {
 		sp--;
 	}
 
@@ -464,7 +464,7 @@ main(int argc, char **argv)
 			if (in) {
 				fprintf(stderr, "Can not handle nested opens\n");
 			} else {
-				while (*fname && isspace(*fname))
+				while (*fname && isspace((int)*fname))
 					fname++;
 				if (!(in = fopen(fname, "r"))) {
 					fprintf(stderr,"Unable to open file %s\n", fname);

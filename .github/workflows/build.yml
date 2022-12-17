@@ -108,19 +108,34 @@ jobs:
           MDBPATH: test/data
   windows:
     runs-on: windows-latest
-    env:
-      MSYSTEM: MINGW64
+    strategy:
+      fail-fast: false
+      matrix:
+        iconv: [ enable-iconv, disable-iconv]
+        glib: [ enable-glib, disable-glib ]
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            autotools
+            base-devel
+            gcc
+            git
+            glib2
       - uses: actions/checkout@v2
       - name: Check out test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && autoreconf -i -f'
+        run: autoreconf -i -f
       - name: Configure
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./configure'
+        run: ./configure --${{ matrix.glib }} --${{ matrix.iconv }}
       - name: Make
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make'
+        run: make
       - name: Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && bash -e -x ./test_script.sh'
+        run: bash -e -x ./test_script.sh
       - name: SQL Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && bash -e -x ./test_sql.sh'
+        run: bash -e -x ./test_sql.sh
