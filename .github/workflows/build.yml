@@ -131,8 +131,6 @@ jobs:
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
         run: autoreconf -i -f
-      - name: Fix libtool
-        run: sed -i s/_spawnv/spawn/ libtool
       - name: Configure
         run: ./configure --${{ matrix.glib }} --${{ matrix.iconv }}
       - name: Make
