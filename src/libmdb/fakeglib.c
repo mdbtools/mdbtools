@@ -255,7 +255,8 @@ gchar *g_locale_to_utf8(const gchar *opsysstring, size_t len,
     mbstowcs(utf16, opsysstring, wlen+1);
     gchar *utf8 = malloc(3*len+1);
     gchar *dst = utf8;
-    for (size_t i=0; i<len; i++) {
+    size_t i;
+    for (i=0; i<len; i++) {
         // u >= 0x10000 requires surrogate pairs, ignore
         dst += g_unichar_to_utf8(utf16[i], dst);
     }
@@ -332,7 +333,8 @@ void g_hash_table_insert(GHashTable *table, void *key, void *value) {
 
 gboolean g_hash_table_remove(GHashTable *table, gconstpointer key) {
     int found = 0;
-    for (guint i=0; i<table->array->len; i++) {
+    guint i;
+    for (i=0; i<table->array->len; i++) {
         MyNode *node = g_ptr_array_index(table->array, i);
         if (found) {
             table->array->pdata[i-1] = table->array->pdata[i];
@@ -398,7 +400,8 @@ void g_ptr_array_add(GPtrArray *array, void *entry) {
 
 gboolean g_ptr_array_remove(GPtrArray *array, gpointer data) {
     int found = 0;
-    for (guint i=0; i<array->len; i++) {
+    guint i;
+    for (i=0; i<array->len; i++) {
         if (found) {
             array->pdata[i-1] = array->pdata[i];
         } else if (!found && array->pdata[i] == data) {
