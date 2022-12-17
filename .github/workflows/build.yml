@@ -112,12 +112,13 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v2
       - uses: msys2/setup-msys2@v2
         with:
           update: true
           install: >-
             autotools
+            git
+      - uses: actions/checkout@v2
       - name: Check out test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
