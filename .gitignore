@@ -26,6 +26,8 @@ include/mdbtools.h
 libmdb.pc
 libmdbsql.pc
 libtool
+mdbtools-*.tar.gz
+mdbtools-*.zip
 src/extras/mdb-hexdump
 src/odbc/unittest
 src/sql/lexer.c
