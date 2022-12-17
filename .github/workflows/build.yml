@@ -108,6 +108,9 @@ jobs:
           MDBPATH: test/data
   windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v2
       - uses: msys2/setup-msys2@v2
@@ -118,12 +121,12 @@ jobs:
       - name: Check out test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
       - name: Autoconf
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && autoreconf -i -f'
+        run: autoreconf -i -f
       - name: Configure
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./configure'
+        run: ./configure
       - name: Make
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make'
+        run: make
       - name: Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && bash -e -x ./test_script.sh'
+        run: bash -e -x ./test_script.sh
       - name: SQL Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && bash -e -x ./test_sql.sh'
+        run: bash -e -x ./test_sql.sh
