@@ -130,6 +130,7 @@ typedef struct GOptionContext {
 
 /* string functions */
 void *g_memdup(const void *src, size_t len);
+void *g_memdup2(const void *src, size_t len);
 int g_str_equal(const void *str1, const void *str2);
 char **g_strsplit(const char *haystack, const char *needle, int max_tokens);
 void g_strfreev(char **dir);

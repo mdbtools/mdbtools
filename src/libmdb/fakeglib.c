@@ -38,6 +38,10 @@ const char *mdb_iconv_name_from_code_page(int code_page);
 /* string functions */
 
 void *g_memdup(const void *src, size_t len) {
+    return g_memdup2(src, len);
+}
+
+void *g_memdup2(const void *src, size_t len) {
     void *dst = malloc(len);
     memcpy(dst, src, len);
     return dst;
@@ -126,7 +130,7 @@ int vasprintf(char **ret, const char *format, va_list ap) {
 
 char *g_strdup(const char *input) {
     size_t len = strlen(input);
-    return g_memdup(input, len+1);
+    return g_memdup2(input, len+1);
 }
 
 char *g_strndup(const char *src, size_t len) {
