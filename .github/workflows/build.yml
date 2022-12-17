@@ -125,7 +125,7 @@ jobs:
             base-devel
             gcc
             git
-            glib2
+            glib2-devel
       - uses: actions/checkout@v2
       - name: Check out test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
