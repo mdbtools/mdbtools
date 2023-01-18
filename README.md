@@ -110,6 +110,11 @@ brew install mdbtools
 port install mdbtools
 ```
 
+### Windows
+
+Download source code zip from https://github.com/lsgunth/mdbtools-win/releases and place all files where you'd like to use them from, `c:\apps\mdbtools` for example.
+
+
 ### From source
 
 If you have cloned the Git repository, you will first need to generate the
@@ -174,6 +179,10 @@ You can do that running:
 ```bash 
 $ ldconfig
 ```
+
+### Windows from source
+
+See readme at https://github.com/lsgunth/mdbtools-win.
 
 ## Hacking
 
