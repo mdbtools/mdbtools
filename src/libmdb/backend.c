@@ -401,7 +401,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		"COMMENT %s",
 		quote_schema_name_rquotes_merge);
 	mdb_register_backend(mdb, "sqlite",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT|MDB_SHEXP_INDEXES|MDB_SHEXP_CST_NOTNULL,
 		mdb_sqlite_types, NULL, NULL,
 		"date('now')", "date('now')",
 		"%Y-%m-%d %H:%M:%S",
@@ -571,7 +571,47 @@ mdb_get_index_name(int backend, MdbTableDef *table, MdbIndex *idx)
 
 	return index_name;
 }
+/**
+ * mdb_print_pk - print primary key constraint
+ * @output: Where to print the sql
+ * @table: Table to process
+ */
+static void
+mdb_print_pk_if_sqlite(FILE *outfile, MdbTableDef *table)
+{
+	unsigned int i, j;
+	MdbHandle *mdb = table->entry->mdb;
+	MdbIndex *idx;
+	MdbColumn *col;
+	char *quoted_name;
+	// this is only necessary for sqlite
+	if (strcmp(mdb->backend_name, "sqlite") != 0)
+		return;
 
+	if (table->indices==NULL)
+		mdb_read_indices(table);
+		
+	for (i = 0; i < table->num_idxs; i++) {
+		idx = g_ptr_array_index(table->indices, i);
+		if (idx->index_type == 1) {
+			fprintf(outfile, "\t, PRIMARY KEY (");
+			for (j = 0; j < idx->num_keys; j++) {
+				if (j)
+					fprintf(outfile, ", ");
+				col = g_ptr_array_index(table->columns, idx->key_col_num[j] - 1);
+				quoted_name = mdb->default_backend->quote_schema_name(NULL, col->name);
+				quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
+				fprintf(outfile, "%s", quoted_name);
+				if (idx->index_type != 1 && idx->key_col_order[j])
+					/* no DESC for primary keys */
+					fprintf(outfile, " DESC");
+
+				g_free(quoted_name);
+			}
+			fprintf(outfile, ")\n");
+		}
+	}
+}
 /**
  * mdb_print_indexes
  * @output: Where to print the sql
@@ -596,13 +636,16 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		backend = MDB_BACKEND_MYSQL;
 	} else if (!strcmp(mdb->backend_name, "oracle")) {
 		backend = MDB_BACKEND_ORACLE;
+	} else if (!strcmp(mdb->backend_name, "sqlite")) {
+		backend = MDB_BACKEND_SQLITE;
 	} else {
 		fprintf(outfile, "-- Indexes are not implemented for %s\n\n", mdb->backend_name);
 		return;
 	}
 
 	/* read indexes */
-	mdb_read_indices(table);
+	if (table->indices==NULL)
+		mdb_read_indices(table);
 
 	fprintf (outfile, "-- CREATE INDEXES ...\n");
 
@@ -612,6 +655,9 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 	for (i=0;i<table->num_idxs;i++) {
 		idx = g_ptr_array_index (table->indices, i);
 		if (idx->index_type==2)
+			continue;
+		/* Sqlite3 primary keys have to be issued as a table constraint */
+		if (idx->index_type == 1 && backend == MDB_BACKEND_SQLITE)
 			continue;
 
 		index_name = mdb_get_index_name(backend, table, idx);
@@ -630,7 +676,10 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 		}
 
 		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
-
+		if (idx->num_keys == 0) {
+			fprintf(outfile, "-- WARNING: found no keys for index %s - ignored\n", quoted_name);
+			continue;
+		}
 		if (idx->index_type==1) {
 			switch (backend) {
 				case MDB_BACKEND_ORACLE:
@@ -645,6 +694,7 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
 			switch (backend) {
 				case MDB_BACKEND_ORACLE:
 				case MDB_BACKEND_POSTGRES:
+				case MDB_BACKEND_SQLITE:
 					fprintf(outfile, "CREATE");
 					if (idx->flags & MDB_IDX_UNIQUE)
 						fprintf (outfile, " UNIQUE");
@@ -967,6 +1017,11 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		else
 			fputs("\n", outfile);
 	} /* for */
+
+	if (export_options & MDB_SHEXP_INDEXES) {
+		// sqlite does not support ALTER TABLE PRIMARY KEY, so we need to place it directly into CREATE TABLE
+		mdb_print_pk_if_sqlite(outfile, table);
+	}
 
 	fputs(")", outfile);
 	if (mdb->default_backend->per_table_comment_statement && export_options & MDB_SHEXP_COMMENTS) {
