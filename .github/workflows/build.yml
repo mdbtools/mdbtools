@@ -96,7 +96,7 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt/libiodbc
         env:
           CC: ${{ matrix.compiler }}
           YACC: /usr/local/opt/bison/bin/bison
