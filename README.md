@@ -152,8 +152,7 @@ mutually exclusive.
 By default, the ODBC driver will be installed as /usr/local/lib/odbc/libmdbodbc.so,
 with a Unicode-capable driver at /usr/local/lib/odbc/libmdbodbcW.so.
 
-A list of general options is available in the [INSTALL](./INSTALL) file, and
-`configure --help` will give you the list of mdbtools specific options.
+The command `configure --help` will give you the list of mdbtools specific options.
 
 ```bash
 $ make
