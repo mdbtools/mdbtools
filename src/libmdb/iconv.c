@@ -275,6 +275,8 @@ static const char *mdb_iconv_name_from_code_page(int code_page) {
 		case 860: jet3_iconv_code="IBM860"; break;
 		case 861: jet3_iconv_code="IBM861"; break;
 		case 862: jet3_iconv_code="IBM862"; break;
+		case 863: jet3_iconv_code="IBM863"; break;
+		case 864: jet3_iconv_code="IBM864"; break;
 		case 865: jet3_iconv_code="IBM865"; break;
 		case 866: jet3_iconv_code="IBM866"; break;
 		case 869: jet3_iconv_code="IBM869"; break;
