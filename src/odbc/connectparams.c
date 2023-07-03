@@ -213,7 +213,7 @@ gchar* ExtractDSN (ConnectParams* params, const gchar* connectString)
    /*
     * Position ourselves to the beginning of "DSN"
     */
-   p = strstr (connectString, "DSN");
+   p = strcasestr (connectString, "DSN");
    if (!p) return NULL;
    /*
     * Position ourselves to the "="
@@ -243,9 +243,9 @@ gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
    if (!params)
       return NULL;
    /*
-    * Position ourselves to the beginning of "DSN"
+    * Position ourselves to the beginning of "DBQ"
     */
-   p = strstr (connectString, "DBQ");
+   p = strcasestr (connectString, "DBQ");
    if (!p) return NULL;
    /*
     * Position ourselves to the "="
