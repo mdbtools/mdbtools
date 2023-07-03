@@ -243,7 +243,7 @@ gchar* ExtractDBQ (ConnectParams* params, const gchar* connectString)
    if (!params)
       return NULL;
    /*
-    * Position ourselves to the beginning of "DSN"
+    * Position ourselves to the beginning of "DBQ"
     */
    p = strcasestr (connectString, "DBQ");
    if (!p) return NULL;
