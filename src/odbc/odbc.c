@@ -513,7 +513,7 @@ SQLRETURN SQL_API SQLBindCol(
 	/* if this is a repeat */
 	if (cur) {
 		cur->column_bindtype = fCType;
-   		cur->column_lenbind = (int *)pcbValue;
+   		cur->column_lenbind = pcbValue;
    		cur->column_bindlen = cbValueMax;
    		cur->varaddr = (char *) rgbValue;
 	} else {
@@ -522,7 +522,7 @@ SQLRETURN SQL_API SQLBindCol(
 		newitem->column_number = icol;
 		newitem->column_bindtype = fCType;
    		newitem->column_bindlen = cbValueMax;
-   		newitem->column_lenbind = (int *)pcbValue;
+   		newitem->column_lenbind = pcbValue;
    		newitem->varaddr = (char *) rgbValue;
 		/* if there's no head yet */
 		if (! stmt->bind_head) {
