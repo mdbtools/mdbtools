@@ -480,7 +480,21 @@ gchar *g_option_context_get_help (GOptionContext *context,
 #elif HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
     const char * appname = program_invocation_short_name;
 #else
-    const char * appname = "mdb-util";
+    const char * appname;
+    if (context->invocation_name != NULL) {
+        char * tmp = strrchr(context->invocation_name, '\\');
+        if (tmp != NULL) {
+            /* bash into mintty use to copy into argv[0] the full path of the executable, so let's clean it up */
+            appname = tmp + 1;
+        }
+        else {
+            /* OTOH Windows shell copies the name we typed on command prompt */
+            appname = context->invocation_name;
+        }
+    }
+    else {
+        appname = "mdb-util";
+    }
 #endif
 
     char *help = malloc(4096);
@@ -528,6 +542,9 @@ gboolean g_option_context_parse(GOptionContext *context,
     int i;
     int count = 0;
     int len = 0;
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !(HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME)
+    context->invocation_name = (*argv)[0];
+#endif
     if (*argc == 2 &&
             (strcmp((*argv)[1], "-h") == 0 || strcmp((*argv)[1], "--help") == 0)) {
         fprintf(stderr, "%s", g_option_context_get_help(context, TRUE, NULL));
