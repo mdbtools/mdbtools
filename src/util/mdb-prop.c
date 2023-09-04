@@ -97,9 +97,9 @@ main(int argc, char **argv)
 		g_free(buf);
 		mdb_free_tabledef(table);
 		g_free(table_name);
-		g_free(propColName);
 		mdb_close(mdb);
 		printf("Column %s not found in MSysObjects!\n", propColName);
+		g_free(propColName);
 		return 1;
 	}
 
