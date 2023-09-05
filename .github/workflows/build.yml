@@ -49,7 +49,7 @@ jobs:
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: brew install bison gawk automake
+        run: brew install bison gawk automake glib
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
@@ -89,7 +89,7 @@ jobs:
       - name: Remove packages
         run: brew unlink unixodbc
       - name: Install packages
-        run: brew install libiodbc bison gawk automake
+        run: brew install libiodbc bison gawk automake glib
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: git clone https://github.com/mdbtools/mdbtestdata.git test
