@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -o errexit
+set -x
+
 # Simple test script; run after performing
 # git clone https://github.com/mdbtools/mdbtestdata.git test
 ./src/util/mdb-json test/data/ASampleDatabase.accdb "Asset Items"
