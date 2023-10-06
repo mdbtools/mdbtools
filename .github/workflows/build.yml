@@ -140,7 +140,7 @@ jobs:
             git
             glib2-devel
       - uses: actions/checkout@v2
-      - name: Check out test data
+      - name: Fetch test data
         run: |
           rm -rf test
           mkdir test
