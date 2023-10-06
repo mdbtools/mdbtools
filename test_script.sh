@@ -3,6 +3,8 @@
 set -o errexit
 set -x
 
+LANG=C.UTF-8
+
 # Simple test script; run after performing
 # git clone https://github.com/mdbtools/mdbtestdata.git test
 ./src/util/mdb-json test/data/ASampleDatabase.accdb "Asset Items"
