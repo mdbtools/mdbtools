@@ -17,6 +17,7 @@ m4/
 config.log
 config.status
 configure
+/configure~
 Makefile.in
 Makefile
 doc/*.1
@@ -54,10 +55,9 @@ src/util/prkkd
 src/util/prole
 src/util/prtable
 src/util/updrow
-
+/test/
 ## apidocs docs related
 public/
 .sass-cache/
 *.css.map
 temp-man-pages/
-
