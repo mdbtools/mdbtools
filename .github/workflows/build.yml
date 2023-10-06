@@ -24,7 +24,7 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: bash -e -x ./test_script.sh
+        run: ./test_script.sh
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
@@ -63,7 +63,7 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: bash -e -x ./test_script.sh
+        run: ./test_script.sh
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
@@ -138,6 +138,6 @@ jobs:
       - name: Make
         run: make
       - name: Test
-        run: bash -e -x ./test_script.sh
+        run: ./test_script.sh
       - name: SQL Test
         run: bash -e -x ./test_sql.sh
