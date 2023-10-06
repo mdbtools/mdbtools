@@ -1,4 +1,9 @@
-#!/bin/bash
+#!/bin/sh
+
+set -o errexit
+set -x
+
+LANG=C.UTF-8
 
 # Simple test script; run after performing
 # git clone https://github.com/mdbtools/mdbtestdata.git test
@@ -16,3 +21,5 @@
 ./src/util/mdb-ver test/data/ASampleDatabase.accdb
 ./src/util/mdb-ver test/data/nwind.mdb
 ./src/util/mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwner
+
+printf -- '\n\n%s Passed.\n' "$0"
