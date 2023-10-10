@@ -29,7 +29,7 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: ./test_script.sh
+        run: ./test_script.sh --github
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
@@ -71,7 +71,7 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: ./test_script.sh
+        run: ./test_script.sh --github
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
@@ -152,6 +152,6 @@ jobs:
       - name: Make
         run: make
       - name: Test
-        run: ./test_script.sh
+        run: ./test_script.sh --github
       - name: SQL Test
         run: bash -e -x ./test_sql.sh
