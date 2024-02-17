@@ -9,7 +9,7 @@ SYNOPSIS
 DESCRIPTION
   mdb-json is a utility program distributed with MDB Tools. 
 
-  It produces a CSV (comma separated value) output for the given table. Such output is suitable for importation into databases or spreadsheets.
+  It produces JSON output for the given table. Such output is suitable for parsing in a variety of languages.
 
 OPTIONS
   -D, --date-format fmt     Set the date format (see strftime(3) for details).
