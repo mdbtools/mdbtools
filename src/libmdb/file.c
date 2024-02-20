@@ -123,7 +123,7 @@ static char *mdb_find_file(const char *file_name)
  *
  * Return value: The handle on success, NULL on failure
  */
-static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
+static MdbHandle *mdb_handle_from_stream(FILE *stream, void *data, size_t data_len, MdbFileFlags flags) {
 	MdbHandle *mdb = g_malloc0(sizeof(MdbHandle));
 	mdb_set_default_backend(mdb, "access");
     mdb_set_date_fmt(mdb, "%x %X");
@@ -140,6 +140,8 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 	mdb->f = g_malloc0(sizeof(MdbFile));
 	mdb->f->refs = 1;
 	mdb->f->stream = stream;
+	mdb->f->data = data;
+	mdb->f->data_len = data_len;
 	if (flags & MDB_WRITABLE) {
 		mdb->f->writable = TRUE;
     }
@@ -206,17 +208,7 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
  * Return value: point to MdbHandle structure.
  */
 MdbHandle *mdb_open_buffer(void *buffer, size_t len, MdbFileFlags flags) {
-    FILE *file = NULL;
-#ifdef HAVE_FMEMOPEN
-    file = fmemopen(buffer, len, (flags & MDB_WRITABLE) ? "r+" : "r");
-#else
-    fprintf(stderr, "mdb_open_buffer requires a platform with support for fmemopen(3)\n");
-#endif
-    if (file == NULL) {
-        fprintf(stderr, "Couldn't open memory buffer\n");
-        return NULL;
-    }
-    return mdb_handle_from_stream(file, flags);
+    return mdb_handle_from_stream(NULL, buffer, len, flags);
 }
 
 /**
@@ -253,7 +245,7 @@ MdbHandle *mdb_open(const char *filename, MdbFileFlags flags)
 
     g_free(filepath);
 
-    return mdb_handle_from_stream(file, flags);
+    return mdb_handle_from_stream(file, NULL, 0, flags);
 }
 
 /**
@@ -354,25 +346,42 @@ static ssize_t _mdb_read_pg(MdbHandle *mdb, void *pg_buf, unsigned long pg)
 	ssize_t len;
 	off_t offset = pg * mdb->fmt->pg_size;
 
-    if (fseeko(mdb->f->stream, 0, SEEK_END) == -1) {
-        fprintf(stderr, "Unable to seek to end of file\n");
-        return 0;
-    }
-    if (ftello(mdb->f->stream) < offset) { 
-        fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
-        return 0;
-    }
+	if (mdb->f->data) {
+		if ((off_t)mdb->f->data_len < offset) {
+			fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
+			return 0;
+		}
+	} else {
+		if (fseeko(mdb->f->stream, 0, SEEK_END) == -1) {
+			fprintf(stderr, "Unable to seek to end of file\n");
+			return 0;
+		}
+		if (ftello(mdb->f->stream) < offset) {
+			fprintf(stderr,"offset %" PRIu64 " is beyond EOF\n",(uint64_t)offset);
+			return 0;
+		}
+	}
+
 	if (mdb->stats && mdb->stats->collect) 
 		mdb->stats->pg_reads++;
 
-	if (fseeko(mdb->f->stream, offset, SEEK_SET) == -1) {
-        fprintf(stderr, "Unable to seek to page %lu\n", pg);
-        return 0;
-    }
-	len = fread(pg_buf, 1, mdb->fmt->pg_size, mdb->f->stream);
-	if (ferror(mdb->f->stream)) {
-		perror("read");
-		return 0;
+	if (mdb->f->data) {
+		if (offset + mdb->fmt->pg_size > (off_t)mdb->f->data_len)
+			len = mdb->f->data_len - offset;
+		else
+			len = mdb->fmt->pg_size;
+
+		memcpy(pg_buf, (char*)mdb->f->data + offset, len);
+	} else {
+		if (fseeko(mdb->f->stream, offset, SEEK_SET) == -1) {
+			fprintf(stderr, "Unable to seek to page %lu\n", pg);
+			return 0;
+		}
+		len = fread(pg_buf, 1, mdb->fmt->pg_size, mdb->f->stream);
+		if (ferror(mdb->f->stream)) {
+			perror("read");
+			return 0;
+		}
 	}
     memset(pg_buf + len, 0, mdb->fmt->pg_size - len);
 	/*
