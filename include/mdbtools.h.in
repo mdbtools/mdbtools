@@ -21,9 +21,6 @@
 #define MDBTOOLS_H_HAVE_ICONV_H @HAVE_ICONV_H@
 #define MDBTOOLS_H_HAVE_XLOCALE_H @HAVE_XLOCALE_H@
 
-#ifdef __cplusplus
-  extern "C" {
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -46,6 +43,10 @@
 
 #ifdef _WIN32
 #include <io.h>
+#endif
+
+#ifdef __cplusplus
+  extern "C" {
 #endif
 
 /** \addtogroup mdbtools
