@@ -1360,14 +1360,85 @@ SQLRETURN SQL_API SQLGetData(
 			break;
 		// case MDB_MONEY: TODO
 		case MDB_FLOAT:
-			*(float*)rgbValue = mdb_get_single(mdb->pg_buf, col->cur_value_start);
-			if (pcbValue)
-				*pcbValue = sizeof(float);
+			switch (fCType) {
+			case SQL_C_FLOAT:
+				*(float*)rgbValue = mdb_get_single(mdb->pg_buf, col->cur_value_start);
+				if (pcbValue)
+					*pcbValue = sizeof(float);
+				break;
+			case SQL_C_DOUBLE:
+				*(double*)rgbValue = (double)mdb_get_single(mdb->pg_buf, col->cur_value_start);
+				if (pcbValue)
+					*pcbValue = sizeof(double);
+				break;
+			case SQL_C_CHAR:
+			case SQL_C_WCHAR:
+			case SQL_C_STINYINT:
+			case SQL_C_UTINYINT:
+			case SQL_C_TINYINT:
+			case SQL_C_SBIGINT:
+			case SQL_C_UBIGINT:
+			case SQL_C_SSHORT:
+			case SQL_C_USHORT:
+			case SQL_C_SHORT:
+			case SQL_C_SLONG:
+			case SQL_C_ULONG:
+			case SQL_C_LONG:
+			case SQL_C_NUMERIC:
+			// case SQL_C_FLOAT:
+			// case SQL_C_DOUBLE:
+			case SQL_C_BIT:
+			case SQL_C_BINARY:
+			case SQL_C_INTERVAL_YEAR_TO_MONTH:
+			case SQL_C_INTERVAL_DAY_TO_HOUR:
+			case SQL_C_INTERVAL_DAY_TO_MINUTE:
+			case SQL_C_INTERVAL_DAY_TO_SECOND:
+			case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+			case SQL_C_INTERVAL_HOUR_TO_SECOND:
+				strcpy(stmt->sqlState, "HYC00"); // Not implemented
+				return SQL_ERROR;
+			default:
+				strcpy(stmt->sqlState, "07006"); // Not allowed
+				return SQL_ERROR;
+			}
 			break;
 		case MDB_DOUBLE:
-			*(double*)rgbValue = mdb_get_double(mdb->pg_buf, col->cur_value_start);
-			if (pcbValue)
-			  *pcbValue = sizeof(double);
+			switch (fCType) {
+			case SQL_C_DOUBLE:
+				*(double*)rgbValue = mdb_get_double(mdb->pg_buf, col->cur_value_start);
+				if (pcbValue)
+					*pcbValue = sizeof(double);
+				break;
+			case SQL_C_CHAR:
+			case SQL_C_WCHAR:
+			case SQL_C_STINYINT:
+			case SQL_C_UTINYINT:
+			case SQL_C_TINYINT:
+			case SQL_C_SBIGINT:
+			case SQL_C_UBIGINT:
+			case SQL_C_SSHORT:
+			case SQL_C_USHORT:
+			case SQL_C_SHORT:
+			case SQL_C_SLONG:
+			case SQL_C_ULONG:
+			case SQL_C_LONG:
+			case SQL_C_NUMERIC:
+			case SQL_C_FLOAT:
+			// case SQL_C_DOUBLE:
+			case SQL_C_BIT:
+			case SQL_C_BINARY:
+			case SQL_C_INTERVAL_YEAR_TO_MONTH:
+			case SQL_C_INTERVAL_DAY_TO_HOUR:
+			case SQL_C_INTERVAL_DAY_TO_MINUTE:
+			case SQL_C_INTERVAL_DAY_TO_SECOND:
+			case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+			case SQL_C_INTERVAL_HOUR_TO_SECOND:
+				strcpy(stmt->sqlState, "HYC00"); // Not implemented
+				return SQL_ERROR;
+			default:
+				strcpy(stmt->sqlState, "07006"); // Not allowed
+				return SQL_ERROR;
+			}
 			break;
 #if ODBCVER >= 0x0300
 		// returns text if old odbc

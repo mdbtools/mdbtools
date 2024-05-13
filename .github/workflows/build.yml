@@ -1,5 +1,7 @@
 name: build
 on: [ push, pull_request ]
+env:
+  TEST_DATA_URL: https://github.com/mdbtools/mdbtestdata/archive/refs/heads/master.tar.gz
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -14,7 +16,10 @@ jobs:
         run: sudo apt install gettext
       - uses: actions/checkout@v2
       - name: Fetch test data
-        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+        run: |
+          rm -rf test
+          mkdir test
+          curl -sSLf "$TEST_DATA_URL" | tar xz --strip-components=1 -C test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -24,7 +29,7 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: bash -e -x ./test_script.sh
+        run: ./test_script.sh --github
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
@@ -52,7 +57,10 @@ jobs:
         run: brew install bison gawk automake
       - uses: actions/checkout@v2
       - name: Fetch test data
-        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+        run: |
+          rm -rf test
+          mkdir test
+          curl -sSLf "$TEST_DATA_URL" | tar xz --strip-components=1 -C test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -63,7 +71,7 @@ jobs:
       - name: Make
         run: make
       - name: CLI tests
-        run: bash -e -x ./test_script.sh
+        run: ./test_script.sh --github
       - name: SQL tests
         run: bash -e -x ./test_sql.sh
       - name: ODBC tests
@@ -90,9 +98,14 @@ jobs:
         run: brew unlink unixodbc
       - name: Install packages
         run: brew install libiodbc bison gawk automake
+      - name: Add path
+        run: echo /usr/local/opt/libiodbc/bin >> $GITHUB_PATH
       - uses: actions/checkout@v2
       - name: Fetch test data
-        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+        run: |
+          rm -rf test
+          mkdir test
+          curl -sSLf "$TEST_DATA_URL" | tar xz --strip-components=1 -C test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -127,8 +140,11 @@ jobs:
             git
             glib2-devel
       - uses: actions/checkout@v2
-      - name: Check out test data
-        run: git clone https://github.com/mdbtools/mdbtestdata.git test
+      - name: Fetch test data
+        run: |
+          rm -rf test
+          mkdir test
+          curl -sSLf "$TEST_DATA_URL" | tar xz --strip-components=1 -C test
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -136,6 +152,6 @@ jobs:
       - name: Make
         run: make
       - name: Test
-        run: bash -e -x ./test_script.sh
+        run: ./test_script.sh --github
       - name: SQL Test
         run: bash -e -x ./test_sql.sh
