@@ -64,7 +64,7 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/opt/homebrew/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/opt/homebrew/opt/unixodbc
         env:
           CC: ${{ matrix.compiler }}
           YACC: /opt/homebrew/opt/bison/bin/bison
