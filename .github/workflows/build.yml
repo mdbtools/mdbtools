@@ -64,10 +64,10 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/usr/local/opt
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/opt/homebrew/opt
         env:
           CC: ${{ matrix.compiler }}
-          YACC: /usr/local/opt/bison/bin/bison
+          YACC: /opt/homebrew/opt/bison/bin/bison
       - name: Make
         run: make
       - name: CLI tests
@@ -97,7 +97,7 @@ jobs:
       - name: Install packages
         run: brew install bison gawk automake libtool libiodbc
       - name: Add path
-        run: echo /usr/local/opt/libiodbc/bin >> $GITHUB_PATH
+        run: echo /opt/homebrew/opt/libiodbc/bin >> $GITHUB_PATH
       - uses: actions/checkout@v2
       - name: Fetch test data
         run: |
@@ -107,10 +107,10 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/usr/local/opt/libiodbc
+        run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/opt/homebrew/opt/libiodbc
         env:
           CC: ${{ matrix.compiler }}
-          YACC: /usr/local/opt/bison/bin/bison
+          YACC: /opt/homebrew/opt/bison/bin/bison
       - name: Make
         run: make
       - name: ODBC tests
