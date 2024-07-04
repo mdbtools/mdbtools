@@ -259,7 +259,7 @@ offset_start of memo = (int16*) LVAL_page[offset_num_rows + (row_id * 2) + 2]
 if (row_id = 0)
      offset_stop of memo = 2048(jet3) or 4096(jet4)
 else
-     offset_stop of memo = (int16*) LVAL_page[offset_num_row + (row_id * 2)]
+     offset_stop of memo = (int16*) LVAL_page[offset_num_row + (row_id * 2)] & offset_mask // offset_mask = 0x1fff
 ```
 
 The length (partial if type 2) for the memo is:
