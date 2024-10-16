@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 
 #ifdef HAVE_LIBREADLINE
 #  if defined(HAVE_READLINE_READLINE_H)
@@ -322,7 +323,11 @@ main(int argc, char **argv)
 	char prompt[20];
 	int line = 0;
 	char *mybuf;
+#ifdef __arm__
+	uint64_t bufsz;
+#else
 	unsigned int bufsz;
+#endif
 	MdbSQL *sql;
 	FILE *in = NULL, *out = NULL;
 	char *filename_in=NULL, *filename_out=NULL;
