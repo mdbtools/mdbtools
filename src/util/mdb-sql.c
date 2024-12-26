@@ -322,7 +322,7 @@ main(int argc, char **argv)
 	char prompt[20];
 	int line = 0;
 	char *mybuf;
-	unsigned int bufsz;
+	size_t bufsz;
 	MdbSQL *sql;
 	FILE *in = NULL, *out = NULL;
 	char *filename_in=NULL, *filename_out=NULL;
@@ -408,7 +408,7 @@ main(int argc, char **argv)
 
 	/* give the buffer an initial size */
 	bufsz = 4096;
-	mybuf = g_malloc(bufsz);
+	mybuf = malloc(bufsz);
 	mybuf[0]='\0';
 
 	while (1) {
@@ -420,7 +420,7 @@ main(int argc, char **argv)
 
 		if (in) {
 			s=calloc(bufsz, 1);
-			if (!fgets(s, bufsz, in)) {
+			if (!fgets(s, (int)bufsz, in)) {
 				// Backwards compatibility with older MDBTools
 				// Files read from the command line had an
 				// implicit "go" at the end
@@ -478,7 +478,7 @@ main(int argc, char **argv)
 
 			while (strlen(mybuf) + strlen(s) > bufsz) {
 				bufsz *= 2;
-				mybuf = (char *) g_realloc(mybuf, bufsz);
+				mybuf = realloc(mybuf, bufsz);
 			}
 #ifdef HAVE_READLINE_HISTORY
 			/* don't record blank lines, or lines read from files
@@ -500,7 +500,7 @@ main(int argc, char **argv)
 	}
 	mdb_sql_exit(sql);
 
-	g_free(mybuf);
+	free(mybuf);
 	if (s) free(s);
 	if (out) fclose(out);
 	if ((in) && (in != stdin)) fclose(in);

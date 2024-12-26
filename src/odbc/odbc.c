@@ -2058,7 +2058,7 @@ static int _odbc_fix_literals(struct _hstmt *stmt)
 	char tmp[4096];
 	char *s, *d, *p;
 	int i, quoted = 0, find_end = 0;
-	char quote_char;
+	char quote_char = '\0';
 
 	s=stmt->query;
 	d=tmp;
