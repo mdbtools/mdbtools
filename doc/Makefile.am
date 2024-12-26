@@ -1,5 +1,5 @@
 SHELL = /bin/sh
-TXT2MAN = ./txt2man
+TXT2MAN = $(srcdir)/txt2man
 PRODUCT = MDBTools
 
 dist_man_MANS =
