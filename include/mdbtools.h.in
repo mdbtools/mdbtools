@@ -474,7 +474,8 @@ typedef struct {
 	int start;
 	unsigned char is_null;
 	unsigned char is_fixed;
-	int colnum;
+	int colnum;  // this is the index in the table->columns array
+	int col_num; // this is the col_num from MdbColumn
 	int offset;
 } MdbField;
 
