@@ -183,7 +183,7 @@ ldconfig
 
 ## Hacking
 
-If you are interested in helping, read the [HACKING](./HACKING) file for a description of 
+If you are interested in helping, read the [HACKING](./HACKING.md) file for a description of 
 where the code stands and what has been gleened of the file format.
 
 ## Contact
