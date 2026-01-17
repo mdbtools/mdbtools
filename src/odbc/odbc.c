@@ -2136,7 +2136,7 @@ static SQLSMALLINT _odbc_get_client_type(MdbColumn *col)
 		case MDB_MONEY:
 			return SQL_DECIMAL;
 		case MDB_FLOAT:
-			return SQL_FLOAT;
+			return SQL_REAL;
 		case MDB_DOUBLE:
 			return SQL_DOUBLE;
 		case MDB_DATETIME: ;

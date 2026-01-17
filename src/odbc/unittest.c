@@ -199,5 +199,76 @@ int i;
 	}		
 	printf("Done\n");
 
+	/* Test for issue #458: MDB_FLOAT should map to SQL_REAL, not SQL_FLOAT
+	 * This tests the fix in _odbc_get_client_type() where MDB_FLOAT
+	 * columns return SQL_REAL (7) instead of SQL_FLOAT (6).
+	 * Single-precision floats in MS Access (Single/MDB_FLOAT) must map to
+	 * SQL_REAL for correct value interpretation.
+	 */
+	printf("\nTesting column type mapping (issue #458)...\n");
+
+	/* Reset statement for new query */
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+
+	/* Query Order Details table - the Discount column is typically Single (MDB_FLOAT) */
+	retcode = SQLPrepare(hstmt,
+		(unsigned char *)"select * from [Order Details]",
+		SQL_NTS);
+
+	if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
+	{
+		retcode = SQLExecute(hstmt);
+		if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
+		{
+			SQLSMALLINT numCols;
+			SQLNumResultCols(hstmt, &numCols);
+
+			printf("Checking column types for Order Details (%d columns):\n", numCols);
+
+			for (i = 1; i <= numCols; i++)
+			{
+				SQLLEN colType = 0;
+				SQLSMALLINT nameLen = 0;
+				SQLCHAR colName[128] = {0};
+
+				/* Get column name - use ODBC 2.x SQLColAttributes */
+				SQLColAttributes(hstmt, i, SQL_COLUMN_NAME, colName, sizeof(colName), &nameLen, NULL);
+
+				/* Get column type */
+				SQLColAttributes(hstmt, i, SQL_COLUMN_TYPE, NULL, 0, NULL, &colType);
+
+				printf("  Column %d (%s): SQL type = %ld", i, colName, (long)colType);
+
+				/* SQL_REAL = 7, SQL_FLOAT = 6, SQL_DOUBLE = 8 */
+				if (colType == SQL_REAL) {
+					printf(" (SQL_REAL - correct for Single/MDB_FLOAT)\n");
+				} else if (colType == SQL_FLOAT) {
+					/* This would indicate the bug is present */
+					fprintf(stderr, "\nERROR: Column %s returned SQL_FLOAT (%ld) instead of SQL_REAL (%d)!\n",
+						colName, (long)colType, SQL_REAL);
+					fprintf(stderr, "This indicates issue #458 is not fixed.\n");
+					return 1;
+				} else if (colType == SQL_DOUBLE) {
+					printf(" (SQL_DOUBLE - correct for Double/MDB_DOUBLE)\n");
+				} else {
+					printf("\n");
+				}
+			}
+			printf("Column type mapping test passed.\n");
+		}
+		else
+		{
+			/* Order Details table might not exist in all test databases */
+			printStatementError(hstmt, "Note: Order Details query failed (table may not exist)");
+			printf("Skipping column type test (Order Details table not available)\n");
+		}
+	}
+	else
+	{
+		printf("Skipping column type test (prepare failed)\n");
+	}
+
+	printf("Done\n");
+
 	return 0;
 }
