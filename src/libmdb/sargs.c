@@ -276,7 +276,7 @@ mdb_find_field(int col_num, MdbField *fields, int num_fields)
 	int i;
 
 	for (i=0;i<num_fields;i++) {
-		if (fields[i].colnum == col_num) return i;
+		if (fields[i].col_num == col_num) return i;
 	}
 	return -1;
 }
