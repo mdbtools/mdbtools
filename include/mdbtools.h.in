@@ -386,9 +386,12 @@ typedef struct {
 	/* info needed for handling deleted/added columns */
 	int 		fixed_offset;
 	unsigned int	var_col_num;
-	/* row_col_num is the row column number order, 
+	/* row_col_num is the row column number order,
 	 * including deleted columns */
 	int		row_col_num;
+	/* whether the current value is NULL (as opposed to a zero-length
+	 * value such as an empty string) */
+	unsigned char	cur_value_is_null;
 } MdbColumn;
 
 struct mdbsargtree {

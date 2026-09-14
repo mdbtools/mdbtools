@@ -145,7 +145,11 @@ Notes:
   is currently unknown.
 - Offsets that have 0x40 in the high order byte point to a location within the
   page where a Data Pointer (4 bytes) to another data page (also known as an
-  overflow page) is stored.  Called 'lookupflag' in source code.
+  overflow page) is stored.  Called 'lookupflag' in source code.  The Data
+  Pointer has the same layout as the LVAL pointers described below (row number
+  in the low byte, page number in the upper three bytes).  The relocated row on
+  the overflow page has the 0x80 flag set, so it is only reached through the
+  pointer and is not read again when the overflow page is scanned.
 - Offsets that have 0x80 in the high order byte are deleted rows.  Called
   'delflag' in source code.
 

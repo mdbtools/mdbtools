@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <sql.h>
 #include <sqlext.h>
 
@@ -180,6 +181,39 @@ int i;
 				szSqlState, szErrorMsg);
 			return 1;
 		}		
+		/* Column names: SQLDescribeCol reports the length in characters,
+		 * SQLColAttributes reports it in bytes (issue #357). For the ANSI
+		 * driver these are equal to strlen(name). */
+		{
+			SQLSMALLINT ncols = 0, icol;
+			SQLNumResultCols(hstmt, &ncols);
+			for (icol = 1; icol <= ncols; icol++) {
+				UCHAR name1[64], name2[64];
+				SQLSMALLINT len1 = -1, len2 = -1, type, scale, nullable;
+				SQLULEN size;
+				SQLLEN num;
+				retcode = SQLDescribeCol(hstmt, icol, name1, sizeof(name1), &len1,
+						&type, &size, &scale, &nullable);
+				if (retcode != SQL_SUCCESS) {
+					printStatementError(hstmt, "problem with SQLDescribeCol");
+					return 1;
+				}
+				retcode = SQLColAttributes(hstmt, icol, SQL_COLUMN_NAME, name2, sizeof(name2), &len2, &num);
+				if (retcode != SQL_SUCCESS) {
+					printStatementError(hstmt, "problem with SQLColAttributes");
+					return 1;
+				}
+				printf("column %d: SQLDescribeCol=\"%s\" (%d) SQLColAttributes=\"%s\" (%d)\n",
+						icol, name1, len1, name2, len2);
+				if (strcmp((char *)name1, (char *)name2) != 0
+						|| len1 != (SQLSMALLINT)strlen((char *)name1)
+						|| len2 != (SQLSMALLINT)strlen((char *)name2)) {
+					fprintf(stderr, "column name / length mismatch for column %d\n", icol);
+					return 1;
+				}
+			}
+		}
+
 		SQLBindCol(hstmt, 1, SQL_C_LONG, &id_value, sizeof(id_value), NULL);
 		SQLBindCol(hstmt, 3, SQL_CHAR, szCol1, sizeof(szCol1), &length);
 	

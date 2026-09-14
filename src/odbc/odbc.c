@@ -116,24 +116,36 @@ static SQLRETURN do_connect (
 		return SQL_ERROR;
 }
 
+/*
+ * Convert the NUL-terminated string _in to SQLWCHAR. Returns the number of
+ * characters in the complete converted string (not including the terminator),
+ * regardless of how many actually fit in _out. If _out is non-NULL, at most
+ * _out_count-1 characters are written to it, always followed by a terminator.
+ * _out may be NULL (or _out_count 0) to only compute the required length.
+ */
 size_t _mdb_odbc_ascii2unicode(struct _hdbc* dbc, const char *_in, size_t _in_len, SQLWCHAR *_out, size_t _out_count){
-    wchar_t *w = malloc(_out_count * sizeof(wchar_t));
-    size_t count = 0, i;
+    size_t max_count = strlen(_in) + 1; /* wide chars never outnumber bytes */
+    wchar_t *w = malloc(max_count * sizeof(wchar_t));
+    size_t count = 0, i, n;
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
-    count = _mbstowcs_l(w, _in, _out_count, dbc->locale);
+    count = _mbstowcs_l(w, _in, max_count, dbc->locale);
 #elif defined(HAVE_MBSTOWCS_L)
-    count = mbstowcs_l(w, _in, _out_count, dbc->locale);
+    count = mbstowcs_l(w, _in, max_count, dbc->locale);
 #else
     locale_t oldlocale = uselocale(dbc->locale);
-    count = mbstowcs(w, _in, _out_count);
+    count = mbstowcs(w, _in, max_count);
     uselocale(oldlocale);
 #endif
-    for (i=0; i<count; i++) {
-        _out[i] = (SQLWCHAR)w[i];
+    if (count == (size_t)-1) /* invalid multibyte sequence */
+        count = 0;
+    if (_out && _out_count > 0) {
+        n = (count < _out_count) ? count : _out_count - 1;
+        for (i=0; i<n; i++) {
+            _out[i] = (SQLWCHAR)w[i];
+        }
+        _out[n] = '\0';
     }
     free(w);
-    if (count < _out_count)
-        _out[count] = '\0';
     return count;
 }
 
@@ -703,7 +715,10 @@ SQLRETURN SQL_API SQLColAttributes(
 				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
 				return SQL_ERROR;
 			}
-			if (snprintf(rgbDesc, cbDescMax, "%s", sqlcol->name) + 1 > cbDescMax) {
+			/* Total length in bytes, excluding the terminator, even if truncated */
+			if (pcbDesc)
+				*pcbDesc = strlen(sqlcol->name);
+			if (rgbDesc && snprintf(rgbDesc, cbDescMax, "%s", sqlcol->name) + 1 > cbDescMax) {
 				strcpy(stmt->sqlState, "01004"); // String data, right truncated
 				ret = SQL_SUCCESS_WITH_INFO;
 			}
@@ -715,8 +730,12 @@ SQLRETURN SQL_API SQLColAttributes(
 		case SQL_COLUMN_TYPE_NAME:
 		{
 			const char *type_name = _odbc_get_client_type_name(col);
-			if (type_name)
-				*pcbDesc = snprintf(rgbDesc, cbDescMax, "%s", type_name);
+			if (type_name) {
+				if (pcbDesc)
+					*pcbDesc = strlen(type_name);
+				if (rgbDesc)
+					snprintf(rgbDesc, cbDescMax, "%s", type_name);
+			}
 			break;
 		}
 		case SQL_COLUMN_LENGTH:

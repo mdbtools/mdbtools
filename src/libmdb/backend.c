@@ -750,6 +750,20 @@ mdb_print_indexes(FILE* outfile, MdbTableDef *table, char *dbnamespace)
  *   Returns NULL on last iteration.
  *   The caller is responsible for freeing this string.
  */
+static int
+is_system_table_name(MdbHandle *mdb, const char *name)
+{
+	unsigned int i;
+	MdbCatalogEntry *entry;
+
+	for (i = 0; i < mdb->num_catalog; i++) {
+		entry = g_ptr_array_index(mdb->catalog, i);
+		if (entry->object_type == MDB_TABLE && !strcmp(entry->object_name, name))
+			return mdb_is_system_table(entry);
+	}
+	return 0;
+}
+
 static char *
 mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tablename)
 {
@@ -806,12 +820,21 @@ mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tabl
 			mdb->relationships_table = NULL;
 			return NULL;
 		}
-		if (!tablename || !strcmp(bound[1], tablename))
+		if (tablename) {
+			if (!strcmp(bound[1], tablename))
+				break;
+		} else if (!is_system_table_name(mdb, bound[1])
+				&& !is_system_table_name(mdb, bound[3])) {
+			/* Only user tables are exported, so skip relationships
+			 * involving system tables (e.g. MSysNavPaneGroups). */
 			break;
+		}
 	}
 
 	quoted_table_1 = mdb->default_backend->quote_schema_name(dbnamespace, bound[1]);
+	quoted_table_1 = mdb_normalise_and_replace(mdb, &quoted_table_1);
 	quoted_table_2 = mdb->default_backend->quote_schema_name(dbnamespace, bound[3]);
+	quoted_table_2 = mdb_normalise_and_replace(mdb, &quoted_table_2);
 	grbit = atoi(bound[4]);
 	constraint_name = g_strconcat(bound[1], "_", bound[0], "_fk", NULL);
 
@@ -1136,9 +1159,15 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 		fputs ("-- CREATE Relationships ...\n", outfile);
 		the_relation=mdb_get_relationships(mdb, dbnamespace, tabname);
 		if (!the_relation) {
-			fputs("-- relationships are not implemented for ", outfile);
-			fputs(mdb->backend_name, outfile);
-			fputs("\n", outfile);
+			if (strcmp(mdb->backend_name, "postgres")
+			 && strcmp(mdb->backend_name, "mysql")
+			 && strcmp(mdb->backend_name, "oracle")) {
+				fputs("-- relationships are not implemented for ", outfile);
+				fputs(mdb->backend_name, outfile);
+				fputs("\n", outfile);
+			} else {
+				fputs("-- (none)\n", outfile);
+			}
 		} else {
 			do {
 				fputs(the_relation, outfile);

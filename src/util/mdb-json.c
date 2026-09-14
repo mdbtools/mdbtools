@@ -200,7 +200,7 @@ main(int argc, char **argv)
 		int add_delimiter = 0;
 		for (i=0;i<table->num_cols;i++) {
 			col=g_ptr_array_index(table->columns,i);
-			if (bound_lens[i]) {
+			if (!col->cur_value_is_null) {
 				if (add_delimiter) {
 					fputs(delimiter, outfile);
 					add_delimiter = 0;

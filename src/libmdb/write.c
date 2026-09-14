@@ -715,6 +715,12 @@ mdb_update_row(MdbTableDef *table)
 		fprintf(stderr, "File is not open for writing\n");
 		return 0;
 	}
+	if (table->cur_phys_pg && mdb->cur_pg != table->cur_phys_pg) {
+		/* the row was reached through an overflow pointer, so the page
+		 * buffer does not hold the table's data page */
+		fprintf(stderr, "Updating a row stored on an overflow page is not supported\n");
+		return 0;
+	}
 	mdb_find_row(mdb, table->cur_row-1, &row_start, &old_row_size);
 	row_end = row_start + old_row_size - 1;
 
