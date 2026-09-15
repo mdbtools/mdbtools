@@ -132,6 +132,11 @@ jobs:
     steps:
       - uses: msys2/setup-msys2@v2
         with:
+          # This job builds with the msys-native (Cygwin-like) gcc, so run in the
+          # MSYS environment. Under MINGW64 config.guess reports a mingw host and
+          # libtool emits a MinGW launcher that calls _spawnv, which the MSYS
+          # headers do not declare and GCC 14+ rejects.
+          msystem: MSYS
           update: true
           install: >-
             autotools
@@ -148,7 +153,9 @@ jobs:
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
-        run: ./configure --${{ matrix.glib }} --${{ matrix.iconv }}
+        # Same build triple MSYS2 uses for its own msys packages; upstream
+        # libtool has no msys host case, so the guessed x86_64-pc-msys is unusable.
+        run: ./configure --build=x86_64-pc-cygwin --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }}
       - name: Make
         run: make
       - name: Test
