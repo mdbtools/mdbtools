@@ -13,8 +13,10 @@ jobs:
         glib: [ enable-glib, disable-glib ]
     steps:
       - name: Install packages
-        run: sudo apt install gettext unixodbc gcc-11 gcc-12
-      - uses: actions/checkout@v2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext unixodbc unixodbc-dev libglib2.0-dev gcc-11 gcc-12
+      - uses: actions/checkout@v4
       - name: Fetch test data
         run: |
           rm -rf test
@@ -55,7 +57,7 @@ jobs:
     steps:
       - name: Install packages
         run: brew install bison gawk automake libtool unixodbc
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Fetch test data
         run: |
           rm -rf test
@@ -98,7 +100,7 @@ jobs:
         run: brew install bison gawk automake libtool libiodbc
       - name: Add path
         run: echo /opt/homebrew/opt/libiodbc/bin >> $GITHUB_PATH
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Fetch test data
         run: |
           rm -rf test
@@ -137,7 +139,7 @@ jobs:
             gcc
             git
             glib2-devel
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Fetch test data
         run: |
           rm -rf test
