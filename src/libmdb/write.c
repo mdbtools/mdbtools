@@ -265,6 +265,7 @@ mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fiel
 		unsigned int col_start;
 		col = g_ptr_array_index(table->columns,i);
 		fields[i].colnum = i;
+		fields[i].col_num = col->col_num;
 		fields[i].is_fixed = col->is_fixed;
 		byte_num = col->col_num / 8;
 		bit_num = col->col_num % 8;
