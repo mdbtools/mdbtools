@@ -379,7 +379,10 @@ next_pg field.
 |      |         |             | autonumber column, if any. 0 otherwise   |
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
-| ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
+| ???? | 2 bytes | num_var_cols| Number of variable column slots.  A      |
+|      |         |             | deleted column keeps its slot, as with   |
+|      |         |             | max_cols, so this can be more than the   |
+|      |         |             | variable columns the table now has       |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
 | ???? | 4 bytes | num_idx     | Number of logical indexes in table       |
 | ???? | 4 bytes | num_real_idx| Number of index entries                  |
@@ -390,8 +393,8 @@ next_pg field.
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_real_idx (8 bytes per idxs)               |
 +-------------------------------------------------------------------------+
-| 0x00 | 4 bytes | ???         |                                          |
-| ???? | 4 bytes | num_idx_rows| (not sure)                               |
+| ???? | 4 bytes | idx_rows1   | A row count statistic, kept loosely      |
+| ???? | 4 bytes | idx_rows2   | A second row count statistic             |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_cols (18 bytes per column)                |
 +-------------------------------------------------------------------------+
@@ -438,7 +441,8 @@ next_pg field.
 |      |         |             | (or -1 if this index is not a fk)        |
 | 0x00 | 4 bytes | rel_tbl_page| page number of other table in fk         |
 | 0x01 | 1 byte  | cascade_ups | flag indicating if updates are cascaded  |
-| 0x01 | 1 byte  | cascade_dels| flag indicating if deletes are cascaded  |
+| 0x01 | 1 byte  | cascade_dels| 0x01 cascades deletes, 0x02 sets the     |
+|      |         |             | foreign key to null on delete            |
 | ???? | 1 byte  | index_type  | 0x01 if index is primary, 0x02 if foreign|
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_idx                                       |
@@ -461,18 +465,23 @@ next_pg field.
 | data | length  | name        | description                              |
 +------+---------+-------------+------------------------------------------+
 | ???? | 4 bytes | tdef_len    | Length of the data for this page         |
-| ???? | 4 bytes | unknown     | unknown                                  |
+| 1625 | 4 bytes | tag         | A structure tag, repeated at the head of |
+|      |         |             | each column block and each logical index |
+|      |         |             | block.  Index column blocks use 1923     |
 | ???? | 4 bytes | num_rows    | Number of records in this table          |
 | 0x00 | 4 bytes | autonumber  | value for the next value of the          |
 |      |         |             | autonumber column, if any. 0 otherwise   |
-| 0x01 | 1 byte  | autonum_flag| 0x01 makes autonumbers work in access    |
-| ???? | 3 bytes | unknown     | unknown                                  |
+| 0x01 | 1 byte  | autonum_flag| 0x01 enables autonumbering               |
+| 0x00 | 3 bytes | unknown     | zero in every definition seen            |
 | 0x00 | 4 bytes | ct_autonum  | autonumber value for complex type column(s) |
 |      |         |             | (shared across all columns in the table) |
-| ???? | 8 bytes | unknown     | unknown                                  |
+| ???? | 8 bytes | unknown     | uninitialized page residue, not a field  |
 | 0x4e | 1 byte  | table_type  | 0x4e: user table, 0x53: system table     |
 | ???? | 2 bytes | max_cols    | Max columns a row will have (deletions)  |
-| ???? | 2 bytes | num_var_cols| Number of variable columns in table      |
+| ???? | 2 bytes | num_var_cols| Number of variable column slots.  A      |
+|      |         |             | deleted column keeps its slot, as with   |
+|      |         |             | max_cols, so this can be more than the   |
+|      |         |             | variable columns the table now has       |
 | ???? | 2 bytes | num_cols    | Number of columns in table (repeat)      |
 | ???? | 4 bytes | num_idx     | Number of logical indexes in table       |
 | ???? | 4 bytes | num_real_idx| Number of index entries                  |
@@ -483,14 +492,14 @@ next_pg field.
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_real_idx (12 bytes per idxs)              |
 +-------------------------------------------------------------------------+
-| 0x00 | 4 bytes | ???         |                                          |
-| ???? | 4 bytes | num_idx_rows| (not sure)                               |
-| 0x00 | 4 bytes | ???         |                                          |
+| ???? | 4 bytes | idx_rows1   | A row count statistic, kept loosely      |
+| ???? | 4 bytes | idx_rows2   | A second row count statistic             |
+| 0x00 | 4 bytes | ???         | zero in every block seen                 |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_cols (25 bytes per column)                |
 +-------------------------------------------------------------------------+
 | ???? | 1 byte  | col_type    | Column Type (see table below)            |
-| ???? | 4 bytes | unknown     | matches first unknown definition block   |
+| 1625 | 4 bytes | tag         | the same structure tag as the definition |
 | ???? | 2 bytes | col_num     | Column Number (includes deleted columns) |
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_id      | Id given to the column when it was       |
@@ -506,8 +515,8 @@ next_pg field.
 |      |         |             | make the ms access 32 bit sort id: lcid, |
 |      |         |             | variant, weight table family             |
 | ???? | 1 byte  | bitmask     | See column flags below                   |
-| ???? | 1 byte  | misc_flags  | 0x01 for compressed unicode              |
-| 0000 | 4 bytes | ???         |                                          |
+| ???? | 1 byte  | misc_flags  | See column ext flags below               |
+| 0x00 | 4 bytes | ???         | zero in every column seen                |
 | ???? | 2 bytes | offset_F    | Offset for fixed length columns          |
 | ???? | 2 bytes | col_len     | Length of the column (0 if memo/ole)     |
 +-------------------------------------------------------------------------+
@@ -518,7 +527,8 @@ next_pg field.
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_real_idx (30+22 = 52 bytes)               |
 +-------------------------------------------------------------------------+
-| ???? | 4 bytes | ???         |                                          |
+| 1923 | 4 bytes | tag         | the structure tag of an index column     |
+|      |         |             | block                                    |
 +-------------------------------------------------------------------------+
 | Iterate 10 times for 10 possible columns (10*3 = 30 bytes)              |
 +-------------------------------------------------------------------------+
@@ -531,11 +541,11 @@ next_pg field.
 | ???? | 1 byte  | flags       | See flags table for indexes              |
 | ???? | 1 byte  | complex_idx | 2 if the index is over a complex column. |
 |      |         |             | 0 on every other index seen              |
-| 0x00 | 4 bytes | unknown     |                                          |
+| 0x00 | 4 bytes | unknown     | zero in every block seen                 |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_idx (28 bytes)                            |
 +-------------------------------------------------------------------------+
-| ???? | 4 bytes | unknown     | matches first unknown definition block   |
+| 1625 | 4 bytes | tag         | the same structure tag as the definition |
 | ???? | 4 bytes | index_num   | Number of the index                      |
 |      |         |             |(warn: not always in the sequential order)|
 | ???? | 4 bytes | index_num2  | Index into index cols list               |
@@ -545,8 +555,10 @@ next_pg field.
 |      |         |             | (or -1 if this index is not a fk)        |
 | 0x00 | 4 bytes | rel_tbl_page| page number of other table in fk         |
 | 0x01 | 1 byte  | cascade_ups | flag indicating if updates are cascaded  |
-| 0x01 | 1 byte  | cascade_dels| flag indicating if deletes are cascaded  |
+| 0x01 | 1 byte  | cascade_dels| 0x01 cascades deletes, 0x02 sets the     |
+|      |         |             | foreign key to null on delete            |
 | ???? | 1 byte  | index_type  | 0x01 if index is primary, 0x02 if foreign|
+| 0x00 | 4 bytes | ???         | zero in every block seen                 |
 +-------------------------------------------------------------------------+
 | Iterate for the number of num_idx                                       |
 +-------------------------------------------------------------------------+
@@ -587,8 +599,10 @@ second set:
       table.  Access refuses to open a table whose flat table does not carry
       it
 - 0x10: a value column of an attachment flat table, which are `FileData`,
-      `FileFlags`, `FileName`, `FileTimeStamp` and `FileURL`
-- 0x20: a version history complex column
+      `FileFlags`, `FileName`, `FileType`, `FileTimeStamp` and `FileURL`.
+      Access writes it and does not require it
+- 0x20: a version history complex column.  Access requires it, and without it
+      shows that column in the datasheet as a column of its own
 - 0xC0: the column is calculated.  The expression is the `Expression` property
       of the column, and each row stores the last computed value inside a 23
       byte wrapper which gives the length of the value as 4 bytes at offset
@@ -935,6 +949,37 @@ languages: Russian cannot be chosen at all, German only as German Phone Book,
 Danish only as Norwegian/Danish.  58 LCIDs resolve to 1033 and need no
 tailoring, so a weight table is the whole of their collation.
 
+A locale which does not resolve to 1033 has a tailoring: a few characters
+which take a different weight from the one the table of its family gives
+them.  Every case of a character moves together, so a tailoring which moves
+`z` moves `Z` with it.  Turkish is the exception measured so far, giving
+capital I the weights of the dotless `ı` and the dotted capital `İ` the
+weights of `i`.
+
+Some collations also weigh a sequence of characters as a unit, such as the
+czech `ch`, which takes one weight of its own between h and i.  Three things
+about a sequence have been measured:
+
+- it counts as one character in everything which follows it, so the diacritic
+  list, the unprintable offsets and the crazy flags all see one unit fewer
+  than the value has characters
+- it is weighed as a unit only when it is written all in lower case, all in
+  upper case, or in title case.  `cha`, `Cha` and `CHa` contract, `cHa` does
+  not, and a sequence barred by its case falls back to the longest sequence
+  left, so the hungarian `DZsa` is the sequence `DZ` and then an `s`
+- a character which writes no inline bytes, such as an apostrophe or a hyphen,
+  stops a sequence, so `c'ha` is a `c` and an `h`
+
+The hungarian doubled digraphs behave differently again.  `ccs` is the
+repeated first letter and then the digraph `cs`, it writes the weight of `cs`
+twice, and it reads the case rule over the digraph alone, so `cCSa` is weighed
+as a unit where `cHa` is not.
+
+Croatian differs between the two weight table families over which form is the
+unit.  In the general legacy family the two characters `dž` take the weight of
+the single character `ǆ` U+01C6, and in the general family the two characters
+take a weight of their own and U+01C6 decomposes into `d` and `ž`.
+
 French is unusual in changing no weight.  It orders the diacritics
 of a value from the end rather than the start, which sorts `cote` before `côte`
 before `coté` before `côté`.  Build the list with one entry per character which
@@ -1016,10 +1061,59 @@ MSysComplexTypeVH_<guid>      version history
 
 The type tables of the first two kinds are shared, one per database, and
 Access creates them whether or not a column uses them.  A version history type
-table is created per column, which is why its name carries a guid.
+table is created per column, which is why its name carries a guid.  It holds a
+memo column named after the memo column whose versions it keeps, and a date
+column, in either order.
+
+**A version history column and its date column have fixed names.**  The column
+in the table which declares it is always
+
+```
+VersionHistory_F5F8918F-0A3F-4DA9-AE71-184EE5012880
+```
+
+and the date column of its type table is always
+
+```
+Modified_F9B5E312-4155-4c59-9AAE-391C1B295827
+```
+
+Both hold across every database seen.  Only the type table's own guid varies
+per column.  A fixed column name means a table can keep the version history of
+at most one memo column.
+
+The flat table is named `f_<32 hex digits>_<column>`, cut to the 64 characters a
+table name may be, which the long name of a version history column needs.  Its
+indexes are `MSysComplexPKIndex` on the primary key, `_<column>` on the foreign
+key, and for a multivalued field or an attachment `IdxFKPrimaryScalar` on the
+foreign key plus a value column, `Value` for a multivalued field and `FileName`
+for an attachment.  Access also writes a unique `<column>_<32 hex digits>` index
+on the complex column itself, cut to 64 characters the same way.  Only the
+foreign key index is needed to read the values, and Access opens a file which
+has neither of the other two.
 
 Each row of the flat table carries the complex id of the row it belongs to in
-a foreign key column marked by ext flag 0x08.
+a foreign key column marked by ext flag 0x08.  The flat table also holds a LONG
+autonumber primary key, which is the id of one value, and the columns of the
+type table by the same names.
+
+The complex id is a per row autonumber of the table which declares the column,
+and every complex column of one row shares it.  A row written before a complex
+column was added holds none, and Access shows and edits such a row but fails to
+save the edit.
+
+`MSysObjects.Flags` says which part an object plays: 0x00040000 on the table
+which declares the column, without which Access never looks for the values, and
+0x000A0000 on the flat table, without which it will not open that table at all.
+A type table is 0x00030000.  Access also sets 0x80000000 on both supporting
+kinds, which only hides them from the navigation pane.
+
+Access reads the row source of a multivalued field from the `RowSourceType` and
+`RowSource` properties of the flat table's value column, not of the column
+itself, and offers no way to add a value unless the row source names at least
+one.  An attachment column carries no properties.  A version history column
+carries none either, and instead the memo column it shadows carries
+`AppendOnly`, as does the table.
 
 Properties
 ----------
@@ -1074,6 +1168,70 @@ The flag byte is a bit field, not a boolean.  Two of the bits are known:
 The whole byte has to be written back unchanged.
 
 See ``props.c``` for an example.
+
+Name Maps
+---------
+
+A name map is the data behind the Name AutoCorrect option.  It records the
+tables and columns an object depends on, and ties each one to the guid in the
+`GUID` property of that table or column.  When a table or column is renamed,
+Access uses the guid to find the old name and changes the places which use it.
+
+Only Jet 4 and later files have name maps.  They are stored as OLE properties
+in the default property block of the MSysObjects row of the object:
+
+- a table has a `NameMap` property.  It has a table record for the table
+  itself, a column record for each column and a reference record for each
+  name that an expression in the table (a calculated column, a validation
+  rule) uses
+- a query has a `DOL` property in the same format.  It has a table record for
+  each table or query the query reads and a column record for each column it
+  uses.  A query which tracks no names (union, pass-through, data definition)
+  has the magic value alone
+- a linked table also has one, which Jackcess ignores
+
+The database properties `Track Name AutoCorrect Info` and `Perform Name
+AutoCorrect` (LONG) turn the option on and off.  If a property is missing,
+Access takes the option as on.
+
+```
+NameMap := u32 magic 0x550ECC0A [u32 reserved, record*]
+record  := guid[16], u32 type, payload[16], name, u32 zero
+```
+
+The name is little-endian UCS-2 with a null terminator, whatever the charset
+of the database.  The trailing zero is left off the last record.  There is no
+record count, so a reader stops at the end of the data.
+
+```
+type  record     payload
+0     table      8 byte date, then 8 bytes of writer state
+6     reference  guid of the table
+7     column     guid of the table
+12    end        tag of the Access build which wrote the map, older builds
+                 did not write this record
+```
+
+The guid of a reference or an end record is zero.
+
+The date in a table record is the DateUpdate of the table in MSysObjects at
+the time Access wrote the name map.  Access rewrites the name map of a table
+when a design save changes a column or an index.  A table property change, a
+rename in the Navigation Pane, data entry and a compact do not rewrite it.
+When a column is renamed, Access changes the name in its record and keeps its
+guid.  A table renamed in the Navigation Pane keeps its old name in its table
+record until the next design save.
+
+Access repairs a query when it next opens it, not when the table changes.  It
+finds each record of the `DOL` by guid, and if the object now has a different
+name, it changes the sql and the `DOL`.  A table record for a query which the
+query reads carries the guid of that source query.  The column records under
+it carry the guids of the table columns the source query reads.  So a query
+name map must not be changed without its sql, because Access could then not
+find the old names to repair.
+
+Name maps often disagree with their tables, even in files which only Access
+wrote.  It is more reliable to find a column record by name than by guid.
 
 
 Text Data Type
