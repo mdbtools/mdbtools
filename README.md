@@ -116,19 +116,26 @@ If you have cloned the Git repository, you will first need to generate the
 `configure` file (skip this step if you have downloaded a formal release):
 
 ```bash
-$ autoreconf -i -f
+autoreconf -i -f
 ```
 
 Then:
 
 ```bash
-$ ./configure
+./configure
 ```
+
+OR with mingw32 (--disable-shared --enable-static are optional as you knew):
+
+```bash
+./configure --host=x86_64-w64-mingw32 --disable-shared --enable-static
+```
+
 
 OR for a complete install (requires bison, flex, and unixODBC):
 
 ```bash
-$ ./configure --with-unixodbc=/usr/local
+./configure --with-unixodbc=/usr/local
 ```
 
 By default, MDB Tools is linked against the copy of
@@ -155,7 +162,7 @@ with a Unicode-capable driver at /usr/local/lib/odbc/libmdbodbcW.so.
 The command `configure --help` will give you the list of mdbtools specific options.
 
 ```bash
-$ make
+make
 ```
 
 Once MDB Tools has been compiled, libmdb.[so|a] will be in the src/libmdb 
@@ -164,19 +171,19 @@ directory and the utility programs will be in the src/util directory.
 You can then install (to /usr/local by default) by running the following as root:
 
 ```bash
-$ make install
+make install
 ```
 
 Some systems will also need the ld cache to be updated after installation;
 You can do that running:
 
 ```bash 
-$ ldconfig
+ldconfig
 ```
 
 ## Hacking
 
-If you are interested in helping, read the [HACKING](./HACKING) file for a description of 
+If you are interested in helping, read the [HACKING](./HACKING.md) file for a description of 
 where the code stands and what has been gleened of the file format.
 
 ## Contact

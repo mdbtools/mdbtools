@@ -206,7 +206,7 @@ mdb_find_end_of_row(MdbHandle *mdb, int row)
 	/* if lookupflag is not set, it's good (deleteflag is ok) */
 	for (i = row; i > 0; i--) {
 		row_start = mdb_get_int16(mdb->pg_buf, (rco + i*2));
-		if (!(row_start & 0x8000)) {
+		if (!(row_start & 0x4000)) {
 			break;
 		}
 	}
@@ -310,16 +310,13 @@ int ret;
 	}
 	return 0;
 }
+static int mdb_read_row_at(MdbTableDef *table, int row_start, size_t row_size);
 int mdb_read_row(MdbTableDef *table, unsigned int row)
 {
 	MdbHandle *mdb = table->entry->mdb;
-	MdbColumn *col;
-	unsigned int i;
 	int row_start;
 	size_t row_size = 0;
 	int delflag, lookupflag;
-	MdbField *fields;
-	int num_fields;
 
 	if (table->num_cols == 0 || !table->columns)
 		return 0;
@@ -333,20 +330,57 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 	}
 
+	/* See HACKING.md: 0x8000 marks a deleted row and 0x4000 marks a
+	 * "lookup" slot holding a 4-byte pointer to the row's actual location
+	 * on an overflow page. The row on the overflow page is itself flagged
+	 * as deleted so that it is only reached through the pointer. */
 	delflag = lookupflag = 0;
-	if (row_start & 0x8000) lookupflag++;
-	if (row_start & 0x4000) delflag++;
+	if (row_start & 0x8000) delflag++;
+	if (row_start & 0x4000) lookupflag++;
 	row_start &= OFFSET_MASK; /* remove flags */
 #if MDB_DEBUG
-	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
+	fprintf(stdout,"Row %d bytes %d to %d %s %s\n",
 		row, row_start, row_start + row_size - 1,
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
-#endif	
+#endif
 
-	if (!table->noskip_del && delflag) {
+	if (table->noskip_del) {
+		/* Every slot is read in place, including the relocated rows on
+		 * the overflow pages, so the pointers themselves are skipped. */
+		if (lookupflag)
+			return 0;
+	} else if (delflag) {
 		return 0;
+	} else if (lookupflag) {
+		void *buf;
+		int off;
+		size_t len;
+		guint32 pg_row;
+
+		if (row_size < 4)
+			return 0;
+		pg_row = mdb_get_int32(mdb->pg_buf, row_start);
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &off, &len) == -1 || len == 0)
+			return 0;
+		/* Make the overflow page the current page: bound values refer
+		 * to offsets within it, and memo/OLE data is read from it after
+		 * this call returns. The table's own data page is read again
+		 * by mdb_fetch_row() before the next row is fetched. */
+		mdb_swap_pgbuf(mdb);
+		mdb->cur_pg = pg_row >> 8;
+		return mdb_read_row_at(table, off, len);
 	}
+
+	return mdb_read_row_at(table, row_start, row_size);
+}
+static int mdb_read_row_at(MdbTableDef *table, int row_start, size_t row_size)
+{
+	MdbHandle *mdb = table->entry->mdb;
+	MdbColumn *col;
+	unsigned int i;
+	MdbField *fields;
+	int num_fields;
 
 	fields = malloc(sizeof(MdbField) * table->num_cols);
 
@@ -382,6 +416,8 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	int offset, 
 	int len)
 {
+	/* booleans use the null bit to store their value and are never NULL */
+	col->cur_value_is_null = (col->col_type != MDB_BOOL && isnull);
 	if (col->col_type == MDB_BOOL) {
 		mdb_xfer_bound_bool(mdb, col, isnull);
 	} else if (isnull) {
@@ -434,7 +470,9 @@ int mdb_read_next_dpg(MdbTableDef *table)
 #endif 
 	/* can't do a fast read, go back to the old way */
 	do {
-		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
+		/* page 0 is the database header so it is never a data page;
+		 * cur_phys_pg must end up as the page now in the buffer */
+		if (!mdb_read_pg(mdb, ++table->cur_phys_pg))
 			return 0;
 	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=(long)entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
@@ -489,6 +527,10 @@ mdb_fetch_row(MdbTableDef *table)
 			}
 			mdb_read_pg(mdb, pg);
 		} else {
+			/* the previous row may have left an overflow page in the
+			 * page buffer (no-op if the data page is still loaded) */
+			if (table->cur_phys_pg && !mdb_read_pg(mdb, table->cur_phys_pg))
+				return 0;
 			rows = mdb_get_int16(mdb->pg_buf,fmt->row_count_offset);
 
 			/* if at end of page, find a new data page */
@@ -587,6 +629,10 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	}
 	if (len < 4)
 		return 0;
+	if (len - 4 > (size_t)col->chunk_size) {
+		fprintf(stderr, "OLE chunk of %zu bytes exceeds the bind size\n", len - 4);
+		return 0;
+	}
 	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 	if (col->bind_ptr)
@@ -628,6 +674,10 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 			&buf, &row_start, &len)) {
 			return 0;
 		}
+		if (len > chunk_size) {
+			fprintf(stderr, "OLE chunk of %zu bytes exceeds the bind size\n", len);
+			return 0;
+		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 		if (col->bind_ptr) {
@@ -644,6 +694,10 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
 			&buf, &row_start, &len) || len < 4) {
+			return 0;
+		}
+		if (len - 4 > chunk_size) {
+			fprintf(stderr, "OLE chunk of %zu bytes exceeds the bind size\n", len - 4);
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -675,7 +729,8 @@ mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
 
-	len = mdb_ole_read(mdb, col, ole_ptr, OLE_BUFFER_SIZE);
+	/* col->bind_ptr is, by convention, mdb->bind_size bytes long */
+	len = mdb_ole_read(mdb, col, ole_ptr, mdb->bind_size);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
 	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
@@ -892,14 +947,26 @@ mdb_date_to_tm(double td, struct tm *t)
 {
 	long day, time;
 	long yr, q;
+	double frac;
 	const int *cal;
 
-	if (td < 0.0 || td > 1e6) // About 2700 AD
+	/* Dates before 12/30/1899 are negative. As in VB/COM DATE values,
+	 * the integer part is the (signed) day offset and the fractional
+	 * part is the (unsigned) time of day, so -1.5 is 12/29/1899 12:00. */
+	if (td < -693593.0 || td >= 2958466.0) // Between 1/1/0001 and 12/31/9999
 		return;
 
 	yr = 1;
 	day = (long)(td);
-	time = (long)((td - day) * 86400.0 + 0.5);
+	frac = td - day;
+	if (frac < 0)
+		frac = -frac;
+	time = (long)(frac * 86400.0 + 0.5);
+	if (time >= 86400) {
+		/* rounding carried into the next day */
+		time -= 86400;
+		day += (td < 0) ? -1 : 1;
+	}
 	t->tm_hour = time / 3600;
 	t->tm_min = (time / 60) % 60;
 	t->tm_sec = time % 60;

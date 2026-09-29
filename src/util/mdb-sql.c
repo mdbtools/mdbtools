@@ -25,7 +25,7 @@
 #    include <readline.h>
 #  else
 /* no readline.h */
-extern char *readline ();
+extern char *readline (const char *);
 #  endif
 char *cmdline = NULL;
 #endif /* HAVE_LIBREADLINE */
@@ -37,10 +37,10 @@ char *cmdline = NULL;
 #    include <history.h>
 #  else
 /* no history.h */
-extern void add_history ();
-extern int write_history ();
-extern int read_history ();
-extern void clear_history ();
+extern void add_history (const char *);
+extern int write_history (const char *);
+extern int read_history (const char *);
+extern void clear_history (void);
 #  endif
 #endif /* HAVE_READLINE_HISTORY */
 
@@ -443,6 +443,12 @@ main(int argc, char **argv)
 			if (!l)
 				break;
 			s=g_locale_to_utf8(l, -1, NULL, NULL, NULL);
+			/* Conversion fails when the line contains bytes that are
+			 * not valid in the current locale (e.g. a UTF-8 "ß" typed
+			 * under the C locale).  Fall back to the raw input rather
+			 * than dereferencing NULL below. */
+			if (!s)
+				s=g_strdup(l);
 			free(l);
 		}
 

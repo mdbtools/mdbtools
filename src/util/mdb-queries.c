@@ -48,6 +48,7 @@ int main (int argc, char **argv) {
 	int list_only=0;
 	int found_match=0;
 	int line_break=0;
+	int rc=0;
 	char *query_id;
 	char *query_name = NULL;
     size_t bind_size = QUERY_BIND_SIZE;
@@ -66,8 +67,15 @@ int main (int argc, char **argv) {
 	char *sql_predicate = malloc(bind_size);
 	char *sql_columns = malloc(bind_size);
 	char *sql_where = malloc(bind_size);
+	char *sql_grouping = malloc(bind_size);
+	char *sql_having = malloc(bind_size);
 	char *sql_sorting = malloc(bind_size);
+	char *sql_insert = malloc(bind_size);
+	char *sql_into = malloc(bind_size);
+	char *sql_target = malloc(bind_size);
+	char *sql_target_columns = malloc(bind_size);
 	int flagint;
+	int query_type = 1;	// 1 select, 2 make-table, 3 append, 4 update, 5 delete, 6 crosstab, 7 DDL, 8 pass-through, 9 union
 	char *locale = NULL;
 	int print_mdbver = 0;
 	
@@ -163,11 +171,19 @@ int main (int argc, char **argv) {
 
 				mdb_rewind_table(table);
 
+				sql_tables[0] = sql_predicate[0] = sql_columns[0] = sql_where[0] = '\0';
+				sql_grouping[0] = sql_having[0] = sql_sorting[0] = '\0';
+				sql_insert[0] = sql_into[0] = sql_target[0] = sql_target_columns[0] = '\0';
+
 				while (mdb_fetch_row(table)) {
 					if(strcmp(query_id,objectid) == 0) {
 						flagint = atoi(flag);
 						//we have a row for our query
 						switch(atoi(attribute)) {
+							case 1:		// query type; Name1 = destination table for make-table/append
+								query_type = flagint;
+								strcpy(sql_target,name1);
+								break;
 							case 3:		// predicate
 								if (flagint & 0x30) {
 									strcpy(sql_predicate, " TOP ");
@@ -188,11 +204,20 @@ int main (int argc, char **argv) {
 								sprintf(sql_tables+strlen(sql_tables),"[%s]",name1);
 								break;
 							case 6:		// column name
-								if(strcmp(sql_columns,"") == 0) {
-									strcpy(sql_columns,expression);
-								} else {
+								if(strcmp(sql_columns,"") != 0) {
 									strcat(sql_columns,",");
-									strcat(sql_columns,expression);
+								}
+								strcat(sql_columns,expression);
+								if(strcmp(name1,"") != 0 && strcmp(name1,expression) != 0) {
+									// Name1 = column alias
+									sprintf(sql_columns+strlen(sql_columns)," AS [%s]",name1);
+								}
+								if(strcmp(name2,"") != 0) {
+									// Name2 = destination column (append query)
+									if(strcmp(sql_target_columns,"") != 0) {
+										strcat(sql_target_columns,",");
+									}
+									sprintf(sql_target_columns+strlen(sql_target_columns),"[%s]",name2);
 								}
 								break;
 							case 7:		// join/relationship where clause
@@ -200,7 +225,20 @@ int main (int argc, char **argv) {
 								//fprintf(stdout,"join clause: %s\n",expression);
 								break;
 							case 8:		// where clause
-								strcpy(sql_where,expression);
+								strcpy(sql_where," WHERE ");
+								strcat(sql_where,expression);
+								break;
+							case 9:		// group by
+								if(strcmp(sql_grouping,"") == 0) {
+									strcpy(sql_grouping," GROUP BY ");
+								} else {
+									strcat(sql_grouping,",");
+								}
+								strcat(sql_grouping,expression);
+								break;
+							case 10:		// having clause
+								strcpy(sql_having," HAVING ");
+								strcat(sql_having,expression);
 								break;
 							case 11:		// sorting
 								if(strcmp(sql_sorting,"") == 0) {
@@ -220,25 +258,35 @@ int main (int argc, char **argv) {
 				fprintf(stdout,"sql_where: %s\n",sql_where);
 				fprintf(stdout,"sql_sorting: %s\n",sql_sorting);*/
 				
-				/* print out the sql statement */
-				if(strcmp(sql_where,"") == 0) {
-					fprintf(stdout,"SELECT%s %s FROM %s %s\n",sql_predicate,sql_columns,sql_tables,sql_sorting);
-				} else {
-					fprintf(stdout,"SELECT%s %s FROM %s WHERE %s %s\n",sql_predicate,sql_columns,sql_tables,sql_where,sql_sorting);
+				/* append (INSERT INTO ... SELECT) and make-table (SELECT ... INTO) queries */
+				if(query_type == 3) {
+					sprintf(sql_insert,"INSERT INTO [%s] ",sql_target);
+					if(strcmp(sql_target_columns,"") != 0) {
+						sprintf(sql_insert+strlen(sql_insert),"(%s) ",sql_target_columns);
+					}
+				} else if(query_type == 2) {
+					sprintf(sql_into," INTO [%s]",sql_target);
 				}
+
+				/* print out the sql statement */
+				fprintf(stdout,"%sSELECT%s %s%s FROM %s%s%s%s %s\n",sql_insert,sql_predicate,sql_columns,sql_into,sql_tables,sql_where,sql_grouping,sql_having,sql_sorting);
 						
 				mdb_free_tabledef(table);
+			} else {
+				fprintf(stderr,"Couldn't read the MSysQueries table\n");
+				rc = 1;
 			}
 			free(query_id);
 		} else {
 			fprintf(stderr,"Couldn't locate the specified query: %s\n",query_name);
+			rc = 1;
 		}
 	}
 
 	mdb_close(mdb);
 	g_free(query_name);
-	
-	return 0;
+
+	return rc;
 }
 
 /**************************************************** 	

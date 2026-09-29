@@ -68,6 +68,13 @@
 // M$VC see http://stackoverflow.com/questions/1113409/attribute-constructor-equivalent-in-vc
 #define MDB_DEPRECATED(type, funcname) type __attribute__((deprecated)) funcname
 
+#ifdef __MINGW32__
+  #include <stdlib.h>
+  #ifndef locale_t
+    typedef _locale_t locale_t;
+  #endif
+#endif
+
 typedef @LOCALE_T@ mdb_locale_t;
 
 enum {
@@ -379,9 +386,12 @@ typedef struct {
 	/* info needed for handling deleted/added columns */
 	int 		fixed_offset;
 	unsigned int	var_col_num;
-	/* row_col_num is the row column number order, 
+	/* row_col_num is the row column number order,
 	 * including deleted columns */
 	int		row_col_num;
+	/* whether the current value is NULL (as opposed to a zero-length
+	 * value such as an empty string) */
+	unsigned char	cur_value_is_null;
 } MdbColumn;
 
 struct mdbsargtree {

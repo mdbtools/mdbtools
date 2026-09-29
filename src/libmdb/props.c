@@ -32,9 +32,13 @@ mdb_read_props_list(MdbHandle *mdb, gchar *kkd, int len)
 	mdb_buffer_dump(kkd, 0, len);
 #endif
 	pos = 0;
-	while (pos < len) {
+	while (pos + 2 <= len) {
 		record_len = mdb_get_int16(kkd, pos);
 		pos += 2;
+		if (record_len > (guint32)(len - pos)) {
+			fprintf(stderr, "Property name length %u exceeds buffer, ignoring remaining names\n", record_len);
+			break;
+		}
 		if (mdb_get_option(MDB_DEBUG_PROPS)) {
 			fprintf(stderr, "%02d ",i++);
 			mdb_buffer_dump(kkd, pos - 2, record_len + 2);
@@ -104,11 +108,18 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 #endif
 	pos = 0;
 
+	props = mdb_alloc_props();
+	props->hash = g_hash_table_new(g_str_hash, g_str_equal);
+	if (len < 6)
+		return props;
 	record_len = mdb_get_int16(kkd, pos);
 	pos += 4;
 	name_len = mdb_get_int16(kkd, pos);
 	pos += 2;
-	props = mdb_alloc_props();
+	if (name_len > (guint32)(len - pos)) {
+		fprintf(stderr, "Property block name length %u exceeds buffer\n", name_len);
+		return props;
+	}
 	if (name_len) {
 		props->name = g_malloc(3*name_len + 1);
 		mdb_unicode2ascii(mdb, kkd+pos, name_len, props->name, 3*name_len + 1);
@@ -116,9 +127,7 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 	}
 	pos += name_len;
 
-	props->hash = g_hash_table_new(g_str_hash, g_str_equal);
-
-	while (pos < len) {
+	while (pos + 8 <= len) {
 		record_len = mdb_get_int16(kkd, pos);
 		dtype = kkd[pos + 3];
 		elem = mdb_get_int16(kkd, pos + 4);
@@ -126,6 +135,9 @@ mdb_read_props(MdbHandle *mdb, GPtrArray *names, gchar *kkd, int len)
 			break;
 		dsize = mdb_get_int16(kkd, pos + 6);
 		if (dsize < 0 || pos + 8 + dsize > len)
+			break;
+		/* each record is an 8 byte header followed by the value */
+		if (record_len < 8 || record_len > (guint32)(len - pos))
 			break;
 		value = g_strdup_printf("%.*s", dsize, &kkd[pos+8]);
 		name = g_ptr_array_index(names,elem);
@@ -189,7 +201,7 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 #endif
 	mdb_debug(MDB_DEBUG_PROPS,"starting prop parsing of type %s", buffer);
 
-	if (strcmp("KKD", buffer) && strcmp("MR2", buffer)) {
+	if (len < 4 || (memcmp("KKD\0", buffer, 4) && memcmp("MR2\0", buffer, 4))) {
 		fprintf(stderr, "Unrecognized format.\n");
 		mdb_buffer_dump(buffer, 0, len);
 		return NULL;
@@ -198,11 +210,16 @@ mdb_kkd_to_props(MdbHandle *mdb, void *buffer, size_t len) {
 	result = g_ptr_array_new();
 
 	pos = 4;
-	while (pos < len) {
+	while (pos + 6 <= len) {
 		record_len = mdb_get_int32(buffer, pos);
 		record_type = mdb_get_int16(buffer, pos + 4);
 		mdb_debug(MDB_DEBUG_PROPS,"prop chunk type:0x%04x len:%d", record_type, record_len);
 		//mdb_buffer_dump(buffer, pos+4, record_len);
+		/* each chunk is a 6 byte header followed by its payload */
+		if (record_len < 6 || record_len > len - pos) {
+			fprintf(stderr, "Property chunk length %u is invalid, ignoring remaining properties\n", record_len);
+			break;
+		}
 		switch (record_type) {
 			case 0x80:
 				if (names) free_names(names);

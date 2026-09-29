@@ -24,6 +24,17 @@
 #define is_binary_type(x) (x==MDB_OLE || x==MDB_BINARY || x==MDB_REPID)
 
 static char *escapes(char *s);
+static int truncation_warned = 0;
+/* Bound values are truncated to bind_size - 1 bytes; warn once when that happens */
+static void check_truncation(MdbColumn *col, int length)
+{
+	if (truncation_warned || col->col_type == MDB_OLE)
+		return;
+	if (length + 1 >= (int)col->table->entry->mdb->bind_size) {
+		fprintf(stderr, "Warning: value in column %s was truncated to the maximum bind size; use --bind-size to increase it\n", col->name);
+		truncation_warned = 1;
+	}
+}
 static void format_value(FILE *outfile, char *value, size_t length, int quote_text, int col_type, char *escape_char, char *quote_char, int bin_mode, int export_flags, char *backend_name);
 
 int
@@ -58,6 +69,7 @@ main(int argc, char **argv)
 	int ret;
 	char *locale = NULL;
 	char *table_name = NULL;
+	int bind_size = EXPORT_BIND_SIZE;
 	int print_mdbver = 0;
 
 	GOptionEntry entries[] = {
@@ -75,7 +87,8 @@ main(int argc, char **argv)
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
 		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex"},
-		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1)", NULL},
+		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1, or TRUE/FALSE with -I postgres)", NULL},
+		{"bind-size", 0, 0, G_OPTION_ARG_INT, &bind_size, "Maximum size in bytes of an exported field value; longer values are truncated with a warning (default is 200000)", "bytes"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{NULL},
 	};
@@ -131,6 +144,10 @@ main(int argc, char **argv)
 
 	if (escape_char)
 		escape_char = escapes(escape_char);
+	else if (insert_dialect && !strcmp(insert_dialect, "mysql"))
+		/* MySQL treats backslashes in string literals as escapes, so
+		 * both quotes and backslashes must be escaped with a backslash */
+		escape_char = g_strdup("\\");
 
 	if (insert_dialect)
 		header_row = 0;
@@ -173,10 +190,18 @@ main(int argc, char **argv)
 	if (shortdate_fmt)
 		mdb_set_shortdate_fmt(mdb, shortdate_fmt);
 
+	if (insert_dialect && !strcmp(insert_dialect, "postgres"))
+		/* PostgreSQL BOOLEAN columns do not accept integer literals */
+		boolean_words = 1;
+
 	if (boolean_words)
 		mdb_set_boolean_fmt_words(mdb);
 
-    mdb_set_bind_size(mdb, EXPORT_BIND_SIZE);
+	if (bind_size < MDB_BIND_SIZE) {
+		fprintf(stderr, "Bind size must be at least %d\n", MDB_BIND_SIZE);
+		exit(1);
+	}
+	mdb_set_bind_size(mdb, bind_size);
 
 	if (insert_dialect)
 		if (!mdb_set_default_backend(mdb, insert_dialect)) {
@@ -200,7 +225,7 @@ main(int argc, char **argv)
 	bound_lens = g_malloc(table->num_cols * sizeof(int));
 	for (i = 0; i < table->num_cols; i++) {
 		/* bind columns */
-		bound_values[i] = g_malloc0(EXPORT_BIND_SIZE);
+		bound_values[i] = g_malloc0(bind_size);
 		ret = mdb_bind_column(table, i + 1, bound_values[i], &bound_lens[i]);
 		if (ret == -1) {
 			fprintf(stderr, "Failed to bind column %d\n", i + 1);
@@ -246,7 +271,8 @@ main(int argc, char **argv)
 				if (i > 0)
 					fputs(delimiter, outfile);
 				col = g_ptr_array_index(table->columns, i);
-				if (!bound_lens[i]) {
+				check_truncation(col, bound_lens[i]);
+				if (col->cur_value_is_null) {
 					/* Don't quote NULLs */
 					if (insert_dialect)
 						fputs("NULL", outfile);
@@ -304,7 +330,8 @@ main(int argc, char **argv)
 				if (i > 0)
 					fputs(delimiter, outfile);
 				col = g_ptr_array_index(table->columns, i);
-				if (!bound_lens[i]) {
+				check_truncation(col, bound_lens[i]);
+				if (col->cur_value_is_null) {
 					/* Don't quote NULLs */
 					if (insert_dialect)
 						fputs("NULL", outfile);
