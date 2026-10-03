@@ -103,6 +103,9 @@ typedef struct GOptionEntry {
 
 typedef struct GOptionContext {
     const char *desc;
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !(HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME)
+    const char *invocation_name;
+#endif
     const GOptionEntry *entries;
 } GOptionContext;
 
