@@ -101,12 +101,13 @@ mdb_sql_run_query (MdbSQL* sql, const gchar* querystr) {
 		return NULL;
 	}
 
-	if (sql->cur_table == NULL) {
-		/* Invalid column name? (should get caught by mdb_sql_select,
-		 * but it appeared to happen anyway with 0.5) */
-		mdb_sql_error (sql, _("Got no result for '%s' command"), querystr);
+	/* Errors have already been reported by mdb_sql_error() */
+	if (mdb_sql_has_error(sql))
 		return NULL;
-	}
+
+	/* Statements such as CONNECT TO and DISCONNECT have no result set */
+	if (sql->cur_table == NULL)
+		return sql;
 
 	if (mdb_sql_bind_all(sql) == -1) {
 		mdb_sql_error (sql, _("Failed to bind columns for '%s' command"), querystr);

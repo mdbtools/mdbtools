@@ -244,6 +244,11 @@ SQLRETURN SQL_API SQLExtendedFetch(
 	if (rgfRowStatus)
 		*rgfRowStatus = SQL_SUCCESS; /* what is the row status value? */
 	
+	if (!stmt->sql->cur_table) {
+		strcpy(stmt->sqlState, "24000"); // Invalid cursor state
+		LogStatementError(stmt, "No result set");
+		return SQL_ERROR;
+	}
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
 		SQLRETURN final_retval = SQL_SUCCESS;
 		while (cur && (final_retval == SQL_SUCCESS || final_retval == SQL_SUCCESS_WITH_INFO)) {
@@ -973,6 +978,11 @@ SQLRETURN SQLFetch(
 
 	if ( stmt->sql->limit >= 0 && stmt->rows_affected == stmt->sql->limit ) {
 		return SQL_NO_DATA_FOUND;
+	}
+	if (!stmt->sql->cur_table) {
+		strcpy(stmt->sqlState, "24000"); // Invalid cursor state
+		LogStatementError(stmt, "No result set");
+		return SQL_ERROR;
 	}
 	if (mdb_fetch_row(stmt->sql->cur_table)) {
 		SQLRETURN final_retval = SQL_SUCCESS;

@@ -170,7 +170,10 @@ run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 	mdb_sql_run_query(sql, mybuf);
 	/* The query may have been "connect to", which opens a new handle */
 	set_date_fmts(sql);
-	if (!mdb_sql_has_error(sql)) {
+	if (!mdb_sql_has_error(sql) && !sql->cur_table) {
+		/* Successful statement without a result set (connect/disconnect) */
+		mdb_sql_reset(sql);
+	} else if (!mdb_sql_has_error(sql)) {
 		if (showplan) {
 			table = sql->cur_table;
 			if (table->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);

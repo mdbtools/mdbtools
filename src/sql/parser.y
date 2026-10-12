@@ -252,6 +252,5 @@ int parse_sql( MdbSQL * mdb, const gchar *str)
 
 void yyerror(YYLTYPE* yyloc,sql_context* sql_ctx, char const * msg)
 {
-	fprintf(stderr,"Error at Line : %s\n", msg);
 	mdb_sql_error(sql_ctx->mdb, "%s", msg);
 }
