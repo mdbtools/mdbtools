@@ -199,6 +199,66 @@ You can do that running:
 ldconfig
 ```
 
+### Registering the ODBC driver
+
+`make install` copies the ODBC driver into `<libdir>/odbc` (`/usr/local/lib/odbc`
+by default), but does not register it with the driver manager. Two drivers are
+installed: `libmdbodbc` (ANSI) and `libmdbodbcW` (Unicode). On macOS they are
+named `libmdbodbc.dylib` and `libmdbodbcW.dylib` instead of `.so`.
+
+With unixODBC, save a driver template such as the following as
+`mdbtools-odbcinst.ini`, adjusting the paths to your installation:
+
+```ini
+[MDBTools]
+Description = MDB Tools ODBC driver
+Driver      = /usr/local/lib/odbc/libmdbodbc.so
+Setup       = /usr/local/lib/odbc/libmdbodbc.so
+FileUsage   = 1
+
+[MDBToolsW]
+Description = MDB Tools ODBC driver (Unicode)
+Driver      = /usr/local/lib/odbc/libmdbodbcW.so
+Setup       = /usr/local/lib/odbc/libmdbodbcW.so
+FileUsage   = 1
+```
+
+and register it (as root, since it updates the system-wide `odbcinst.ini`;
+`odbcinst -j` shows where that file is):
+
+```bash
+odbcinst -i -d -f mdbtools-odbcinst.ini
+```
+
+A data source is then defined in `odbc.ini` (system-wide, see `odbcinst -j`) or
+`~/.odbc.ini` (per user). The only setting the driver reads is `Database`, which
+should be the absolute path to the `.mdb` or `.accdb` file:
+
+```ini
+[nwind]
+Description = Northwind sample database
+Driver      = MDBTools
+Database    = /path/to/nwind.mdb
+```
+
+You can add it with `odbcinst -i -s -h -f dsn.ini` (user DSN) or
+`odbcinst -i -s -l -f dsn.ini` (system DSN), or by editing the file directly.
+Test it with unixODBC's `isql`:
+
+```bash
+echo "SELECT * FROM Customers" | isql nwind -v
+```
+
+You can also connect without a DSN by passing the file name in the
+connection string, e.g. `Driver=MDBTools;DBQ=/path/to/nwind.mdb`
+(`isql -k "Driver=MDBTools;DBQ=/path/to/nwind.mdb"`).
+
+With iODBC, add the same entries to its `odbcinst.ini` and `odbc.ini` files
+(`/etc/odbcinst.ini` and `/etc/odbc.ini`, or `~/.odbcinst.ini` and
+`~/.odbc.ini`; on macOS, `/Library/ODBC/` or `~/Library/ODBC/`); the
+`[ODBC Drivers]` section of `odbcinst.ini` should also list
+`MDBTools = Installed`.
+
 ## Hacking
 
 If you are interested in helping, read the [HACKING](./HACKING.md) file for a description of 
