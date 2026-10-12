@@ -119,12 +119,14 @@ main(int argc, char **argv)
 	int print_mdbver = 0;
 	int json_array = 0;
 	int row_count = 0;
+	int limit = -1;
 
 	GOptionEntry entries[] = {
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"no-unprintable", 'U', 0, G_OPTION_ARG_NONE, &drop_nonascii, "Change unprintable characters to spaces (otherwise escaped as \\u00XX)", NULL},
 		{"array", 'A', 0, G_OPTION_ARG_NONE, &json_array, "Output a single JSON array of row objects (default is one object per line)", NULL},
+		{"limit", 0, 0, G_OPTION_ARG_INT, &limit, "Stop after exporting <rows> rows (default is all rows)", "rows"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
         {NULL}
     };
@@ -198,7 +200,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	while(mdb_fetch_row(table)) {
+	while((limit < 0 || row_count < limit) && mdb_fetch_row(table)) {
 		if (json_array)
 			fputs(row_count ? ",\n" : "[", outfile);
 		row_count++;

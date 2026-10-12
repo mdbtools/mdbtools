@@ -1012,7 +1012,7 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 
 	mdb_date_to_tm(td, &t);
 
-	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
+	strftime(text, mdb->bind_size, fmt, &t);
 
 	return text;
 }

@@ -2,7 +2,7 @@ NAME
   mdb-sql - SQL interface to MDB Tools
 
 SYNOPSIS
-  mdb-sql [-HFp] [-d char] [-i file] [-o file] [database]
+  mdb-sql [-HFp] [-d char] [-i file] [-o file] [-D fmt] [-T fmt] [database]
   mdb-sql -h|--help
   mdb-sql --version
 
@@ -24,6 +24,8 @@ specified, columns will be delimited by a tab character if pretty printing
 (-p) is turned off. If pretty printing is enabled this option is meaningless.
   -i, --input file             Specify an input file. This option allows an input file containing the SQL to be passed to mdb-sql.  See Notes.
   -o, --output file            Specify an output file. This option allows the name of an output file to be used instead of stdout.
+  -D, --date-format fmt        Set the date format used for columns formatted as Short Date (see strftime(3) for details).
+  -T, --datetime-format fmt    Set the date/time format used for other date columns (see strftime(3) for details). Default is "%x %X".
   --version                    Print the mdbtools version and exit.
 
 COMMANDS
