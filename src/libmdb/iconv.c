@@ -117,6 +117,57 @@ static size_t unicode2ascii_locale(mdb_locale_t locale, const char *in_ptr, size
 	return count;
 }
 
+/* The reverse of latin1_to_utf8_without_iconv(): characters that are not
+ * in Latin-1 become '?' */
+static size_t utf8_to_latin1_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+	size_t i = 0, j = 0;
+	while (i < len_in && j < dlen) {
+		unsigned char c = in_ptr[i++];
+		if (c < 0x80) {
+			dest[j++] = c;
+		} else if ((c == 0xC2 || c == 0xC3) && i < len_in && ((unsigned char)in_ptr[i] & 0xC0) == 0x80) {
+			dest[j++] = ((c & 0x1F) << 6) | ((unsigned char)in_ptr[i++] & 0x3F);
+		} else {
+			/* skip the continuation bytes of a longer sequence */
+			while (i < len_in && ((unsigned char)in_ptr[i] & 0xC0) == 0x80)
+				i++;
+			dest[j++] = '?';
+		}
+	}
+	return j;
+}
+
+/* The reverse of unicode2ascii_locale(): convert a multibyte string to
+ * UCS-2LE. Characters outside the BMP become '?'. Returns the number of
+ * bytes written, or (size_t)-1 if the input isn't valid. */
+static size_t ascii2unicode_locale(mdb_locale_t locale, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+    size_t i, count;
+    char *in = g_strndup(in_ptr, len_in);
+    wchar_t *w = malloc((len_in+1)*sizeof(wchar_t));
+
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64) || defined(WINDOWS)
+    count = _mbstowcs_l(w, in, len_in+1, locale);
+#elif defined(HAVE_MBSTOWCS_L)
+    count = mbstowcs_l(w, in, len_in+1, locale);
+#else
+    locale_t oldlocale = uselocale(locale);
+    count = mbstowcs(w, in, len_in+1);
+    uselocale(oldlocale);
+#endif
+    g_free(in);
+    if (count == (size_t)-1) {
+        free(w);
+        return count;
+    }
+    for (i=0; i<count && 2*i+1<dlen; i++) {
+        unsigned long c = (unsigned long)w[i] > 0xFFFF ? '?' : (unsigned long)w[i];
+        dest[2*i] = c & 0xFF;
+        dest[2*i+1] = c >> 8;
+    }
+    free(w);
+    return 2*i;
+}
+
 static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	if (IS_JET3(mdb)) {
 		if (mdb->f->code_page == 1252) {
@@ -191,11 +242,17 @@ mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	//printf("len_in %d len_out %d\n", len_in, len_out);
 	dlen -= len_out;
 #else
+	/* the inverse of decompressed_to_utf8_without_iconv() */
 	if (IS_JET3(mdb)) {
-		int count;
-		snprintf(out_ptr, len_out, "%.*s%n", (int)len_in, in_ptr, &count);
-		dlen = count;
-	} else {
+		if (mdb->f->code_page == 1252) {
+			dlen = utf8_to_latin1_without_iconv(in_ptr, len_in, out_ptr, len_out);
+		} else {
+			int count;
+			snprintf(out_ptr, len_out, "%.*s%n", (int)len_in, in_ptr, &count);
+			dlen = count;
+		}
+	} else if ((dlen = ascii2unicode_locale(mdb->locale, in_ptr, len_in, out_ptr, len_out)) == (size_t)-1) {
+		/* not valid in the locale: copy the bytes */
 		unsigned int i;
 		slen = MIN(len_in, len_out/2);
 		dlen = slen*2;

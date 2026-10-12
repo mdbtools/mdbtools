@@ -207,6 +207,69 @@ static int test_primary_keys(HDBC hdbc, HSTMT hstmt)
 	return 0;
 }
 
+/* Catalog functions: non-ASCII names must come back as UTF-8, and each
+ * call must replace the previous result set of the statement */
+static int test_catalog(HSTMT hstmt)
+{
+	SQLCHAR name[128];
+	SQLSMALLINT ncols = 0;
+	SQLLEN len;
+	int found = 0, rows = 0;
+
+	printf("\nTesting catalog functions...\n");
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	SQLFreeStmt(hstmt, SQL_UNBIND);
+
+	/* leave a result set open: SQLTables must discard it */
+	if (SQLExecDirect(hstmt, (SQLCHAR *)"select * from Shippers", SQL_NTS) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLExecDirect");
+		return 1;
+	}
+	if (SQLTables(hstmt, NULL, 0, NULL, 0, NULL, 0, NULL, 0) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLTables");
+		return 1;
+	}
+	SQLNumResultCols(hstmt, &ncols);
+	if (ncols != 5) {
+		fprintf(stderr, "SQLTables returned %d columns, expected 5\n", ncols);
+		return 1;
+	}
+	while (SQLFetch(hstmt) == SQL_SUCCESS) {
+		SQLGetData(hstmt, 3, SQL_C_CHAR, name, sizeof(name), &len);
+		if (strcmp((char *)name, "Ums\xc3\xa4tze") == 0)
+			found = 1;
+	}
+	if (!found) {
+		fprintf(stderr, "SQLTables did not return Ums\xc3\xa4tze\n");
+		return 1;
+	}
+
+	if (SQLColumns(hstmt, NULL, 0, NULL, 0, (SQLCHAR *)"Ums\xc3\xa4tze", SQL_NTS, NULL, 0) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLColumns");
+		return 1;
+	}
+	SQLNumResultCols(hstmt, &ncols);
+	if (ncols != 18) {
+		fprintf(stderr, "SQLColumns returned %d columns, expected 18\n", ncols);
+		return 1;
+	}
+	while (SQLFetch(hstmt) == SQL_SUCCESS) {
+		SQLGetData(hstmt, 3, SQL_C_CHAR, name, sizeof(name), &len);
+		if (strcmp((char *)name, "Ums\xc3\xa4tze") != 0) {
+			fprintf(stderr, "SQLColumns returned table name '%s'\n", name);
+			return 1;
+		}
+		rows++;
+	}
+	if (rows == 0) {
+		fprintf(stderr, "SQLColumns returned no columns\n");
+		return 1;
+	}
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	printf("Catalog test passed (%d columns).\n", rows);
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 int i;
@@ -460,6 +523,9 @@ int i;
 		return 1;
 
 	if (test_primary_keys(hdbc, hstmt))
+		return 1;
+
+	if (test_catalog(hstmt))
 		return 1;
 
 	return 0;

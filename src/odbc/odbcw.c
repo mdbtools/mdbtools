@@ -241,10 +241,13 @@ SQLRETURN SQL_API SQLColumnsW(
     SQLWCHAR           *szColumnName,
     SQLSMALLINT        cbColumnName)
 {
+	TRACE("SQLColumnsW");
+	if (!szTableName)
+		return SQLColumns(hstmt, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
 	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
 	{
 		size_t l=cbTableName*4;
-		SQLCHAR *tmp=calloc(l,1);
+		SQLCHAR *tmp=calloc(l+1,1);
 		SQLRETURN ret;
 		l = unicode2ascii(((struct _hstmt* )hstmt)->hdbc, szTableName, cbTableName, tmp, l);
 		ret = SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);

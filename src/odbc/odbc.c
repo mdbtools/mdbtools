@@ -1394,9 +1394,15 @@ SQLRETURN SQL_API SQLColumns(
 	SQLSMALLINT datatype;  /* For datetime, use concise data type */
 	SQLSMALLINT sqldatatype;  /* For datetime, use nonconcise data type */
 	SQLINTEGER ordinal;
+	gchar *table_name = NULL;
 
 	TRACE("SQLColumns");
 
+	/* A NULL table name matches all tables */
+	if (szTableName)
+		table_name = g_strndup((gchar*)szTableName, _odbc_get_string_size(cbTableName, szTableName));
+
+	mdb_sql_reset(sql);
 	mdb_read_catalog(mdb, MDB_ANY);
 
 	ttable = mdb_create_temp_table(mdb, "#columns");
@@ -1423,16 +1429,22 @@ SQLRETURN SQL_API SQLColumns(
 	for (i=0; i<mdb->num_catalog; i++) {
      		entry = g_ptr_array_index(mdb->catalog, i);
 		/* TODO: Do more advanced matching */
-		if (entry->object_type != MDB_TABLE || g_ascii_strcasecmp((char*)szTableName, entry->object_name) != 0)
+		if (entry->object_type != MDB_TABLE ||
+				(table_name && g_ascii_strcasecmp(table_name, entry->object_name) != 0))
 			continue;
 		table = mdb_read_table(entry);
 		if ( !table )
 		{
-			LogStatementError(stmt, "Could not read table '%s'", szTableName);
+			strcpy(stmt->sqlState, "HY000"); // General error
+			LogStatementError(stmt, "Could not read table '%s'", entry->object_name);
+			g_free(table_name);
 			return SQL_ERROR;
 		}
 		if (!mdb_read_columns(table)) {
-			LogStatementError(stmt, "Could not read columns of table '%s'", szTableName);
+			strcpy(stmt->sqlState, "HY000"); // General error
+			LogStatementError(stmt, "Could not read columns of table '%s'", entry->object_name);
+			mdb_free_tabledef(table);
+			g_free(table_name);
 			return SQL_ERROR;
 		}
 		for (j=0; j<table->num_cols; j++) {
@@ -1466,6 +1478,7 @@ SQLRETURN SQL_API SQLColumns(
 		}
 		mdb_free_tabledef(table);
 	}
+	g_free(table_name);
 	sql->cur_table = ttable;
 
 	return SQL_SUCCESS;
@@ -2133,7 +2146,8 @@ SQLRETURN SQL_API SQLGetTypeInfo(
 	MdbField fields[NUM_TYPE_INFO_COLS];
 
 	TRACE("SQLGetTypeInfo");
-	
+
+	mdb_sql_reset(sql);
 	ttable = mdb_create_temp_table(mdb, "#typeinfo");
 	mdb_sql_add_temp_col(sql, ttable, 0, "TYPE_NAME", MDB_TEXT, 30, 0);
 	mdb_sql_add_temp_col(sql, ttable, 1, "DATA_TYPE", MDB_INT, 0, 1);
@@ -2288,6 +2302,7 @@ SQLRETURN SQL_API SQLTables( //sz* not used, so Unicode API not required.
 
 	TRACE("SQLTables");
 
+	mdb_sql_reset(sql);
 	mdb_read_catalog(mdb, MDB_ANY);
 
 	ttable = mdb_create_temp_table(mdb, "#tables");
