@@ -123,6 +123,18 @@ if ! testCommand mdb-queries test/data/ASampleDatabase.accdb qryCostsSummedByOwn
 	rc=1
 fi
 
+# Output regression tests: each tests/cli/*.cmd holds one command line
+# (relative to src/util) whose output must match the matching .expected file.
+for cmd in tests/cli/*.cmd; do
+	printf 'Checking output of %s... ' "$cmd"
+	if eval "./src/util/$(cat "$cmd")" 2>&1 | diff -u "${cmd%.cmd}.expected" -; then
+		printf 'passed.\n'
+	else
+		printf 'failed.\n'
+		rc=1
+	fi
+done
+
 if [ $rc = 0 ]; then
 	printf -- '\n%s passed.\n' "$0"
 else
