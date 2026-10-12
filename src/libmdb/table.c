@@ -245,7 +245,20 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	int cur_pos;
 	size_t name_sz;
 	GPtrArray *allprops;
-	
+
+	/* The columns only need to be read once. Re-reading them would leak
+	 * (or, for a caller holding MdbColumn pointers or bindings, free) the
+	 * existing array; temp tables have no definition page to read. */
+	if (table->columns)
+		return table->columns;
+
+	/* Other calls (e.g. mdb_fetch_row) may have replaced the page buffer
+	 * since mdb_read_table, so re-read the table definition page. */
+	if (!mdb_read_pg(mdb, table->entry->table_pg)) {
+		fprintf(stderr, "mdb_read_columns: Unable to read page %lu\n", table->entry->table_pg);
+		return NULL;
+	}
+
 	table->columns = g_ptr_array_new();
 
 	col = g_malloc(fmt->tab_col_entry_size);
@@ -348,6 +361,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			}
 		}
 	table->index_start = cur_pos;
+	table->index_start_pg = mdb->cur_pg;
 	return table->columns;
 }
 

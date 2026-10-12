@@ -460,6 +460,8 @@ typedef struct S_MdbTableDef {
 	/* temp table */
 	unsigned int  is_temp_table;
 	GPtrArray     *temp_table_pages;
+	/* page holding table->index_start, set by mdb_read_columns() */
+	guint32	index_start_pg;
 } MdbTableDef;
 
 struct mdbindex {
