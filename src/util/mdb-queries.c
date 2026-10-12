@@ -41,6 +41,19 @@
 #define QUERY_JOIN_LEFT  2
 #define QUERY_JOIN_RIGHT 3
 
+/* Flag bits of the MSysQueries attribute 3 row */
+#define QUERY_FLAG_SELECT_STAR  0x01
+#define QUERY_FLAG_DISTINCT     0x02	/* for union queries: UNION rather than UNION ALL */
+#define QUERY_FLAG_OWNERACCESS  0x04
+#define QUERY_FLAG_DISTINCTROW  0x08
+#define QUERY_FLAG_TOP          0x10
+#define QUERY_FLAG_PERCENT      0x20
+
+/* Flag values of crosstab column and group by rows */
+#define QUERY_CROSSTAB_VALUE  0
+#define QUERY_CROSSTAB_PIVOT  1
+#define QUERY_CROSSTAB_ROW    2
+
 /* A source in the FROM clause: either a table (or saved query), possibly
  * aliased, or a join of two other sources. */
 typedef struct QuerySource {
@@ -66,6 +79,8 @@ static QuerySource *query_source_table(const char *table, const char *alias);
 static void query_source_free(gpointer data, gpointer user_data);
 static void query_join_free(gpointer data, gpointer user_data);
 static char *mdb_build_from_clause(GPtrArray *sources, GPtrArray *joins);
+static void mdb_append_parameter(GString *out, const char *name, int type);
+static void mdb_append_list_item(GString *list, const char *item);
 
 int main (int argc, char **argv) {
 	unsigned int i;
@@ -105,6 +120,12 @@ int main (int argc, char **argv) {
 	char *sql_into = malloc(bind_size);
 	char *sql_target = malloc(bind_size);
 	char *sql_target_columns = malloc(bind_size);
+	GString *sql_parameters = NULL;
+	GString *xtab_value = NULL, *xtab_rows = NULL, *xtab_pivot = NULL, *xtab_grouping = NULL;
+	GPtrArray *union_parts = NULL;
+	char *column;
+	char *sql_union;
+	int select_flags = 0;
 	int flagint;
 	int query_type = 1;	// 1 select, 2 make-table, 3 append, 4 update, 5 delete, 6 crosstab, 7 DDL, 8 pass-through, 9 union
 	char *locale = NULL;
@@ -175,7 +196,7 @@ int main (int argc, char **argv) {
 		for (i=0; i < mdb->num_catalog; i++) {
 			temp = g_ptr_array_index(mdb->catalog, i);
 			
-			if(strcmp(temp->object_name,query_name) == 0) {
+			if(temp->object_type == MDB_QUERY && strcmp(temp->object_name,query_name) == 0) {
 				entry = g_ptr_array_index(mdb->catalog,i);
 				found_match=1;
 			} else if(strcmp(temp->object_name,"MSysQueries") == 0) {
@@ -207,6 +228,12 @@ int main (int argc, char **argv) {
 				sql_predicate[0] = sql_columns[0] = sql_where[0] = '\0';
 				sql_grouping[0] = sql_having[0] = sql_sorting[0] = '\0';
 				sql_insert[0] = sql_into[0] = sql_target[0] = sql_target_columns[0] = '\0';
+				sql_parameters = g_string_new("");
+				xtab_value = g_string_new("");
+				xtab_rows = g_string_new("");
+				xtab_pivot = g_string_new("");
+				xtab_grouping = g_string_new("");
+				union_parts = g_ptr_array_new();
 
 				while (mdb_fetch_row(table)) {
 					if(strcmp(query_id,objectid) == 0) {
@@ -217,31 +244,52 @@ int main (int argc, char **argv) {
 								query_type = flagint;
 								strcpy(sql_target,name1);
 								break;
-							case 3:		// predicate
-								if (flagint & 0x30) {
-									strcpy(sql_predicate, " TOP ");
+							case 2:		// parameter: Name1 = name, Flag = data type
+								mdb_append_parameter(sql_parameters, name1, flagint);
+								break;
+							case 3:		// predicate; Name1 = TOP value
+								select_flags = flagint;
+								if (flagint & QUERY_FLAG_DISTINCTROW) {
+									strcpy(sql_predicate, " DISTINCTROW");
+								} else if (flagint & QUERY_FLAG_DISTINCT) {
+									strcpy(sql_predicate, " DISTINCT");
+								}
+								if (flagint & (QUERY_FLAG_TOP | QUERY_FLAG_PERCENT)) {
+									strcat(sql_predicate, " TOP ");
 									strcat(sql_predicate, name1);
-									if (flagint & 0x20) {
+									if (flagint & QUERY_FLAG_PERCENT) {
 										strcat(sql_predicate, " PERCENT");
 									}
-								} else if (flagint & 0x8) {
-									strcpy(sql_predicate, " DISTINCTROW");
-								} else if (flagint & 0x2) {
-									strcpy(sql_predicate, " DISTINCT");
 								}
 								break;
 							case 5:		// table name; Name2 = alias
+								if(strcmp(name1,"") == 0 && strcmp(expression,"") != 0) {
+									// union query: Expression = one of the SELECTs
+									g_ptr_array_add(union_parts, g_strdup(expression));
+									break;
+								}
 								g_ptr_array_add(sources, query_source_table(name1, name2));
 								break;
 							case 6:		// column name
+								if(strcmp(name1,"") != 0 && strcmp(name1,expression) != 0) {
+									// Name1 = column alias
+									column = g_strdup_printf("%s AS [%s]", expression, name1);
+								} else {
+									column = g_strdup(expression);
+								}
 								if(strcmp(sql_columns,"") != 0) {
 									strcat(sql_columns,",");
 								}
-								strcat(sql_columns,expression);
-								if(strcmp(name1,"") != 0 && strcmp(name1,expression) != 0) {
-									// Name1 = column alias
-									sprintf(sql_columns+strlen(sql_columns)," AS [%s]",name1);
+								strcat(sql_columns,column);
+								// crosstab queries: Flag = role of the column
+								if(flagint == QUERY_CROSSTAB_PIVOT) {
+									mdb_append_list_item(xtab_pivot, expression);
+								} else if(flagint == QUERY_CROSSTAB_ROW) {
+									mdb_append_list_item(xtab_rows, column);
+								} else {
+									mdb_append_list_item(xtab_value, column);
 								}
+								g_free(column);
 								if(strcmp(name2,"") != 0) {
 									// Name2 = destination column (append query)
 									if(strcmp(sql_target_columns,"") != 0) {
@@ -269,18 +317,23 @@ int main (int argc, char **argv) {
 									strcat(sql_grouping,",");
 								}
 								strcat(sql_grouping,expression);
+								if(flagint != QUERY_CROSSTAB_PIVOT) {
+									mdb_append_list_item(xtab_grouping, expression);
+								}
 								break;
 							case 10:		// having clause
 								strcpy(sql_having," HAVING ");
 								strcat(sql_having,expression);
 								break;
-							case 11:		// sorting
+							case 11:		// sorting; Name1 = "D" for descending
 								if(strcmp(sql_sorting,"") == 0) {
 									strcpy(sql_sorting,"ORDER BY ");
-									strcat(sql_sorting,expression);
-									if(strcmp(name1,"D") == 0) {
-										strcat(sql_sorting," DESCENDING");
-									}
+								} else {
+									strcat(sql_sorting,",");
+								}
+								strcat(sql_sorting,expression);
+								if(strcmp(name1,"D") == 0) {
+									strcat(sql_sorting," DESC");
 								}
 								break;
 						}
@@ -303,8 +356,51 @@ int main (int argc, char **argv) {
 					sprintf(sql_into," INTO [%s]",sql_target);
 				}
 
+				if(select_flags & QUERY_FLAG_SELECT_STAR) {
+					/* "output all fields" */
+					if(strcmp(sql_columns,"") != 0) {
+						memmove(sql_columns+2, sql_columns, strlen(sql_columns)+1);
+						memcpy(sql_columns, "*,", 2);
+					} else {
+						strcpy(sql_columns, "*");
+					}
+				}
+
+				if(sql_parameters->len) {
+					fprintf(stdout,"PARAMETERS %s; ",sql_parameters->str);
+				}
+
 				/* print out the sql statement */
-				fprintf(stdout,"%sSELECT%s %s%s FROM %s%s%s%s %s\n",sql_insert,sql_predicate,sql_columns,sql_into,sql_tables,sql_where,sql_grouping,sql_having,sql_sorting);
+				if(query_type == 9) {
+					/* union query */
+					for (i=0; i < union_parts->len; i++) {
+						sql_union = g_ptr_array_index(union_parts, i);
+						/* drop trailing whitespace */
+						while (*sql_union && strchr(" \t\r\n", sql_union[strlen(sql_union)-1]))
+							sql_union[strlen(sql_union)-1] = '\0';
+						if (i > 0)
+							fputs((select_flags & QUERY_FLAG_DISTINCT) ? " UNION " : " UNION ALL ", stdout);
+						fputs(sql_union, stdout);
+					}
+					fprintf(stdout," %s\n",sql_sorting);
+				} else if(query_type == 6) {
+					/* crosstab query */
+					fprintf(stdout,"TRANSFORM %s SELECT%s %s FROM %s%s%s%s%s%s%s PIVOT %s\n",
+						xtab_value->str,sql_predicate,xtab_rows->str,sql_tables,sql_where,
+						xtab_grouping->len ? " GROUP BY " : "",xtab_grouping->str,
+						sql_having,sql_sorting[0] ? " " : "",sql_sorting,xtab_pivot->str);
+				} else {
+					fprintf(stdout,"%sSELECT%s %s%s FROM %s%s%s%s %s%s\n",sql_insert,sql_predicate,sql_columns,sql_into,sql_tables,sql_where,sql_grouping,sql_having,sql_sorting,
+						(select_flags & QUERY_FLAG_OWNERACCESS) ? " WITH OWNERACCESS OPTION" : "");
+				}
+
+				g_string_free(sql_parameters, TRUE);
+				g_string_free(xtab_value, TRUE);
+				g_string_free(xtab_rows, TRUE);
+				g_string_free(xtab_pivot, TRUE);
+				g_string_free(xtab_grouping, TRUE);
+				g_ptr_array_foreach(union_parts, (GFunc)g_free, NULL);
+				g_ptr_array_free(union_parts, TRUE);
 
 				g_free(sql_tables);
 				mdb_free_tabledef(table);
@@ -368,6 +464,8 @@ char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 	MdbTableDef *table = NULL;
 	char *id = malloc(mdb->bind_size);
 	char *name = malloc(mdb->bind_size);
+	char *type = malloc(mdb->bind_size);
+	int found = 0;
 	
  	/* loop over each entry in the catalog */
  	for (i=0; i < mdb->num_catalog; i++) {
@@ -385,18 +483,24 @@ char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 
 		mdb_bind_column_by_name(table, "Id", id, NULL);
 		mdb_bind_column_by_name(table, "Name", name, NULL);
+		mdb_bind_column_by_name(table, "Type", type, NULL);
 
 		mdb_rewind_table(table);
 
+		/* forms and reports can have the same name as a query */
 		while (mdb_fetch_row(table)) {
-			if(strcmp(query,name) == 0) {
+			if(strcmp(query,name) == 0 && (atoi(type) & 0x7F) == MDB_QUERY) {
+				found = 1;
 				break;
 			}
 		}
 		mdb_free_tabledef(table);
 	}
 
+	if (!found)
+		id[0] = '\0';
 	free(name);
+	free(type);
 	
 	return id;
 }
@@ -546,4 +650,56 @@ static char *mdb_build_from_clause(GPtrArray *sources, GPtrArray *joins) {
 		query_source_append_sql(out, g_ptr_array_index(sources, i), 0);
 	}
 	return g_string_free(out, FALSE);
+}
+
+static void mdb_append_list_item(GString *list, const char *item) {
+	if (list->len)
+		g_string_append(list, ",");
+	g_string_append(list, item);
+}
+
+/* Append a "[name] type" entry of a PARAMETERS declaration. The type is the
+ * column type code (MDB_BOOL...MDB_NUMERIC) of the parameter. */
+static void mdb_append_parameter(GString *out, const char *name, int type) {
+	const char *type_name;
+	char **parts;
+	int i;
+
+	switch (type) {
+		case MDB_BOOL: type_name = "Bit"; break;
+		case MDB_BYTE: type_name = "Byte"; break;
+		case MDB_INT: type_name = "Short"; break;
+		case MDB_LONGINT: type_name = "Long"; break;
+		case MDB_MONEY: type_name = "Currency"; break;
+		case MDB_FLOAT: type_name = "IEEESingle"; break;
+		case MDB_DOUBLE: type_name = "IEEEDouble"; break;
+		case MDB_DATETIME: type_name = "DateTime"; break;
+		case MDB_BINARY: type_name = "Binary"; break;
+		case MDB_TEXT: type_name = "Text"; break;
+		case MDB_OLE: type_name = "LongBinary"; break;
+		case MDB_MEMO: type_name = "LongText"; break;
+		case MDB_REPID: type_name = "Guid"; break;
+		case MDB_NUMERIC: type_name = "Decimal"; break;
+		default: type_name = "Value"; break;
+	}
+
+	if (out->len)
+		g_string_append(out, ",");
+	if (strchr(name, '[')) {
+		/* already quoted */
+		g_string_append(out, name);
+	} else {
+		/* Forms!Form Name!Control -> [Forms]![Form Name]![Control] */
+		parts = g_strsplit(name, "!", -1);
+		for (i=0; parts[i]; i++) {
+			if (i > 0)
+				g_string_append(out, "!");
+			g_string_append(out, "[");
+			g_string_append(out, parts[i]);
+			g_string_append(out, "]");
+		}
+		g_strfreev(parts);
+	}
+	g_string_append(out, " ");
+	g_string_append(out, type_name);
 }
