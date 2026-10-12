@@ -717,6 +717,34 @@ MdbColumn *mdb_sql_find_colbyname(MdbTableDef *table, char *name)
 	return NULL;
 }
 
+/* Parse an ISO 8601 style date, "YYYY-MM-DD[ HH:MM[:SS]]" (a "T" may
+ * separate date and time), into a JET date value */
+static int
+mdb_sql_parse_iso_date(const char *s, double *date)
+{
+	struct tm tm = { 0 };
+	int n = 0;
+
+	if (sscanf(s, "%4d-%2d-%2d%n", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &n) != 3)
+		return 0;
+	s += n;
+	if (*s == ' ' || *s == 'T') {
+		n = 0;
+		if (sscanf(s + 1, "%2d:%2d%n:%2d%n", &tm.tm_hour, &tm.tm_min, &n, &tm.tm_sec, &n) < 2)
+			return 0;
+		s += 1 + n;
+	}
+	if (*s)
+		return 0;
+	if (tm.tm_mon < 1 || tm.tm_mon > 12 || tm.tm_mday < 1 || tm.tm_mday > 31 ||
+			tm.tm_hour > 23 || tm.tm_min > 59 || tm.tm_sec > 59)
+		return 0;
+	tm.tm_year -= 1900;
+	tm.tm_mon -= 1;
+	mdb_tm_to_date(&tm, date);
+	return 1;
+}
+
 typedef struct {
 	MdbSQL *sql; /* for error reporting; may be NULL */
 	MdbTableDef *table;
@@ -742,6 +770,20 @@ mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 		return 1;
 	} else {
 		node->col = col;
+		if (col->col_type == MDB_DATETIME && node->val_type == MDB_TEXT &&
+				node->op != MDB_ISNULL && node->op != MDB_NOTNULL) {
+			double date;
+			if (node->op == MDB_LIKE || node->op == MDB_ILIKE ||
+					!mdb_sql_parse_iso_date(node->value.s, &date)) {
+				if (ctx->sql)
+					mdb_sql_error(ctx->sql, "Can't compare date column %s with '%s'; use a 'YYYY-MM-DD [HH:MM:SS]' date or strptime()",
+							col->name, node->value.s);
+				ctx->failed = 1;
+				return 1;
+			}
+			node->value.d = date;
+			node->val_type = MDB_DOUBLE;
+		}
 		/* Do conversion to required target value type.
 		 * Plain integers are UNIX timestamps for backwards compatibility of parser
 		*/

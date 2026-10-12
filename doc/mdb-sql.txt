@@ -69,6 +69,8 @@ NOTES
 
   The 'ilike' operator is similar, but performs a case-insensitive pattern match.
 
+  A date/time column can be compared with a string literal in the form 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DD HH:MM:SS', or with strptime('date', 'format') for other formats. Comparisons with NULL values are never true; use IS NULL or IS NOT NULL to test for them.
+
 ENVIRONMENT
   LC_COLLATE          Defines the locale for string-comparison operations. See locale(1).
   MDB_JET3_CHARSET    Defines the charset of the input JET3 (access 97) file. Default is CP1252. See iconv(1).
