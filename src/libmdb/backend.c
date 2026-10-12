@@ -933,6 +933,20 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	MdbProperties *props;
 	const char *prop_value;
 
+	table = mdb_read_table (entry);
+	if (!table) {
+		fprintf(stderr, "Error: Table %s does not exist\n", entry->object_name);
+		return;
+	}
+
+	/* get the columns before printing anything, so that a table whose
+	 * definition cannot be read is left out instead of half printed */
+	if (!mdb_read_columns(table)) {
+		fprintf(stderr, "Error: Unable to read the columns of table %s\n", entry->object_name);
+		mdb_free_tabledef(table);
+		return;
+	}
+
 	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, entry->object_name);
 	quoted_table_name = mdb_normalise_and_replace(mdb, &quoted_table_name);
 
@@ -943,15 +957,6 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	/* create the table */
 	fprintf (outfile, mdb->default_backend->create_table_statement, quoted_table_name);
 	fprintf (outfile, " (\n");
-
-	table = mdb_read_table (entry);
-	if (!table) {
-		fprintf(stderr, "Error: Table %s does not exist\n", entry->object_name);
-		return;
-	}
-
-	/* get the columns */
-	mdb_read_columns(table);
 
 	/* loop over the columns, dumping the names and types */
 	for (i = 0; i < table->num_cols; i++) {

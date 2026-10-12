@@ -333,6 +333,8 @@ typedef struct {
 #else
     mdb_locale_t locale;
 #endif
+	/* bitmap of the data types mdb_col_to_string has warned about */
+	unsigned char warned_types[32];
 } MdbHandle; 
 
 typedef struct {

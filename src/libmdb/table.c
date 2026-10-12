@@ -281,6 +281,16 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			mdb_free_columns(table->columns);
 			return table->columns = NULL;
 		}
+		/* Valid types are 0x01-0x0C and 0x0F-0x14 (EXTDATETIME); 0x0D
+		 * and 0x0E are not column types (see HACKING.md). Anything else
+		 * means the table definition is corrupt. */
+		if (col[0] == 0 || col[0] == 0x0d || col[0] == 0x0e || col[0] > 0x14) {
+			fprintf(stderr, "mdb_read_columns: column %u of table %s has unknown type 0x%02x; "
+					"the table definition may be corrupt\n", i, table->name, col[0]);
+			g_free(col);
+			mdb_free_columns(table->columns);
+			return table->columns = NULL;
+		}
 		pcol = g_malloc0(sizeof(MdbColumn));
 
 		pcol->table = table;
@@ -385,7 +395,10 @@ guint32 pgnum;
 
 	if (table->props)
 		mdb_dump_props(table->props, stdout, 0);
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		mdb_free_tabledef(table);
+		return;
+	}
 	mdb_read_indices(table);
 
 	for (i=0;i<table->num_cols;i++) {

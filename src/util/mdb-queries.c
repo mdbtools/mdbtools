@@ -209,9 +209,12 @@ int main (int argc, char **argv) {
 			query_id = mdb_get_query_id(mdb,entry->object_name);
 			
 			table = mdb_read_table(sys_queries);
+			if(table && !mdb_read_columns(table)) {
+				mdb_free_tabledef(table);
+				table = NULL;
+			}
 
 			if(table) {
-				mdb_read_columns(table);
 
 				mdb_bind_column_by_name(table, "Attribute", attribute, NULL);
 				mdb_bind_column_by_name(table, "Expression", expression, NULL);
@@ -477,9 +480,12 @@ char * mdb_get_query_id(MdbHandle *mdb, char *query) {
 	}
 	
 	table = mdb_read_table(entry);
+	if(table && !mdb_read_columns(table)) {
+		mdb_free_tabledef(table);
+		table = NULL;
+	}
 
 	if(table) {
-		mdb_read_columns(table);
 
 		mdb_bind_column_by_name(table, "Id", id, NULL);
 		mdb_bind_column_by_name(table, "Name", name, NULL);

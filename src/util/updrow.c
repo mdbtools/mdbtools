@@ -51,7 +51,8 @@ int len;
 	table = mdb_read_table_by_name(mdb, tabname, MDB_TABLE);
 
 	if (table) {
-		mdb_read_columns(table);
+		if (!mdb_read_columns(table))
+			exit(1);
 		mdb_read_indices(table);
 		printf("updstr %s\n",updstr);
 		colname = strtok(updstr,"=");

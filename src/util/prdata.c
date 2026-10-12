@@ -37,7 +37,8 @@ main(int argc, char **argv)
 
 	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 	if (table) {
-		mdb_read_columns(table);
+		if (!mdb_read_columns(table))
+			exit(1);
 		mdb_data_dump(table);
 		mdb_free_tabledef(table);
 	}

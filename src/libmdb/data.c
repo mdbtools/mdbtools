@@ -1131,7 +1131,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		default:
 			/* shouldn't happen.  bools are handled specially
 			** by mdb_xfer_bound_bool() */
-			fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
+			/* warn once per type and handle, not once per value */
+			if (datatype < 0 || datatype > 255 ||
+					!(mdb->warned_types[datatype/8] & (1 << (datatype%8)))) {
+				if (datatype >= 0 && datatype <= 255)
+					mdb->warned_types[datatype/8] |= 1 << (datatype%8);
+				fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
+			}
 			text = g_strdup("");
 		break;
 	}

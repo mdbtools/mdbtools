@@ -184,7 +184,10 @@ main(int argc, char **argv)
 	}
 
 	/* read table */
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		fprintf(stderr, "Error: Unable to read the columns of table %s.\n", table_name);
+		exit(1);
+	}
 	mdb_rewind_table(table);
 
 	bound_values = g_malloc(table->num_cols * sizeof(char *));
