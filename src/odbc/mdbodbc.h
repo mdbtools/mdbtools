@@ -67,6 +67,10 @@ struct _hstmt {
 	int rows_affected;
 	int icol; /* SQLGetData: last column */
 	int pos; /* SQLGetData: last position (truncated result) */
+	/* Statement attributes that accept more than one value (see SQLSetStmtAttr) */
+	SQLULEN noscan;
+	SQLULEN row_bind_type;
+	SQLULEN metadata_id;
 };
 
 struct _sql_bind_info {

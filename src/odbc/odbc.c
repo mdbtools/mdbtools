@@ -1002,6 +1002,106 @@ SQLRETURN SQL_API SQLFreeHandle(
    return retval;
 }
 
+/*
+ * The driver only implements a forward-only, read-only cursor that returns
+ * one row per fetch. Requests for anything else are answered with
+ * SQLSTATE 01S02 (Option value changed) and the supported value is kept, as
+ * permitted by the ODBC spec; clients such as Qt (which asks for
+ * SQL_CURSOR_STATIC and then checks SQL_ATTR_CURSOR_SCROLLABLE) cope with
+ * that. Attributes whose semantics we cannot honour or substitute are
+ * rejected with HYC00.
+ */
+static SQLRETURN _odbc_option_changed(struct _hstmt *stmt, const char *attr, const char *value)
+{
+	strcpy(stmt->sqlState, "01S02"); // Option value changed
+	LogStatementError(stmt, "Option value changed: %s set to %s", attr, value);
+	return SQL_SUCCESS_WITH_INFO;
+}
+
+static SQLRETURN _odbc_attr_not_supported(struct _hstmt *stmt, SQLINTEGER attr)
+{
+	strcpy(stmt->sqlState, "HYC00"); // Optional feature not implemented
+	LogStatementError(stmt, "Statement attribute %d is not supported", (int)attr);
+	return SQL_ERROR;
+}
+
+SQLRETURN SQL_API SQLSetStmtAttr (
+    SQLHSTMT StatementHandle,
+    SQLINTEGER Attribute,
+    SQLPOINTER Value,
+    SQLINTEGER StringLength)
+{
+	struct _hstmt *stmt = (struct _hstmt *) StatementHandle;
+	SQLULEN value = (SQLULEN)Value;
+
+	TRACE("SQLSetStmtAttr");
+	switch (Attribute) {
+		case SQL_ATTR_CURSOR_TYPE:
+			if (value != SQL_CURSOR_FORWARD_ONLY)
+				return _odbc_option_changed(stmt, "SQL_ATTR_CURSOR_TYPE", "SQL_CURSOR_FORWARD_ONLY");
+			break;
+		case SQL_ATTR_CONCURRENCY:
+			if (value != SQL_CONCUR_READ_ONLY)
+				return _odbc_option_changed(stmt, "SQL_ATTR_CONCURRENCY", "SQL_CONCUR_READ_ONLY");
+			break;
+		case SQL_ATTR_CURSOR_SCROLLABLE:
+			if (value != SQL_NONSCROLLABLE)
+				return _odbc_option_changed(stmt, "SQL_ATTR_CURSOR_SCROLLABLE", "SQL_NONSCROLLABLE");
+			break;
+		case SQL_ATTR_CURSOR_SENSITIVITY:
+			if (value != SQL_UNSPECIFIED && value != SQL_INSENSITIVE)
+				return _odbc_option_changed(stmt, "SQL_ATTR_CURSOR_SENSITIVITY", "SQL_INSENSITIVE");
+			break;
+		case SQL_ATTR_ROW_ARRAY_SIZE:
+		case SQL_ROWSET_SIZE:
+			if (value != 1)
+				return _odbc_option_changed(stmt, "SQL_ATTR_ROW_ARRAY_SIZE", "1");
+			break;
+		case SQL_ATTR_QUERY_TIMEOUT:
+			if (value != 0)
+				return _odbc_option_changed(stmt, "SQL_ATTR_QUERY_TIMEOUT", "0");
+			break;
+		case SQL_ATTR_MAX_ROWS:
+			if (value != 0)
+				return _odbc_option_changed(stmt, "SQL_ATTR_MAX_ROWS", "0");
+			break;
+		case SQL_ATTR_MAX_LENGTH:
+			if (value != 0)
+				return _odbc_option_changed(stmt, "SQL_ATTR_MAX_LENGTH", "0");
+			break;
+		case SQL_ATTR_KEYSET_SIZE:
+			if (value != 0)
+				return _odbc_option_changed(stmt, "SQL_ATTR_KEYSET_SIZE", "0");
+			break;
+		case SQL_ATTR_RETRIEVE_DATA:
+			if (value != SQL_RD_ON)
+				return _odbc_option_changed(stmt, "SQL_ATTR_RETRIEVE_DATA", "SQL_RD_ON");
+			break;
+		case SQL_ATTR_NOSCAN:
+			/* Escape sequences are always processed, which is harmless
+			 * for statements that contain none */
+			stmt->noscan = value;
+			break;
+		case SQL_ATTR_ROW_BIND_TYPE:
+			/* Only one row is fetched at a time, so row-wise and
+			 * column-wise binding are equivalent */
+			stmt->row_bind_type = value;
+			break;
+		case SQL_ATTR_METADATA_ID:
+			/* Catalog functions match names exactly in either case */
+			stmt->metadata_id = value;
+			break;
+		case SQL_ATTR_ASYNC_ENABLE:
+		case SQL_ATTR_USE_BOOKMARKS:
+			if (value != SQL_ASYNC_ENABLE_OFF) /* == SQL_UB_OFF */
+				return _odbc_attr_not_supported(stmt, Attribute);
+			break;
+		default:
+			return _odbc_attr_not_supported(stmt, Attribute);
+	}
+	return SQL_SUCCESS;
+}
+
 SQLRETURN SQL_API SQLGetStmtAttr (
     SQLHSTMT StatementHandle,
     SQLINTEGER Attribute,
@@ -1009,7 +1109,79 @@ SQLRETURN SQL_API SQLGetStmtAttr (
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLength)
 {
+	struct _hstmt *stmt = (struct _hstmt *) StatementHandle;
+	SQLULEN value;
+	int is_len = 0; /* 64-bit value on 64-bit platforms, otherwise SQLUINTEGER */
+
 	TRACE("SQLGetStmtAttr");
+	switch (Attribute) {
+		case SQL_ATTR_CURSOR_TYPE:
+			value = SQL_CURSOR_FORWARD_ONLY;
+			break;
+		case SQL_ATTR_CONCURRENCY:
+			value = SQL_CONCUR_READ_ONLY;
+			break;
+		case SQL_ATTR_CURSOR_SCROLLABLE:
+			value = SQL_NONSCROLLABLE;
+			break;
+		case SQL_ATTR_CURSOR_SENSITIVITY:
+			value = SQL_INSENSITIVE;
+			break;
+		case SQL_ATTR_ROW_ARRAY_SIZE:
+		case SQL_ROWSET_SIZE:
+			value = 1;
+			is_len = 1;
+			break;
+		case SQL_ATTR_QUERY_TIMEOUT:
+			value = 0;
+			break;
+		case SQL_ATTR_MAX_ROWS:
+		case SQL_ATTR_MAX_LENGTH:
+		case SQL_ATTR_KEYSET_SIZE:
+			value = 0;
+			is_len = 1;
+			break;
+		case SQL_ATTR_RETRIEVE_DATA:
+			value = SQL_RD_ON;
+			break;
+		case SQL_ATTR_NOSCAN:
+			value = stmt->noscan;
+			break;
+		case SQL_ATTR_ROW_BIND_TYPE:
+			value = stmt->row_bind_type;
+			break;
+		case SQL_ATTR_METADATA_ID:
+			value = stmt->metadata_id;
+			break;
+		case SQL_ATTR_ASYNC_ENABLE:
+			value = SQL_ASYNC_ENABLE_OFF;
+			break;
+		case SQL_ATTR_USE_BOOKMARKS:
+			value = SQL_UB_OFF;
+			break;
+		case SQL_ATTR_ROW_NUMBER:
+			value = stmt->rows_affected;
+			is_len = 1;
+			break;
+		case SQL_ATTR_APP_ROW_DESC:
+		case SQL_ATTR_APP_PARAM_DESC:
+		case SQL_ATTR_IMP_ROW_DESC:
+		case SQL_ATTR_IMP_PARAM_DESC:
+			/* Descriptors are not implemented. unixODBC probes these
+			 * on every SQLAllocHandle and ignores the failure, so do
+			 * not leave a diagnostic message behind. */
+			return SQL_ERROR;
+		default:
+			return _odbc_attr_not_supported(stmt, Attribute);
+	}
+	if (Value) {
+		if (is_len)
+			*(SQLULEN *)Value = value;
+		else
+			*(SQLUINTEGER *)Value = (SQLUINTEGER)value;
+	}
+	if (StringLength)
+		*StringLength = is_len ? sizeof(SQLULEN) : sizeof(SQLUINTEGER);
 	return SQL_SUCCESS;
 }
 
@@ -1665,7 +1837,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			//_set_func_exists(pfExists,SQL_API_SQLSETDESCREC);
 			_set_func_exists(pfExists,SQL_API_SQLSETENVATTR);
 			_set_func_exists(pfExists,SQL_API_SQLSETPARAM);
-			//_set_func_exists(pfExists,SQL_API_SQLSETSTMTATTR);
+			_set_func_exists(pfExists,SQL_API_SQLSETSTMTATTR);
 			_set_func_exists(pfExists,SQL_API_SQLSETSTMTOPTION);
 			_set_func_exists(pfExists,SQL_API_SQLSPECIALCOLUMNS);
 			_set_func_exists(pfExists,SQL_API_SQLSTATISTICS);
@@ -1674,48 +1846,47 @@ SQLRETURN SQL_API SQLGetFunctions(
 			break;
 #endif
 		case SQL_API_ALL_FUNCTIONS:
-			memset(pfExists, 0, 100); // 100 by spec
-			_set_func_exists(pfExists,SQL_API_SQLALLOCCONNECT);
-			_set_func_exists(pfExists,SQL_API_SQLALLOCENV);
-			_set_func_exists(pfExists,SQL_API_SQLALLOCSTMT);
-			_set_func_exists(pfExists,SQL_API_SQLBINDCOL);
-			_set_func_exists(pfExists,SQL_API_SQLCANCEL);
-			_set_func_exists(pfExists,SQL_API_SQLCOLATTRIBUTE);
-			_set_func_exists(pfExists,SQL_API_SQLCOLUMNS);
-			_set_func_exists(pfExists,SQL_API_SQLCONNECT);
-			_set_func_exists(pfExists,SQL_API_SQLDATASOURCES);
-			_set_func_exists(pfExists,SQL_API_SQLDESCRIBECOL);
-			_set_func_exists(pfExists,SQL_API_SQLDISCONNECT);
-			_set_func_exists(pfExists,SQL_API_SQLERROR);
-			_set_func_exists(pfExists,SQL_API_SQLEXECDIRECT);
-			_set_func_exists(pfExists,SQL_API_SQLEXECUTE);
-			_set_func_exists(pfExists,SQL_API_SQLFETCH);
-			_set_func_exists(pfExists,SQL_API_SQLFREECONNECT);
-			_set_func_exists(pfExists,SQL_API_SQLFREEENV);
-			_set_func_exists(pfExists,SQL_API_SQLFREEHANDLE);
-			_set_func_exists(pfExists,SQL_API_SQLFREESTMT);
-			_set_func_exists(pfExists,SQL_API_SQLGETCONNECTOPTION);
-			_set_func_exists(pfExists,SQL_API_SQLGETCURSORNAME);
-			_set_func_exists(pfExists,SQL_API_SQLGETDATA);
-			_set_func_exists(pfExists,SQL_API_SQLGETFUNCTIONS);
-			_set_func_exists(pfExists,SQL_API_SQLGETINFO);
-			_set_func_exists(pfExists,SQL_API_SQLGETSTMTATTR);
-			_set_func_exists(pfExists,SQL_API_SQLGETSTMTOPTION);
-			_set_func_exists(pfExists,SQL_API_SQLGETTYPEINFO);
-			_set_func_exists(pfExists,SQL_API_SQLNUMRESULTCOLS);
-			_set_func_exists(pfExists,SQL_API_SQLPARAMDATA);
-			_set_func_exists(pfExists,SQL_API_SQLPREPARE);
-			_set_func_exists(pfExists,SQL_API_SQLPUTDATA);
-			_set_func_exists(pfExists,SQL_API_SQLROWCOUNT);
-			_set_func_exists(pfExists,SQL_API_SQLSETCONNECTOPTION);
-			_set_func_exists(pfExists,SQL_API_SQLSETCURSORNAME);
-			_set_func_exists(pfExists,SQL_API_SQLSETENVATTR);
-			_set_func_exists(pfExists,SQL_API_SQLSETPARAM);
-			_set_func_exists(pfExists,SQL_API_SQLSETSTMTOPTION);
-			_set_func_exists(pfExists,SQL_API_SQLSPECIALCOLUMNS);
-			_set_func_exists(pfExists,SQL_API_SQLSTATISTICS);
-			_set_func_exists(pfExists,SQL_API_SQLTABLES);
-			_set_func_exists(pfExists,SQL_API_SQLTRANSACT);
+			/* ODBC 2: array of 100 SQLUSMALLINT flags, one per function */
+			memset(pfExists, 0, 100 * sizeof(SQLUSMALLINT));
+			pfExists[SQL_API_SQLALLOCCONNECT] = SQL_TRUE;
+			pfExists[SQL_API_SQLALLOCENV] = SQL_TRUE;
+			pfExists[SQL_API_SQLALLOCSTMT] = SQL_TRUE;
+			pfExists[SQL_API_SQLBINDCOL] = SQL_TRUE;
+			pfExists[SQL_API_SQLCANCEL] = SQL_TRUE;
+			pfExists[SQL_API_SQLCOLATTRIBUTE] = SQL_TRUE;
+			pfExists[SQL_API_SQLCOLUMNS] = SQL_TRUE;
+			pfExists[SQL_API_SQLCONNECT] = SQL_TRUE;
+			pfExists[SQL_API_SQLDATASOURCES] = SQL_TRUE;
+			pfExists[SQL_API_SQLDESCRIBECOL] = SQL_TRUE;
+			pfExists[SQL_API_SQLDISCONNECT] = SQL_TRUE;
+			pfExists[SQL_API_SQLERROR] = SQL_TRUE;
+			pfExists[SQL_API_SQLEXECDIRECT] = SQL_TRUE;
+			pfExists[SQL_API_SQLEXECUTE] = SQL_TRUE;
+			pfExists[SQL_API_SQLFETCH] = SQL_TRUE;
+			pfExists[SQL_API_SQLFREECONNECT] = SQL_TRUE;
+			pfExists[SQL_API_SQLFREEENV] = SQL_TRUE;
+			pfExists[SQL_API_SQLFREESTMT] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETCONNECTOPTION] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETCURSORNAME] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETDATA] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETFUNCTIONS] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETINFO] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETSTMTOPTION] = SQL_TRUE;
+			pfExists[SQL_API_SQLGETTYPEINFO] = SQL_TRUE;
+			pfExists[SQL_API_SQLNUMRESULTCOLS] = SQL_TRUE;
+			pfExists[SQL_API_SQLPARAMDATA] = SQL_TRUE;
+			pfExists[SQL_API_SQLPREPARE] = SQL_TRUE;
+			pfExists[SQL_API_SQLPUTDATA] = SQL_TRUE;
+			pfExists[SQL_API_SQLROWCOUNT] = SQL_TRUE;
+			pfExists[SQL_API_SQLSETCONNECTOPTION] = SQL_TRUE;
+			pfExists[SQL_API_SQLSETCURSORNAME] = SQL_TRUE;
+			pfExists[SQL_API_SQLSETENVATTR] = SQL_TRUE;
+			pfExists[SQL_API_SQLSETPARAM] = SQL_TRUE;
+			pfExists[SQL_API_SQLSETSTMTOPTION] = SQL_TRUE;
+			pfExists[SQL_API_SQLSPECIALCOLUMNS] = SQL_TRUE;
+			pfExists[SQL_API_SQLSTATISTICS] = SQL_TRUE;
+			pfExists[SQL_API_SQLTABLES] = SQL_TRUE;
+			pfExists[SQL_API_SQLTRANSACT] = SQL_TRUE;
 			break;
 
 		case SQL_API_SQLALLOCCONNECT:
@@ -1754,6 +1925,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 		case SQL_API_SQLSETCURSORNAME:
 		case SQL_API_SQLSETENVATTR:
 		case SQL_API_SQLSETPARAM:
+		case SQL_API_SQLSETSTMTATTR:
 		case SQL_API_SQLSETSTMTOPTION:
 		case SQL_API_SQLSPECIALCOLUMNS:
 		case SQL_API_SQLSTATISTICS:
@@ -1836,7 +2008,7 @@ SQLRETURN SQL_API SQLGetStmtOption(
     SQLPOINTER         pvParam)
 {
 	TRACE("SQLGetStmtOption");
-	return SQL_SUCCESS;
+	return SQLGetStmtAttr(hstmt, fOption, pvParam, SQL_MAX_OPTION_STRING_LENGTH, NULL);
 }
 
 SQLRETURN SQL_API SQLGetTypeInfo(
@@ -1954,7 +2126,7 @@ SQLRETURN SQL_API SQLSetStmtOption(
     SQLULEN            vParam)
 {
 	TRACE("SQLSetStmtOption");
-	return SQL_SUCCESS;
+	return SQLSetStmtAttr(hstmt, fOption, (SQLPOINTER)vParam, SQL_NTS);
 }
 
 SQLRETURN SQL_API SQLSpecialColumns(

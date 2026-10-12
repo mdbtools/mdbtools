@@ -55,6 +55,101 @@ static void printStatementError(HSTMT hstmt, char *msg)
 }
 
 
+static int expect_state(HSTMT hstmt, SQLRETURN ret, SQLRETURN expected_ret,
+		const char *expected_state, const char *what)
+{
+	SQLCHAR state[6] = "";
+	SQLCHAR msg[SQL_MAX_MESSAGE_LENGTH] = "";
+	SQLINTEGER native;
+	SQLSMALLINT len;
+
+	if (ret != expected_ret) {
+		fprintf(stderr, "%s: returned %d, expected %d\n", what, ret, expected_ret);
+		return 1;
+	}
+	if (!expected_state)
+		return 0;
+	SQLError(SQL_NULL_HENV, SQL_NULL_HDBC, hstmt, state, &native, msg, sizeof(msg), &len);
+	if (strcmp((char *)state, expected_state) != 0) {
+		fprintf(stderr, "%s: SQLSTATE %s, expected %s\n", what, state, expected_state);
+		return 1;
+	}
+	printf("%s: %s %s\n", what, state, msg);
+	return 0;
+}
+
+/* Statement attributes (issue #434): Qt asks for a static cursor; the
+ * driver substitutes a forward-only one and says so with 01S02. */
+static int test_stmt_attrs(HDBC hdbc, HSTMT hstmt)
+{
+	SQLUSMALLINT exists = SQL_FALSE;
+	SQLULEN value;
+	SQLINTEGER len;
+	int i;
+
+	printf("\nTesting statement attributes (issue #434)...\n");
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	SQLFreeStmt(hstmt, SQL_UNBIND); /* earlier bindings have gone out of scope */
+
+	SQLGetFunctions(hdbc, SQL_API_SQLSETSTMTATTR, &exists);
+	if (exists != SQL_TRUE) {
+		fprintf(stderr, "SQLGetFunctions does not report SQLSetStmtAttr\n");
+		return 1;
+	}
+
+	if (expect_state(hstmt, SQLSetStmtAttr(hstmt, SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_STATIC, SQL_IS_UINTEGER),
+				SQL_SUCCESS_WITH_INFO, "01S02", "SQL_ATTR_CURSOR_TYPE=SQL_CURSOR_STATIC"))
+		return 1;
+	value = SQL_CURSOR_STATIC;
+	if (expect_state(hstmt, SQLGetStmtAttr(hstmt, SQL_ATTR_CURSOR_TYPE, &value, 0, &len),
+				SQL_SUCCESS, NULL, "get SQL_ATTR_CURSOR_TYPE"))
+		return 1;
+	if (value != SQL_CURSOR_FORWARD_ONLY) {
+		fprintf(stderr, "SQL_ATTR_CURSOR_TYPE is %lu, expected forward-only\n", (unsigned long)value);
+		return 1;
+	}
+	value = SQL_SCROLLABLE;
+	SQLGetStmtAttr(hstmt, SQL_ATTR_CURSOR_SCROLLABLE, &value, 0, &len);
+	if (value != SQL_NONSCROLLABLE) {
+		fprintf(stderr, "SQL_ATTR_CURSOR_SCROLLABLE is %lu, expected nonscrollable\n", (unsigned long)value);
+		return 1;
+	}
+	if (expect_state(hstmt, SQLSetStmtAttr(hstmt, SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)SQL_CURSOR_FORWARD_ONLY, SQL_IS_UINTEGER),
+				SQL_SUCCESS, NULL, "SQL_ATTR_CURSOR_TYPE=SQL_CURSOR_FORWARD_ONLY"))
+		return 1;
+	if (expect_state(hstmt, SQLSetStmtAttr(hstmt, SQL_ATTR_CONCURRENCY,
+				(SQLPOINTER)SQL_CONCUR_READ_ONLY, SQL_IS_UINTEGER),
+				SQL_SUCCESS, NULL, "SQL_ATTR_CONCURRENCY=SQL_CONCUR_READ_ONLY"))
+		return 1;
+	if (expect_state(hstmt, SQLSetStmtAttr(hstmt, SQL_ATTR_ROW_ARRAY_SIZE,
+				(SQLPOINTER)10, SQL_IS_UINTEGER),
+				SQL_SUCCESS_WITH_INFO, "01S02", "SQL_ATTR_ROW_ARRAY_SIZE=10"))
+		return 1;
+	if (expect_state(hstmt, SQLSetStmtOption(hstmt, SQL_CONCURRENCY, SQL_CONCUR_LOCK),
+				SQL_SUCCESS_WITH_INFO, "01S02", "SQLSetStmtOption(SQL_CONCURRENCY)"))
+		return 1;
+	if (expect_state(hstmt, SQLSetStmtAttr(hstmt, SQL_ATTR_ROWS_FETCHED_PTR,
+				&value, SQL_IS_POINTER),
+				SQL_ERROR, "HYC00", "SQL_ATTR_ROWS_FETCHED_PTR"))
+		return 1;
+
+	/* The statement must still work after all that */
+	if (expect_state(hstmt, SQLExecDirect(hstmt, (SQLCHAR *)"select * from Shippers", SQL_NTS),
+				SQL_SUCCESS, NULL, "SQLExecDirect"))
+		return 1;
+	for (i = 0; SQLFetch(hstmt) == SQL_SUCCESS; i++)
+		;
+	if (i != 3) {
+		fprintf(stderr, "Fetched %d rows from Shippers, expected 3\n", i);
+		return 1;
+	}
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	printf("Statement attribute test passed.\n");
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 int i;
@@ -303,6 +398,9 @@ int i;
 	}
 
 	printf("Done\n");
+
+	if (test_stmt_attrs(hdbc, hstmt))
+		return 1;
 
 	return 0;
 }
