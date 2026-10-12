@@ -625,6 +625,51 @@ mdbsql_add_sarg(MdbSQL *sql, const char *qualifier, const char *col_name, int op
 	return 0;
 }
 
+void
+mdbsql_const_list_free(GPtrArray *list)
+{
+	unsigned int i;
+
+	if (!list)
+		return;
+	for (i=0; i<list->len; i++)
+		mdbsql_const_free(g_ptr_array_index(list, i));
+	g_ptr_array_free(list, TRUE);
+}
+
+/* col IN (c1, c2, ...) is added as col = c1 OR col = c2 OR ..., and
+ * col NOT IN (...) as its negation */
+int
+mdbsql_add_in(MdbSQL *sql, const char *qualifier, const char *col_name, GPtrArray *list, int negate)
+{
+	unsigned int i;
+
+	for (i=0; i<list->len; i++) {
+		if (mdbsql_add_sarg(sql, qualifier, col_name, MDB_EQUAL, g_ptr_array_index(list, i)))
+			return 1;
+		if (i > 0)
+			mdb_sql_add_or(sql);
+	}
+	if (negate)
+		mdb_sql_add_not(sql);
+	return 0;
+}
+
+/* col BETWEEN low AND high is added as col >= low AND col <= high, and
+ * col NOT BETWEEN ... as its negation */
+int
+mdbsql_add_between(MdbSQL *sql, const char *qualifier, const char *col_name,
+	MdbSQLConst *low, MdbSQLConst *high, int negate)
+{
+	if (mdbsql_add_sarg(sql, qualifier, col_name, MDB_GTEQ, low) ||
+			mdbsql_add_sarg(sql, qualifier, col_name, MDB_LTEQ, high))
+		return 1;
+	mdb_sql_add_and(sql);
+	if (negate)
+		mdb_sql_add_not(sql);
+	return 0;
+}
+
 int 
 mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 {

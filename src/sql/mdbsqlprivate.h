@@ -60,5 +60,9 @@ void mdbsql_const_free(MdbSQLConst *c);
 MdbSQLConst *mdbsql_strptime(MdbSQL *sql, MdbSQLConst *data, MdbSQLConst *format);
 int mdbsql_add_sarg(MdbSQL *sql, const char *qualifier, const char *col_name, int op, MdbSQLConst *c);
 int mdbsql_eval_expr(MdbSQL *sql, MdbSQLConst *c1, int op, MdbSQLConst *c2);
+void mdbsql_const_list_free(GPtrArray *list);
+int mdbsql_add_in(MdbSQL *sql, const char *qualifier, const char *col_name, GPtrArray *list, int negate);
+int mdbsql_add_between(MdbSQL *sql, const char *qualifier, const char *col_name,
+	MdbSQLConst *low, MdbSQLConst *high, int negate);
 
 #endif

@@ -69,6 +69,8 @@ or		{ return OR; }
 not		{ return NOT; }
 is		{ return IS; }
 null		{ return NUL; }
+in		{ return IN; }
+between		{ return BETWEEN; }
 "="		{ return EQ; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }

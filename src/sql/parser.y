@@ -62,11 +62,13 @@ typedef struct sql_context
 	int ival;
 	MdbSQLConst *cval;
 	MdbSQLColRef *colref;
+	GPtrArray *list;
 }
 
 %destructor { free($$); } <name>
 %destructor { mdbsql_const_free($$); } <cval>
 %destructor { mdbsql_colref_free($$); } <colref>
+%destructor { mdbsql_const_list_free($$); } <list>
 
 %start stmt
 
@@ -74,7 +76,7 @@ typedef struct sql_context
 %token OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
 %token DESCRIBE TABLE TOP PERCENT AS
-%token LTEQ GTEQ NEQ LIKE ILIKE IS NUL
+%token LTEQ GTEQ NEQ LIKE ILIKE IS NUL IN BETWEEN
 
 %type <name> database
 %type <cval> constant
@@ -83,6 +85,7 @@ typedef struct sql_context
 %type <name> identifier
 %type <name> alias
 %type <colref> column_ref
+%type <list> constant_list
 
 //
 // operator precedence
@@ -200,6 +203,37 @@ sarg:
 				mdbsql_add_sarg(parser_ctx->mdb, $1->qualifier, $1->name, $2, NULL);
 				mdbsql_colref_free($1);
 				}
+	| column_ref IN OPENING constant_list CLOSING {
+				int rc = mdbsql_add_in(parser_ctx->mdb, $1->qualifier, $1->name, $4, 0);
+				mdbsql_colref_free($1);
+				mdbsql_const_list_free($4);
+				if (rc) YYERROR;
+				}
+	| column_ref NOT IN OPENING constant_list CLOSING {
+				int rc = mdbsql_add_in(parser_ctx->mdb, $1->qualifier, $1->name, $5, 1);
+				mdbsql_colref_free($1);
+				mdbsql_const_list_free($5);
+				if (rc) YYERROR;
+				}
+	| column_ref BETWEEN constant AND constant {
+				int rc = mdbsql_add_between(parser_ctx->mdb, $1->qualifier, $1->name, $3, $5, 0);
+				mdbsql_colref_free($1);
+				mdbsql_const_free($3);
+				mdbsql_const_free($5);
+				if (rc) YYERROR;
+				}
+	| column_ref NOT BETWEEN constant AND constant {
+				int rc = mdbsql_add_between(parser_ctx->mdb, $1->qualifier, $1->name, $4, $6, 1);
+				mdbsql_colref_free($1);
+				mdbsql_const_free($4);
+				mdbsql_const_free($6);
+				if (rc) YYERROR;
+				}
+	;
+
+constant_list:
+	constant { $$ = g_ptr_array_new(); g_ptr_array_add($$, $1); }
+	| constant_list ',' constant { $$ = $1; g_ptr_array_add($$, $3); }
 	;
 
 identifier:
