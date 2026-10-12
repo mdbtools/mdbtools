@@ -275,15 +275,25 @@ const MdbBackendType*
 mdb_get_colbacktype(const MdbColumn *col) {
 	MdbBackend *backend = col->table->entry->mdb->default_backend;
 	int col_type = col->col_type;
-	if (col_type > MDB_NUMERIC)
-		return NULL;
-	if (col_type == MDB_LONGINT && col->is_long_auto && backend->type_autonum)
+	/* A complex column (multi-valued field, attachment or version
+	 * history) holds a 32-bit integer, the complex-field ID that keys
+	 * the rows of its hidden MSysComplexType_* table, and mdbtools
+	 * exports that ID rather than the values. Use the backend's long
+	 * integer type for it (never its autonumber type, although Access
+	 * sets the autonumber flag on these columns): the type tables,
+	 * including any passed to mdb_register_backend, only extend to
+	 * MDB_NUMERIC. */
+	if (col_type == MDB_COMPLEX)
+		col_type = MDB_LONGINT;
+	else if (col_type == MDB_LONGINT && col->is_long_auto && backend->type_autonum)
 		return backend->type_autonum;
+	if (col_type < 0 || col_type > MDB_NUMERIC)
+		return NULL;
 	if (col_type == MDB_DATETIME && backend->type_shortdate) {
 		if (mdb_col_is_shortdate(col))
 			return backend->type_shortdate;
 	}
-	if (!backend->types_table[col_type].name[0])
+	if (!backend->types_table[col_type].name || !backend->types_table[col_type].name[0])
 		return NULL;
 	return &backend->types_table[col_type];
 }

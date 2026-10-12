@@ -64,3 +64,4 @@ AUTHORS
 
 BUGS
   Memo fields are allowed to contain a newline characters, the current program does nothing about this.
+  Multi-valued, attachment and version history (complex) columns are exported as the integer ID that Access uses to find their values in a hidden table, not as the values themselves.

@@ -62,3 +62,4 @@ AUTHORS
 BUGS
   Relationships and other features may not be supported by all databases.
   Access datatypes are mapped to their closest counterparts in the target backend. This may not always yield an exact fit.
+  Multi-valued, attachment and version history (complex) columns are declared as integers, because mdb-export exports the integer ID that Access uses to find their values in a hidden table, not the values themselves.
