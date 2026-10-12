@@ -936,7 +936,10 @@ mdb_tm_to_date(struct tm *t, double *td)
 	short yr = t->tm_year + 1900;
 	char leap = ((yr & 3) == 0) && ((yr % 100) != 0 || (yr % 400) == 0);
 	const int *cal = leap ? leap_cal : noleap_cal;
-	long int time = (yr*365+(yr/4)-(yr/100)+(yr/400)+cal[t->tm_mon]+t->tm_mday)-693959;
+	/* days since 1/1/0001 (proleptic Gregorian), minus those up to 12/30/1899;
+	 * leap days are counted for the years before yr only, as cal
+	 * already accounts for a leap day in yr itself */
+	long int time = ((yr-1)*365L+((yr-1)/4)-((yr-1)/100)+((yr-1)/400)+cal[t->tm_mon]+t->tm_mday)-693594;
 
 	*td = (((long)t->tm_hour * 3600)+((long)t->tm_min * 60)+((long)t->tm_sec)) / 86400.0;
 	if (time>=0) *td+=time; else *td=time-*td;
