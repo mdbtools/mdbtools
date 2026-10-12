@@ -55,6 +55,8 @@ typedef struct {
 	int  bind_type;
 	int  *bind_len;
 	int  bind_max;
+	/* Added in mdbtools 1.1 */
+	char *qualifier;	/* table name or alias the column was qualified with, or NULL */
 } MdbSQLColumn;
 
 typedef struct {

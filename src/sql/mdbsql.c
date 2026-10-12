@@ -131,6 +131,7 @@ static void mdb_sql_free_columns(GPtrArray *columns)
 	for (i=0; i<columns->len; i++) {
 		MdbSQLColumn *c = (MdbSQLColumn *)g_ptr_array_index(columns, i);
 		g_free(c->name);
+		g_free(c->qualifier);
 		g_free(c);
 	}
 	g_ptr_array_free(columns, TRUE);
@@ -142,6 +143,7 @@ static void mdb_sql_free_tables(GPtrArray *tables)
 	for (i=0; i<tables->len; i++) {
 		MdbSQLTable *t = (MdbSQLTable *)g_ptr_array_index(tables, i);
 		g_free(t->name);
+		g_free(t->alias);
 		g_free(t);
 	}
 	g_ptr_array_free(tables, TRUE);
@@ -563,9 +565,11 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
  * to the sarg stack. The constant is converted to the type of the column
  * later, by mdb_sql_resolve_sargcol() */
 int
-mdbsql_add_sarg(MdbSQL *sql, const char *col_name, int op, MdbSQLConst *c)
+mdbsql_add_sarg(MdbSQL *sql, const char *qualifier, const char *col_name, int op, MdbSQLConst *c)
 {
 	MdbSargNode *node;
+	size_t name_len = strlen(col_name);
+	char *stash;
 
 	if (c && c->text && strlen(c->text) >= sizeof(node->value.s)) {
 		mdb_sql_error(sql, "Constant '%.20s...' is too long", c->text);
@@ -573,8 +577,14 @@ mdbsql_add_sarg(MdbSQL *sql, const char *col_name, int op, MdbSQLConst *c)
 	}
 	node = mdb_sql_alloc_node();
 	node->op = op;
-	/* stash the column name until we finish with the grammar */
-	node->parent = (void *) g_strdup(col_name);
+	/* stash the column name until we finish with the grammar, followed
+	 * by its qualifier: "name\0qualifier\0" */
+	if (!qualifier)
+		qualifier = "";
+	stash = g_malloc(name_len + strlen(qualifier) + 2);
+	memcpy(stash, col_name, name_len + 1);
+	strcpy(stash + name_len + 1, qualifier);
+	node->parent = stash;
 
 	if (c) {
 		switch (c->type) {
@@ -603,7 +613,7 @@ int
 mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
 {
 	MdbSQLConst *c = constant ? mdb_sql_const_from_string(constant) : NULL;
-	int rc = mdbsql_add_sarg(sql, col_name, op, c);
+	int rc = mdbsql_add_sarg(sql, NULL, col_name, op, c);
 	mdbsql_const_free(c);
 	return rc;
 }
@@ -618,13 +628,42 @@ mdb_sql_sel_count(MdbSQL *sql)
 	sql->sel_count=1;
 }
 
-int mdb_sql_add_column(MdbSQL *sql, char *column_name)
+/* Takes ownership of qualifier and name */
+MdbSQLColRef *
+mdbsql_colref_new(char *qualifier, char *name)
+{
+	MdbSQLColRef *ref = g_malloc0(sizeof(MdbSQLColRef));
+	ref->qualifier = qualifier;
+	ref->name = name;
+	return ref;
+}
+
+void
+mdbsql_colref_free(MdbSQLColRef *ref)
+{
+	if (!ref)
+		return;
+	free(ref->qualifier);
+	free(ref->name);
+	g_free(ref);
+}
+
+/* Add a column to the select list; name may be "*" for all the columns of
+ * the table qualifier */
+int
+mdbsql_add_column(MdbSQL *sql, const char *qualifier, const char *name)
 {
 	MdbSQLColumn *c = g_malloc0(sizeof(MdbSQLColumn));
-	c->name = g_strdup(column_name);
+	c->name = g_strdup(name);
+	c->qualifier = qualifier ? g_strdup(qualifier) : NULL;
 	g_ptr_array_add(sql->columns, c);
 	sql->num_columns++;
 	return 0;
+}
+
+int mdb_sql_add_column(MdbSQL *sql, char *column_name)
+{
+	return mdbsql_add_column(sql, NULL, column_name);
 }
 int mdb_sql_add_limit(MdbSQL *sql, char *limit, int percent)
 {
@@ -648,14 +687,19 @@ int mdb_sql_add_function1(MdbSQL *sql, char *func_name, char *arg1)
 	fprintf(stderr, "calling function %s with %s", func_name, arg1);
 	return 0;
 }
-int mdb_sql_add_table(MdbSQL *sql, char *table_name)
+int
+mdbsql_add_table(MdbSQL *sql, const char *name, const char *alias)
 {
 	MdbSQLTable *t = g_malloc0(sizeof(MdbSQLTable));
-	t->name = g_strdup(table_name);
-	t->alias = NULL;
+	t->name = g_strdup(name);
+	t->alias = alias ? g_strdup(alias) : NULL;
 	g_ptr_array_add(sql->tables, t);
 	sql->num_tables++;
 	return 0;
+}
+int mdb_sql_add_table(MdbSQL *sql, char *table_name)
+{
+	return mdbsql_add_table(sql, table_name, NULL);
 }
 void mdb_sql_dump(MdbSQL *sql)
 {
@@ -887,7 +931,22 @@ typedef struct {
 	MdbSQL *sql; /* for error reporting; may be NULL */
 	MdbTableDef *table;
 	int failed;
+	MdbSQLTable *sql_tab; /* for checking qualifiers; may be NULL */
 } MdbSQLSargColContext;
+
+/* Check that a column qualifier names the table, or its alias */
+static int
+mdb_sql_check_qualifier(MdbSQL *sql, MdbSQLTable *sql_tab, const char *qualifier)
+{
+	if (!qualifier || !qualifier[0] || !sql_tab)
+		return 0;
+	if (!g_ascii_strcasecmp(qualifier, sql_tab->name) ||
+			(sql_tab->alias && !g_ascii_strcasecmp(qualifier, sql_tab->alias)))
+		return 0;
+	if (sql)
+		mdb_sql_error(sql, "Table %s is not in the FROM clause", qualifier);
+	return 1;
+}
 
 /* Resolve the column name stashed in a relational node of the sarg tree,
  * and convert the constant to the type needed to compare with it */
@@ -902,6 +961,9 @@ mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 	if (!mdb_is_relational_op(node->op)) return 0;
 	if (!node->parent) return 0;
 
+	if (mdb_sql_check_qualifier(ctx->sql, ctx->sql_tab,
+				(char *)node->parent + strlen(node->parent) + 1))
+		goto fail;
 	if (!(col = mdb_sql_find_colbyname(ctx->table, (char *)node->parent))) {
 		if (ctx->sql)
 			mdb_sql_error(ctx->sql, "Column %s not found", (char *)node->parent);
@@ -1030,7 +1092,7 @@ fail:
 
 int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 {
-	MdbSQLSargColContext ctx = { NULL, data, 0 };
+	MdbSQLSargColContext ctx = { NULL, data, 0, NULL };
 	mdb_sql_resolve_sargcol(node, &ctx);
 	return 0;
 }
@@ -1054,6 +1116,44 @@ mdb_sql_count_result(MdbSQL *sql, int count)
 	mdb_add_row_to_pg(ttable,row_buffer, row_size);
 	ttable->num_rows++;
 	sql->cur_table = ttable;
+}
+
+/* Replace each table.* in the select list with the columns of the table */
+static void
+mdb_sql_expand_stars(MdbSQL *sql, MdbTableDef *table)
+{
+	GPtrArray *columns;
+	MdbSQLColumn *sqlcol;
+	MdbColumn *col;
+	unsigned int i, j;
+
+	for (i=0;i<sql->num_columns;i++) {
+		sqlcol = g_ptr_array_index(sql->columns,i);
+		if (!strcmp(sqlcol->name, "*"))
+			break;
+	}
+	if (i == sql->num_columns)
+		return;
+
+	columns = sql->columns;
+	sql->columns = g_ptr_array_new();
+	sql->num_columns = 0;
+	for (i=0;i<columns->len;i++) {
+		sqlcol = g_ptr_array_index(columns,i);
+		if (strcmp(sqlcol->name, "*")) {
+			g_ptr_array_add(sql->columns, sqlcol);
+			sql->num_columns++;
+			continue;
+		}
+		for (j=0;j<table->num_cols;j++) {
+			col = g_ptr_array_index(table->columns,j);
+			mdbsql_add_column(sql, NULL, col->name);
+		}
+		g_free(sqlcol->name);
+		g_free(sqlcol->qualifier);
+		g_free(sqlcol);
+	}
+	g_ptr_array_free(columns, TRUE);
 }
 
 void 
@@ -1104,6 +1204,17 @@ int found = 0;
 			mdb_sql_add_column(sql, col->name);
 		}
 	}
+	/* check the qualifiers, and expand table.* */
+	for (i=0;i<sql->num_columns;i++) {
+		sqlcol = g_ptr_array_index(sql->columns,i);
+		if (mdb_sql_check_qualifier(sql, sql_tab, sqlcol->qualifier)) {
+			mdb_index_scan_free(table);
+			mdb_free_tabledef(table);
+			mdb_sql_reset(sql);
+			return;
+		}
+	}
+	mdb_sql_expand_stars(sql, table);
 	/* verify all specified columns exist in this table */
 	for (i=0;i<sql->num_columns;i++) {
 		sqlcol = g_ptr_array_index(sql->columns,i);
@@ -1129,7 +1240,7 @@ int found = 0;
 	 * resolve column names to MdbColumn structs
 	 */
 	if (sql->sarg_tree) {
-		MdbSQLSargColContext ctx = { sql, table, 0 };
+		MdbSQLSargColContext ctx = { sql, table, 0, sql_tab };
 		mdb_sql_walk_tree(sql->sarg_tree, mdb_sql_resolve_sargcol, &ctx);
 		if (ctx.failed) {
 			mdb_free_tabledef(table);

@@ -61,17 +61,19 @@ typedef struct sql_context
 	double dval;
 	int ival;
 	MdbSQLConst *cval;
+	MdbSQLColRef *colref;
 }
 
 %destructor { free($$); } <name>
 %destructor { mdbsql_const_free($$); } <cval>
+%destructor { mdbsql_colref_free($$); } <colref>
 
 %start stmt
 
 %token <name> IDENT NAME PATH STRING NUMBER
 %token OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
-%token DESCRIBE TABLE TOP PERCENT
+%token DESCRIBE TABLE TOP PERCENT AS
 %token LTEQ GTEQ NEQ LIKE ILIKE IS NUL
 
 %type <name> database
@@ -79,6 +81,8 @@ typedef struct sql_context
 %type <ival> operator
 %type <ival> nulloperator
 %type <name> identifier
+%type <name> table_alias
+%type <colref> column_ref
 
 //
 // operator precedence
@@ -154,13 +158,13 @@ sarg_list:
 	;
 
 sarg:
-	identifier operator constant	{
-				int rc = mdbsql_add_sarg(parser_ctx->mdb, $1, $2, $3);
-				free($1);
+	column_ref operator constant	{
+				int rc = mdbsql_add_sarg(parser_ctx->mdb, $1->qualifier, $1->name, $2, $3);
+				mdbsql_colref_free($1);
 				mdbsql_const_free($3);
 				if (rc) YYERROR;
 				}
-	| constant operator identifier {
+	| constant operator column_ref {
 				int rc;
 				switch($2) {
 					case MDB_GT:
@@ -180,10 +184,10 @@ sarg:
 					mdb_sql_error(parser_ctx->mdb, "The pattern of LIKE must be on its right");
 					rc = 1;
 				} else {
-					rc = mdbsql_add_sarg(parser_ctx->mdb, $3, $2, $1);
+					rc = mdbsql_add_sarg(parser_ctx->mdb, $3->qualifier, $3->name, $2, $1);
 				}
 				mdbsql_const_free($1);
-				free($3);
+				mdbsql_colref_free($3);
 				if (rc) YYERROR;
 				}
 	| constant operator constant {
@@ -192,15 +196,20 @@ sarg:
 				mdbsql_const_free($3);
 				if (rc) YYERROR;
 	}
-	| identifier nulloperator	{ 
-				mdbsql_add_sarg(parser_ctx->mdb, $1, $2, NULL);
-				free($1);
+	| column_ref nulloperator	{ 
+				mdbsql_add_sarg(parser_ctx->mdb, $1->qualifier, $1->name, $2, NULL);
+				mdbsql_colref_free($1);
 				}
 	;
 
 identifier:
 	NAME
 	| IDENT
+	;
+
+column_ref:
+	identifier { $$ = mdbsql_colref_new(NULL, $1); }
+	| identifier '.' identifier { $$ = mdbsql_colref_new($1, $3); }
 	;
 
 operator:
@@ -237,7 +246,17 @@ database:
 	;
 
 table:
-	identifier { mdb_sql_add_table(parser_ctx->mdb, $1); free($1); }
+	identifier table_alias {
+			mdbsql_add_table(parser_ctx->mdb, $1, $2);
+			free($1);
+			free($2);
+		}
+	;
+
+table_alias:
+	/* empty */ { $$ = NULL; }
+	| identifier
+	| AS identifier { $$ = $2; }
 	;
 
 column_list:
@@ -249,7 +268,14 @@ column_list:
 	 
 
 column:
-	identifier { mdb_sql_add_column(parser_ctx->mdb, $1); free($1); }
+	column_ref {
+			mdbsql_add_column(parser_ctx->mdb, $1->qualifier, $1->name);
+			mdbsql_colref_free($1);
+		}
+	| identifier '.' '*' {
+			mdbsql_add_column(parser_ctx->mdb, $1, "*");
+			free($1);
+		}
 	;
 
 %%

@@ -80,6 +80,7 @@ ilike		{ return ILIKE; }
 limit		{ return LIMIT; }
 top		{ return TOP; }
 percent		{ return PERCENT; }
+as		{ return AS; }
 count\(		{ return COUNT; }
 strptime\(	{ return STRPTIME; }
 [ \t\r]	;
@@ -117,7 +118,7 @@ strptime\(	{ return STRPTIME; }
 		return STRING;
 	}
 
-(-?[0-9]+|(-?[0-9]*\.[0-9]*)(e[-+]?[0-9]+)?) {
+-?([0-9]+\.?[0-9]*|\.[0-9]+)(e[-+]?[0-9]+)? {
 		yylval->name = g_strdup(yytext); return NUMBER;
 	}
 "("		{ return OPENING; }
