@@ -762,15 +762,18 @@ mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 	char ole_ptr[MDB_MEMO_OVERHEAD];
 	char *result = malloc(OLE_BUFFER_SIZE);
 	size_t result_buffer_size = OLE_BUFFER_SIZE;
-	size_t len, pos;
+	size_t len, pos, ole_len;
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
+	/* Stop at the declared length so that an LVAL chain pointing
+	 * back to itself can't grow the buffer forever */
+	ole_len = mdb_get_int32(ole_ptr, 0) & 0x3fffffff;
 
 	/* col->bind_ptr is, by convention, mdb->bind_size bytes long */
 	len = mdb_ole_read(mdb, col, ole_ptr, mdb->bind_size);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
-	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
+	while (pos < ole_len && (len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
 			result_buffer_size += OLE_BUFFER_SIZE;
 			if ((result = reallocf(result, result_buffer_size)) == NULL) {
@@ -919,8 +922,10 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			if (tmpoff + len - 4 > memo_len)
 				break;
 
-			/* Stop processing on zero length multiple page memo fields */
-			if (len < 4)
+			/* Stop processing on zero length multiple page memo fields.
+			 * An empty chunk would not advance tmpoff, so a chain
+			 * pointing back to itself would never terminate. */
+			if (len <= 4)
 				break;
 
 			memcpy(tmp + tmpoff, (char*)buf + row_start + 4, len - 4);
