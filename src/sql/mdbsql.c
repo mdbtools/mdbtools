@@ -404,6 +404,21 @@ mdbsql_const_from_literal(const char *literal)
 	return c;
 }
 
+static int mdb_sql_parse_date(const char *s, int access_style, double *date);
+
+/* Make a date constant from the text between the #s of a date literal */
+MdbSQLConst *
+mdbsql_const_date(MdbSQL *sql, const char *text)
+{
+	double date;
+
+	if (!mdb_sql_parse_date(text, 1, &date)) {
+		mdb_sql_error(sql, "Invalid date #%s#; use #MM/DD/YYYY [HH:MM:SS]# or #YYYY-MM-DD [HH:MM:SS]#", text);
+		return NULL;
+	}
+	return mdbsql_const_new(MDB_SQL_CONST_DATE, NULL, date);
+}
+
 void
 mdbsql_const_free(MdbSQLConst *c)
 {
@@ -902,27 +917,94 @@ MdbColumn *mdb_sql_find_colbyname(MdbTableDef *table, char *name)
 	return NULL;
 }
 
-/* Parse an ISO 8601 style date, "YYYY-MM-DD[ HH:MM[:SS]]" (a "T" may
- * separate date and time), into a JET date value */
+/* Parse a time, "HH:MM[:SS[.FFF]][ AM|PM]", which must be all of s */
 static int
-mdb_sql_parse_iso_date(const char *s, double *date)
+mdb_sql_parse_time(const char *s, struct tm *tm)
 {
-	struct tm tm = { 0 };
-	int n = 0;
+	int n = 0, fields;
 
-	if (sscanf(s, "%4d-%2d-%2d%n", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &n) != 3)
+	tm->tm_sec = 0;
+	if (!isdigit((unsigned char)*s) ||
+			(fields = sscanf(s, "%2d:%2d%n:%2d%n", &tm->tm_hour, &tm->tm_min, &n, &tm->tm_sec, &n)) < 2)
 		return 0;
 	s += n;
-	if (*s == ' ' || *s == 'T') {
-		n = 0;
-		if (sscanf(s + 1, "%2d:%2d%n:%2d%n", &tm.tm_hour, &tm.tm_min, &n, &tm.tm_sec, &n) < 2)
+	/* fractions of a second (as in ODBC's {ts '...'}) are ignored */
+	if (*s == '.' && fields == 3)
+		s += 1 + strspn(s + 1, "0123456789");
+	while (*s == ' ')
+		s++;
+	if (!g_ascii_strcasecmp(s, "AM") || !g_ascii_strcasecmp(s, "PM")) {
+		if (tm->tm_hour < 1 || tm->tm_hour > 12)
 			return 0;
-		s += 1 + n;
+		tm->tm_hour = tm->tm_hour % 12 + (toupper((unsigned char)*s) == 'P' ? 12 : 0);
+		s += 2;
+	}
+	return !*s && tm->tm_hour >= 0 && tm->tm_hour <= 23 && tm->tm_min >= 0 &&
+		tm->tm_min <= 59 && tm->tm_sec >= 0 && tm->tm_sec <= 59;
+}
+
+/* Parse a date into a JET date value. Accepted are ISO 8601 style dates,
+ * "YYYY-MM-DD[ HH:MM[:SS]]" (a "T" may separate date and time), and, if
+ * access_style is set, the forms of Access date literals as well:
+ * "MM/DD/YYYY", "YYYY/MM/DD" and two digit years, followed by an optional
+ * "HH:MM[:SS][ AM|PM]", or a time alone */
+static int
+mdb_sql_parse_date(const char *s, int access_style, double *date)
+{
+	static const int days[] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	struct tm tm = { 0 };
+	int a, b, c, n = 0, digits;
+
+	if (access_style) {
+		while (*s == ' ')
+			s++;
+		struct tm t = { 0 };
+		if (mdb_sql_parse_time(s, &t)) {
+			*date = (t.tm_hour * 3600 + t.tm_min * 60 + t.tm_sec) / 86400.0;
+			return 1;
+		}
+	}
+	if (!isdigit((unsigned char)*s))
+		return 0;
+	digits = strspn(s, "0123456789");
+	if (sscanf(s, "%4d-%2d-%2d%n", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &n) == 3) {
+		s += n;
+		if (*s == ' ' || *s == 'T') {
+			if (!mdb_sql_parse_time(s + 1, &tm))
+				return 0;
+			s += strlen(s);
+		}
+	} else if (access_style && sscanf(s, "%d/%d/%d%n", &a, &b, &c, &n) == 3) {
+		if (digits > 2) {
+			tm.tm_year = a; tm.tm_mon = b; tm.tm_mday = c;
+		} else {
+			const char *year = s;
+			int i;
+			for (i = 0; i < n; i++)
+				if (s[i] == '/')
+					year = s + i + 1;
+			tm.tm_mon = a; tm.tm_mday = b; tm.tm_year = c;
+			/* two digit years are 1930 to 2029, as in Access */
+			if (n - (year - s) <= 2)
+				tm.tm_year = c + (c < 30 ? 2000 : 1900);
+		}
+		s += n;
+		if (*s == ' ') {
+			while (*s == ' ')
+				s++;
+			if (*s && !mdb_sql_parse_time(s, &tm))
+				return 0;
+			s += strlen(s);
+		}
+	} else {
+		return 0;
 	}
 	if (*s)
 		return 0;
-	if (tm.tm_mon < 1 || tm.tm_mon > 12 || tm.tm_mday < 1 || tm.tm_mday > 31 ||
-			tm.tm_hour > 23 || tm.tm_min > 59 || tm.tm_sec > 59)
+	if (tm.tm_year < 1 || tm.tm_year > 9999 || tm.tm_mon < 1 || tm.tm_mon > 12 ||
+			tm.tm_mday < 1 || tm.tm_mday > days[tm.tm_mon - 1] ||
+			(tm.tm_mon == 2 && tm.tm_mday == 29 && !((tm.tm_year % 4 == 0 &&
+				tm.tm_year % 100 != 0) || tm.tm_year % 400 == 0)))
 		return 0;
 	tm.tm_year -= 1900;
 	tm.tm_mon -= 1;
@@ -1016,7 +1098,7 @@ mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 		break;
 	case MDB_DATETIME:
 		if (node->val_type == MDB_TEXT) {
-			if (!mdb_sql_parse_iso_date(node->value.s, &d)) {
+			if (!mdb_sql_parse_date(node->value.s, 0, &d)) {
 				if (ctx->sql)
 					mdb_sql_error(ctx->sql, "Can't compare date column %s with '%s'; use a 'YYYY-MM-DD [HH:MM:SS]' date or strptime()",
 							col->name, node->value.s);

@@ -121,6 +121,7 @@ strptime\(	{ return STRPTIME; }
 -?([0-9]+\.?[0-9]*|\.[0-9]+)(e[-+]?[0-9]+)? {
 		yylval->name = g_strdup(yytext); return NUMBER;
 	}
+#[^#\n]*#	{ yylval->name = g_strndup(yytext+1, yyleng-2); return DATE_LITERAL; }
 "("		{ return OPENING; }
 ")"		{ return CLOSING; }
 <PATHMODE>~?(\/?[a-z0-9\.\-\_\!\~\'\(\)\%\xa0-\xff]+)+ {

@@ -70,7 +70,7 @@ typedef struct sql_context
 
 %start stmt
 
-%token <name> IDENT NAME PATH STRING NUMBER
+%token <name> IDENT NAME PATH STRING NUMBER DATE_LITERAL
 %token OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
 %token DESCRIBE TABLE TOP PERCENT AS
@@ -237,6 +237,11 @@ constant:
 	}
 	| NUMBER { $$ = mdbsql_const_new(MDB_SQL_CONST_NUMBER, $1, 0); free($1); }
 	| STRING { $$ = mdbsql_const_from_literal($1); free($1); }
+	| DATE_LITERAL {
+		$$ = mdbsql_const_date(parser_ctx->mdb, $1);
+		free($1);
+		if (!$$) YYERROR;
+	}
 	;
 
 database:
