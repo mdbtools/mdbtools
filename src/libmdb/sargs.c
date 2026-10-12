@@ -263,7 +263,8 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 			break;
 		case MDB_MEMO:
 		case MDB_REPID:
-			val = mdb_col_to_string(mdb, mdb->pg_buf, field->start, col->col_type, (gint32)mdb_get_int32(field->value, 0));
+			val = mdb_col_to_string(mdb, mdb->pg_buf, field->start, col->col_type,
+				col->col_type == MDB_REPID ? field->siz : (gint32)mdb_get_int32(field->value, 0));
 			//printf("%s\n",val);
 			ret = mdb_test_string(node, val);
 			g_free(val);

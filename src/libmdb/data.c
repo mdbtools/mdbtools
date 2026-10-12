@@ -268,10 +268,47 @@ mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
 	}
 	return ret;
 }
+/* Number of bytes a value of a fixed width type occupies, or 0 */
+static int mdb_fixed_value_size(int col_type)
+{
+	switch (col_type) {
+		case MDB_BYTE: return 1;
+		case MDB_INT: return 2;
+		case MDB_LONGINT:
+		case MDB_COMPLEX:
+		case MDB_FLOAT: return 4;
+		case MDB_MONEY:
+		case MDB_DOUBLE:
+		case MDB_DATETIME: return 8;
+		case MDB_REPID: return 16;
+		case MDB_NUMERIC: return 17;
+	}
+	return 0;
+}
+/* Check that a value of a fixed width type is long enough to decode, and
+ * warn once per type and handle if it is not */
+static int mdb_fixed_value_ok(MdbHandle *mdb, int col_type, int len)
+{
+	int size = mdb_fixed_value_size(col_type);
+
+	if (size == 0 || len >= size)
+		return 1;
+	if (!(mdb->warned_short_types[col_type/8] & (1 << (col_type%8)))) {
+		mdb->warned_short_types[col_type/8] |= 1 << (col_type%8);
+		fprintf(stderr, "Warning: %d byte value of data type %d is shorter than %d bytes; "
+				"treating it as NULL (the database may be corrupt)\n", len, col_type, size);
+	}
+	return 0;
+}
 static size_t
 mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
 int ret;
+	/* a truncated fixed width value would be decoded from past its end */
+	if (len && !mdb_fixed_value_ok(mdb, col->col_type, len)) {
+		col->cur_value_is_null = 1;
+		len = 0;
+	}
 	//if (!strcmp("Name",col->name)) {
 		//printf("start %d %d\n",start, len);
 	//}
@@ -1076,6 +1113,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 	char *text = NULL;
 	float tf;
 	double td;
+
+	if (!mdb_fixed_value_ok(mdb, datatype, size))
+		return g_strdup("");
 
 	switch (datatype) {
 		case MDB_BYTE:

@@ -335,6 +335,8 @@ typedef struct {
 #endif
 	/* bitmap of the data types mdb_col_to_string has warned about */
 	unsigned char warned_types[32];
+	/* bitmap of the data types warned about for values that are too short */
+	unsigned char warned_short_types[32];
 } MdbHandle; 
 
 typedef struct {
