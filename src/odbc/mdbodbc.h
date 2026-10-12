@@ -71,6 +71,17 @@ struct _hstmt {
 	SQLULEN noscan;
 	SQLULEN row_bind_type;
 	SQLULEN metadata_id;
+	/* Parameters bound with SQLBindParameter, indexed by number - 1 */
+	GPtrArray *params;
+};
+
+struct _sql_param_info {
+	SQLSMALLINT c_type;
+	SQLSMALLINT sql_type;
+	SQLULEN column_size;
+	SQLPOINTER value;
+	SQLLEN buffer_length;
+	SQLLEN *len_ind;
 };
 
 struct _sql_bind_info {

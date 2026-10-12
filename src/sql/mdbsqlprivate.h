@@ -56,6 +56,7 @@ int mdbsql_add_table(MdbSQL *sql, const char *name, const char *alias);
 MdbSQLConst *mdbsql_const_new(MdbSQLConstType type, const char *text, double d);
 MdbSQLConst *mdbsql_const_from_literal(const char *literal);
 MdbSQLConst *mdbsql_const_date(MdbSQL *sql, const char *text);
+MdbSQLConst *mdbsql_const_param(MdbSQL *sql);
 void mdbsql_const_free(MdbSQLConst *c);
 MdbSQLConst *mdbsql_strptime(MdbSQL *sql, MdbSQLConst *data, MdbSQLConst *format);
 int mdbsql_add_sarg(MdbSQL *sql, const char *qualifier, const char *col_name, int op, MdbSQLConst *c);

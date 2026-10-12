@@ -232,6 +232,24 @@ SQLRETURN SQL_API SQLExecDirectW(
 	}
 }
 
+SQLRETURN SQL_API SQLPrepareW(
+    SQLHSTMT           hstmt,
+    SQLWCHAR           *szSqlStr,
+    SQLINTEGER         cbSqlStr)
+{
+	TRACE("SQLPrepareW");
+	if(cbSqlStr==SQL_NTS)cbSqlStr=sqlwlen(szSqlStr);
+	{
+		size_t l=cbSqlStr*4;
+		SQLCHAR *tmp=calloc(l+1,1);
+		SQLRETURN ret;
+		l = unicode2ascii(((struct _hstmt *)hstmt)->hdbc, szSqlStr, cbSqlStr, tmp, l);
+		ret = SQLPrepare(hstmt, tmp, l);
+		free(tmp);
+		return ret;
+	}
+}
+
 SQLRETURN SQL_API SQLColumnsW(
     SQLHSTMT           hstmt,
     SQLWCHAR           *szCatalogName,

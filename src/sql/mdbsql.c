@@ -419,6 +419,96 @@ mdbsql_const_date(MdbSQL *sql, const char *text)
 	return mdbsql_const_new(MDB_SQL_CONST_DATE, NULL, date);
 }
 
+/* The value of the next ? parameter of the statement being parsed */
+MdbSQLConst *
+mdbsql_const_param(MdbSQL *sql)
+{
+	MdbSQLConst *c = NULL;
+	unsigned int n = ++sql->num_params;
+
+	if (sql->params && n <= sql->params->len)
+		c = g_ptr_array_index(sql->params, n - 1);
+	if (!c) {
+		mdb_sql_error(sql, "No value given for parameter %u", n);
+		return NULL;
+	}
+	return mdbsql_const_new(c->type, c->text, c->d);
+}
+
+void
+mdb_sql_clear_params(MdbSQL *sql)
+{
+	unsigned int i;
+
+	if (!sql->params)
+		return;
+	for (i=0; i<sql->params->len; i++) {
+		mdbsql_const_free(g_ptr_array_index(sql->params, i));
+		g_ptr_array_index(sql->params, i) = NULL;
+	}
+}
+
+static int
+mdb_sql_set_param(MdbSQL *sql, int n, MdbSQLConst *c)
+{
+	if (n < 1) {
+		mdbsql_const_free(c);
+		return -1;
+	}
+	if (!sql->params)
+		sql->params = g_ptr_array_new();
+	while (sql->params->len < (unsigned int)n)
+		g_ptr_array_add(sql->params, NULL);
+	mdbsql_const_free(g_ptr_array_index(sql->params, n - 1));
+	g_ptr_array_index(sql->params, n - 1) = c;
+	return 0;
+}
+
+int
+mdb_sql_set_param_null(MdbSQL *sql, int n)
+{
+	return mdb_sql_set_param(sql, n, mdbsql_const_new(MDB_SQL_CONST_NULL, NULL, 0));
+}
+
+int
+mdb_sql_set_param_string(MdbSQL *sql, int n, const char *value)
+{
+	return mdb_sql_set_param(sql, n, mdbsql_const_new(MDB_SQL_CONST_STRING, value, 0));
+}
+
+int
+mdb_sql_set_param_int(MdbSQL *sql, int n, long long value)
+{
+	char buf[32];
+	snprintf(buf, sizeof(buf), "%lld", value);
+	return mdb_sql_set_param(sql, n, mdbsql_const_new(MDB_SQL_CONST_NUMBER, buf, 0));
+}
+
+int
+mdb_sql_set_param_double(MdbSQL *sql, int n, double value)
+{
+	char buf[64], *p;
+	char decimal_point = localeconv()->decimal_point[0];
+
+	if (value != value || value - value != 0) /* NaN or infinite */
+		return -1;
+	snprintf(buf, sizeof(buf), "%.17g", value);
+	if (decimal_point != '.' && (p = strchr(buf, decimal_point)))
+		*p = '.';
+	return mdb_sql_set_param(sql, n, mdbsql_const_new(MDB_SQL_CONST_NUMBER, buf, 0));
+}
+
+int
+mdb_sql_set_param_date(MdbSQL *sql, int n, struct tm *value)
+{
+	double date;
+
+	if (value->tm_mon < 0 || value->tm_mon > 11)
+		return -1;
+	mdb_tm_to_date(value, &date);
+	return mdb_sql_set_param(sql, n, mdbsql_const_new(MDB_SQL_CONST_DATE, NULL, date));
+}
+
 void
 mdbsql_const_free(MdbSQLConst *c)
 {
@@ -781,6 +871,9 @@ void mdb_sql_dump(MdbSQL *sql)
 void mdb_sql_exit(MdbSQL *sql)
 {
 	mdb_sql_free(sql);
+	mdb_sql_clear_params(sql);
+	if (sql->params)
+		g_ptr_array_free(sql->params, TRUE);
 	if (sql->mdb)
 		mdb_close(sql->mdb);
 	

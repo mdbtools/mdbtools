@@ -37,6 +37,8 @@ static int _odbc_fix_literals(struct _hstmt *stmt);
 static int _odbc_get_string_size(int size, SQLCHAR *str);
 
 static void unbind_columns (struct _hstmt*);
+static void unbind_params (struct _hstmt*);
+static int _odbc_count_params(const char *query);
 
 #define FILL_FIELD(f,v,s) mdb_fill_temp_field(f,v,s,0,0,0,0)
 
@@ -220,7 +222,27 @@ SQLRETURN SQL_API SQLDescribeParam(
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
 {
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _sql_param_info *param = NULL;
+
 	TRACE("SQLDescribeParam");
+	if (ipar < 1 || ipar > _odbc_count_params(stmt->query)) {
+		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
+		LogStatementError(stmt, "Invalid parameter number %d", ipar);
+		return SQL_ERROR;
+	}
+	/* The types of parameters aren't known before the statement runs:
+	 * report the type the parameter was bound with, if any */
+	if (stmt->params && ipar <= stmt->params->len)
+		param = g_ptr_array_index(stmt->params, ipar - 1);
+	if (pfSqlType)
+		*pfSqlType = param ? param->sql_type : SQL_VARCHAR;
+	if (pcbParamDef)
+		*pcbParamDef = param ? param->column_size : 255;
+	if (pibScale)
+		*pibScale = 0;
+	if (pfNullable)
+		*pfNullable = SQL_NULLABLE;
 	return SQL_SUCCESS;
 }
 
@@ -311,7 +333,11 @@ SQLRETURN SQL_API SQLNumParams(
     SQLHSTMT           hstmt,
     SQLSMALLINT       *pcpar)
 {
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+
 	TRACE("SQLNumParams");
+	if (pcpar)
+		*pcpar = _odbc_count_params(stmt->query);
 	return SQL_SUCCESS;
 }
 
@@ -512,10 +538,51 @@ SQLRETURN SQL_API SQLBindParameter(
     SQLLEN             cbValueMax,
     SQLLEN            *pcbValue)
 {
-	/*struct _hstmt *stmt;*/
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	struct _sql_param_info *param;
 
 	TRACE("SQLBindParameter");
-	/*stmt = (struct _hstmt *) hstmt;*/
+	if (ipar < 1) {
+		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
+		LogStatementError(stmt, "Invalid parameter number %d", ipar);
+		return SQL_ERROR;
+	}
+	if (fParamType != SQL_PARAM_INPUT && fParamType != SQL_PARAM_INPUT_OUTPUT) {
+		strcpy(stmt->sqlState, "HYC00"); // Optional feature not implemented
+		LogStatementError(stmt, "Only input parameters are supported");
+		return SQL_ERROR;
+	}
+	if (fCType == SQL_C_DEFAULT) {
+		switch (fSqlType) {
+			case SQL_INTEGER: fCType = SQL_C_SLONG; break;
+			case SQL_SMALLINT: fCType = SQL_C_SSHORT; break;
+			case SQL_TINYINT: fCType = SQL_C_STINYINT; break;
+			case SQL_BIGINT: fCType = SQL_C_SBIGINT; break;
+			case SQL_BIT: fCType = SQL_C_BIT; break;
+			case SQL_REAL: fCType = SQL_C_FLOAT; break;
+			case SQL_FLOAT: case SQL_DOUBLE: fCType = SQL_C_DOUBLE; break;
+			case SQL_TYPE_DATE: case SQL_DATE: fCType = SQL_C_TYPE_DATE; break;
+			case SQL_TYPE_TIME: case SQL_TIME: fCType = SQL_C_TYPE_TIME; break;
+			case SQL_TYPE_TIMESTAMP: case SQL_TIMESTAMP: fCType = SQL_C_TYPE_TIMESTAMP; break;
+			case SQL_WCHAR: case SQL_WVARCHAR: case SQL_WLONGVARCHAR: fCType = SQL_C_WCHAR; break;
+			default: fCType = SQL_C_CHAR; break;
+		}
+	}
+	if (!stmt->params)
+		stmt->params = g_ptr_array_new();
+	while (stmt->params->len < ipar)
+		g_ptr_array_add(stmt->params, NULL);
+	param = g_ptr_array_index(stmt->params, ipar - 1);
+	if (!param) {
+		param = g_malloc0(sizeof(struct _sql_param_info));
+		g_ptr_array_index(stmt->params, ipar - 1) = param;
+	}
+	param->c_type = fCType;
+	param->sql_type = fSqlType;
+	param->column_size = cbColDef;
+	param->value = rgbValue;
+	param->buffer_length = cbValueMax;
+	param->len_ind = pcbValue;
 	return SQL_SUCCESS;
 }
 
@@ -933,6 +1000,218 @@ SQLRETURN SQL_API SQLError(
 	return result;
 }
 
+/* Convert a UTF-16 string to UTF-8; unpaired surrogates become U+FFFD */
+static char *
+_odbc_wchar_to_utf8(const SQLWCHAR *w, size_t count)
+{
+	char *s = g_malloc(count * 3 + 1), *d = s;
+	size_t i;
+
+	for (i=0; i<count; i++) {
+		unsigned long c = w[i];
+		if (c >= 0xD800 && c <= 0xDBFF && i+1 < count && w[i+1] >= 0xDC00 && w[i+1] <= 0xDFFF) {
+			c = 0x10000 + ((c - 0xD800) << 10) + (w[++i] - 0xDC00);
+		} else if (c >= 0xD800 && c <= 0xDFFF) {
+			c = 0xFFFD;
+		}
+		if (c < 0x80) {
+			*d++ = c;
+		} else if (c < 0x800) {
+			*d++ = 0xC0 | (c >> 6);
+			*d++ = 0x80 | (c & 0x3F);
+		} else if (c < 0x10000) {
+			*d++ = 0xE0 | (c >> 12);
+			*d++ = 0x80 | ((c >> 6) & 0x3F);
+			*d++ = 0x80 | (c & 0x3F);
+		} else {
+			*d++ = 0xF0 | (c >> 18);
+			*d++ = 0x80 | ((c >> 12) & 0x3F);
+			*d++ = 0x80 | ((c >> 6) & 0x3F);
+			*d++ = 0x80 | (c & 0x3F);
+		}
+	}
+	*d = '\0';
+	return s;
+}
+
+/* Count the ? parameter markers of a statement, as the SQL lexer does:
+ * question marks in 'strings', "names" and [names] don't count */
+static int
+_odbc_count_params(const char *query)
+{
+	int n = 0;
+	char close = '\0';
+
+	for (; *query; query++) {
+		if (close) {
+			if (*query == close)
+				close = '\0';
+		} else if (*query == '\'' || *query == '"') {
+			close = *query;
+		} else if (*query == '[') {
+			close = ']';
+		} else if (*query == '?') {
+			n++;
+		}
+	}
+	return n;
+}
+
+static SQLRETURN
+_odbc_param_error(struct _hstmt *stmt, const char *state, int n, const char *msg)
+{
+	strcpy(stmt->sqlState, state);
+	LogStatementError(stmt, "Parameter %d: %s", n, msg);
+	return SQL_ERROR;
+}
+
+/* Pass the value bound to parameter n to the SQL engine */
+static SQLRETURN
+_odbc_set_param(struct _hstmt *stmt, int n, struct _sql_param_info *param)
+{
+	MdbSQL *sql = stmt->sql;
+	SQLLEN ind = param->len_ind ? *param->len_ind : SQL_NTS;
+	struct tm tm = { 0 };
+	char *str;
+	int rc;
+
+	if (ind == SQL_NULL_DATA)
+		return mdb_sql_set_param_null(sql, n) ? SQL_ERROR : SQL_SUCCESS;
+	if (ind == SQL_DATA_AT_EXEC || ind <= SQL_LEN_DATA_AT_EXEC_OFFSET)
+		return _odbc_param_error(stmt, "HYC00", n, "data at execution is not supported");
+	if (!param->value)
+		return _odbc_param_error(stmt, "HY009", n, "no value buffer");
+
+	switch (param->c_type) {
+	case SQL_C_CHAR:
+		if (ind == SQL_NTS)
+			ind = strlen(param->value);
+		if (ind < 0)
+			return _odbc_param_error(stmt, "HY090", n, "invalid length");
+		str = g_strndup(param->value, ind);
+		rc = mdb_sql_set_param_string(sql, n, str);
+		g_free(str);
+		break;
+	case SQL_C_WCHAR:
+		if (ind == SQL_NTS) {
+			const SQLWCHAR *w = param->value;
+			for (ind = 0; w[ind]; ind++)
+				;
+		} else if (ind < 0) {
+			return _odbc_param_error(stmt, "HY090", n, "invalid length");
+		} else {
+			ind /= sizeof(SQLWCHAR);
+		}
+		str = _odbc_wchar_to_utf8(param->value, ind);
+		rc = mdb_sql_set_param_string(sql, n, str);
+		g_free(str);
+		break;
+	case SQL_C_LONG: case SQL_C_SLONG:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLINTEGER *)param->value);
+		break;
+	case SQL_C_ULONG:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLUINTEGER *)param->value);
+		break;
+	case SQL_C_SHORT: case SQL_C_SSHORT:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLSMALLINT *)param->value);
+		break;
+	case SQL_C_USHORT:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLUSMALLINT *)param->value);
+		break;
+	case SQL_C_TINYINT: case SQL_C_STINYINT:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLSCHAR *)param->value);
+		break;
+	case SQL_C_UTINYINT:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLCHAR *)param->value);
+		break;
+	case SQL_C_BIT:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLCHAR *)param->value != 0);
+		break;
+	case SQL_C_SBIGINT:
+		rc = mdb_sql_set_param_int(sql, n, *(SQLBIGINT *)param->value);
+		break;
+	case SQL_C_UBIGINT:
+		if (*(SQLUBIGINT *)param->value > LLONG_MAX)
+			rc = mdb_sql_set_param_double(sql, n, *(SQLUBIGINT *)param->value);
+		else
+			rc = mdb_sql_set_param_int(sql, n, *(SQLUBIGINT *)param->value);
+		break;
+	case SQL_C_DOUBLE:
+		rc = mdb_sql_set_param_double(sql, n, *(SQLDOUBLE *)param->value);
+		break;
+	case SQL_C_FLOAT:
+		rc = mdb_sql_set_param_double(sql, n, *(SQLREAL *)param->value);
+		break;
+	case SQL_C_DATE: case SQL_C_TYPE_DATE:
+	{
+		DATE_STRUCT *d = param->value;
+		tm.tm_year = d->year - 1900;
+		tm.tm_mon = d->month - 1;
+		tm.tm_mday = d->day;
+		goto set_date;
+	}
+	case SQL_C_TIME: case SQL_C_TYPE_TIME:
+	{
+		TIME_STRUCT *t = param->value;
+		/* a time alone is a time on 12/30/1899, day 0 */
+		tm.tm_year = 1899 - 1900;
+		tm.tm_mon = 11;
+		tm.tm_mday = 30;
+		tm.tm_hour = t->hour;
+		tm.tm_min = t->minute;
+		tm.tm_sec = t->second;
+		goto set_date;
+	}
+	case SQL_C_TIMESTAMP: case SQL_C_TYPE_TIMESTAMP:
+	{
+		TIMESTAMP_STRUCT *ts = param->value;
+		tm.tm_year = ts->year - 1900;
+		tm.tm_mon = ts->month - 1;
+		tm.tm_mday = ts->day;
+		tm.tm_hour = ts->hour;
+		tm.tm_min = ts->minute;
+		tm.tm_sec = ts->second;
+		goto set_date;
+	}
+	set_date:
+		if (tm.tm_year < 1 - 1900 || tm.tm_year > 9999 - 1900 || tm.tm_mon < 0 || tm.tm_mon > 11 ||
+				tm.tm_mday < 1 || tm.tm_mday > 31 || tm.tm_hour < 0 || tm.tm_hour > 23 ||
+				tm.tm_min < 0 || tm.tm_min > 59 || tm.tm_sec < 0 || tm.tm_sec > 61)
+			return _odbc_param_error(stmt, "22008", n, "invalid date or time");
+		rc = mdb_sql_set_param_date(sql, n, &tm);
+		break;
+	default:
+		return _odbc_param_error(stmt, "HYC00", n, "C type not supported");
+	}
+	if (rc)
+		return _odbc_param_error(stmt, "22018", n, "invalid value");
+	return SQL_SUCCESS;
+}
+
+/* Pass the values of the parameters of the statement to the SQL engine */
+static SQLRETURN
+_odbc_set_params(struct _hstmt *stmt)
+{
+	int i, n = _odbc_count_params(stmt->query);
+	struct _sql_param_info *param;
+	SQLRETURN ret;
+
+	mdb_sql_clear_params(stmt->sql);
+	for (i=1; i<=n; i++) {
+		param = NULL;
+		if (stmt->params && (unsigned int)i <= stmt->params->len)
+			param = g_ptr_array_index(stmt->params, i - 1);
+		if (!param) {
+			strcpy(stmt->sqlState, "07002"); // COUNT field incorrect
+			LogStatementError(stmt, "No value bound for parameter %d", i);
+			return SQL_ERROR;
+		}
+		if ((ret = _odbc_set_param(stmt, i, param)) != SQL_SUCCESS)
+			return ret;
+	}
+	return SQL_SUCCESS;
+}
+
 SQLRETURN SQL_API SQLExecute(SQLHSTMT hstmt)
 {
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
@@ -943,10 +1222,17 @@ SQLRETURN SQL_API SQLExecute(SQLHSTMT hstmt)
 	_odbc_fix_literals(stmt);
 
 	mdb_sql_reset(stmt->sql);
+	stmt->rows_affected = 0;
+	stmt->icol = 0;
+	stmt->pos = 0;
+
+	if (_odbc_set_params(stmt) != SQL_SUCCESS)
+		return SQL_ERROR;
 
 	mdb_sql_run_query(stmt->sql, stmt->query);
 	if (mdb_sql_has_error(stmt->sql)) {
-		LogStatementError(stmt, "Couldn't parse SQL\n");
+		strcpy(stmt->sqlState, "42000"); // Syntax error or access violation
+		LogStatementError(stmt, "Couldn't parse SQL: %s", mdb_sql_last_error(stmt->sql));
 		mdb_sql_reset(stmt->sql);
 		return SQL_ERROR;
 	} else {
@@ -961,6 +1247,19 @@ SQLRETURN SQL_API SQLExecDirect(
 {
 	SQLPrepare(hstmt, szSqlStr, cbSqlStr);
 	return SQLExecute(hstmt);
+}
+
+static void
+unbind_params(struct _hstmt *stmt)
+{
+	unsigned int i;
+
+	if (!stmt->params)
+		return;
+	for (i=0; i<stmt->params->len; i++)
+		g_free(g_ptr_array_index(stmt->params, i));
+	g_ptr_array_free(stmt->params, TRUE);
+	stmt->params = NULL;
 }
 
 static void
@@ -1080,13 +1379,14 @@ SQLRETURN SQL_API SQLFreeStmt(
 			return SQL_INVALID_HANDLE;
 		mdb_sql_exit(stmt->sql);
 		unbind_columns(stmt);
+		unbind_params(stmt);
 		g_free(stmt);
 	} else if (fOption==SQL_CLOSE) {
 		stmt->rows_affected = 0;
 	} else if (fOption==SQL_UNBIND) {
 		unbind_columns(stmt);
 	} else if (fOption==SQL_RESET_PARAMS) {
-		/* Bound parameters not currently implemented */
+		unbind_params(stmt);
 	} else {
 	}
 	return SQL_SUCCESS;
@@ -1372,7 +1672,8 @@ SQLRETURN SQL_API SQLSetParam(            /*      Use SQLBindParameter */
     SQLLEN            *pcbValue)
 {
 	TRACE("SQLSetParam");
-	return SQL_SUCCESS;
+	return SQLBindParameter(hstmt, ipar, SQL_PARAM_INPUT_OUTPUT, fCType, fSqlType,
+			cbParamDef, ibScale, rgbValue, SQL_SETPARAM_VALUE_MAX, pcbValue);
 }
 
 SQLRETURN SQL_API SQLColumns(
@@ -1910,6 +2211,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			//_set_func_exists(pfExists,SQL_API_SQLCOPYDESC);
 			_set_func_exists(pfExists,SQL_API_SQLDATASOURCES);
 			_set_func_exists(pfExists,SQL_API_SQLDESCRIBECOL);
+			_set_func_exists(pfExists,SQL_API_SQLDESCRIBEPARAM);
 			_set_func_exists(pfExists,SQL_API_SQLDISCONNECT);
 			//_set_func_exists(pfExists,SQL_API_SQLENDTRAN);
 			_set_func_exists(pfExists,SQL_API_SQLERROR);
@@ -1935,6 +2237,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			_set_func_exists(pfExists,SQL_API_SQLGETSTMTATTR);
 			_set_func_exists(pfExists,SQL_API_SQLGETSTMTOPTION);
 			_set_func_exists(pfExists,SQL_API_SQLGETTYPEINFO);
+			_set_func_exists(pfExists,SQL_API_SQLNUMPARAMS);
 			_set_func_exists(pfExists,SQL_API_SQLNUMRESULTCOLS);
 			_set_func_exists(pfExists,SQL_API_SQLPARAMDATA);
 			_set_func_exists(pfExists,SQL_API_SQLPREPARE);
@@ -1963,12 +2266,14 @@ SQLRETURN SQL_API SQLGetFunctions(
 			pfExists[SQL_API_SQLALLOCENV] = SQL_TRUE;
 			pfExists[SQL_API_SQLALLOCSTMT] = SQL_TRUE;
 			pfExists[SQL_API_SQLBINDCOL] = SQL_TRUE;
+			pfExists[SQL_API_SQLBINDPARAMETER] = SQL_TRUE;
 			pfExists[SQL_API_SQLCANCEL] = SQL_TRUE;
 			pfExists[SQL_API_SQLCOLATTRIBUTE] = SQL_TRUE;
 			pfExists[SQL_API_SQLCOLUMNS] = SQL_TRUE;
 			pfExists[SQL_API_SQLCONNECT] = SQL_TRUE;
 			pfExists[SQL_API_SQLDATASOURCES] = SQL_TRUE;
 			pfExists[SQL_API_SQLDESCRIBECOL] = SQL_TRUE;
+			pfExists[SQL_API_SQLDESCRIBEPARAM] = SQL_TRUE;
 			pfExists[SQL_API_SQLDISCONNECT] = SQL_TRUE;
 			pfExists[SQL_API_SQLERROR] = SQL_TRUE;
 			pfExists[SQL_API_SQLEXECDIRECT] = SQL_TRUE;
@@ -1984,6 +2289,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			pfExists[SQL_API_SQLGETINFO] = SQL_TRUE;
 			pfExists[SQL_API_SQLGETSTMTOPTION] = SQL_TRUE;
 			pfExists[SQL_API_SQLGETTYPEINFO] = SQL_TRUE;
+			pfExists[SQL_API_SQLNUMPARAMS] = SQL_TRUE;
 			pfExists[SQL_API_SQLNUMRESULTCOLS] = SQL_TRUE;
 			pfExists[SQL_API_SQLPARAMDATA] = SQL_TRUE;
 			pfExists[SQL_API_SQLPREPARE] = SQL_TRUE;
@@ -2005,12 +2311,14 @@ SQLRETURN SQL_API SQLGetFunctions(
 		case SQL_API_SQLALLOCENV:
 		case SQL_API_SQLALLOCSTMT:
 		case SQL_API_SQLBINDCOL:
+		case SQL_API_SQLBINDPARAMETER:
 		case SQL_API_SQLCANCEL:
 		case SQL_API_SQLCOLATTRIBUTE:
 		case SQL_API_SQLCOLUMNS:
 		case SQL_API_SQLCONNECT:
 		case SQL_API_SQLDATASOURCES:
 		case SQL_API_SQLDESCRIBECOL:
+		case SQL_API_SQLDESCRIBEPARAM:
 		case SQL_API_SQLDISCONNECT:
 		case SQL_API_SQLERROR:
 		case SQL_API_SQLEXECDIRECT:
@@ -2028,6 +2336,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 		case SQL_API_SQLGETSTMTATTR:
 		case SQL_API_SQLGETSTMTOPTION:
 		case SQL_API_SQLGETTYPEINFO:
+		case SQL_API_SQLNUMPARAMS:
 		case SQL_API_SQLNUMRESULTCOLS:
 		case SQL_API_SQLPARAMDATA:
 		case SQL_API_SQLPREPARE:

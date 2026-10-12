@@ -271,6 +271,10 @@ constant:
 	}
 	| NUMBER { $$ = mdbsql_const_new(MDB_SQL_CONST_NUMBER, $1, 0); free($1); }
 	| STRING { $$ = mdbsql_const_from_literal($1); free($1); }
+	| '?' {
+		$$ = mdbsql_const_param(parser_ctx->mdb);
+		if (!$$) YYERROR;
+	}
 	| DATE_LITERAL {
 		$$ = mdbsql_const_date(parser_ctx->mdb, $1);
 		free($1);
@@ -325,6 +329,7 @@ int parse_sql( MdbSQL * mdb, const gchar *str)
 {
   sql_context ctx;
   ctx.mdb = mdb;
+  mdb->num_params = 0;
 
   yylex_init(&ctx.flex_scanner);
   yy_scan_string(str, ctx.flex_scanner);

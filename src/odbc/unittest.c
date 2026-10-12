@@ -333,6 +333,190 @@ static int test_aliases(HSTMT hstmt)
 	return 0;
 }
 
+/* Execute the prepared statement, return the number of rows, or -1 */
+static int execute_count(HSTMT hstmt, const char *what)
+{
+	int n = 0;
+
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	if (SQLExecute(hstmt) != SQL_SUCCESS) {
+		printStatementError(hstmt, (char *)what);
+		return -1;
+	}
+	while (SQLFetch(hstmt) == SQL_SUCCESS)
+		n++;
+	return n;
+}
+
+static int check_count(HSTMT hstmt, const char *what, int expected)
+{
+	int n = execute_count(hstmt, what);
+	printf("  %s: %d rows\n", what, n);
+	if (n != expected) {
+		fprintf(stderr, "%s: %d rows, expected %d\n", what, n, expected);
+		return 1;
+	}
+	return 0;
+}
+
+/* Number of rows returned by a statement without parameters */
+static int literal_count(HSTMT hstmt, const char *query)
+{
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	if (SQLPrepare(hstmt, (SQLCHAR *)query, SQL_NTS) != SQL_SUCCESS)
+		return -1;
+	return execute_count(hstmt, query);
+}
+
+/* Query parameters (issue #428) */
+static int test_params(HDBC hdbc, HSTMT hstmt)
+{
+	SQLUSMALLINT exists = SQL_FALSE;
+	SQLSMALLINT nparams = -1, type, scale, nullable;
+	SQLULEN size;
+	SQLINTEGER id = 2;
+	SQLBIGINT big = 10248;
+	SQLDOUBLE freight = 500.5;
+	SQLCHAR name[64], text[32];
+	SQLWCHAR wtext[32];
+	SQLLEN ind, len, name_ind;
+	DATE_STRUCT date = { 1996, 5, 2 };
+	TIMESTAMP_STRUCT ts1 = { 1996, 1, 1, 0, 0, 0, 0 }, ts2 = { 1996, 1, 31, 23, 59, 59, 0 };
+	SQLRETURN ret;
+	const char *s;
+	int i, expected;
+
+	printf("\nTesting query parameters (issue #428)...\n");
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	SQLFreeStmt(hstmt, SQL_UNBIND);
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+
+	SQLGetFunctions(hdbc, SQL_API_SQLBINDPARAMETER, &exists);
+	if (exists != SQL_TRUE) {
+		fprintf(stderr, "SQLGetFunctions does not report SQLBindParameter\n");
+		return 1;
+	}
+	SQLGetFunctions(hdbc, SQL_API_SQLNUMPARAMS, &exists);
+	if (exists != SQL_TRUE) {
+		fprintf(stderr, "SQLGetFunctions does not report SQLNumParams\n");
+		return 1;
+	}
+
+	/* Question marks in strings and names are not parameters */
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT * FROM Shippers WHERE CompanyName = '?' "
+			"OR [a?b] IN (?, ?) OR \"c?\" = ?", SQL_NTS);
+	SQLNumParams(hstmt, &nparams);
+	if (nparams != 3) {
+		fprintf(stderr, "SQLNumParams returned %d, expected 3\n", nparams);
+		return 1;
+	}
+	if (expect_state(hstmt, SQLDescribeParam(hstmt, 4, &type, &size, &scale, &nullable),
+				SQL_ERROR, "07009", "SQLDescribeParam(4)"))
+		return 1;
+
+	/* Integer, re-executed with another value */
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT CompanyName FROM Shippers WHERE ShipperID = ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
+	if (SQLDescribeParam(hstmt, 1, &type, &size, &scale, &nullable) != SQL_SUCCESS || type != SQL_INTEGER) {
+		fprintf(stderr, "SQLDescribeParam(1) returned type %d\n", type);
+		return 1;
+	}
+	SQLBindCol(hstmt, 1, SQL_C_CHAR, name, sizeof(name), &name_ind);
+	for (i = 0; i < 2; i++) {
+		const char *names[] = { "United Package", "Federal Shipping" };
+		SQLFreeStmt(hstmt, SQL_CLOSE);
+		if (SQLExecute(hstmt) != SQL_SUCCESS || SQLFetch(hstmt) != SQL_SUCCESS) {
+			printStatementError(hstmt, "problem with the integer parameter");
+			return 1;
+		}
+		printf("  ShipperID = %d: %s\n", (int)id, name);
+		if (strcmp((char *)name, names[i]) != 0 || SQLFetch(hstmt) != SQL_NO_DATA_FOUND) {
+			fprintf(stderr, "Unexpected result for ShipperID = %d\n", (int)id);
+			return 1;
+		}
+		id = 3;
+	}
+	SQLFreeStmt(hstmt, SQL_UNBIND);
+
+	/* Strings: the quote must not need escaping; a length instead of
+	 * SQL_NTS; a wide string */
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT CustomerID FROM Customers WHERE CompanyName = ?", SQL_NTS);
+	strcpy((char *)text, "Bon app'");
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 40, 0, text, sizeof(text), NULL);
+	if (check_count(hstmt, "CompanyName = \"Bon app'\" (null terminated)", 1))
+		return 1;
+	strcpy((char *)text, "Bon app'XYZ");
+	len = 8;
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 40, 0, text, sizeof(text), &len);
+	if (check_count(hstmt, "CompanyName = \"Bon app'\" (length 8)", 1))
+		return 1;
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT ShipperID FROM Shippers WHERE CompanyName LIKE ?", SQL_NTS);
+	for (s = "%Express", i = 0; ; i++) {
+		wtext[i] = s[i];
+		if (!s[i])
+			break;
+	}
+	len = SQL_NTS;
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_WCHAR, SQL_WVARCHAR, 40, 0, wtext, sizeof(wtext), &len);
+	if (check_count(hstmt, "CompanyName LIKE '%Express' (SQL_C_WCHAR)", 1))
+		return 1;
+
+	/* Big integer, double, date and timestamps */
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT OrderID FROM Orders WHERE OrderID = ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, &big, 0, NULL);
+	if (check_count(hstmt, "OrderID = 10248 (SQL_C_SBIGINT)", 1))
+		return 1;
+	expected = literal_count(hstmt, "SELECT OrderID FROM Orders WHERE Freight > 500.5");
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT OrderID FROM Orders WHERE Freight > ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_DOUBLE, SQL_DOUBLE, 0, 0, &freight, 0, NULL);
+	if (expected <= 0 || check_count(hstmt, "Freight > 500.5 (SQL_C_DOUBLE)", expected))
+		return 1;
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT OrderID FROM Orders WHERE OrderDate = ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_TYPE_DATE, SQL_TYPE_DATE, 0, 0, &date, 0, NULL);
+	if (check_count(hstmt, "OrderDate = 1996-05-02 (SQL_C_TYPE_DATE)", 3))
+		return 1;
+	expected = literal_count(hstmt, "SELECT OrderID FROM Orders WHERE OrderDate >= #1/1/1996# AND OrderDate < #2/1/1996#");
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT OrderID FROM Orders WHERE OrderDate BETWEEN ? AND ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0, &ts1, 0, NULL);
+	SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_TYPE_TIMESTAMP, SQL_TYPE_TIMESTAMP, 0, 0, &ts2, 0, NULL);
+	if (expected <= 0 || check_count(hstmt, "OrderDate BETWEEN two timestamps", expected))
+		return 1;
+
+	/* NULL: comparisons are unknown, whichever way */
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	ind = SQL_NULL_DATA;
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT OrderID FROM Orders WHERE ShipRegion = ? OR NOT ShipRegion = ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 15, 0, text, sizeof(text), &ind);
+	SQLBindParameter(hstmt, 2, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 15, 0, text, sizeof(text), &ind);
+	if (check_count(hstmt, "ShipRegion = NULL OR NOT ShipRegion = NULL", 0))
+		return 1;
+
+	/* An unbound parameter */
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT * FROM Shippers WHERE ShipperID = ? AND CompanyName = ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &id, 0, NULL);
+	ret = SQLExecute(hstmt);
+	if (expect_state(hstmt, ret, SQL_ERROR, "07002", "SQLExecute with an unbound parameter"))
+		return 1;
+
+	/* A parameter that can't be compared with the column */
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	strcpy((char *)text, "two");
+	SQLPrepare(hstmt, (SQLCHAR *)"SELECT * FROM Shippers WHERE ShipperID = ?", SQL_NTS);
+	SQLBindParameter(hstmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR, 10, 0, text, sizeof(text), NULL);
+	ret = SQLExecute(hstmt);
+	if (expect_state(hstmt, ret, SQL_ERROR, "42000", "SQLExecute with ShipperID = 'two'"))
+		return 1;
+
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
+	printf("Query parameter test passed.\n");
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 int i;
@@ -592,6 +776,9 @@ int i;
 		return 1;
 
 	if (test_aliases(hstmt))
+		return 1;
+
+	if (test_params(hdbc, hstmt))
 		return 1;
 
 	return 0;
