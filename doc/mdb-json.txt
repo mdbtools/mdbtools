@@ -2,7 +2,7 @@ NAME
   mdb-json - Export data in an MDB database table to JSON.
 
 SYNOPSIS
-  mdb-json [-D fmt] [-T fmt] [-U] database table
+  mdb-json [-D fmt] [-T fmt] [-U] [-A] database table
   mdb-json -h|--help
   mdb-json --version
 
@@ -11,10 +11,13 @@ DESCRIPTION
 
   It produces JSON output for the given table. Such output is suitable for parsing in a variety of languages.
 
+  By default each row is written as a JSON object on its own line (JSON Lines). With --array the rows are instead wrapped in a single JSON array.
+
 OPTIONS
   -D, --date-format fmt     Set the date format (see strftime(3) for details).
   -T, --time-format fmt     Set the date/time format (see strftime(3) for details).
   -U, --no-unprintable      Change unprintable characters to spaces (otherwise escaped as \\u00XX).
+  -A, --array               Output one JSON array containing all the rows instead of one object per line. An empty table produces [].
   --version                 Print the mdbtools version and exit.
 
 NOTES 
