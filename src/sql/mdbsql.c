@@ -744,6 +744,27 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 	return 0;
 }
 
+static void
+mdb_sql_count_result(MdbSQL *sql, int count)
+{
+	MdbHandle *mdb = sql->mdb;
+	MdbTableDef *ttable = mdb_create_temp_table(mdb, "#count");
+	char tmpstr[32];
+	gchar row_cnt[32];
+	unsigned char row_buffer[MDB_PGSIZE];
+	MdbField fields[1];
+	int row_size, tmpsiz;
+
+	mdb_sql_add_temp_col(sql, ttable, 0, "count", MDB_TEXT, 30, 0);
+	snprintf(tmpstr, sizeof(tmpstr), "%d", count);
+	tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, row_cnt, sizeof(row_cnt));
+	mdb_fill_temp_field(&fields[0],row_cnt, tmpsiz, 0,0,0,0);
+	row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
+	mdb_add_row_to_pg(ttable,row_buffer, row_size);
+	ttable->num_rows++;
+	sql->cur_table = ttable;
+}
+
 void 
 mdb_sql_select(MdbSQL *sql)
 {
@@ -778,21 +799,7 @@ int found = 0;
     }
 
 	if (sql->sel_count && !sql->sarg_tree) {
-		MdbTableDef *ttable = mdb_create_temp_table(mdb, "#count");
-		char tmpstr[32];
-		gchar row_cnt[32];
-		unsigned char row_buffer[MDB_PGSIZE];
-		MdbField fields[1];
-		int row_size, tmpsiz;
-
-		mdb_sql_add_temp_col(sql, ttable, 0, "count", MDB_TEXT, 30, 0);
-		snprintf(tmpstr, sizeof(tmpstr), "%d", table->num_rows);
-		tmpsiz = mdb_ascii2unicode(mdb, tmpstr, 0, row_cnt, sizeof(row_cnt));
-		mdb_fill_temp_field(&fields[0],row_cnt, tmpsiz, 0,0,0,0);
-		row_size = mdb_pack_row(ttable, row_buffer, 1, fields);
-		mdb_add_row_to_pg(ttable,row_buffer, row_size);
-		ttable->num_rows++;
-		sql->cur_table = ttable;
+		mdb_sql_count_result(sql, table->num_rows);
 		mdb_free_tabledef(table);
 		return;
 	}
@@ -839,6 +846,20 @@ int found = 0;
 	 * XXX - this won't work when we implement joins 
 	 */
 	table->sarg_tree = sql->sarg_tree;
+
+	if (sql->sel_count) {
+		/* COUNT(*) with a WHERE clause: count the matching rows. The sarg
+		 * tree stays owned by sql and is freed by mdb_sql_reset() */
+		int count = 0;
+		mdb_index_scan_init(mdb, table);
+		while (mdb_fetch_row(table))
+			count++;
+		mdb_index_scan_free(table);
+		table->sarg_tree = NULL;
+		mdb_free_tabledef(table);
+		mdb_sql_count_result(sql, count);
+		return;
+	}
 	sql->sarg_tree = NULL;
 
 	sql->cur_table = table;
