@@ -216,6 +216,7 @@ enum {
 	MDB_BINEXPORT_RAW,
 	MDB_BINEXPORT_OCTAL,
 	MDB_BINEXPORT_HEXADECIMAL,
+	MDB_BINEXPORT_NULL, /* export binary values as NULL */
 
     /* Flags that can be OR'ed into the above when calling mdb_print_col */
 	MDB_EXPORT_ESCAPE_CONTROL_CHARS = (1 << 4)

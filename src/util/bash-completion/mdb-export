@@ -9,7 +9,7 @@ _mdb_export()
 	elif [[ "$prev" == -@(I|-insert) ]] ; then
 		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- "$cur" ) )
 	elif [[ "$prev" == -@(b|-bin) ]] ; then
-		COMPREPLY=( $( compgen -W 'strip raw octal hex' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'strip raw octal hex null' -- "$cur" ) )
 	fi
 
 	$split && return

@@ -1204,7 +1204,7 @@ mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int b
 
 	while (1) {
 		if (is_binary_type(col_type)) {
-			if (bin_mode == MDB_BINEXPORT_STRIP)
+			if (bin_mode == MDB_BINEXPORT_STRIP || bin_mode == MDB_BINEXPORT_NULL)
 				break;
 			if (!bin_len--)
 				break;

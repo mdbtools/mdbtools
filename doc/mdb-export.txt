@@ -2,7 +2,7 @@ NAME
   mdb-export - Export data in an MDB database table to CSV format.
 
 SYNOPSIS
-  mdb-export [--no-header] [--delimiter delim] [--row-delimiter delim] [[--no-quote] | [--quote char [--escape char]]] [--escape-invisible] [--date-format fmt] [--datetime-format fmt] [--bin strip|raw|octal|hex] [--boolean-words] database table
+  mdb-export [--no-header] [--delimiter delim] [--row-delimiter delim] [[--no-quote] | [--quote char [--escape char]]] [--escape-invisible] [--date-format fmt] [--datetime-format fmt] [--bin strip|raw|octal|hex|null] [--boolean-words] database table
   mdb-export --insert backend [--namespace prefix] [--batch-size int] database table
   mdb-export -h|--help
   mdb-export --version
@@ -28,7 +28,8 @@ OPTIONS
   -D, --date-format fmt         Set the date format (see strftime(3) for details.
   -T, --datetime-format fmt     Set the date/time format (see strftime(3) for details.
   -0, --null char               Use char to represent a NULL value.
-  -b, --bin strip|raw|octal|hex Binary export mode: strip binaries, export as-is, output \\ooo style octal data or output \\xx style hexadecimal data.
+  -b, --bin strip|raw|octal|hex|null
+                                Binary export mode: strip binaries, export as-is, output \\ooo style octal data, output \\xx style hexadecimal data, or export binaries as NULL (see --null; NULL with --insert).
   -B, --boolean-words           Use TRUE/FALSE in Boolean fields (default is 0/1).
   --version                     Print the mdbtools version and exit.
 

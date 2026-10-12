@@ -86,7 +86,7 @@ main(int argc, char **argv)
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
-		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex"},
+		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex|null"},
 		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1, or TRUE/FALSE with -I postgres)", NULL},
 		{"bind-size", 0, 0, G_OPTION_ARG_INT, &bind_size, "Maximum size in bytes of an exported field value; longer values are truncated with a warning (default is 200000)", "bytes"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
@@ -166,6 +166,8 @@ main(int argc, char **argv)
 			bin_mode = MDB_BINEXPORT_OCTAL;
 		else if (!strcmp(str_bin_mode, "hex"))
 			bin_mode = MDB_BINEXPORT_HEXADECIMAL;
+		else if (!strcmp(str_bin_mode, "null"))
+			bin_mode = MDB_BINEXPORT_NULL;
 		else {
 			fputs("Invalid binary mode\n", stderr);
 			exit(1);
@@ -272,7 +274,8 @@ main(int argc, char **argv)
 					fputs(delimiter, outfile);
 				col = g_ptr_array_index(table->columns, i);
 				check_truncation(col, bound_lens[i]);
-				if (col->cur_value_is_null) {
+				if (col->cur_value_is_null ||
+						(bin_mode == MDB_BINEXPORT_NULL && is_binary_type(col->col_type))) {
 					/* Don't quote NULLs */
 					if (insert_dialect)
 						fputs("NULL", outfile);
@@ -331,7 +334,8 @@ main(int argc, char **argv)
 					fputs(delimiter, outfile);
 				col = g_ptr_array_index(table->columns, i);
 				check_truncation(col, bound_lens[i]);
-				if (col->cur_value_is_null) {
+				if (col->cur_value_is_null ||
+						(bin_mode == MDB_BINEXPORT_NULL && is_binary_type(col->col_type))) {
 					/* Don't quote NULLs */
 					if (insert_dialect)
 						fputs("NULL", outfile);
