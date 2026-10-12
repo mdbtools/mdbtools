@@ -61,6 +61,7 @@ void mdb_free_catalog(MdbHandle *mdb)
 	}
 	g_ptr_array_free(mdb->catalog, TRUE);
 	mdb->catalog = NULL;
+	mdb->num_catalog = 0;
 }
 
 GPtrArray *mdb_read_catalog (MdbHandle *mdb, int objtype)

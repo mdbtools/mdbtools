@@ -150,6 +150,13 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 		return NULL;
 	}
 	if (mdb->pg_buf[0] != 0) {
+		/* Jet 3 and later files start with 00 01 00 00 "Standard Jet DB"
+		 * (or "Standard ACE DB"); the Access 1.x/2.0 files we have seen
+		 * start with 01 00 00 00 instead. */
+		if (mdb->pg_buf[0] == 0x01 && mdb->pg_buf[1] == 0 &&
+				mdb->pg_buf[2] == 0 && mdb->pg_buf[3] == 0)
+			fprintf(stderr, "File may be an Access 1.x/2.0 (Jet 1.x/2.x) database, "
+					"which is not supported; convert it with Access 97 or later\n");
 		mdb_close(mdb);
 		return NULL; 
 	}

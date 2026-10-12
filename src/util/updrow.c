@@ -40,6 +40,10 @@ int len;
 	}
 	
 	mdb = mdb_open(argv[1], MDB_WRITABLE);
+	if (!mdb) {
+		fprintf(stderr, "Unable to open database.\n");
+		exit(1);
+	}
 	tabname = argv[2];
 	sargname = argv[3];
 	updstr = g_strdup(argv[4]);
