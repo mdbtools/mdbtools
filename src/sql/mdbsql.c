@@ -17,7 +17,9 @@
  */
 
 #include <stdarg.h>
-#include "mdbsql.h"
+#include <ctype.h>
+#include <limits.h>
+#include "mdbsqlprivate.h"
 
 #ifdef HAVE_STRPTIME
 #include <time.h>
@@ -339,73 +341,186 @@ mdb_sql_dump_node(MdbSargNode *node, int level)
 	}
 }
 
+/* Parse a number written with a '.' decimal point, whatever the locale.
+ * Leading and trailing blanks are allowed. Returns 1 on success. */
+static int
+mdb_sql_parse_number(const char *s, double *d)
+{
+	char buf[64], *end;
+	const char *p;
+	size_t len;
+
+	while (isspace((unsigned char)*s))
+		s++;
+	len = strlen(s);
+	while (len && isspace((unsigned char)s[len-1]))
+		len--;
+	if (!len || len >= sizeof(buf))
+		return 0;
+	for (p = s; p < s + len; p++)
+		if (!isdigit((unsigned char)*p) && !strchr("+-.eE", *p))
+			return 0;
+	memcpy(buf, s, len);
+	buf[len] = '\0';
+	if ((end = strchr(buf, '.')))
+		*end = localeconv()->decimal_point[0];
+	*d = strtod(buf, &end);
+	return end != buf && *end == '\0';
+}
+
+MdbSQLConst *
+mdbsql_const_new(MdbSQLConstType type, const char *text, double d)
+{
+	MdbSQLConst *c = g_malloc0(sizeof(MdbSQLConst));
+	c->type = type;
+	c->text = text ? g_strdup(text) : NULL;
+	c->d = d;
+	return c;
+}
+
+/* Make a string constant from a quoted literal such as 'it''s' */
+MdbSQLConst *
+mdbsql_const_from_literal(const char *literal)
+{
+	MdbSQLConst *c = mdbsql_const_new(MDB_SQL_CONST_STRING, NULL, 0);
+	size_t len = strlen(literal);
+	char *d;
+	const char *s;
+
+	if (len >= 2 && literal[0] == '\'' && literal[len-1] == '\'') {
+		literal++;
+		len -= 2;
+	}
+	c->text = d = g_malloc(len + 1);
+	for (s = literal; s < literal + len; s++) {
+		*d++ = *s;
+		if (*s == '\'' && s + 1 < literal + len && s[1] == '\'')
+			s++;
+	}
+	*d = '\0';
+	return c;
+}
+
+void
+mdbsql_const_free(MdbSQLConst *c)
+{
+	if (!c)
+		return;
+	g_free(c->text);
+	g_free(c);
+}
+
+/* Old style constants, as passed to the public mdb_sql_* functions:
+ * quoted strings, or numbers */
+static MdbSQLConst *
+mdb_sql_const_from_string(const char *constant)
+{
+	if (constant[0] == '\'')
+		return mdbsql_const_from_literal(constant);
+	return mdbsql_const_new(MDB_SQL_CONST_NUMBER, constant, 0);
+}
+
 /* Parses date format specifier into JET date representation (double) */
-char *
-mdb_sql_strptime(MdbSQL *sql, char *data, char *format)
+MdbSQLConst *
+mdbsql_strptime(MdbSQL *sql, MdbSQLConst *data, MdbSQLConst *format)
 {
 #ifndef HAVE_STRPTIME
 	mdb_sql_error(sql, "Your system doesn't support strptime.");
-	mdb_sql_reset(sql);
 	return NULL;
 #else
-	char *p, *pszDate;
 	struct tm tm={0};
 	double date=0;
 
-	if (data[0]!='\'' || *(p=&data[strlen(data)-1])!='\'') {
+	if (data->type != MDB_SQL_CONST_STRING) {
 		mdb_sql_error(sql, "First parameter of strptime (data) must be a string.");
-		mdb_sql_reset(sql);
 		return NULL;
 	}
-	*p=0; ++data;
-	if (format[0]!='\'' || *(p=&format[strlen(format)-1])!='\'') {
+	if (format->type != MDB_SQL_CONST_STRING) {
 		mdb_sql_error(sql, "Second parameter of strptime (format) must be a string.");
-		mdb_sql_reset(sql);
 		return NULL;
 	}
-	*p=0; ++format;
-	if (!strptime(data, format, &tm)) {
-		mdb_sql_error(sql, "strptime('%s','%s') failed.", data, format);
-		mdb_sql_reset(sql);
+	if (!strptime(data->text, format->text, &tm)) {
+		mdb_sql_error(sql, "strptime('%s','%s') failed.", data->text, format->text);
 		return NULL;
 	}
 	mdb_tm_to_date(&tm, &date);
 	/* It seems that when just using a time offset without date in strptime, 
 	 * we always get 1 as decimal part, een though it should be 0 for time */
 	if (date < 2 && date > 1) date--;
-	if ((pszDate=malloc(16))) {
-		char cLocale=localeconv()->decimal_point[0], *p;
-		snprintf(pszDate, 16, "%lf", date);
-		if (cLocale!='.') for (p=pszDate; *p; p++) if (*p==cLocale) *p='.';
-	}
-	return pszDate;
+	return mdbsql_const_new(MDB_SQL_CONST_DATE, NULL, date);
 #endif
 }
 
-/* evaluate a expression involving 2 constants and add answer to the stack */
-int 
-mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
+char *
+mdb_sql_strptime(MdbSQL *sql, char *data, char *format)
 {
-	long val1, val2, value, compar;
-	unsigned char illop = 0; 
-	MdbSargNode *node;
+	MdbSQLConst *c1 = mdb_sql_const_from_string(data);
+	MdbSQLConst *c2 = mdb_sql_const_from_string(format);
+	MdbSQLConst *date = mdbsql_strptime(sql, c1, c2);
+	char *pszDate = NULL;
 
-	if (const1[0]=='\'' && const2[0]=='\'') {
-		value = strcoll(const1, const2);
+	mdbsql_const_free(c1);
+	mdbsql_const_free(c2);
+	if (!date) {
+		mdb_sql_reset(sql);
+		return NULL;
+	}
+	if ((pszDate=malloc(16))) {
+		char cLocale=localeconv()->decimal_point[0], *p;
+		snprintf(pszDate, 16, "%lf", date->d);
+		if (cLocale!='.') for (p=pszDate; *p; p++) if (*p==cLocale) *p='.';
+	}
+	mdbsql_const_free(date);
+	return pszDate;
+}
+
+/* Push a node for a comparison whose result is known: 1 (true), 0 (false)
+ * or -1 (unknown, a comparison with NULL) */
+static void
+mdb_sql_push_const_node(MdbSQL *sql, int value)
+{
+	MdbSargNode *node = mdb_sql_alloc_node();
+	node->op = MDB_EQUAL;
+	node->col = NULL;
+	node->value.i = value;
+	mdb_sql_push_node(sql, node);
+}
+
+/* evaluate a expression involving 2 constants and add answer to the stack */
+int
+mdbsql_eval_expr(MdbSQL *sql, MdbSQLConst *c1, int op, MdbSQLConst *c2)
+{
+	double val1, val2;
+	int value = 0, compar = 0;
+	unsigned char illop = 0;
+
+	if (c1->type == MDB_SQL_CONST_NULL || c2->type == MDB_SQL_CONST_NULL) {
+		mdb_sql_push_const_node(sql, -1);
+		return 0;
+	}
+	if (c1->type == MDB_SQL_CONST_STRING && c2->type == MDB_SQL_CONST_STRING) {
+		value = strcoll(c1->text, c2->text);
 		switch (op) {
 			case MDB_EQUAL: compar = (value ? 0 : 1); break;
 			case MDB_GT: compar = (value > 0); break;
 			case MDB_GTEQ: compar = (value >= 0); break;
 			case MDB_LT: compar = (value < 0); break;
 			case MDB_LTEQ: compar = (value <= 0); break;
-			case MDB_LIKE: compar = mdb_like_cmp(const1,const2); break;
-			case MDB_ILIKE: compar = mdb_ilike_cmp(const1,const2); break;
+			case MDB_LIKE: compar = mdb_like_cmp(c1->text, c2->text); break;
+			case MDB_ILIKE: compar = mdb_ilike_cmp(c1->text, c2->text); break;
 			case MDB_NEQ: compar = (value ? 1 : 0); break;
 			default: illop = 1;
 		}
-	} else if (const1[0]!='\'' && const2[0]!='\'') {
-		val1 = atol(const1);
-		val2 = atol(const2);
+	} else {
+		/* numbers and dates; a string must hold a number */
+		if (c1->type == MDB_SQL_CONST_DATE)
+			val1 = c1->d;
+		else if (!mdb_sql_parse_number(c1->text, &val1))
+			goto mismatch;
+		if (c2->type == MDB_SQL_CONST_DATE)
+			val2 = c2->d;
+		else if (!mdb_sql_parse_number(c2->text, &val2))
+			goto mismatch;
 		switch (op) {
 			case MDB_EQUAL: compar = (val1 == val2); break;
 			case MDB_GT: compar = (val1 > val2); break;
@@ -415,59 +530,82 @@ mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 			case MDB_NEQ: compar = (val1 != val2); break;
 			default: illop = 1;
 		}
-	} else {
-		mdb_sql_error(sql, "Comparison of strings and numbers not allowed.");
-		/* the column and table names are no good now */
-		mdb_sql_reset(sql);
-		return 1;
 	}
 	if (illop) {
 		mdb_sql_error(sql, "Illegal operator used for comparison of literals.");
-		/* the column and table names are no good now */
-		mdb_sql_reset(sql);
 		return 1;
 	}
-	node = mdb_sql_alloc_node();
-	node->op = MDB_EQUAL;
-	node->col = NULL;
-	node->value.i = (compar ? 1 : 0);
-	mdb_sql_push_node(sql, node);
+	mdb_sql_push_const_node(sql, compar ? 1 : 0);
 	return 0;
+
+mismatch:
+	mdb_sql_error(sql, "Comparison of strings and numbers not allowed.");
+	return 1;
 }
+
 int 
-mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
+mdb_sql_eval_expr(MdbSQL *sql, char *const1, int op, char *const2)
 {
-	char *p;
+	MdbSQLConst *c1 = mdb_sql_const_from_string(const1);
+	MdbSQLConst *c2 = mdb_sql_const_from_string(const2);
+	int rc = mdbsql_eval_expr(sql, c1, op, c2);
+
+	mdbsql_const_free(c1);
+	mdbsql_const_free(c2);
+	if (rc) {
+		/* the column and table names are no good now */
+		mdb_sql_reset(sql);
+	}
+	return rc;
+}
+
+/* Add a comparison of a column with a constant (NULL for IS [NOT] NULL)
+ * to the sarg stack. The constant is converted to the type of the column
+ * later, by mdb_sql_resolve_sargcol() */
+int
+mdbsql_add_sarg(MdbSQL *sql, const char *col_name, int op, MdbSQLConst *c)
+{
 	MdbSargNode *node;
 
+	if (c && c->text && strlen(c->text) >= sizeof(node->value.s)) {
+		mdb_sql_error(sql, "Constant '%.20s...' is too long", c->text);
+		return 1;
+	}
 	node = mdb_sql_alloc_node();
 	node->op = op;
 	/* stash the column name until we finish with the grammar */
 	node->parent = (void *) g_strdup(col_name);
 
-	if (!constant) {
-		/* XXX - do we need to check operator? */
-		mdb_sql_push_node(sql, node);
-		return 0;
+	if (c) {
+		switch (c->type) {
+			case MDB_SQL_CONST_NULL:
+				node->val_type = MDB_SQL_VAL_NULL;
+				break;
+			case MDB_SQL_CONST_STRING:
+				node->val_type = MDB_TEXT;
+				snprintf(node->value.s, sizeof(node->value.s), "%s", c->text);
+				break;
+			case MDB_SQL_CONST_NUMBER:
+				node->val_type = MDB_SQL_VAL_NUMBER;
+				snprintf(node->value.s, sizeof(node->value.s), "%s", c->text);
+				break;
+			case MDB_SQL_CONST_DATE:
+				node->val_type = MDB_SQL_VAL_DATE;
+				node->value.d = c->d;
+				break;
+		}
 	}
-	/* FIX ME -- we should probably just be storing the ascii value until the 
-	** column definition can be checked for validity
-	*/
-	if (constant[0]=='\'') {
-		snprintf(node->value.s, sizeof(node->value.s), "%.*s", (int)strlen(constant) - 2, &constant[1]);
-		node->val_type = MDB_TEXT;
-	} else if ((p=strchr(constant, '.'))) {
-		*p=localeconv()->decimal_point[0];
-		node->value.d = strtod(constant, NULL);
-		node->val_type = MDB_DOUBLE;
-	} else {
-		node->value.i = atoi(constant);
-		node->val_type = MDB_INT;
-	}
-
 	mdb_sql_push_node(sql, node);
-
 	return 0;
+}
+
+int 
+mdb_sql_add_sarg(MdbSQL *sql, char *col_name, int op, char *constant)
+{
+	MdbSQLConst *c = constant ? mdb_sql_const_from_string(constant) : NULL;
+	int rc = mdbsql_add_sarg(sql, col_name, op, c);
+	mdbsql_const_free(c);
+	return rc;
 }
 void
 mdb_sql_all_columns(MdbSQL *sql)
@@ -758,6 +896,7 @@ mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 {
 	MdbSQLSargColContext *ctx = data;
 	MdbColumn *col;
+	double d;
 
 	if (ctx->failed) return 1;
 	if (!mdb_is_relational_op(node->op)) return 0;
@@ -766,63 +905,127 @@ mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 	if (!(col = mdb_sql_find_colbyname(ctx->table, (char *)node->parent))) {
 		if (ctx->sql)
 			mdb_sql_error(ctx->sql, "Column %s not found", (char *)node->parent);
-		ctx->failed = 1;
-		return 1;
-	} else {
-		node->col = col;
-		if (node->op == MDB_ISNULL || node->op == MDB_NOTNULL)
-			return 0;
-		switch (col->col_type) {
-			case MDB_BOOL: case MDB_BYTE: case MDB_INT: case MDB_LONGINT:
-			case MDB_COMPLEX: case MDB_MONEY: case MDB_NUMERIC:
-			case MDB_FLOAT: case MDB_DOUBLE: case MDB_DATETIME:
-				if (node->op == MDB_LIKE || node->op == MDB_ILIKE) {
-					if (ctx->sql)
-						mdb_sql_error(ctx->sql, "Can't use LIKE with column %s of type %s",
-								col->name, mdb_get_colbacktype_string(col));
-					ctx->failed = 1;
-					return 1;
-				}
-				break;
-			case MDB_TEXT: case MDB_MEMO: case MDB_REPID:
-				break;
-			default:
+		goto fail;
+	}
+	node->col = col;
+	if (node->op == MDB_ISNULL || node->op == MDB_NOTNULL)
+		return 0;
+	switch (col->col_type) {
+		case MDB_BOOL: case MDB_BYTE: case MDB_INT: case MDB_LONGINT:
+		case MDB_COMPLEX: case MDB_MONEY: case MDB_NUMERIC:
+		case MDB_FLOAT: case MDB_DOUBLE: case MDB_DATETIME:
+			if (node->op == MDB_LIKE || node->op == MDB_ILIKE) {
 				if (ctx->sql)
-					mdb_sql_error(ctx->sql, "Can't compare column %s of type %s",
+					mdb_sql_error(ctx->sql, "Can't use LIKE with column %s of type %s",
 							col->name, mdb_get_colbacktype_string(col));
-				ctx->failed = 1;
-				return 1;
+				goto fail;
+			}
+			break;
+		case MDB_TEXT: case MDB_MEMO: case MDB_REPID:
+			break;
+		default:
+			if (ctx->sql)
+				mdb_sql_error(ctx->sql, "Can't compare column %s of type %s",
+						col->name, mdb_get_colbacktype_string(col));
+			goto fail;
+	}
+
+	/* A comparison with NULL is unknown, whatever the column holds */
+	if (node->val_type == MDB_SQL_VAL_NULL) {
+		node->col = NULL;
+		node->value.i = -1;
+		return 0;
+	}
+
+	/* Convert the constant to the type needed to compare with the column */
+	switch (col->col_type) {
+	case MDB_TEXT: case MDB_MEMO: case MDB_REPID:
+		if (node->val_type == MDB_SQL_VAL_NUMBER) {
+			/* compare with the number as written */
+			node->val_type = MDB_TEXT;
+		} else if (node->val_type == MDB_SQL_VAL_DATE) {
+			if (ctx->sql)
+				mdb_sql_error(ctx->sql, "Can't compare text column %s with a date", col->name);
+			goto fail;
 		}
-		if (col->col_type == MDB_DATETIME && node->val_type == MDB_TEXT &&
-				node->op != MDB_ISNULL && node->op != MDB_NOTNULL) {
-			double date;
-			if (node->op == MDB_LIKE || node->op == MDB_ILIKE ||
-					!mdb_sql_parse_iso_date(node->value.s, &date)) {
+		break;
+	case MDB_DATETIME:
+		if (node->val_type == MDB_TEXT) {
+			if (!mdb_sql_parse_iso_date(node->value.s, &d)) {
 				if (ctx->sql)
 					mdb_sql_error(ctx->sql, "Can't compare date column %s with '%s'; use a 'YYYY-MM-DD [HH:MM:SS]' date or strptime()",
 							col->name, node->value.s);
-				ctx->failed = 1;
-				return 1;
+				goto fail;
 			}
-			node->value.d = date;
+			node->value.d = d;
 			node->val_type = MDB_DOUBLE;
-		}
-		/* Do conversion to required target value type.
-		 * Plain integers are UNIX timestamps for backwards compatibility of parser
-		*/
-		if (col->col_type == MDB_DATETIME && node->val_type == MDB_INT) {
-			struct tm *tmp;
+		} else if (node->val_type == MDB_SQL_VAL_DATE) {
+			node->val_type = MDB_DOUBLE;
+		} else if (node->val_type == MDB_SQL_VAL_NUMBER) {
+			if (!mdb_sql_parse_number(node->value.s, &d)) {
+				if (ctx->sql)
+					mdb_sql_error(ctx->sql, "Invalid number %s", node->value.s);
+				goto fail;
+			}
+			if (!strpbrk(node->value.s, ".eE") && d > -1e15 && d < 1e15) {
+				/* Plain integers are UNIX timestamps for backwards
+				 * compatibility of parser */
+				time_t t = (time_t)d;
+				struct tm *tmp;
 #ifdef HAVE_GMTIME_R
-			struct tm tm;
-			tmp = gmtime_r((time_t*)&node->value.i, &tm);
+				struct tm tm;
+				tmp = gmtime_r(&t, &tm);
 #else		// regular gmtime on Windows uses thread-local storage
-			tmp = gmtime((time_t*)&node->value.i);
+				tmp = gmtime(&t);
 #endif
-			mdb_tm_to_date(tmp, &node->value.d);
+				if (!tmp) {
+					if (ctx->sql)
+						mdb_sql_error(ctx->sql, "Invalid timestamp %s", node->value.s);
+					goto fail;
+				}
+				mdb_tm_to_date(tmp, &d);
+			}
+			node->value.d = d;
 			node->val_type = MDB_DOUBLE;
 		}
+		break;
+	default:
+		/* numeric columns: a string constant must hold a number */
+		if (node->val_type == MDB_SQL_VAL_DATE) {
+			if (ctx->sql)
+				mdb_sql_error(ctx->sql, "Can't compare column %s of type %s with a date",
+						col->name, mdb_get_colbacktype_string(col));
+			goto fail;
+		}
+		if (node->val_type == MDB_TEXT || node->val_type == MDB_SQL_VAL_NUMBER) {
+			if (!mdb_sql_parse_number(node->value.s, &d)) {
+				if (ctx->sql) {
+					if (node->val_type == MDB_TEXT)
+						mdb_sql_error(ctx->sql, "Can't compare column %s of type %s with '%s'",
+								col->name, mdb_get_colbacktype_string(col), node->value.s);
+					else
+						mdb_sql_error(ctx->sql, "Invalid number %s", node->value.s);
+				}
+				goto fail;
+			}
+			/* Yes/No columns hold 1 or 0; Access writes True as -1 */
+			if (col->col_type == MDB_BOOL && (node->op == MDB_EQUAL || node->op == MDB_NEQ))
+				d = (d != 0);
+			if (d >= INT_MIN && d <= INT_MAX && d == (int)d) {
+				node->value.i = (int)d;
+				node->val_type = MDB_INT;
+			} else {
+				node->value.d = d;
+				node->val_type = MDB_DOUBLE;
+			}
+		}
+		break;
 	}
 	return 0;
+
+fail:
+	ctx->failed = 1;
+	return 1;
 }
 
 int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)

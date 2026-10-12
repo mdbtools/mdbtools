@@ -1,0 +1,54 @@
+OrderID
+10248
+1 Row retrieved
+OrderID
+10248
+1 Row retrieved
+OrderID
+10248
+10249
+2 Rows retrieved
+count
+4
+1 Row retrieved
+Can't compare column ShipVia of type Long Integer with 'two'
+Can't compare column ShipVia of type Long Integer with '2x'
+CustomerID	PostalCode
+ALFKI	12209
+1 Row retrieved
+CustomerID	PostalCode
+CACTU	1010
+OCEAN	1010
+RANCH	1010
+3 Rows retrieved
+CustomerID
+ANATR
+1 Row retrieved
+CustomerID
+BONAP
+1 Row retrieved
+count
+8
+1 Row retrieved
+count
+8
+1 Row retrieved
+Can't compare column Discontinued of type Boolean with 'abc'
+count
+3
+1 Row retrieved
+count
+3
+1 Row retrieved
+count
+3
+1 Row retrieved
+Comparison of strings and numbers not allowed.
+count
+3
+1 Row retrieved
+The pattern of LIKE must be on its right
+Can't compare column Freight of type Currency with a date
+count
+830
+1 Row retrieved

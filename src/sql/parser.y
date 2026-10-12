@@ -16,6 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+%code requires {
+#include "mdbsqlprivate.h"
+}
+
 %{
 #include "mdbsql.h"
 
@@ -56,17 +60,22 @@ typedef struct sql_context
 	char *name;
 	double dval;
 	int ival;
+	MdbSQLConst *cval;
 }
+
+%destructor { free($$); } <name>
+%destructor { mdbsql_const_free($$); } <cval>
 
 %start stmt
 
-%token <name> IDENT NAME PATH STRING NUMBER OPENING CLOSING
+%token <name> IDENT NAME PATH STRING NUMBER
+%token OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
 %token DESCRIBE TABLE TOP PERCENT
 %token LTEQ GTEQ NEQ LIKE ILIKE IS NUL
 
 %type <name> database
-%type <name> constant
+%type <cval> constant
 %type <ival> operator
 %type <ival> nulloperator
 %type <name> identifier
@@ -145,12 +154,14 @@ sarg_list:
 	;
 
 sarg:
-	identifier operator constant	{ 
-	                        mdb_sql_add_sarg(parser_ctx->mdb, $1, $2, $3);
+	identifier operator constant	{
+				int rc = mdbsql_add_sarg(parser_ctx->mdb, $1, $2, $3);
 				free($1);
-				free($3);
+				mdbsql_const_free($3);
+				if (rc) YYERROR;
 				}
 	| constant operator identifier {
+				int rc;
 				switch($2) {
 					case MDB_GT:
 						$2 = MDB_LT;
@@ -165,18 +176,24 @@ sarg:
 						$2 = MDB_GTEQ;
 						break;
 				}
-
-	                        mdb_sql_add_sarg(parser_ctx->mdb, $3, $2, $1);
-				free($1);
+				if ($2 == MDB_LIKE || $2 == MDB_ILIKE) {
+					mdb_sql_error(parser_ctx->mdb, "The pattern of LIKE must be on its right");
+					rc = 1;
+				} else {
+					rc = mdbsql_add_sarg(parser_ctx->mdb, $3, $2, $1);
+				}
+				mdbsql_const_free($1);
 				free($3);
+				if (rc) YYERROR;
 				}
 	| constant operator constant {
-	                        mdb_sql_eval_expr(parser_ctx->mdb, $1, $2, $3);
-				free($1);
-				free($3);
+				int rc = mdbsql_eval_expr(parser_ctx->mdb, $1, $2, $3);
+				mdbsql_const_free($1);
+				mdbsql_const_free($3);
+				if (rc) YYERROR;
 	}
 	| identifier nulloperator	{ 
-	                        mdb_sql_add_sarg(parser_ctx->mdb, $1, $2, NULL);
+				mdbsql_add_sarg(parser_ctx->mdb, $1, $2, NULL);
 				free($1);
 				}
 	;
@@ -204,12 +221,13 @@ nulloperator:
 
 constant:
 	STRPTIME constant ',' constant CLOSING {
-	        $$ = mdb_sql_strptime(parser_ctx->mdb, $2, $4);
-		free($2);
-		free($4);
+		$$ = mdbsql_strptime(parser_ctx->mdb, $2, $4);
+		mdbsql_const_free($2);
+		mdbsql_const_free($4);
+		if (!$$) YYERROR;
 	}
-	| NUMBER { $$ = $1; }
-	| STRING { $$ = $1; }
+	| NUMBER { $$ = mdbsql_const_new(MDB_SQL_CONST_NUMBER, $1, 0); free($1); }
+	| STRING { $$ = mdbsql_const_from_literal($1); free($1); }
 	;
 
 database:

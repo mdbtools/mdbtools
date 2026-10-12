@@ -238,6 +238,9 @@ mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 	 * probably better off table scanning.
 	 */
 	if (mdb_is_relational_op(node->op) && node->col) {
+		/* the index code only handles integer constants for these */
+		if (node->col->col_type == MDB_LONGINT && node->val_type != MDB_INT)
+			return 0;
 		//printf("op = %d value = %s\n", node->op, node->value.s);
 		sarg.op = node->op;
 		sarg.value = node->value;
@@ -343,8 +346,10 @@ mdb_test_sarg_node_3vl(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int 
 
 	if (mdb_is_relational_op(node->op)) {
 		col = node->col;
-		/* for const = const expressions */
+		/* for const = const expressions; -1 means unknown (NULL) */
 		if (!col) {
+			if (node->value.i < 0)
+				return SARG_UNKNOWN;
 			return node->value.i ? SARG_TRUE : SARG_FALSE;
 		}
 		elem = mdb_find_field(col->col_num, fields, num_fields);
