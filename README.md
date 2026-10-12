@@ -75,11 +75,23 @@ First, you must have reasonably current installations of:
 * [libtool](https://www.gnu.org/software/libtool/)
 * [automake](https://www.gnu.org/software/automake/)
 * [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.64)
+* [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) (its
+  `pkg.m4` macros are needed when generating `configure`)
 
-If you want to build the SQL engine, you'll need
-[bison](https://www.gnu.org/software/bison/) (version >= 3.0) or
-[byacc](https://invisible-island.net/byacc/byacc.html), and
-[flex](https://github.com/westes/flex).
+GNU gettext is *not* required: the gettext macros used for iconv detection
+(`iconv.m4`, `lib-link.m4`, `lib-prefix.m4`, `lib-ld.m4` and
+`host-cpu-c-abi.m4`) are included in the [m4](./m4) directory. If gettext's
+`autopoint` is installed, `autoreconf -i` will run it and refresh these files
+with the system copies.
+
+If you want to build the SQL engine (which is also needed for the ODBC
+driver), you'll need [bison](https://www.gnu.org/software/bison/) (version >=
+3.0) and [flex](https://github.com/westes/flex). If either is missing or bison
+is too old, `configure` prints a warning and disables the SQL engine (and
+fails if the ODBC driver was requested). On
+macOS the system bison is 2.3, so install a newer one (e.g. with Homebrew or
+MacPorts) and point `configure` at it if necessary, e.g.
+`YACC=/opt/homebrew/opt/bison/bin/bison ./configure`.
 
 If you want to build the ODBC driver, you'll need `unixodbc-dev` (version
 2.2.10 or above) or [iodbc](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/WelcomeVisitors).
