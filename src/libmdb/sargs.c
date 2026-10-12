@@ -106,6 +106,29 @@ int mdb_test_int(MdbSargNode *node, gint32 i)
 	return 0;
 }
 
+/* The constant of a numeric comparison, as a double */
+static double
+mdb_sarg_node_double(MdbSargNode *node)
+{
+	return node->val_type == MDB_INT ? node->value.i : node->value.d;
+}
+
+/* Decode a NUMERIC (DECIMAL) value: a sign byte followed by a 128 bit
+ * unsigned integer stored as four little endian 32 bit words, most
+ * significant word first. Note that col_prec holds the scale. */
+static double
+mdb_numeric_to_double(const unsigned char *buf, int scale)
+{
+	double d = 0;
+	int i;
+
+	for (i=0; i<4; i++)
+		d = d * 4294967296.0 + (guint32)mdb_get_int32((void *)buf, 1 + 4*i);
+	for (i=0; i<scale; i++)
+		d /= 10;
+	return (buf[0] & 0x80) ? -d : d;
+}
+
 /* Actually used to not rely on libm. 
  * Maybe there is a cleaner and faster solution? */
 static double poor_mans_trunc(double x)
@@ -225,7 +248,8 @@ mdb_find_indexable_sargs(MdbSargNode *node, gpointer data)
 int 
 mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field)
 {
-	char tmpbuf[256];
+	/* up to 255 characters, each up to 3 bytes in UTF-8 */
+	char tmpbuf[1024];
 	char* val;
 	int ret = 1;
 	/* Boolean values are stored in the null bitmap and are never NULL */
@@ -243,19 +267,36 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 			ret = mdb_test_int(node, !field->is_null);
 			break;
 		case MDB_BYTE:
-			ret = mdb_test_int(node, (gint32)((char *)field->value)[0]);
+			ret = mdb_test_double(node->op, mdb_sarg_node_double(node), ((unsigned char *)field->value)[0]);
 			break;
 		case MDB_INT:
-			ret = mdb_test_int(node, (gint32)mdb_get_int16(field->value, 0));
+			ret = mdb_test_double(node->op, mdb_sarg_node_double(node), mdb_get_int16(field->value, 0));
 			break;
 		case MDB_LONGINT:
-			ret = mdb_test_int(node, (gint32)mdb_get_int32(field->value, 0));
+		case MDB_COMPLEX:
+			ret = mdb_test_double(node->op, mdb_sarg_node_double(node), (gint32)mdb_get_int32(field->value, 0));
+			break;
+		case MDB_MONEY:
+			/* a 64 bit integer scaled by 10000 */
+			if (field->siz < 8)
+				return 0;
+			ret = mdb_test_double(node->op, mdb_sarg_node_double(node),
+				(long long)((unsigned long long)(guint32)mdb_get_int32(field->value, 0) |
+					((unsigned long long)(guint32)mdb_get_int32(field->value, 4) << 32)) / 10000.0);
+			break;
+		case MDB_NUMERIC:
+			if (field->siz < 17)
+				return 0;
+			ret = mdb_test_double(node->op, mdb_sarg_node_double(node),
+				mdb_numeric_to_double(field->value, col->col_prec));
 			break;
 		case MDB_FLOAT:
-			ret = mdb_test_double(node->op, node->val_type == MDB_INT ? node->value.i : node->value.d, mdb_get_single(field->value, 0));
+			/* compare in single precision, so that 0.05 matches the
+			 * single closest to 0.05 */
+			ret = mdb_test_double(node->op, (float)mdb_sarg_node_double(node), mdb_get_single(field->value, 0));
 			break;
 		case MDB_DOUBLE:
-			ret = mdb_test_double(node->op, node->val_type == MDB_INT ? node->value.i : node->value.d, mdb_get_double(field->value, 0));
+			ret = mdb_test_double(node->op, mdb_sarg_node_double(node), mdb_get_double(field->value, 0));
 			break;
 		case MDB_TEXT:
 			mdb_unicode2ascii(mdb, field->value, field->siz, tmpbuf, sizeof(tmpbuf));

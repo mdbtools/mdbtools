@@ -1,0 +1,48 @@
+count
+187
+1 Row retrieved
+OrderID	Freight
+10372	890.7800
+10540	1007.6400
+10691	810.0500
+11030	830.7500
+4 Rows retrieved
+OrderID	Freight
+10248	32.3800
+1 Row retrieved
+count
+37
+1 Row retrieved
+count
+185
+1 Row retrieved
+count
+154
+1 Row retrieved
+count
+52
+1 Row retrieved
+count
+2086
+1 Row retrieved
+count
+2086
+1 Row retrieved
+count
+91
+1 Row retrieved
+count
+5
+1 Row retrieved
+count
+8
+1 Row retrieved
+count
+6
+1 Row retrieved
+count
+9
+1 Row retrieved
+Can't compare column Photo of type OLE
+Can't use LIKE with column ShipVia of type Long Integer
+Can't use LIKE with column OrderDate of type DateTime

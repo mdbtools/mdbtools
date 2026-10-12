@@ -770,6 +770,29 @@ mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 		return 1;
 	} else {
 		node->col = col;
+		if (node->op == MDB_ISNULL || node->op == MDB_NOTNULL)
+			return 0;
+		switch (col->col_type) {
+			case MDB_BOOL: case MDB_BYTE: case MDB_INT: case MDB_LONGINT:
+			case MDB_COMPLEX: case MDB_MONEY: case MDB_NUMERIC:
+			case MDB_FLOAT: case MDB_DOUBLE: case MDB_DATETIME:
+				if (node->op == MDB_LIKE || node->op == MDB_ILIKE) {
+					if (ctx->sql)
+						mdb_sql_error(ctx->sql, "Can't use LIKE with column %s of type %s",
+								col->name, mdb_get_colbacktype_string(col));
+					ctx->failed = 1;
+					return 1;
+				}
+				break;
+			case MDB_TEXT: case MDB_MEMO: case MDB_REPID:
+				break;
+			default:
+				if (ctx->sql)
+					mdb_sql_error(ctx->sql, "Can't compare column %s of type %s",
+							col->name, mdb_get_colbacktype_string(col));
+				ctx->failed = 1;
+				return 1;
+		}
 		if (col->col_type == MDB_DATETIME && node->val_type == MDB_TEXT &&
 				node->op != MDB_ISNULL && node->op != MDB_NOTNULL) {
 			double date;
