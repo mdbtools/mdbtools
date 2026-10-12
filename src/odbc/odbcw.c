@@ -164,7 +164,9 @@ SQLRETURN SQL_API SQLColAttributesW(
 {
 	TRACE("SQLColAttributesW");
 	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL
-			&& fDescType!=SQL_DESC_NAME && fDescType!=SQL_COLUMN_TYPE_NAME)
+			&& fDescType!=SQL_DESC_NAME && fDescType!=SQL_COLUMN_TYPE_NAME
+			&& fDescType!=SQL_DESC_BASE_COLUMN_NAME && fDescType!=SQL_DESC_BASE_TABLE_NAME
+			&& fDescType!=SQL_DESC_TABLE_NAME)
 		return SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
 	else{
 		/* Unlike SQLDescribeCol, cbDescMax and *pcbDesc are in BYTES, not

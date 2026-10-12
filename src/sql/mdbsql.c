@@ -131,6 +131,7 @@ static void mdb_sql_free_columns(GPtrArray *columns)
 	for (i=0; i<columns->len; i++) {
 		MdbSQLColumn *c = (MdbSQLColumn *)g_ptr_array_index(columns, i);
 		g_free(c->name);
+		g_free(c->col_name);
 		g_free(c->qualifier);
 		g_free(c);
 	}
@@ -649,12 +650,13 @@ mdbsql_colref_free(MdbSQLColRef *ref)
 }
 
 /* Add a column to the select list; name may be "*" for all the columns of
- * the table qualifier */
+ * the table qualifier. The result column is called alias, if not NULL */
 int
-mdbsql_add_column(MdbSQL *sql, const char *qualifier, const char *name)
+mdbsql_add_column(MdbSQL *sql, const char *qualifier, const char *name, const char *alias)
 {
 	MdbSQLColumn *c = g_malloc0(sizeof(MdbSQLColumn));
-	c->name = g_strdup(name);
+	c->name = g_strdup(alias ? alias : name);
+	c->col_name = g_strdup(name);
 	c->qualifier = qualifier ? g_strdup(qualifier) : NULL;
 	g_ptr_array_add(sql->columns, c);
 	sql->num_columns++;
@@ -663,7 +665,7 @@ mdbsql_add_column(MdbSQL *sql, const char *qualifier, const char *name)
 
 int mdb_sql_add_column(MdbSQL *sql, char *column_name)
 {
-	return mdbsql_add_column(sql, NULL, column_name);
+	return mdbsql_add_column(sql, NULL, column_name, NULL);
 }
 int mdb_sql_add_limit(MdbSQL *sql, char *limit, int percent)
 {
@@ -818,6 +820,7 @@ mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *name, 
 	mdb_sql_add_column(sql, name);
 	sqlcol = g_ptr_array_index(sql->columns,col_num);
 	sqlcol->disp_size = mdb_col_disp_size(&tcol);
+	sqlcol->col = g_ptr_array_index(ttable->columns, ttable->num_cols - 1);
 
 	return 0;
 }
@@ -1129,7 +1132,7 @@ mdb_sql_expand_stars(MdbSQL *sql, MdbTableDef *table)
 
 	for (i=0;i<sql->num_columns;i++) {
 		sqlcol = g_ptr_array_index(sql->columns,i);
-		if (!strcmp(sqlcol->name, "*"))
+		if (!strcmp(sqlcol->col_name, "*"))
 			break;
 	}
 	if (i == sql->num_columns)
@@ -1140,16 +1143,17 @@ mdb_sql_expand_stars(MdbSQL *sql, MdbTableDef *table)
 	sql->num_columns = 0;
 	for (i=0;i<columns->len;i++) {
 		sqlcol = g_ptr_array_index(columns,i);
-		if (strcmp(sqlcol->name, "*")) {
+		if (strcmp(sqlcol->col_name, "*")) {
 			g_ptr_array_add(sql->columns, sqlcol);
 			sql->num_columns++;
 			continue;
 		}
 		for (j=0;j<table->num_cols;j++) {
 			col = g_ptr_array_index(table->columns,j);
-			mdbsql_add_column(sql, NULL, col->name);
+			mdbsql_add_column(sql, NULL, col->name, NULL);
 		}
 		g_free(sqlcol->name);
+		g_free(sqlcol->col_name);
 		g_free(sqlcol->qualifier);
 		g_free(sqlcol);
 	}
@@ -1221,14 +1225,15 @@ int found = 0;
 		found=0;
 		for (j=0;j<table->num_cols;j++) {
 			col=g_ptr_array_index(table->columns,j);
-			if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
+			if (!g_ascii_strcasecmp(sqlcol->col_name, col->name)) {
 				sqlcol->disp_size = mdb_col_disp_size(col);
+				sqlcol->col = col;
 				found=1;
 				break;
 			}
 		}
 		if (!found) {
-			mdb_sql_error(sql, "Column %s not found",sqlcol->name);
+			mdb_sql_error(sql, "Column %s not found",sqlcol->col_name);
 			mdb_index_scan_free(table);
 			mdb_free_tabledef(table);
 			mdb_sql_reset(sql);
@@ -1285,13 +1290,55 @@ int
 mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr)
 {
 	MdbSQLColumn *sqlcol;
+	int i;
 
 	if (colnum <= 0 || colnum > sql->num_columns)
 		return -1;
 
 	/* sql columns are traditionally 1 based, so decrement colnum */
 	sqlcol = g_ptr_array_index(sql->columns,colnum - 1);
-	return mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr, len_ptr);
+	sqlcol->bind_addr = varaddr;
+	sqlcol->bind_len = len_ptr;
+	sqlcol->copy_of = NULL;
+	if (!sqlcol->col)
+		return mdb_bind_column_by_name(sql->cur_table, sqlcol->name, varaddr, len_ptr);
+
+	/* A column can only be bound to one buffer: when it is selected more
+	 * than once, the value is copied to the others after each fetch */
+	for (i=0;i<colnum-1;i++) {
+		MdbSQLColumn *other = g_ptr_array_index(sql->columns,i);
+		if (other->col == sqlcol->col && other->bind_addr && !other->copy_of) {
+			sqlcol->copy_of = other;
+			return colnum;
+		}
+	}
+	for (i=0;i<sql->cur_table->num_cols;i++) {
+		if (g_ptr_array_index(sql->cur_table->columns,i) == sqlcol->col)
+			return mdb_bind_column(sql->cur_table, i+1, varaddr, len_ptr);
+	}
+	return -1;
+}
+
+/* Copy the values of columns selected more than once, see
+ * mdb_sql_bind_column() */
+static void
+mdb_sql_copy_bound_values(MdbSQL *sql)
+{
+	unsigned int i;
+	size_t len;
+
+	for (i=0;i<sql->num_columns;i++) {
+		MdbSQLColumn *sqlcol = g_ptr_array_index(sql->columns,i);
+		MdbSQLColumn *src = sqlcol->copy_of;
+		if (!src || !sqlcol->bind_addr)
+			continue;
+		len = strlen(src->bind_addr) + 1;
+		if (len > sql->mdb->bind_size)
+			len = sql->mdb->bind_size;
+		memcpy(sqlcol->bind_addr, src->bind_addr, len);
+		if (sqlcol->bind_len && src->bind_len)
+			*sqlcol->bind_len = *src->bind_len;
+	}
 }
 
 int
@@ -1333,6 +1380,7 @@ mdb_sql_fetch_row(MdbSQL *sql, MdbTableDef *table)
 			return 0;
 		}
 		sql->row_count++;
+		mdb_sql_copy_bound_values(sql);
 	}
 	return rc;
 }
@@ -1362,6 +1410,7 @@ mdb_sql_dump_results(MdbSQL *sql)
 
 	/* print each row */
 	while(mdb_fetch_row(sql->cur_table)) {
+		mdb_sql_copy_bound_values(sql);
   		for (j=0;j<sql->num_columns;j++) {
 			sqlcol = g_ptr_array_index(sql->columns,j);
 			print_value(g_ptr_array_index(sql->bound_values, j),sqlcol->disp_size,!j);

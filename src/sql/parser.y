@@ -81,7 +81,7 @@ typedef struct sql_context
 %type <ival> operator
 %type <ival> nulloperator
 %type <name> identifier
-%type <name> table_alias
+%type <name> alias
 %type <colref> column_ref
 
 //
@@ -246,14 +246,14 @@ database:
 	;
 
 table:
-	identifier table_alias {
+	identifier alias {
 			mdbsql_add_table(parser_ctx->mdb, $1, $2);
 			free($1);
 			free($2);
 		}
 	;
 
-table_alias:
+alias:
 	/* empty */ { $$ = NULL; }
 	| identifier
 	| AS identifier { $$ = $2; }
@@ -268,12 +268,13 @@ column_list:
 	 
 
 column:
-	column_ref {
-			mdbsql_add_column(parser_ctx->mdb, $1->qualifier, $1->name);
+	column_ref alias {
+			mdbsql_add_column(parser_ctx->mdb, $1->qualifier, $1->name, $2);
 			mdbsql_colref_free($1);
+			free($2);
 		}
 	| identifier '.' '*' {
-			mdbsql_add_column(parser_ctx->mdb, $1, "*");
+			mdbsql_add_column(parser_ctx->mdb, $1, "*", NULL);
 			free($1);
 		}
 	;

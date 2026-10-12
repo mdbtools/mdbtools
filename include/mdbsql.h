@@ -57,6 +57,9 @@ typedef struct {
 	int  bind_max;
 	/* Added in mdbtools 1.1 */
 	char *qualifier;	/* table name or alias the column was qualified with, or NULL */
+	char *col_name;		/* the column of the table; name is its alias, if one was given */
+	MdbColumn *col;		/* the column of cur_table holding the values (set by mdb_sql_select()) */
+	void *copy_of;		/* internal: the MdbSQLColumn whose bound value is copied to this one */
 } MdbSQLColumn;
 
 typedef struct {

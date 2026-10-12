@@ -270,6 +270,69 @@ static int test_catalog(HSTMT hstmt)
 	return 0;
 }
 
+/* Column aliases and qualified names (issues #432, #360) */
+static int test_aliases(HSTMT hstmt)
+{
+	const char *names[] = { "id", "CompanyName", "name2" };
+	const char *bases[] = { "ShipperID", "CompanyName", "CompanyName" };
+	SQLCHAR name[64], v2[64], v3[64];
+	SQLSMALLINT len, type, scale, nullable, ncols = 0, i;
+	SQLULEN size;
+	SQLLEN ind, num;
+	SQLINTEGER id = 0;
+
+	printf("\nTesting column aliases...\n");
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	SQLFreeStmt(hstmt, SQL_UNBIND);
+	if (SQLExecDirect(hstmt, (SQLCHAR *)"SELECT s.ShipperID AS id, [s].[CompanyName], "
+				"\"s\".CompanyName name2 FROM Shippers AS s WHERE s.ShipperID = 2",
+				SQL_NTS) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLExecDirect");
+		return 1;
+	}
+	SQLNumResultCols(hstmt, &ncols);
+	if (ncols != 3) {
+		fprintf(stderr, "%d result columns, expected 3\n", ncols);
+		return 1;
+	}
+	for (i = 1; i <= ncols; i++) {
+		if (SQLDescribeCol(hstmt, i, name, sizeof(name), &len, &type, &size, &scale, &nullable) != SQL_SUCCESS
+				|| strcmp((char *)name, names[i-1]) != 0) {
+			fprintf(stderr, "SQLDescribeCol(%d) = %s, expected %s\n", i, name, names[i-1]);
+			return 1;
+		}
+		if (SQLColAttributes(hstmt, i, SQL_DESC_LABEL, name, sizeof(name), &len, &num) != SQL_SUCCESS
+				|| strcmp((char *)name, names[i-1]) != 0) {
+			fprintf(stderr, "SQL_DESC_LABEL(%d) = %s, expected %s\n", i, name, names[i-1]);
+			return 1;
+		}
+		if (SQLColAttributes(hstmt, i, SQL_DESC_BASE_COLUMN_NAME, name, sizeof(name), &len, &num) != SQL_SUCCESS
+				|| strcmp((char *)name, bases[i-1]) != 0) {
+			fprintf(stderr, "SQL_DESC_BASE_COLUMN_NAME(%d) = %s, expected %s\n", i, name, bases[i-1]);
+			return 1;
+		}
+		printf("  column %d: %s (%s)\n", i, names[i-1], name);
+	}
+	if (SQLFetch(hstmt) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLFetch");
+		return 1;
+	}
+	SQLGetData(hstmt, 1, SQL_C_SLONG, &id, sizeof(id), &ind);
+	SQLGetData(hstmt, 2, SQL_C_CHAR, v2, sizeof(v2), &ind);
+	SQLGetData(hstmt, 3, SQL_C_CHAR, v3, sizeof(v3), &ind);
+	if (id != 2 || strcmp((char *)v2, "United Package") != 0 || strcmp((char *)v3, (char *)v2) != 0) {
+		fprintf(stderr, "Unexpected row: %d, %s, %s\n", (int)id, v2, v3);
+		return 1;
+	}
+	if (SQLFetch(hstmt) != SQL_NO_DATA_FOUND) {
+		fprintf(stderr, "More than one row\n");
+		return 1;
+	}
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	printf("Column alias test passed.\n");
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 int i;
@@ -526,6 +589,9 @@ int i;
 		return 1;
 
 	if (test_catalog(hstmt))
+		return 1;
+
+	if (test_aliases(hstmt))
 		return 1;
 
 	return 0;

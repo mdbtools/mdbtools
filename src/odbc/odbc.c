@@ -683,6 +683,49 @@ SQLRETURN SQL_API SQLConnect(
 	return ret;
 }
 
+/* Find the table column holding the values of result column icol (1 based) */
+static MdbColumn *
+_odbc_get_result_col(struct _hstmt *stmt, int icol, MdbSQLColumn **psqlcol)
+{
+	MdbSQL *sql = stmt->sql;
+	MdbSQLColumn *sqlcol;
+	MdbTableDef *table = sql->cur_table;
+	MdbColumn *col;
+	unsigned int i;
+
+	if (icol < 1 || icol > (int)sql->num_columns || !table)
+		return NULL;
+	sqlcol = g_ptr_array_index(sql->columns, icol - 1);
+	if (psqlcol)
+		*psqlcol = sqlcol;
+	if (sqlcol->col)
+		return sqlcol->col;
+	for (i=0;i<table->num_cols;i++) {
+		col=g_ptr_array_index(table->columns,i);
+		if (!g_ascii_strcasecmp(sqlcol->name, col->name))
+			return col;
+	}
+	return NULL;
+}
+
+/* Copy a string attribute, setting *len to its full length in bytes */
+static SQLRETURN
+_odbc_copy_string_attr(struct _hstmt *stmt, const char *value, SQLPOINTER buf, SQLSMALLINT buf_len, SQLSMALLINT *len)
+{
+	if (buf_len < 0) {
+		strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
+		return SQL_ERROR;
+	}
+	/* Total length in bytes, excluding the terminator, even if truncated */
+	if (len)
+		*len = strlen(value);
+	if (buf && snprintf(buf, buf_len, "%s", value) + 1 > buf_len) {
+		strcpy(stmt->sqlState, "01004"); // String data, right truncated
+		return SQL_SUCCESS_WITH_INFO;
+	}
+	return SQL_SUCCESS;
+}
+
 SQLRETURN SQL_API SQLDescribeCol(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       icol,
@@ -694,29 +737,13 @@ SQLRETURN SQL_API SQLDescribeCol(
     SQLSMALLINT       *pibScale,
     SQLSMALLINT       *pfNullable)
 {
-	int i;
 	struct _hstmt *stmt = (struct _hstmt *) hstmt;
-	MdbSQL *sql = stmt->sql;
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
-	MdbTableDef *table;
 	SQLRETURN ret;
 
 	TRACE("SQLDescribeCol");
-	if (icol<1 || icol>sql->num_columns) {
-		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
-		return SQL_ERROR;
-	}
-	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
-	table = sql->cur_table;
-	for (i=0;i<table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
-			break;
-		}
-	}
-	if (i==table->num_cols) {
-		fprintf(stderr, "Column %s lost\n", (char*)sqlcol->name);
+	if (!(col = _odbc_get_result_col(stmt, icol, &sqlcol))) {
 		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
@@ -760,12 +787,10 @@ SQLRETURN SQL_API SQLColAttributes(
     SQLSMALLINT       *pcbDesc,
     SQLLEN            *pfDesc)
 {
-	int i;
 	struct _hstmt *stmt;
 	MdbSQL *sql;
 	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
-	MdbTableDef *table;
 	SQLRETURN ret;
 
 	TRACE("SQLColAttributes");
@@ -781,21 +806,8 @@ SQLRETURN SQL_API SQLColAttributes(
 			break;
 	}
 
-	if (icol<1 || icol>sql->num_columns) {
-		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
-		return SQL_ERROR;
-	}
-
 	/* find the column */
-	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
-	table = sql->cur_table;
-	for (i=0;i<table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
-			break;
-          	}
-	}
-	if (i==table->num_cols) {
+	if (!(col = _odbc_get_result_col(stmt, icol, &sqlcol))) {
 		strcpy(stmt->sqlState, "07009"); // Invalid descriptor index
 		return SQL_ERROR;
 	}
@@ -805,17 +817,16 @@ SQLRETURN SQL_API SQLColAttributes(
 	switch(fDescType) {
 		case SQL_COLUMN_NAME: case SQL_DESC_NAME:
 		case SQL_COLUMN_LABEL: /* = SQL_DESC_LABEL */
-			if (cbDescMax < 0) {
-				strcpy(stmt->sqlState, "HY090"); // Invalid string or buffer length
-				return SQL_ERROR;
-			}
-			/* Total length in bytes, excluding the terminator, even if truncated */
-			if (pcbDesc)
-				*pcbDesc = strlen(sqlcol->name);
-			if (rgbDesc && snprintf(rgbDesc, cbDescMax, "%s", sqlcol->name) + 1 > cbDescMax) {
-				strcpy(stmt->sqlState, "01004"); // String data, right truncated
-				ret = SQL_SUCCESS_WITH_INFO;
-			}
+			/* the alias, if one was given */
+			ret = _odbc_copy_string_attr(stmt, sqlcol->name, rgbDesc, cbDescMax, pcbDesc);
+			break;
+		case SQL_DESC_BASE_COLUMN_NAME:
+			ret = _odbc_copy_string_attr(stmt, col->name, rgbDesc, cbDescMax, pcbDesc);
+			break;
+		case SQL_DESC_BASE_TABLE_NAME:
+		case SQL_DESC_TABLE_NAME:
+			ret = _odbc_copy_string_attr(stmt, sql->cur_table->is_temp_table ? "" : sql->cur_table->name,
+					rgbDesc, cbDescMax, pcbDesc);
 			break;
 		case SQL_COLUMN_TYPE: /* =SQL_DESC_CONCISE_TYPE */
 			//*pfDesc = SQL_CHAR;
@@ -1504,31 +1515,18 @@ SQLRETURN SQL_API SQLGetData(
 	struct _hstmt *stmt;
 	MdbSQL *sql;
 	MdbHandle *mdb;
-	MdbSQLColumn *sqlcol;
 	MdbColumn *col;
-	MdbTableDef *table;
-	int i, intValue;
+	int intValue;
 
 	TRACE("SQLGetData");
 	stmt = (struct _hstmt *) hstmt;
 	sql = stmt->sql;
 	mdb = sql->mdb;
 
-	if (icol<1 || icol>sql->num_columns) {
+	if (!(col = _odbc_get_result_col(stmt, icol, NULL))) {
 		strcpy(stmt->sqlState, "07009");
 		return SQL_ERROR;
 	}
-
-	sqlcol = g_ptr_array_index(sql->columns,icol - 1);
-	table = sql->cur_table;
-	for (i=0;i<table->num_cols;i++) {
-		col=g_ptr_array_index(table->columns,i);
-		if (!g_ascii_strcasecmp(sqlcol->name, col->name)) {
-			break;
-		}
-	}
-	if (i==table->num_cols)
-		return SQL_ERROR;
 
 	if (icol!=stmt->icol) {
 		stmt->icol=icol;

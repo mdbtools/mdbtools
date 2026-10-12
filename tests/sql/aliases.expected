@@ -1,0 +1,21 @@
+id	name
+1	Speedy Express
+2	United Package
+3	Federal Shipping
+3 Rows retrieved
+Shipper ID	Company
+1	Speedy Express
+1 Row retrieved
+ShipperID	again	CompanyName	x
+1	1	Speedy Express	Speedy Express
+2	2	United Package	United Package
+3	3	Federal Shipping	Federal Shipping
+3 Rows retrieved
+ShipperID	ShipperID	CompanyName	Phone
+3	3	Federal Shipping	(503) 555-9931
+1 Row retrieved
+OrderID	Freight	f2
+10248	32.3800	32.3800
+10249	11.6100	11.6100
+2 Rows retrieved
+Column id not found
