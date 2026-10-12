@@ -41,6 +41,12 @@ Provides command line utilities, including:
 
 See the man page of each program for usage instructions.
 
+The [src/util](./src/util) directory also builds `mdb-import`, which imports
+CSV data into an existing table. Write support in libmdb is experimental (for
+example, tables with indexes are not handled correctly), so `mdb-import` is not installed and has no
+installed man page; run it from the build tree (`src/util/mdb-import`) at your
+own risk, and only on a copy of your database.
+
 The [src/util](./src/util) directory also contains a number of debugging tools, intended for developers. They are:
 
 | Command | Description |

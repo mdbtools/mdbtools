@@ -5,7 +5,7 @@ PRODUCT = MDBTools
 dist_man_MANS =
 if ENABLE_MAN
   dist_man_MANS += mdb-tables.1 mdb-ver.1 mdb-export.1 mdb-schema.1 \
-	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 mdb-import.1 \
+	mdb-array.1 mdb-header.1 mdb-hexdump.1 mdb-parsecsv.1 mdb-prop.1 \
 	mdb-count.1 mdb-json.1 mdb-queries.1
 if SQL
   dist_man_MANS += mdb-sql.1
