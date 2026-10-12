@@ -717,15 +717,30 @@ MdbColumn *mdb_sql_find_colbyname(MdbTableDef *table, char *name)
 	return NULL;
 }
 
-int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
+typedef struct {
+	MdbSQL *sql; /* for error reporting; may be NULL */
+	MdbTableDef *table;
+	int failed;
+} MdbSQLSargColContext;
+
+/* Resolve the column name stashed in a relational node of the sarg tree,
+ * and convert the constant to the type needed to compare with it */
+static int
+mdb_sql_resolve_sargcol(MdbSargNode *node, gpointer data)
 {
-	MdbTableDef *table = data;
+	MdbSQLSargColContext *ctx = data;
 	MdbColumn *col;
 
+	if (ctx->failed) return 1;
 	if (!mdb_is_relational_op(node->op)) return 0;
 	if (!node->parent) return 0;
 
-	if ((col = mdb_sql_find_colbyname(table, (char *)node->parent))) {
+	if (!(col = mdb_sql_find_colbyname(ctx->table, (char *)node->parent))) {
+		if (ctx->sql)
+			mdb_sql_error(ctx->sql, "Column %s not found", (char *)node->parent);
+		ctx->failed = 1;
+		return 1;
+	} else {
 		node->col = col;
 		/* Do conversion to required target value type.
 		 * Plain integers are UNIX timestamps for backwards compatibility of parser
@@ -742,6 +757,13 @@ int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
 			node->val_type = MDB_DOUBLE;
 		}
 	}
+	return 0;
+}
+
+int mdb_sql_find_sargcol(MdbSargNode *node, gpointer data)
+{
+	MdbSQLSargColContext ctx = { NULL, data, 0 };
+	mdb_sql_resolve_sargcol(node, &ctx);
 	return 0;
 }
 
@@ -839,7 +861,13 @@ int found = 0;
 	 * resolve column names to MdbColumn structs
 	 */
 	if (sql->sarg_tree) {
-		mdb_sql_walk_tree(sql->sarg_tree, mdb_sql_find_sargcol, table);
+		MdbSQLSargColContext ctx = { sql, table, 0 };
+		mdb_sql_walk_tree(sql->sarg_tree, mdb_sql_resolve_sargcol, &ctx);
+		if (ctx.failed) {
+			mdb_free_tabledef(table);
+			mdb_sql_reset(sql);
+			return;
+		}
 		mdb_sql_walk_tree(sql->sarg_tree, mdb_find_indexable_sargs, NULL);
 	}
 	/* 
