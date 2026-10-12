@@ -150,6 +150,63 @@ static int test_stmt_attrs(HDBC hdbc, HSTMT hstmt)
 	return 0;
 }
 
+/* SQLPrimaryKeys (issue #431) */
+static int check_primary_keys(HSTMT hstmt, const char *table, int nkeys, const char **keys)
+{
+	SQLCHAR table_name[128], column_name[128], pk_name[128];
+	SQLSMALLINT key_seq, ncols = 0;
+	SQLLEN len;
+	int i;
+
+	retcode = SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, (SQLCHAR *)table, SQL_NTS);
+	if (retcode != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLPrimaryKeys");
+		return 1;
+	}
+	SQLNumResultCols(hstmt, &ncols);
+	if (ncols != 6) {
+		fprintf(stderr, "SQLPrimaryKeys returned %d columns, expected 6\n", ncols);
+		return 1;
+	}
+	for (i = 0; (retcode = SQLFetch(hstmt)) == SQL_SUCCESS; i++) {
+		SQLGetData(hstmt, 3, SQL_C_CHAR, table_name, sizeof(table_name), &len);
+		SQLGetData(hstmt, 4, SQL_C_CHAR, column_name, sizeof(column_name), &len);
+		SQLGetData(hstmt, 5, SQL_C_SSHORT, &key_seq, sizeof(key_seq), &len);
+		SQLGetData(hstmt, 6, SQL_C_CHAR, pk_name, sizeof(pk_name), &len);
+		printf("  %s.%s KEY_SEQ=%d PK_NAME=%s\n", table_name, column_name, key_seq, pk_name);
+		if (i >= nkeys || strcmp((char *)column_name, keys[i]) != 0 || key_seq != i + 1) {
+			fprintf(stderr, "Unexpected primary key column for %s\n", table);
+			return 1;
+		}
+	}
+	if (retcode != SQL_NO_DATA_FOUND || i != nkeys) {
+		fprintf(stderr, "SQLPrimaryKeys returned %d rows for %s, expected %d\n", i, table, nkeys);
+		return 1;
+	}
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	return 0;
+}
+
+static int test_primary_keys(HDBC hdbc, HSTMT hstmt)
+{
+	const char *order_details[] = { "OrderID", "ProductID" };
+	const char *orders[] = { "OrderID" };
+	SQLUSMALLINT exists = SQL_FALSE;
+
+	printf("\nTesting SQLPrimaryKeys (issue #431)...\n");
+	SQLGetFunctions(hdbc, SQL_API_SQLPRIMARYKEYS, &exists);
+	if (exists != SQL_TRUE) {
+		fprintf(stderr, "SQLGetFunctions does not report SQLPrimaryKeys\n");
+		return 1;
+	}
+	if (check_primary_keys(hstmt, "Order Details", 2, order_details)
+			|| check_primary_keys(hstmt, "orders", 1, orders)
+			|| check_primary_keys(hstmt, "No such table", 0, NULL))
+		return 1;
+	printf("SQLPrimaryKeys test passed.\n");
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 int i;
@@ -400,6 +457,9 @@ int i;
 	printf("Done\n");
 
 	if (test_stmt_attrs(hdbc, hstmt))
+		return 1;
+
+	if (test_primary_keys(hdbc, hstmt))
 		return 1;
 
 	return 0;

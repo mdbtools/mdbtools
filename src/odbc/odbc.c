@@ -328,7 +328,96 @@ SQLRETURN SQL_API SQLPrimaryKeys(
     SQLCHAR           *szTableName,
     SQLSMALLINT        cbTableName)
 {
+	struct _hstmt *stmt = (struct _hstmt *) hstmt;
+	MdbSQL *sql = stmt->sql;
+	MdbHandle *mdb = sql->mdb;
+	MdbTableDef *ttable;
+	MdbField fields[6];
+	unsigned char row_buffer[MDB_PGSIZE];
+	int row_size;
+	unsigned int i, j, k;
+	MdbCatalogEntry *entry;
+	MdbTableDef *table;
+	MdbIndex *idx;
+	MdbColumn *col;
+	unsigned int ts2, ts3, ts5;
+	unsigned char t2[MDB_BIND_SIZE],
+	              t3[MDB_BIND_SIZE],
+	              t5[MDB_BIND_SIZE];
+	SQLSMALLINT key_seq;
+	gchar *table_name;
+
 	TRACE("SQLPrimaryKeys");
+
+	if (!szTableName) {
+		strcpy(stmt->sqlState, "HY009"); // Invalid use of null pointer
+		LogStatementError(stmt, "SQLPrimaryKeys requires a table name");
+		return SQL_ERROR;
+	}
+	table_name = g_strndup((gchar*)szTableName, _odbc_get_string_size(cbTableName, szTableName));
+
+	mdb_sql_reset(sql);
+	mdb_read_catalog(mdb, MDB_ANY);
+
+	ttable = mdb_create_temp_table(mdb, "#primarykeys");
+	mdb_sql_add_temp_col(sql, ttable, 0, "TABLE_CAT", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 1, "TABLE_SCHEM", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 2, "TABLE_NAME", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 3, "COLUMN_NAME", MDB_TEXT, 128, 0);
+	mdb_sql_add_temp_col(sql, ttable, 4, "KEY_SEQ", MDB_INT, 0, 1);
+	mdb_sql_add_temp_col(sql, ttable, 5, "PK_NAME", MDB_TEXT, 128, 0);
+	mdb_temp_columns_end(ttable);
+	sql->cur_table = ttable;
+
+	for (i=0; i<mdb->num_catalog; i++) {
+		entry = g_ptr_array_index(mdb->catalog, i);
+		if (entry->object_type != MDB_TABLE || g_ascii_strcasecmp(table_name, entry->object_name) != 0)
+			continue;
+		table = mdb_read_table(entry);
+		if (!table) {
+			strcpy(stmt->sqlState, "HY000"); // General error
+			LogStatementError(stmt, "Could not read table '%s'", table_name);
+			g_free(table_name);
+			return SQL_ERROR;
+		}
+		/* mdb_read_indices() must directly follow mdb_read_columns(),
+		 * and returns NULL even on success */
+		if (mdb_read_columns(table))
+			mdb_read_indices(table);
+		if (!table->columns || !table->indices) {
+			strcpy(stmt->sqlState, "HY000"); // General error
+			LogStatementError(stmt, "Could not read indexes of table '%s'", table_name);
+			mdb_free_tabledef(table);
+			g_free(table_name);
+			return SQL_ERROR;
+		}
+		for (j=0; j<table->num_idxs; j++) {
+			idx = g_ptr_array_index(table->indices, j);
+			if (idx->index_type != 1) /* not the primary key */
+				continue;
+			ts2 = mdb_ascii2unicode(mdb, table->name, 0, (char*)t2, sizeof(t2));
+			ts5 = mdb_ascii2unicode(mdb, idx->name, 0, (char*)t5, sizeof(t5));
+			for (k=0; k<idx->num_keys; k++) {
+				col = g_ptr_array_index(table->columns, idx->key_col_num[k]-1);
+				ts3 = mdb_ascii2unicode(mdb, col->name, 0, (char*)t3, sizeof(t3));
+				key_seq = k+1;
+
+				FILL_FIELD(&fields[0], NULL, 0);
+				FILL_FIELD(&fields[1], NULL, 0);
+				FILL_FIELD(&fields[2], t2, ts2);
+				FILL_FIELD(&fields[3], t3, ts3);
+				FILL_FIELD(&fields[4], &key_seq, 0);
+				FILL_FIELD(&fields[5], t5, ts5);
+
+				row_size = mdb_pack_row(ttable, row_buffer, 6, fields);
+				mdb_add_row_to_pg(ttable, row_buffer, row_size);
+				ttable->num_rows++;
+			}
+		}
+		mdb_free_tabledef(table);
+	}
+	g_free(table_name);
+
 	return SQL_SUCCESS;
 }
 
@@ -1828,6 +1917,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			_set_func_exists(pfExists,SQL_API_SQLNUMRESULTCOLS);
 			_set_func_exists(pfExists,SQL_API_SQLPARAMDATA);
 			_set_func_exists(pfExists,SQL_API_SQLPREPARE);
+			_set_func_exists(pfExists,SQL_API_SQLPRIMARYKEYS);
 			_set_func_exists(pfExists,SQL_API_SQLPUTDATA);
 			_set_func_exists(pfExists,SQL_API_SQLROWCOUNT);
 			//_set_func_exists(pfExists,SQL_API_SQLSETCONNECTATTR);
@@ -1876,6 +1966,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 			pfExists[SQL_API_SQLNUMRESULTCOLS] = SQL_TRUE;
 			pfExists[SQL_API_SQLPARAMDATA] = SQL_TRUE;
 			pfExists[SQL_API_SQLPREPARE] = SQL_TRUE;
+			pfExists[SQL_API_SQLPRIMARYKEYS] = SQL_TRUE;
 			pfExists[SQL_API_SQLPUTDATA] = SQL_TRUE;
 			pfExists[SQL_API_SQLROWCOUNT] = SQL_TRUE;
 			pfExists[SQL_API_SQLSETCONNECTOPTION] = SQL_TRUE;
@@ -1919,6 +2010,7 @@ SQLRETURN SQL_API SQLGetFunctions(
 		case SQL_API_SQLNUMRESULTCOLS:
 		case SQL_API_SQLPARAMDATA:
 		case SQL_API_SQLPREPARE:
+		case SQL_API_SQLPRIMARYKEYS:
 		case SQL_API_SQLPUTDATA:
 		case SQL_API_SQLROWCOUNT:
 		case SQL_API_SQLSETCONNECTOPTION:

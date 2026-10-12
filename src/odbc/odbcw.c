@@ -253,6 +253,30 @@ SQLRETURN SQL_API SQLColumnsW(
 	}
 }
 
+SQLRETURN SQL_API SQLPrimaryKeysW(
+    SQLHSTMT           hstmt,
+    SQLWCHAR           *szCatalogName,
+    SQLSMALLINT        cbCatalogName,
+    SQLWCHAR           *szSchemaName,
+    SQLSMALLINT        cbSchemaName,
+    SQLWCHAR           *szTableName,
+    SQLSMALLINT        cbTableName)
+{
+	TRACE("SQLPrimaryKeysW");
+	if (!szTableName)
+		return SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, NULL, 0);
+	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
+	{
+		size_t l=cbTableName*4;
+		SQLCHAR *tmp=calloc(l+1,1);
+		SQLRETURN ret;
+		l = unicode2ascii(((struct _hstmt* )hstmt)->hdbc, szTableName, cbTableName, tmp, l);
+		ret = SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, tmp, l);
+		free(tmp);
+		return ret;
+	}
+}
+
 SQLRETURN SQL_API SQLGetInfoW(
     SQLHDBC            hdbc,
     SQLUSMALLINT       fInfoType,
