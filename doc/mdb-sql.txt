@@ -2,7 +2,7 @@ NAME
   mdb-sql - SQL interface to MDB Tools
 
 SYNOPSIS
-  mdb-sql [-HFp] [-d char] [-i file] [-o file] [-D fmt] [-T fmt] [database]
+  mdb-sql [-HFP] [-d char] [-i file] [-o file] [-D fmt] [-T fmt] [database]
   mdb-sql -h|--help
   mdb-sql --version
 
@@ -15,16 +15,16 @@ language.
 OPTIONS
   -H, --no-header              Suppress header row.
   -F, --no-footer              Suppress footer row.
-  -p, --no-pretty-print        Turn off pretty printing. By default results are printed in an
+  -P, --no-pretty-print        Turn off pretty printing. By default results are printed in an
 ascii table format which looks nice but is not conducive to manipulating the
 output with unix tools. This option prints output plainly in a tab separated
 format.
   -d, --delimiter char         Specify an alternative column delimiter. If no delimiter is
 specified, columns will be delimited by a tab character if pretty printing
-(-p) is turned off. If pretty printing is enabled this option is meaningless.
+(-P) is turned off. If pretty printing is enabled this option is meaningless.
   -i, --input file             Specify an input file. This option allows an input file containing the SQL to be passed to mdb-sql.  See Notes.
   -o, --output file            Specify an output file. This option allows the name of an output file to be used instead of stdout.
-  -D, --date-format fmt        Set the date format used for columns formatted as Short Date (see strftime(3) for details).
+  -D, --date-format fmt        Set the date format used for columns formatted as Short Date (see strftime(3) for details). Default is "%x".
   -T, --datetime-format fmt    Set the date/time format used for other date columns (see strftime(3) for details). Default is "%x %X".
   --version                    Print the mdbtools version and exit.
 
@@ -33,28 +33,61 @@ COMMANDS
 
   connect to database    If no database was specified on the command line this command is necessary before any querys are issued. It also allows the switching of databases once in the tool.
   disconnect             Will disconnect from the current database.
-  go                     Each batch is sent to the parser using the 'go' command.
+  go                     Each batch is sent to the parser using the 'go' command. A statement can also be ended with a semicolon.
   reset	                 A batch can be cleared using the 'reset' command.
   list tables            The list tables command will display a list of available tables in this database, similar to the mdb-tables utility on the command line.
   describe table <table>   Will display the column information for the specified table.
+  :r file                Reads statements from a file.
+  set showplan on|off    Shows how the WHERE clause is evaluated before each query.
+  set noexec on|off      Parses queries without running them.
+  set stats on|off       Prints the number of pages read when turned off.
   quit                   Will exit the tool.
 
 SQL LANGUAGE
-  The currently implemented SQL subset is quite small, supporting only single table queries, no aggregates, and limited support for WHERE clauses. Here is a brief synopsis of the supported language.
+  The implemented SQL subset is small: it supports queries on a single table, with no joins, ordering, grouping or expressions other than the comparisons in the WHERE clause. Keywords are case-insensitive. Here is a synopsis of the supported language.
 
-  select:	SELECT <top clause> [* | <column list>] FROM <table> WHERE <where clause> <limit clause>
+  select:	SELECT [<top clause>] <column list> FROM <table> [[AS] <alias>] [WHERE <condition>] [<limit clause>]
 
-  top clause:	TOP <integer> [ PERCENT ]
+  top clause:	TOP <integer> [PERCENT]
 
-  column list:	<column> [, <column list>]
+  limit clause:	LIMIT <integer>  (TOP and LIMIT can't be combined)
 
-  where clause:	<column> <operator> <literal> [AND <where clause>]
+  column list:	* | COUNT(*) | <column> [[AS] <alias>] [, ...]  where a column may also be <table>.* to select all its columns
 
-  limit clause:	LIMIT <integer>
+  column:	<name> | <table>.<name>  where <table> is the table name or its alias
 
-  operator:	=, =>, =<, <>, like, ilike, <, >
+  name:	an identifier made of letters, digits, _, # and @ (not starting with a digit), or any name in [brackets] or "double quotes" (write "" for a double quote inside the name)
 
-  literal:	integers, floating point numbers, or string literal in single quotes
+  condition:	<comparison> | NOT <condition> | <condition> AND <condition> | <condition> OR <condition> | ( <condition> )
+
+  comparison:	<column> <operator> <literal>, <literal> <operator> <column>, <literal> <operator> <literal>, <column> IS [NOT] NULL, <column> [NOT] IN (<literal> [, ...]), or <column> [NOT] BETWEEN <literal> AND <literal>
+
+  operator:	=, <>, <, >, <=, >=, LIKE, ILIKE
+
+  literal:	an integer or decimal number (12, -1.5, 2e3), a string in single quotes (write '' for a quote inside the string), a date between # signs (see below), or strptime('date', 'format')
+
+  An alias is a name as above; the alias of a column is the column name shown in the header (and reported to ODBC applications), but it can't be used in the WHERE clause.
+
+  Statements other than SELECT: CONNECT TO <database>, DISCONNECT, LIST TABLES and DESCRIBE TABLE <table>.
+
+COMPARISONS
+  A literal is converted to the type of the column it is compared with. Numeric columns (including Currency, Decimal and Yes/No columns) can be compared with numbers, or with strings that hold a number; Yes/No columns are 1 when true, and any non-zero number matches them with = and <>. Text and Memo columns can be compared with strings, or with numbers, which are compared as written (so 05021 matches '05021'). Other combinations, and comparisons involving OLE and binary columns, are reported as errors.
+
+  The LIKE operator performs a case-sensitive pattern match on text columns, with ANSI-style wildcards. An underscore in the pattern will match any single character, and a percent sign will match any run of characters. The pattern must be on the right of LIKE.
+
+  The ILIKE operator is similar, but performs a case-insensitive pattern match.
+
+  A date/time column can be compared with:
+
+  * a date literal between # signs, as in Access: #MM/DD/YYYY#, #YYYY/MM/DD#, #YYYY-MM-DD#, optionally followed by a time HH:MM[:SS] with an optional AM or PM, or a time alone (#12:30:00#). Two digit years are 1930 to 2029.
+
+  * a string literal in the form 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DD HH:MM:SS'.
+
+  * strptime('date', 'format'), which parses date with a strptime(3) format, for any other form.
+
+  Comparisons with NULL values are never true, and neither are their negations; use IS NULL or IS NOT NULL to test for them.
+
+  col IN (a, b) is the same as col = a OR col = b, and col BETWEEN a AND b the same as col >= a AND col <= b.
 
 NOTES
   When passing a file (-i) or piping output to mdb-sql the final 'go' is optional. This allow constructs like 
@@ -64,12 +97,6 @@ NOTES
   to work correctly.
 
   The -i command can be passed the string 'stdin' to test entering text as if using a pipe.
-
-  The 'like' operator performs a case-sensitive pattern match, with ANSI-style wildcards. An underscore in the pattern will match any single character, and a percent sign will match any run of characters.
-
-  The 'ilike' operator is similar, but performs a case-insensitive pattern match.
-
-  A date/time column can be compared with a string literal in the form 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM' or 'YYYY-MM-DD HH:MM:SS', or with strptime('date', 'format') for other formats. Comparisons with NULL values are never true; use IS NULL or IS NOT NULL to test for them.
 
 ENVIRONMENT
   LC_COLLATE          Defines the locale for string-comparison operations. See locale(1).
@@ -99,4 +126,4 @@ AUTHORS
   The mdb-sql utility was written by Brian Bruns.
 
 BUGS
-  The supported SQL syntax is a very limited subset and deficient in several ways.
+  The supported SQL syntax is a very limited subset and deficient in several ways: there are no joins, ORDER BY, GROUP BY, aggregates other than COUNT(*), or expressions in the select list.
