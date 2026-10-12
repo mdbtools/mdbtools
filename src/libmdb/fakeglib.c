@@ -423,11 +423,13 @@ void g_ptr_array_free(GPtrArray *array, gboolean something) {
 
 GList *g_list_append(GList *list, void *data) {
     GList *new_list = calloc(1, sizeof(GList));
+    GList *last = g_list_last(list);
     new_list->data = data;
-    new_list->next = list;
-    if (list)
-        list->prev = new_list;
-    return new_list;
+    new_list->prev = last;
+    if (!last)
+        return new_list;
+    last->next = new_list;
+    return list;
 }
 
 GList *g_list_last(GList *list) {
