@@ -128,6 +128,11 @@ derived from the database creation date (also stored on this page as 8 bytes
 starting at offset 0x72).
 
 The 4 bytes at 0x3e on the Database Definition Page are the database key.
+If it is non-zero the other pages are encrypted.  Jet3 and Jet4 encrypt each
+page with RC4, keyed by the database key XOR the page number.  Access 2007 and
+later instead use Office (RC4 CryptoAPI or AES) encryption keyed by the
+password, described by a structure whose 2 byte length is at 0x299; mdbtools
+does not support it.
 
 The 2 bytes at 0x3C are the default database code page.  It names the charset
 of all text in a Jet3 file.  Jet4 stores text as unicode, so the code page

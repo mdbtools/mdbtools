@@ -30,7 +30,7 @@ static char *quote_char = "\"";
 static char *escape_char = "\\";
 static char *separator_char = ":";
 static char *row_start = "{";
-static char *row_end = "}\n";
+static char *row_end = "}";
 static char *delimiter = ",";
 static size_t quote_len = 1; //strlen(quote_char); /* multibyte */
 static size_t orig_escape_len = 1; //strlen(escape_char);
@@ -117,11 +117,16 @@ main(int argc, char **argv)
 	char *table_name = NULL;
 	char *locale = NULL;
 	int print_mdbver = 0;
+	int json_array = 0;
+	int row_count = 0;
+	int limit = -1;
 
 	GOptionEntry entries[] = {
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"no-unprintable", 'U', 0, G_OPTION_ARG_NONE, &drop_nonascii, "Change unprintable characters to spaces (otherwise escaped as \\u00XX)", NULL},
+		{"array", 'A', 0, G_OPTION_ARG_NONE, &json_array, "Output a single JSON array of row objects (default is one object per line)", NULL},
+		{"limit", 0, 0, G_OPTION_ARG_INT, &limit, "Stop after exporting <rows> rows (default is all rows)", "rows"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
         {NULL}
     };
@@ -179,7 +184,10 @@ main(int argc, char **argv)
 	}
 
 	/* read table */
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		fprintf(stderr, "Error: Unable to read the columns of table %s.\n", table_name);
+		exit(1);
+	}
 	mdb_rewind_table(table);
 
 	bound_values = g_malloc(table->num_cols * sizeof(char *));
@@ -195,7 +203,10 @@ main(int argc, char **argv)
 		}
 	}
 
-	while(mdb_fetch_row(table)) {
+	while((limit < 0 || row_count < limit) && mdb_fetch_row(table)) {
+		if (json_array)
+			fputs(row_count ? ",\n" : "[", outfile);
+		row_count++;
 		fputs(row_start, outfile);
 		int add_delimiter = 0;
 		for (i=0;i<table->num_cols;i++) {
@@ -219,7 +230,11 @@ main(int argc, char **argv)
 			}
 		}
 		fputs(row_end, outfile);
+		if (!json_array)
+			fputs("\n", outfile);
 	}
+	if (json_array)
+		fputs(row_count ? "]\n" : "[]\n", outfile);
 
 	/* free the memory used to bind */
 	for (i=0;i<table->num_cols;i++) {

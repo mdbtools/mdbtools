@@ -4,7 +4,7 @@ _mdb_json()
 	local cur prev words cword split
 	_init_completion -s || return
 
-	if [[ "$prev" == -@(D|-date-format|T|-datetime-format|U|--no-unprintable|h|-help) ]] ; then
+	if [[ "$prev" == -@(D|-date-format|T|-datetime-format|-limit|U|--no-unprintable|h|-help) ]] ; then
 		return 0
 	fi
 

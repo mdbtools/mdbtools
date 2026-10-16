@@ -1,0 +1,3 @@
+# Test fixtures are compared byte-for-byte against program output, so keep
+# them LF-only even when checked out on Windows with core.autocrlf.
+tests/** text eol=lf

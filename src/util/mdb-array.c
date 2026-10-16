@@ -53,7 +53,8 @@ int started;
  table = mdb_read_table_by_name (mdb, argv[2], MDB_TABLE);
  if (table)
        {
-	 mdb_read_columns (table);
+	 if (!mdb_read_columns (table))
+	   exit (1);
 	 mdb_rewind_table (table);
 	 
 	 for (j = 0; j < table->num_cols; j++) 

@@ -29,6 +29,10 @@
  // ensure that lexer will be 8-bit (and not just 7-bit)
 %option 8bit
 
+ // file paths are only recognized after CONNECT, so that the path pattern
+ // can't swallow things like "strptime('...'" or "(col" in other statements
+%s PATHMODE
+
 %{
 #include <string.h>
 #include "mdbsql.h"
@@ -52,7 +56,7 @@ struct sql_context;
 %%
 select		{ return SELECT; }
 from		{ return FROM; }
-connect	{ return CONNECT; }
+connect	{ BEGIN(PATHMODE); return CONNECT; }
 disconnect	{ return DISCONNECT; }
 to		{ return TO; }
 list		{ return LIST; }
@@ -65,6 +69,8 @@ or		{ return OR; }
 not		{ return NOT; }
 is		{ return IS; }
 null		{ return NUL; }
+in		{ return IN; }
+between		{ return BETWEEN; }
 "="		{ return EQ; }
 (<=)		{ return LTEQ; }
 (>=)		{ return GTEQ; }
@@ -76,6 +82,7 @@ ilike		{ return ILIKE; }
 limit		{ return LIMIT; }
 top		{ return TOP; }
 percent		{ return PERCENT; }
+as		{ return AS; }
 count\(		{ return COUNT; }
 strptime\(	{ return STRPTIME; }
 [ \t\r]	;
@@ -113,17 +120,14 @@ strptime\(	{ return STRPTIME; }
 		return STRING;
 	}
 
-(-?[0-9]+|(-?[0-9]*\.[0-9]*)(e[-+]?[0-9]+)?) {
+-?([0-9]+\.?[0-9]*|\.[0-9]+)(e[-+]?[0-9]+)? {
 		yylval->name = g_strdup(yytext); return NUMBER;
 	}
-~?(\/?[a-z0-9\.\-\_\!\~\'\(\)\%\xa0-\xff]+)+ {
-        if (yytext[0] == ')' && strlen(yytext) == 1) {
-            return CLOSING;
-        }
-
-        if (yytext[0] == '(' && strlen(yytext) == 1) {
-            return OPENING;
-        }
+#[^#\n]*#	{ yylval->name = g_strndup(yytext+1, yyleng-2); return DATE_LITERAL; }
+"("		{ return OPENING; }
+")"		{ return CLOSING; }
+<PATHMODE>~?(\/?[a-z0-9\.\-\_\!\~\'\(\)\%\xa0-\xff]+)+ {
+		BEGIN(INITIAL);
 		yylval->name = g_strdup(yytext); return PATH;
 	}
 

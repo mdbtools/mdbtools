@@ -43,7 +43,8 @@ main(int argc, char **argv)
 	table = mdb_read_table_by_name(mdb, argv[2], MDB_TABLE);
 
 	if (table) {
-		mdb_read_columns(table);
+		if (!mdb_read_columns(table))
+			exit(1);
 		mdb_read_indices(table);
 		for (j=0;j<table->num_idxs;j++) {
 			idx = g_ptr_array_index (table->indices, j);

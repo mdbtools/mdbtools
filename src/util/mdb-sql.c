@@ -56,6 +56,8 @@ int footers = 1;
 int pretty_print = 1;
 int showplan = 0;
 int noexec = 0;
+char *date_fmt = NULL;
+char *shortdate_fmt = NULL;
 
 #ifdef HAVE_READLINE_HISTORY
 #define HISTFILE ".mdbhistory"
@@ -149,13 +151,29 @@ do_set_cmd(MdbSQL *sql, char *s)
 	}
 }
 
+static void
+set_date_fmts(MdbSQL *sql)
+{
+	if (!sql->mdb)
+		return;
+	if (date_fmt)
+		mdb_set_date_fmt(sql->mdb, date_fmt);
+	if (shortdate_fmt)
+		mdb_set_shortdate_fmt(sql->mdb, shortdate_fmt);
+}
+
 void 
 run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
 	MdbTableDef *table;
 
 	mdb_sql_run_query(sql, mybuf);
-	if (!mdb_sql_has_error(sql)) {
+	/* The query may have been "connect to", which opens a new handle */
+	set_date_fmts(sql);
+	if (!mdb_sql_has_error(sql) && !sql->cur_table) {
+		/* Successful statement without a result set (connect/disconnect) */
+		mdb_sql_reset(sql);
+	} else if (!mdb_sql_has_error(sql)) {
 		if (showplan) {
 			table = sql->cur_table;
 			if (table->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
@@ -342,6 +360,8 @@ main(int argc, char **argv)
 		{ "no-footer", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &footers, "Don't print footer", NULL},
 		{ "input", 'i', 0, G_OPTION_ARG_FILENAME, &filename_in, "Read SQL from specified file", "file"},
 		{ "output", 'o', 0, G_OPTION_ARG_FILENAME, &filename_out, "Write result to specified file", "file"},
+		{ "date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{ "datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
@@ -404,6 +424,7 @@ main(int argc, char **argv)
 	sql = mdb_sql_init();
 	if (argc == 2) {
 		mdb_sql_open(sql, argv[1]);
+		set_date_fmts(sql);
 	}
 
 	/* give the buffer an initial size */

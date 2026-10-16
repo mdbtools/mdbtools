@@ -46,6 +46,9 @@ typedef struct MdbSQL
 	int limit;
 	int limit_percent;
 	long row_count;
+	/* Added in mdbtools 1.1 */
+	GPtrArray *params;		/* values of the ? parameters, see mdb_sql_set_param_null() */
+	unsigned int num_params;	/* number of ? parameters in the last statement parsed */
 } MdbSQL;
 
 typedef struct {
@@ -55,6 +58,11 @@ typedef struct {
 	int  bind_type;
 	int  *bind_len;
 	int  bind_max;
+	/* Added in mdbtools 1.1 */
+	char *qualifier;	/* table name or alias the column was qualified with, or NULL */
+	char *col_name;		/* the column of the table; name is its alias, if one was given */
+	MdbColumn *col;		/* the column of cur_table holding the values (set by mdb_sql_select()) */
+	void *copy_of;		/* internal: the MdbSQLColumn whose bound value is copied to this one */
 } MdbSQLColumn;
 
 typedef struct {
@@ -102,6 +110,16 @@ int mdb_sql_add_temp_col(MdbSQL *sql, MdbTableDef *ttable, int col_num, char *na
 int mdb_sql_bind_column(MdbSQL *sql, int colnum, void *varaddr, int *len_ptr);
 int mdb_sql_add_limit(MdbSQL *sql, char *limit, int percent);
 int mdb_sql_get_limit(MdbSQL *sql);
+
+/* Values for the ? parameters of the following statements; n is 1 based.
+ * Parameters keep their values until mdb_sql_clear_params(). Strings are
+ * UTF-8; dates are converted with mdb_tm_to_date(). */
+void mdb_sql_clear_params(MdbSQL *sql);
+int mdb_sql_set_param_null(MdbSQL *sql, int n);
+int mdb_sql_set_param_string(MdbSQL *sql, int n, const char *value);
+int mdb_sql_set_param_int(MdbSQL *sql, int n, long long value);
+int mdb_sql_set_param_double(MdbSQL *sql, int n, double value);
+int mdb_sql_set_param_date(MdbSQL *sql, int n, struct tm *value);
 
 int parse_sql(MdbSQL * mdb, const gchar* str);
 

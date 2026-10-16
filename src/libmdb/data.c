@@ -268,10 +268,47 @@ mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
 	}
 	return ret;
 }
+/* Number of bytes a value of a fixed width type occupies, or 0 */
+static int mdb_fixed_value_size(int col_type)
+{
+	switch (col_type) {
+		case MDB_BYTE: return 1;
+		case MDB_INT: return 2;
+		case MDB_LONGINT:
+		case MDB_COMPLEX:
+		case MDB_FLOAT: return 4;
+		case MDB_MONEY:
+		case MDB_DOUBLE:
+		case MDB_DATETIME: return 8;
+		case MDB_REPID: return 16;
+		case MDB_NUMERIC: return 17;
+	}
+	return 0;
+}
+/* Check that a value of a fixed width type is long enough to decode, and
+ * warn once per type and handle if it is not */
+static int mdb_fixed_value_ok(MdbHandle *mdb, int col_type, int len)
+{
+	int size = mdb_fixed_value_size(col_type);
+
+	if (size == 0 || len >= size)
+		return 1;
+	if (!(mdb->warned_short_types[col_type/8] & (1 << (col_type%8)))) {
+		mdb->warned_short_types[col_type/8] |= 1 << (col_type%8);
+		fprintf(stderr, "Warning: %d byte value of data type %d is shorter than %d bytes; "
+				"treating it as NULL (the database may be corrupt)\n", len, col_type, size);
+	}
+	return 0;
+}
 static size_t
 mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
 int ret;
+	/* a truncated fixed width value would be decoded from past its end */
+	if (len && !mdb_fixed_value_ok(mdb, col->col_type, len)) {
+		col->cur_value_is_null = 1;
+		len = 0;
+	}
 	//if (!strcmp("Name",col->name)) {
 		//printf("start %d %d\n",start, len);
 	//}
@@ -725,15 +762,18 @@ mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 	char ole_ptr[MDB_MEMO_OVERHEAD];
 	char *result = malloc(OLE_BUFFER_SIZE);
 	size_t result_buffer_size = OLE_BUFFER_SIZE;
-	size_t len, pos;
+	size_t len, pos, ole_len;
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
+	/* Stop at the declared length so that an LVAL chain pointing
+	 * back to itself can't grow the buffer forever */
+	ole_len = mdb_get_int32(ole_ptr, 0) & 0x3fffffff;
 
 	/* col->bind_ptr is, by convention, mdb->bind_size bytes long */
 	len = mdb_ole_read(mdb, col, ole_ptr, mdb->bind_size);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
-	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
+	while (pos < ole_len && (len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
 			result_buffer_size += OLE_BUFFER_SIZE;
 			if ((result = reallocf(result, result_buffer_size)) == NULL) {
@@ -882,8 +922,10 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			if (tmpoff + len - 4 > memo_len)
 				break;
 
-			/* Stop processing on zero length multiple page memo fields */
-			if (len < 4)
+			/* Stop processing on zero length multiple page memo fields.
+			 * An empty chunk would not advance tmpoff, so a chain
+			 * pointing back to itself would never terminate. */
+			if (len <= 4)
 				break;
 
 			memcpy(tmp + tmpoff, (char*)buf + row_start + 4, len - 4);
@@ -936,7 +978,10 @@ mdb_tm_to_date(struct tm *t, double *td)
 	short yr = t->tm_year + 1900;
 	char leap = ((yr & 3) == 0) && ((yr % 100) != 0 || (yr % 400) == 0);
 	const int *cal = leap ? leap_cal : noleap_cal;
-	long int time = (yr*365+(yr/4)-(yr/100)+(yr/400)+cal[t->tm_mon]+t->tm_mday)-693959;
+	/* days since 1/1/0001 (proleptic Gregorian), minus those up to 12/30/1899;
+	 * leap days are counted for the years before yr only, as cal
+	 * already accounts for a leap day in yr itself */
+	long int time = ((yr-1)*365L+((yr-1)/4)-((yr-1)/100)+((yr-1)/400)+cal[t->tm_mon]+t->tm_mday)-693594;
 
 	*td = (((long)t->tm_hour * 3600)+((long)t->tm_min * 60)+((long)t->tm_sec)) / 86400.0;
 	if (time>=0) *td+=time; else *td=time-*td;
@@ -1012,7 +1057,7 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 
 	mdb_date_to_tm(td, &t);
 
-	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
+	strftime(text, mdb->bind_size, fmt, &t);
 
 	return text;
 }
@@ -1074,6 +1119,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 	float tf;
 	double td;
 
+	if (!mdb_fixed_value_ok(mdb, datatype, size))
+		return g_strdup("");
+
 	switch (datatype) {
 		case MDB_BYTE:
 			text = g_strdup_printf("%hhu", mdb_get_byte(buf, start));
@@ -1128,7 +1176,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		default:
 			/* shouldn't happen.  bools are handled specially
 			** by mdb_xfer_bound_bool() */
-			fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
+			/* warn once per type and handle, not once per value */
+			if (datatype < 0 || datatype > 255 ||
+					!(mdb->warned_types[datatype/8] & (1 << (datatype%8)))) {
+				if (datatype >= 0 && datatype <= 255)
+					mdb->warned_types[datatype/8] |= 1 << (datatype%8);
+				fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
+			}
 			text = g_strdup("");
 		break;
 	}

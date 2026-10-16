@@ -1,0 +1,51 @@
+OrderID	OrderDate
+10994	1996-05-02 00:00:00
+10995	1996-05-02 00:00:00
+10996	1996-05-02 00:00:00
+3 Rows retrieved
+OrderID
+10994
+10995
+10996
+3 Rows retrieved
+OrderID
+10994
+10995
+10996
+3 Rows retrieved
+OrderID
+10994
+10995
+10996
+3 Rows retrieved
+OrderID
+10994
+10995
+10996
+3 Rows retrieved
+count
+48
+1 Row retrieved
+count
+318
+1 Row retrieved
+count
+217
+1 Row retrieved
+count
+84
+1 Row retrieved
+Can't compare date column OrderDate with '1996-02-30'; use a 'YYYY-MM-DD [HH:MM:SS]' date or strptime()
+count
+3
+1 Row retrieved
+count
+3
+1 Row retrieved
+Invalid date #13/1/1996#; use #MM/DD/YYYY [HH:MM:SS]# or #YYYY-MM-DD [HH:MM:SS]#
+Invalid date #yesterday#; use #MM/DD/YYYY [HH:MM:SS]# or #YYYY-MM-DD [HH:MM:SS]#
+Can't compare column Freight of type Currency with a date
+Can't compare text column ShipName with a date
+count
+3
+1 Row retrieved

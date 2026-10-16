@@ -216,6 +216,7 @@ enum {
 	MDB_BINEXPORT_RAW,
 	MDB_BINEXPORT_OCTAL,
 	MDB_BINEXPORT_HEXADECIMAL,
+	MDB_BINEXPORT_NULL, /* export binary values as NULL */
 
     /* Flags that can be OR'ed into the above when calling mdb_print_col */
 	MDB_EXPORT_ESCAPE_CONTROL_CHARS = (1 << 4)
@@ -332,6 +333,10 @@ typedef struct {
 #else
     mdb_locale_t locale;
 #endif
+	/* bitmap of the data types mdb_col_to_string has warned about */
+	unsigned char warned_types[32];
+	/* bitmap of the data types warned about for values that are too short */
+	unsigned char warned_short_types[32];
 } MdbHandle; 
 
 typedef struct {
@@ -459,6 +464,8 @@ typedef struct S_MdbTableDef {
 	/* temp table */
 	unsigned int  is_temp_table;
 	GPtrArray     *temp_table_pages;
+	/* page holding table->index_start, set by mdb_read_columns() */
+	guint32	index_start_pg;
 } MdbTableDef;
 
 struct mdbindex {

@@ -41,6 +41,12 @@ Provides command line utilities, including:
 
 See the man page of each program for usage instructions.
 
+The [src/util](./src/util) directory also builds `mdb-import`, which imports
+CSV data into an existing table. Write support in libmdb is experimental (for
+example, tables with indexes are not handled correctly), so `mdb-import` is not installed and has no
+installed man page; run it from the build tree (`src/util/mdb-import`) at your
+own risk, and only on a copy of your database.
+
 The [src/util](./src/util) directory also contains a number of debugging tools, intended for developers. They are:
 
 | Command | Description |
@@ -75,11 +81,23 @@ First, you must have reasonably current installations of:
 * [libtool](https://www.gnu.org/software/libtool/)
 * [automake](https://www.gnu.org/software/automake/)
 * [autoconf](https://www.gnu.org/software/autoconf/) (version >= 2.64)
+* [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) (its
+  `pkg.m4` macros are needed when generating `configure`)
 
-If you want to build the SQL engine, you'll need
-[bison](https://www.gnu.org/software/bison/) (version >= 3.0) or
-[byacc](https://invisible-island.net/byacc/byacc.html), and
-[flex](https://github.com/westes/flex).
+GNU gettext is *not* required: the gettext macros used for iconv detection
+(`iconv.m4`, `lib-link.m4`, `lib-prefix.m4`, `lib-ld.m4` and
+`host-cpu-c-abi.m4`) are included in the [m4](./m4) directory. If gettext's
+`autopoint` is installed, `autoreconf -i` will run it and refresh these files
+with the system copies.
+
+If you want to build the SQL engine (which is also needed for the ODBC
+driver), you'll need [bison](https://www.gnu.org/software/bison/) (version >=
+3.0) and [flex](https://github.com/westes/flex). If either is missing or bison
+is too old, `configure` prints a warning and disables the SQL engine (and
+fails if the ODBC driver was requested). On
+macOS the system bison is 2.3, so install a newer one (e.g. with Homebrew or
+MacPorts) and point `configure` at it if necessary, e.g.
+`YACC=/opt/homebrew/opt/bison/bin/bison ./configure`.
 
 If you want to build the ODBC driver, you'll need `unixodbc-dev` (version
 2.2.10 or above) or [iodbc](http://www.iodbc.org/dataspace/doc/iodbc/wiki/iodbcWiki/WelcomeVisitors).
@@ -180,6 +198,66 @@ You can do that running:
 ```bash 
 ldconfig
 ```
+
+### Registering the ODBC driver
+
+`make install` copies the ODBC driver into `<libdir>/odbc` (`/usr/local/lib/odbc`
+by default), but does not register it with the driver manager. Two drivers are
+installed: `libmdbodbc` (ANSI) and `libmdbodbcW` (Unicode). On macOS they are
+named `libmdbodbc.dylib` and `libmdbodbcW.dylib` instead of `.so`.
+
+With unixODBC, save a driver template such as the following as
+`mdbtools-odbcinst.ini`, adjusting the paths to your installation:
+
+```ini
+[MDBTools]
+Description = MDB Tools ODBC driver
+Driver      = /usr/local/lib/odbc/libmdbodbc.so
+Setup       = /usr/local/lib/odbc/libmdbodbc.so
+FileUsage   = 1
+
+[MDBToolsW]
+Description = MDB Tools ODBC driver (Unicode)
+Driver      = /usr/local/lib/odbc/libmdbodbcW.so
+Setup       = /usr/local/lib/odbc/libmdbodbcW.so
+FileUsage   = 1
+```
+
+and register it (as root, since it updates the system-wide `odbcinst.ini`;
+`odbcinst -j` shows where that file is):
+
+```bash
+odbcinst -i -d -f mdbtools-odbcinst.ini
+```
+
+A data source is then defined in `odbc.ini` (system-wide, see `odbcinst -j`) or
+`~/.odbc.ini` (per user). The only setting the driver reads is `Database`, which
+should be the absolute path to the `.mdb` or `.accdb` file:
+
+```ini
+[nwind]
+Description = Northwind sample database
+Driver      = MDBTools
+Database    = /path/to/nwind.mdb
+```
+
+You can add it with `odbcinst -i -s -h -f dsn.ini` (user DSN) or
+`odbcinst -i -s -l -f dsn.ini` (system DSN), or by editing the file directly.
+Test it with unixODBC's `isql`:
+
+```bash
+echo "SELECT * FROM Customers" | isql nwind -v
+```
+
+You can also connect without a DSN by passing the file name in the
+connection string, e.g. `Driver=MDBTools;DBQ=/path/to/nwind.mdb`
+(`isql -k "Driver=MDBTools;DBQ=/path/to/nwind.mdb"`).
+
+With iODBC, add the same entries to its `odbcinst.ini` and `odbc.ini` files
+(`/etc/odbcinst.ini` and `/etc/odbc.ini`, or `~/.odbcinst.ini` and
+`~/.odbc.ini`; on macOS, `/Library/ODBC/` or `~/Library/ODBC/`); the
+`[ODBC Drivers]` section of `odbcinst.ini` should also list
+`MDBTools = Installed`.
 
 ## Hacking
 

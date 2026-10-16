@@ -71,6 +71,8 @@ main(int argc, char **argv)
 	char *table_name = NULL;
 	int bind_size = EXPORT_BIND_SIZE;
 	int print_mdbver = 0;
+	int limit = -1;
+	int row_count = 0;
 
 	GOptionEntry entries[] = {
 		{"no-header", 'H', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &header_row, "Suppress header row.", NULL},
@@ -86,8 +88,9 @@ main(int argc, char **argv)
 		{"date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
 		{"datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"null", '0', 0, G_OPTION_ARG_STRING, &null_text, "Use <char> to represent a NULL value", "char"},
-		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex"},
+		{"bin", 'b', 0, G_OPTION_ARG_STRING, &str_bin_mode, "Binary export mode", "strip|raw|octal|hex|null"},
 		{"boolean-words", 'B', 0, G_OPTION_ARG_NONE, &boolean_words, "Use TRUE/FALSE in Boolean fields (default is 0/1, or TRUE/FALSE with -I postgres)", NULL},
+		{"limit", 0, 0, G_OPTION_ARG_INT, &limit, "Stop after exporting <rows> rows (default is all rows)", "rows"},
 		{"bind-size", 0, 0, G_OPTION_ARG_INT, &bind_size, "Maximum size in bytes of an exported field value; longer values are truncated with a warning (default is 200000)", "bytes"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{NULL},
@@ -166,6 +169,8 @@ main(int argc, char **argv)
 			bin_mode = MDB_BINEXPORT_OCTAL;
 		else if (!strcmp(str_bin_mode, "hex"))
 			bin_mode = MDB_BINEXPORT_HEXADECIMAL;
+		else if (!strcmp(str_bin_mode, "null"))
+			bin_mode = MDB_BINEXPORT_NULL;
 		else {
 			fputs("Invalid binary mode\n", stderr);
 			exit(1);
@@ -183,12 +188,6 @@ main(int argc, char **argv)
 		/* Don't bother clean up memory before exit */
 		exit(1);
 	}
-
-	if (date_fmt)
-		mdb_set_date_fmt(mdb, date_fmt);
-
-	if (shortdate_fmt)
-		mdb_set_shortdate_fmt(mdb, shortdate_fmt);
 
 	if (insert_dialect && !strcmp(insert_dialect, "postgres"))
 		/* PostgreSQL BOOLEAN columns do not accept integer literals */
@@ -210,6 +209,13 @@ main(int argc, char **argv)
 			exit(1);
 		}
 
+	/* Set after the backend, which installs its own default date formats */
+	if (date_fmt)
+		mdb_set_date_fmt(mdb, date_fmt);
+
+	if (shortdate_fmt)
+		mdb_set_shortdate_fmt(mdb, shortdate_fmt);
+
 	table = mdb_read_table_by_name(mdb, table_name, MDB_TABLE);
 	if (!table) {
 		fprintf(stderr, "Error: Table %s does not exist in this database.\n", table_name);
@@ -218,7 +224,10 @@ main(int argc, char **argv)
 	}
 
 	/* read table */
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		fprintf(stderr, "Error: Unable to read the columns of table %s.\n", table_name);
+		exit(1);
+	}
 	mdb_rewind_table(table);
 
 	bound_values = g_malloc(table->num_cols * sizeof(char *));
@@ -246,7 +255,8 @@ main(int argc, char **argv)
 	if (mdb->default_backend->capabilities & MDB_SHEXP_BULK_INSERT) {
 		//for efficiency do multi row insert on engines that support this
 		int counter = 0;
-		while (mdb_fetch_row(table)) {
+		while ((limit < 0 || row_count < limit) && mdb_fetch_row(table)) {
+			row_count++;
 			if (counter % batch_size == 0) {
 				counter = 0; // reset to 0, prevent overflow on extremely large data sets.
 				char *quoted_name;
@@ -272,7 +282,8 @@ main(int argc, char **argv)
 					fputs(delimiter, outfile);
 				col = g_ptr_array_index(table->columns, i);
 				check_truncation(col, bound_lens[i]);
-				if (col->cur_value_is_null) {
+				if (col->cur_value_is_null ||
+						(bin_mode == MDB_BINEXPORT_NULL && is_binary_type(col->col_type))) {
 					/* Don't quote NULLs */
 					if (insert_dialect)
 						fputs("NULL", outfile);
@@ -307,7 +318,8 @@ main(int argc, char **argv)
 			fputs(row_delimiter, outfile);
 		}
 	} else {
-		while (mdb_fetch_row(table)) {
+		while ((limit < 0 || row_count < limit) && mdb_fetch_row(table)) {
+			row_count++;
 
 			if (insert_dialect) {
 				char *quoted_name;
@@ -331,7 +343,8 @@ main(int argc, char **argv)
 					fputs(delimiter, outfile);
 				col = g_ptr_array_index(table->columns, i);
 				check_truncation(col, bound_lens[i]);
-				if (col->cur_value_is_null) {
+				if (col->cur_value_is_null ||
+						(bin_mode == MDB_BINEXPORT_NULL && is_binary_type(col->col_type))) {
 					/* Don't quote NULLs */
 					if (insert_dialect)
 						fputs("NULL", outfile);

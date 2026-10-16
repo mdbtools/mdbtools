@@ -15,7 +15,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y gettext unixodbc unixodbc-dev libglib2.0-dev gcc-11 gcc-12
+          sudo apt-get install -y unixodbc unixodbc-dev libglib2.0-dev gcc-11 gcc-12
       - uses: actions/checkout@v4
       - name: Fetch test data
         run: |
@@ -64,7 +64,7 @@ jobs:
           mkdir test
           curl -sSLf "$TEST_DATA_URL" | tar xz --strip-components=1 -C test
       - name: Autoconf
-        run: autoreconf -i -f -I $(brew --prefix)/share/gettext/m4
+        run: autoreconf -i -f
       - name: Configure
         run: ./configure --disable-silent-rules --${{ matrix.glib }} --${{ matrix.iconv }} --with-unixodbc=/opt/homebrew/opt/unixodbc
         env:
@@ -107,7 +107,7 @@ jobs:
           mkdir test
           curl -sSLf "$TEST_DATA_URL" | tar xz --strip-components=1 -C test
       - name: Autoconf
-        run: autoreconf -i -f -I $(brew --prefix)/share/gettext/m4
+        run: autoreconf -i -f
       - name: Configure
         run: ./configure --disable-silent-rules --${{ matrix.glib }} --with-iodbc=/opt/homebrew/opt/libiodbc
         env:

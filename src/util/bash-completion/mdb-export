@@ -4,12 +4,12 @@ _mdb_export()
 	local cur prev words cword split
 	_init_completion -s || return
 
-	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|q|-quote|X|-escape|N|-namespace|S|-batch-size|D|-date-format|T|-datetime-format|0|-null|h|-help) ]] ; then
+	if [[ "$prev" == -@(d|-delimiter|R|-row-delimiter|q|-quote|X|-escape|N|-namespace|S|-batch-size|D|-date-format|T|-datetime-format|0|-null|-limit|h|-help) ]] ; then
 		return 0
 	elif [[ "$prev" == -@(I|-insert) ]] ; then
 		COMPREPLY=( $( compgen -W 'access sybase oracle postgres mysql sqlite' -- "$cur" ) )
 	elif [[ "$prev" == -@(b|-bin) ]] ; then
-		COMPREPLY=( $( compgen -W 'strip raw octal hex' -- "$cur" ) )
+		COMPREPLY=( $( compgen -W 'strip raw octal hex null' -- "$cur" ) )
 	fi
 
 	$split && return

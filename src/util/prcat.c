@@ -31,6 +31,10 @@ main(int argc, char **argv)
 	}
 	
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
+	if (!mdb) {
+		fprintf(stderr, "Unable to open database.\n");
+		exit(1);
+	}
 
 	mdb_dump_catalog(mdb,(argc > 2) ? atoi(argv[2]) : MDB_TABLE); 
 

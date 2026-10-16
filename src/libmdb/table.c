@@ -245,7 +245,20 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	int cur_pos;
 	size_t name_sz;
 	GPtrArray *allprops;
-	
+
+	/* The columns only need to be read once. Re-reading them would leak
+	 * (or, for a caller holding MdbColumn pointers or bindings, free) the
+	 * existing array; temp tables have no definition page to read. */
+	if (table->columns)
+		return table->columns;
+
+	/* Other calls (e.g. mdb_fetch_row) may have replaced the page buffer
+	 * since mdb_read_table, so re-read the table definition page. */
+	if (!mdb_read_pg(mdb, table->entry->table_pg)) {
+		fprintf(stderr, "mdb_read_columns: Unable to read page %lu\n", table->entry->table_pg);
+		return NULL;
+	}
+
 	table->columns = g_ptr_array_new();
 
 	col = g_malloc(fmt->tab_col_entry_size);
@@ -264,6 +277,16 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 	mdb_buffer_dump(mdb->pg_buf, cur_pos, fmt->tab_col_entry_size); */
 #endif
 		if (!read_pg_if_n(mdb, col, &cur_pos, fmt->tab_col_entry_size)) {
+			g_free(col);
+			mdb_free_columns(table->columns);
+			return table->columns = NULL;
+		}
+		/* Valid types are 0x01-0x0C and 0x0F-0x14 (EXTDATETIME); 0x0D
+		 * and 0x0E are not column types (see HACKING.md). Anything else
+		 * means the table definition is corrupt. */
+		if (col[0] == 0 || col[0] == 0x0d || col[0] == 0x0e || col[0] > 0x14) {
+			fprintf(stderr, "mdb_read_columns: column %u of table %s has unknown type 0x%02x; "
+					"the table definition may be corrupt\n", i, table->name, col[0]);
 			g_free(col);
 			mdb_free_columns(table->columns);
 			return table->columns = NULL;
@@ -348,6 +371,7 @@ GPtrArray *mdb_read_columns(MdbTableDef *table)
 			}
 		}
 	table->index_start = cur_pos;
+	table->index_start_pg = mdb->cur_pg;
 	return table->columns;
 }
 
@@ -371,7 +395,10 @@ guint32 pgnum;
 
 	if (table->props)
 		mdb_dump_props(table->props, stdout, 0);
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		mdb_free_tabledef(table);
+		return;
+	}
 	mdb_read_indices(table);
 
 	for (i=0;i<table->num_cols;i++) {

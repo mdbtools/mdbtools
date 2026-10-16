@@ -16,6 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+%code requires {
+#include "mdbsqlprivate.h"
+}
+
 %{
 #include "mdbsql.h"
 
@@ -56,20 +60,32 @@ typedef struct sql_context
 	char *name;
 	double dval;
 	int ival;
+	MdbSQLConst *cval;
+	MdbSQLColRef *colref;
+	GPtrArray *list;
 }
+
+%destructor { free($$); } <name>
+%destructor { mdbsql_const_free($$); } <cval>
+%destructor { mdbsql_colref_free($$); } <colref>
+%destructor { mdbsql_const_list_free($$); } <list>
 
 %start stmt
 
-%token <name> IDENT NAME PATH STRING NUMBER OPENING CLOSING
+%token <name> IDENT NAME PATH STRING NUMBER DATE_LITERAL
+%token OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
-%token DESCRIBE TABLE TOP PERCENT
-%token LTEQ GTEQ NEQ LIKE ILIKE IS NUL
+%token DESCRIBE TABLE TOP PERCENT AS
+%token LTEQ GTEQ NEQ LIKE ILIKE IS NUL IN BETWEEN
 
 %type <name> database
-%type <name> constant
+%type <cval> constant
 %type <ival> operator
 %type <ival> nulloperator
 %type <name> identifier
+%type <name> alias
+%type <colref> column_ref
+%type <list> constant_list
 
 //
 // operator precedence
@@ -145,12 +161,14 @@ sarg_list:
 	;
 
 sarg:
-	identifier operator constant	{ 
-	                        mdb_sql_add_sarg(parser_ctx->mdb, $1, $2, $3);
-				free($1);
-				free($3);
+	column_ref operator constant	{
+				int rc = mdbsql_add_sarg(parser_ctx->mdb, $1->qualifier, $1->name, $2, $3);
+				mdbsql_colref_free($1);
+				mdbsql_const_free($3);
+				if (rc) YYERROR;
 				}
-	| constant operator identifier {
+	| constant operator column_ref {
+				int rc;
 				switch($2) {
 					case MDB_GT:
 						$2 = MDB_LT;
@@ -165,25 +183,67 @@ sarg:
 						$2 = MDB_GTEQ;
 						break;
 				}
-
-	                        mdb_sql_add_sarg(parser_ctx->mdb, $3, $2, $1);
-				free($1);
-				free($3);
+				if ($2 == MDB_LIKE || $2 == MDB_ILIKE) {
+					mdb_sql_error(parser_ctx->mdb, "The pattern of LIKE must be on its right");
+					rc = 1;
+				} else {
+					rc = mdbsql_add_sarg(parser_ctx->mdb, $3->qualifier, $3->name, $2, $1);
+				}
+				mdbsql_const_free($1);
+				mdbsql_colref_free($3);
+				if (rc) YYERROR;
 				}
 	| constant operator constant {
-	                        mdb_sql_eval_expr(parser_ctx->mdb, $1, $2, $3);
-				free($1);
-				free($3);
+				int rc = mdbsql_eval_expr(parser_ctx->mdb, $1, $2, $3);
+				mdbsql_const_free($1);
+				mdbsql_const_free($3);
+				if (rc) YYERROR;
 	}
-	| identifier nulloperator	{ 
-	                        mdb_sql_add_sarg(parser_ctx->mdb, $1, $2, NULL);
-				free($1);
+	| column_ref nulloperator	{ 
+				mdbsql_add_sarg(parser_ctx->mdb, $1->qualifier, $1->name, $2, NULL);
+				mdbsql_colref_free($1);
 				}
+	| column_ref IN OPENING constant_list CLOSING {
+				int rc = mdbsql_add_in(parser_ctx->mdb, $1->qualifier, $1->name, $4, 0);
+				mdbsql_colref_free($1);
+				mdbsql_const_list_free($4);
+				if (rc) YYERROR;
+				}
+	| column_ref NOT IN OPENING constant_list CLOSING {
+				int rc = mdbsql_add_in(parser_ctx->mdb, $1->qualifier, $1->name, $5, 1);
+				mdbsql_colref_free($1);
+				mdbsql_const_list_free($5);
+				if (rc) YYERROR;
+				}
+	| column_ref BETWEEN constant AND constant {
+				int rc = mdbsql_add_between(parser_ctx->mdb, $1->qualifier, $1->name, $3, $5, 0);
+				mdbsql_colref_free($1);
+				mdbsql_const_free($3);
+				mdbsql_const_free($5);
+				if (rc) YYERROR;
+				}
+	| column_ref NOT BETWEEN constant AND constant {
+				int rc = mdbsql_add_between(parser_ctx->mdb, $1->qualifier, $1->name, $4, $6, 1);
+				mdbsql_colref_free($1);
+				mdbsql_const_free($4);
+				mdbsql_const_free($6);
+				if (rc) YYERROR;
+				}
+	;
+
+constant_list:
+	constant { $$ = g_ptr_array_new(); g_ptr_array_add($$, $1); }
+	| constant_list ',' constant { $$ = $1; g_ptr_array_add($$, $3); }
 	;
 
 identifier:
 	NAME
 	| IDENT
+	;
+
+column_ref:
+	identifier { $$ = mdbsql_colref_new(NULL, $1); }
+	| identifier '.' identifier { $$ = mdbsql_colref_new($1, $3); }
 	;
 
 operator:
@@ -204,12 +264,22 @@ nulloperator:
 
 constant:
 	STRPTIME constant ',' constant CLOSING {
-	        $$ = mdb_sql_strptime(parser_ctx->mdb, $2, $4);
-		free($2);
-		free($4);
+		$$ = mdbsql_strptime(parser_ctx->mdb, $2, $4);
+		mdbsql_const_free($2);
+		mdbsql_const_free($4);
+		if (!$$) YYERROR;
 	}
-	| NUMBER { $$ = $1; }
-	| STRING { $$ = $1; }
+	| NUMBER { $$ = mdbsql_const_new(MDB_SQL_CONST_NUMBER, $1, 0); free($1); }
+	| STRING { $$ = mdbsql_const_from_literal($1); free($1); }
+	| '?' {
+		$$ = mdbsql_const_param(parser_ctx->mdb);
+		if (!$$) YYERROR;
+	}
+	| DATE_LITERAL {
+		$$ = mdbsql_const_date(parser_ctx->mdb, $1);
+		free($1);
+		if (!$$) YYERROR;
+	}
 	;
 
 database:
@@ -219,7 +289,17 @@ database:
 	;
 
 table:
-	identifier { mdb_sql_add_table(parser_ctx->mdb, $1); free($1); }
+	identifier alias {
+			mdbsql_add_table(parser_ctx->mdb, $1, $2);
+			free($1);
+			free($2);
+		}
+	;
+
+alias:
+	/* empty */ { $$ = NULL; }
+	| identifier
+	| AS identifier { $$ = $2; }
 	;
 
 column_list:
@@ -231,7 +311,15 @@ column_list:
 	 
 
 column:
-	identifier { mdb_sql_add_column(parser_ctx->mdb, $1); free($1); }
+	column_ref alias {
+			mdbsql_add_column(parser_ctx->mdb, $1->qualifier, $1->name, $2);
+			mdbsql_colref_free($1);
+			free($2);
+		}
+	| identifier '.' '*' {
+			mdbsql_add_column(parser_ctx->mdb, $1, "*", NULL);
+			free($1);
+		}
 	;
 
 %%
@@ -241,6 +329,7 @@ int parse_sql( MdbSQL * mdb, const gchar *str)
 {
   sql_context ctx;
   ctx.mdb = mdb;
+  mdb->num_params = 0;
 
   yylex_init(&ctx.flex_scanner);
   yy_scan_string(str, ctx.flex_scanner);
@@ -252,6 +341,5 @@ int parse_sql( MdbSQL * mdb, const gchar *str)
 
 void yyerror(YYLTYPE* yyloc,sql_context* sql_ctx, char const * msg)
 {
-	fprintf(stderr,"Error at Line : %s\n", msg);
 	mdb_sql_error(sql_ctx->mdb, "%s", msg);
 }

@@ -85,7 +85,13 @@ main(int argc, char **argv)
 		mdb_close(mdb);
 		return 1;
 	}
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table)) {
+		g_free(table_name);
+		g_free(propColName);
+		mdb_free_tabledef(table);
+		mdb_close(mdb);
+		return 1;
+	}
 	mdb_rewind_table(table);
 
 	name = g_malloc(mdb->bind_size);

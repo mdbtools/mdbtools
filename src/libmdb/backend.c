@@ -275,15 +275,25 @@ const MdbBackendType*
 mdb_get_colbacktype(const MdbColumn *col) {
 	MdbBackend *backend = col->table->entry->mdb->default_backend;
 	int col_type = col->col_type;
-	if (col_type > MDB_NUMERIC)
-		return NULL;
-	if (col_type == MDB_LONGINT && col->is_long_auto && backend->type_autonum)
+	/* A complex column (multi-valued field, attachment or version
+	 * history) holds a 32-bit integer, the complex-field ID that keys
+	 * the rows of its hidden MSysComplexType_* table, and mdbtools
+	 * exports that ID rather than the values. Use the backend's long
+	 * integer type for it (never its autonumber type, although Access
+	 * sets the autonumber flag on these columns): the type tables,
+	 * including any passed to mdb_register_backend, only extend to
+	 * MDB_NUMERIC. */
+	if (col_type == MDB_COMPLEX)
+		col_type = MDB_LONGINT;
+	else if (col_type == MDB_LONGINT && col->is_long_auto && backend->type_autonum)
 		return backend->type_autonum;
+	if (col_type < 0 || col_type > MDB_NUMERIC)
+		return NULL;
 	if (col_type == MDB_DATETIME && backend->type_shortdate) {
 		if (mdb_col_is_shortdate(col))
 			return backend->type_shortdate;
 	}
-	if (!backend->types_table[col_type].name[0])
+	if (!backend->types_table[col_type].name || !backend->types_table[col_type].name[0])
 		return NULL;
 	return &backend->types_table[col_type];
 }
@@ -933,6 +943,20 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	MdbProperties *props;
 	const char *prop_value;
 
+	table = mdb_read_table (entry);
+	if (!table) {
+		fprintf(stderr, "Error: Table %s does not exist\n", entry->object_name);
+		return;
+	}
+
+	/* get the columns before printing anything, so that a table whose
+	 * definition cannot be read is left out instead of half printed */
+	if (!mdb_read_columns(table)) {
+		fprintf(stderr, "Error: Unable to read the columns of table %s\n", entry->object_name);
+		mdb_free_tabledef(table);
+		return;
+	}
+
 	quoted_table_name = mdb->default_backend->quote_schema_name(dbnamespace, entry->object_name);
 	quoted_table_name = mdb_normalise_and_replace(mdb, &quoted_table_name);
 
@@ -943,15 +967,6 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 	/* create the table */
 	fprintf (outfile, mdb->default_backend->create_table_statement, quoted_table_name);
 	fprintf (outfile, " (\n");
-
-	table = mdb_read_table (entry);
-	if (!table) {
-		fprintf(stderr, "Error: Table %s does not exist\n", entry->object_name);
-		return;
-	}
-
-	/* get the columns */
-	mdb_read_columns(table);
 
 	/* loop over the columns, dumping the names and types */
 	for (i = 0; i < table->num_cols; i++) {
@@ -1204,7 +1219,7 @@ mdb_print_col(FILE *outfile, gchar *col_val, int quote_text, int col_type, int b
 
 	while (1) {
 		if (is_binary_type(col_type)) {
-			if (bin_mode == MDB_BINEXPORT_STRIP)
+			if (bin_mode == MDB_BINEXPORT_STRIP || bin_mode == MDB_BINEXPORT_NULL)
 				break;
 			if (!bin_len--)
 				break;

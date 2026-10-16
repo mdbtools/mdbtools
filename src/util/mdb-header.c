@@ -99,7 +99,8 @@ FILE *cfile;
 	       }
 
 	       /* get the columns */
-	       mdb_read_columns (table);
+	       if (!mdb_read_columns (table))
+			exit(1);
 
 	       /* loop over the columns, dumping the names and types */
 

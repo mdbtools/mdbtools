@@ -1,0 +1,39 @@
+ShipperID
+1
+3
+2 Rows retrieved
+ShipperID
+2
+1 Row retrieved
+ShipperID
+2
+1 Row retrieved
+count
+255
+1 Row retrieved
+count
+575
+1 Row retrieved
+count
+83
+1 Row retrieved
+count
+240
+1 Row retrieved
+count
+10
+1 Row retrieved
+count
+1
+1 Row retrieved
+count
+48
+1 Row retrieved
+count
+69
+1 Row retrieved
+count
+249
+1 Row retrieved
+Can't compare column ShipVia of type Long Integer with 'x'
+syntax error

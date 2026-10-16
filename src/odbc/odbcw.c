@@ -164,7 +164,9 @@ SQLRETURN SQL_API SQLColAttributesW(
 {
 	TRACE("SQLColAttributesW");
 	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL
-			&& fDescType!=SQL_DESC_NAME && fDescType!=SQL_COLUMN_TYPE_NAME)
+			&& fDescType!=SQL_DESC_NAME && fDescType!=SQL_COLUMN_TYPE_NAME
+			&& fDescType!=SQL_DESC_BASE_COLUMN_NAME && fDescType!=SQL_DESC_BASE_TABLE_NAME
+			&& fDescType!=SQL_DESC_TABLE_NAME)
 		return SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
 	else{
 		/* Unlike SQLDescribeCol, cbDescMax and *pcbDesc are in BYTES, not
@@ -230,6 +232,24 @@ SQLRETURN SQL_API SQLExecDirectW(
 	}
 }
 
+SQLRETURN SQL_API SQLPrepareW(
+    SQLHSTMT           hstmt,
+    SQLWCHAR           *szSqlStr,
+    SQLINTEGER         cbSqlStr)
+{
+	TRACE("SQLPrepareW");
+	if(cbSqlStr==SQL_NTS)cbSqlStr=sqlwlen(szSqlStr);
+	{
+		size_t l=cbSqlStr*4;
+		SQLCHAR *tmp=calloc(l+1,1);
+		SQLRETURN ret;
+		l = unicode2ascii(((struct _hstmt *)hstmt)->hdbc, szSqlStr, cbSqlStr, tmp, l);
+		ret = SQLPrepare(hstmt, tmp, l);
+		free(tmp);
+		return ret;
+	}
+}
+
 SQLRETURN SQL_API SQLColumnsW(
     SQLHSTMT           hstmt,
     SQLWCHAR           *szCatalogName,
@@ -241,13 +261,40 @@ SQLRETURN SQL_API SQLColumnsW(
     SQLWCHAR           *szColumnName,
     SQLSMALLINT        cbColumnName)
 {
+	TRACE("SQLColumnsW");
+	if (!szTableName)
+		return SQLColumns(hstmt, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
 	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
 	{
 		size_t l=cbTableName*4;
-		SQLCHAR *tmp=calloc(l,1);
+		SQLCHAR *tmp=calloc(l+1,1);
 		SQLRETURN ret;
 		l = unicode2ascii(((struct _hstmt* )hstmt)->hdbc, szTableName, cbTableName, tmp, l);
 		ret = SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);
+		free(tmp);
+		return ret;
+	}
+}
+
+SQLRETURN SQL_API SQLPrimaryKeysW(
+    SQLHSTMT           hstmt,
+    SQLWCHAR           *szCatalogName,
+    SQLSMALLINT        cbCatalogName,
+    SQLWCHAR           *szSchemaName,
+    SQLSMALLINT        cbSchemaName,
+    SQLWCHAR           *szTableName,
+    SQLSMALLINT        cbTableName)
+{
+	TRACE("SQLPrimaryKeysW");
+	if (!szTableName)
+		return SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, NULL, 0);
+	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
+	{
+		size_t l=cbTableName*4;
+		SQLCHAR *tmp=calloc(l+1,1);
+		SQLRETURN ret;
+		l = unicode2ascii(((struct _hstmt* )hstmt)->hdbc, szTableName, cbTableName, tmp, l);
+		ret = SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, tmp, l);
 		free(tmp);
 		return ret;
 	}

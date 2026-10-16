@@ -31,6 +31,10 @@ int page, start, stop;
 	}
 	
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
+	if (!mdb) {
+		fprintf(stderr, "Unable to open database.\n");
+		exit(1);
+	}
 
 	mdb_read_catalog(mdb, MDB_TABLE);
 

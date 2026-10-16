@@ -204,7 +204,8 @@ main(int argc, char **argv)
 		fprintf(stderr, "Table %s not found in database\n", argv[2]);
 		exit(1);
 	}
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table))
+		exit(1);
 	mdb_read_indices(table);
 	mdb_rewind_table(table);
 
