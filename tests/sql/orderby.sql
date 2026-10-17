@@ -1,0 +1,16 @@
+select ShipperID, CompanyName from Shippers order by CompanyName;
+select ShipperID, CompanyName from Shippers order by CompanyName desc;
+select ShipperID, CompanyName from Shippers order by Phone ASC;
+select top 5 ProductName, UnitPrice from Products order by UnitPrice desc, ProductName;
+select ProductName as n, UnitPrice from Products where CategoryID = 2 order by n limit 4;
+select e.LastName, e.BirthDate from Employees e order by e.BirthDate desc;
+select CustomerID, Region from Customers where Country = 'UK' order by Region, CustomerID;
+select CustomerID, Region from Customers where Country = 'UK' order by Region desc, CustomerID;
+select ProductID, Discontinued from Products where ProductID < 10 order by Discontinued, ProductID desc;
+select OrderID, EmployeeID from Orders where CustomerID = 'HANAR' order by EmployeeID;
+select OrderID, Freight from Orders where OrderID < 10258 order by Freight;
+select LastName from Employees order by Notes;
+select ShipperID from Shippers order by Nope;
+select ShipperID from Shippers order by x.Phone;
+select CategoryID from Categories order by Picture;
+select ShipperID from Shippers order by Phone sideways;

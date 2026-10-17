@@ -53,6 +53,7 @@ void mdb_free_tabledef(MdbTableDef *table)
 	mdb_free_indices(table->indices);
 	g_free(table->usage_map);
 	g_free(table->free_usage_map);
+	g_free(table->row_list);
 	g_free(table);
 }
 MdbTableDef *mdb_read_table(MdbCatalogEntry *entry)

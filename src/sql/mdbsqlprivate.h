@@ -48,10 +48,19 @@ typedef struct {
 	char *name;
 } MdbSQLColRef;
 
+/* A column of the ORDER BY clause */
+typedef struct {
+	char *qualifier;	/* NULL if not qualified */
+	char *name;		/* a column of the table, or an alias in the select list */
+	int desc;
+	MdbColumn *col;		/* set by mdb_sql_select() */
+} MdbSQLOrderCol;
+
 MdbSQLColRef *mdbsql_colref_new(char *qualifier, char *name);
 void mdbsql_colref_free(MdbSQLColRef *ref);
 int mdbsql_add_column(MdbSQL *sql, const char *qualifier, const char *name, const char *alias);
 int mdbsql_add_table(MdbSQL *sql, const char *name, const char *alias);
+int mdbsql_add_order(MdbSQL *sql, const char *qualifier, const char *name, const char *direction);
 
 MdbSQLConst *mdbsql_const_new(MdbSQLConstType type, const char *text, double d);
 MdbSQLConst *mdbsql_const_from_literal(const char *literal);

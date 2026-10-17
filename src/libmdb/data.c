@@ -536,7 +536,8 @@ mdb_fetch_row(MdbTableDef *table)
 	if (!table->cur_pg_num) {
 		table->cur_pg_num=1;
 		table->cur_row=0;
-		if ((!table->is_temp_table)&&(table->strategy!=MDB_INDEX_SCAN))
+		if (!table->is_temp_table && table->strategy != MDB_INDEX_SCAN &&
+				table->strategy != MDB_ROWLIST_SCAN)
 			if (!mdb_read_next_dpg(table)) return 0;
 	}
 
@@ -563,6 +564,17 @@ mdb_fetch_row(MdbTableDef *table)
 				return 0;
 			}
 			mdb_read_pg(mdb, pg);
+			table->cur_phys_pg = pg;
+		} else if (table->strategy==MDB_ROWLIST_SCAN) {
+			/* cur_pg_num is the 1 based position of the next row */
+			guint32 pg_row;
+			if (table->cur_pg_num > table->num_row_list)
+				return 0;
+			pg_row = table->row_list[table->cur_pg_num++ - 1];
+			table->cur_phys_pg = pg_row >> 8;
+			table->cur_row = pg_row & 0xff;
+			if (!mdb_read_pg(mdb, table->cur_phys_pg))
+				return 0;
 		} else {
 			/* the previous row may have left an overflow page in the
 			 * page buffer (no-op if the data page is still loaded) */
@@ -586,6 +598,31 @@ mdb_fetch_row(MdbTableDef *table)
 	} while (!rc);
 
 	return 1;
+}
+/*
+ * The location (page << 8 | row) of the row last returned by
+ * mdb_fetch_row(), for mdb_rowlist_scan_init()
+ */
+guint32
+mdb_fetched_pg_row(MdbTableDef *table)
+{
+	return table->cur_phys_pg << 8 | ((table->cur_row - 1) & 0xff);
+}
+/*
+ * Make mdb_fetch_row() return the rows at the given locations, in that
+ * order, e.g. rows fetched earlier (see mdb_fetched_pg_row()) and then
+ * sorted. The rows are still tested against the table's sargs. The table
+ * takes ownership of pg_rows, which must have been allocated with g_malloc().
+ */
+void
+mdb_rowlist_scan_init(MdbTableDef *table, guint32 *pg_rows, unsigned int num_rows)
+{
+	mdb_index_scan_free(table);
+	g_free(table->row_list);
+	table->row_list = pg_rows;
+	table->num_row_list = num_rows;
+	table->strategy = MDB_ROWLIST_SCAN;
+	mdb_rewind_table(table);
 }
 void mdb_data_dump(MdbTableDef *table)
 {

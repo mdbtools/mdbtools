@@ -67,6 +67,7 @@ MdbSQL *sql = g_malloc0(sizeof(MdbSQL));
 	sql->columns = g_ptr_array_new();
 	sql->tables = g_ptr_array_new();
 	sql->bound_values = g_ptr_array_new();
+	sql->order_by = g_ptr_array_new();
 	sql->sarg_tree = NULL;
 	sql->sarg_stack = NULL;
 	sql->max_rows = -1;
@@ -149,6 +150,18 @@ static void mdb_sql_free_tables(GPtrArray *tables)
 	}
 	g_ptr_array_free(tables, TRUE);
 }
+static void mdb_sql_free_order(GPtrArray *order_by)
+{
+	unsigned int i;
+	if (!order_by) return;
+	for (i=0; i<order_by->len; i++) {
+		MdbSQLOrderCol *o = g_ptr_array_index(order_by, i);
+		g_free(o->qualifier);
+		g_free(o->name);
+		g_free(o);
+	}
+	g_ptr_array_free(order_by, TRUE);
+}
 
 /* This gives us a nice, uniform place to keep up with memory that needs to be freed */
 static void mdb_sql_free(MdbSQL *sql)
@@ -163,6 +176,8 @@ static void mdb_sql_free(MdbSQL *sql)
 	/* Free MdbSQLColumns and MdbSQLTables */
 	mdb_sql_free_columns(sql->columns);
 	mdb_sql_free_tables(sql->tables);
+	mdb_sql_free_order(sql->order_by);
+	sql->order_by = NULL;
 
 	/* Free sargs */
 	if (sql->sarg_tree) {
@@ -853,6 +868,24 @@ int mdb_sql_add_table(MdbSQL *sql, char *table_name)
 {
 	return mdbsql_add_table(sql, table_name, NULL);
 }
+/* Add a column to the ORDER BY list; direction is ASC, DESC or NULL */
+int
+mdbsql_add_order(MdbSQL *sql, const char *qualifier, const char *name, const char *direction)
+{
+	MdbSQLOrderCol *o;
+
+	if (direction && g_ascii_strcasecmp(direction, "asc") &&
+			g_ascii_strcasecmp(direction, "desc")) {
+		mdb_sql_error(sql, "Expected ASC or DESC after %s in ORDER BY, not %s", name, direction);
+		return 1;
+	}
+	o = g_malloc0(sizeof(MdbSQLOrderCol));
+	o->qualifier = qualifier ? g_strdup(qualifier) : NULL;
+	o->name = g_strdup(name);
+	o->desc = direction && !g_ascii_strcasecmp(direction, "desc");
+	g_ptr_array_add(sql->order_by, o);
+	return 0;
+}
 void mdb_sql_dump(MdbSQL *sql)
 {
 	unsigned int i;
@@ -891,6 +924,8 @@ void mdb_sql_reset(MdbSQL *sql)
 	/* Reset MdbSQL tables */
 	sql->num_tables = 0;
 	sql->tables = g_ptr_array_new();
+
+	sql->order_by = g_ptr_array_new();
 
 	/* Reset bindings */
 	sql->bound_values = g_ptr_array_new();
@@ -1380,6 +1415,214 @@ mdb_sql_expand_stars(MdbSQL *sql, MdbTableDef *table)
 	g_ptr_array_free(columns, TRUE);
 }
 
+/* The value of an ORDER BY column in a row */
+typedef enum {
+	MDB_SQL_SORT_NULL,	/* sorts before any value */
+	MDB_SQL_SORT_NUMBER,	/* d */
+	MDB_SQL_SORT_STRING,	/* s, case folded */
+	MDB_SQL_SORT_BYTES	/* s, len bytes */
+} MdbSQLSortKeyType;
+
+typedef struct {
+	MdbSQLSortKeyType type;
+	double d;
+	char *s;
+	size_t len;
+} MdbSQLSortKey;
+
+typedef struct {
+	MdbSQL *sql;
+	guint32 pg_row;		/* see mdb_fetched_pg_row() */
+	unsigned int seq;	/* position in the scan, to keep the sort stable */
+	MdbSQLSortKey *keys;	/* one per ORDER BY column */
+} MdbSQLSortRow;
+
+/* Resolve the ORDER BY columns: an unqualified name may be an alias given
+ * in the select list, otherwise it is a column of the table */
+static int
+mdb_sql_resolve_order(MdbSQL *sql, MdbTableDef *table, MdbSQLTable *sql_tab)
+{
+	unsigned int i, j;
+
+	for (i=0;i<sql->order_by->len;i++) {
+		MdbSQLOrderCol *o = g_ptr_array_index(sql->order_by, i);
+		o->col = NULL;
+		if (o->qualifier) {
+			if (mdb_sql_check_qualifier(sql, sql_tab, o->qualifier))
+				return 1;
+		} else {
+			for (j=0;j<sql->num_columns;j++) {
+				MdbSQLColumn *sqlcol = g_ptr_array_index(sql->columns, j);
+				if (g_ascii_strcasecmp(sqlcol->name, sqlcol->col_name) &&
+						!g_ascii_strcasecmp(sqlcol->name, o->name)) {
+					o->col = sqlcol->col;
+					break;
+				}
+			}
+		}
+		if (!o->col)
+			o->col = mdb_sql_find_colbyname(table, o->name);
+		if (!o->col) {
+			mdb_sql_error(sql, "Column %s not found", o->name);
+			return 1;
+		}
+		if (o->col->col_type == MDB_OLE) {
+			mdb_sql_error(sql, "Can not sort by OLE column %s", o->col->name);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* Get the value of col in the row last fetched */
+static void
+mdb_sql_get_sort_key(MdbHandle *mdb, MdbColumn *col, MdbSQLSortKey *key)
+{
+	int start = col->cur_value_start;
+	char *str;
+
+	key->type = MDB_SQL_SORT_NUMBER;
+	if (col->col_type == MDB_BOOL) {
+		/* the value is stored in the null bit: set means false. Like
+		 * Access, sort true (-1) before false (0) */
+		key->d = col->cur_value_len ? 0 : -1;
+		return;
+	}
+	if (col->cur_value_is_null || !col->cur_value_len) {
+		key->type = MDB_SQL_SORT_NULL;
+		return;
+	}
+	switch (col->col_type) {
+		case MDB_BYTE:
+			key->d = mdb_get_byte(mdb->pg_buf, start);
+			break;
+		case MDB_INT:
+			key->d = (gint16)mdb_get_int16(mdb->pg_buf, start);
+			break;
+		case MDB_LONGINT:
+		case MDB_COMPLEX:
+			key->d = (gint32)mdb_get_int32(mdb->pg_buf, start);
+			break;
+		case MDB_FLOAT:
+			key->d = mdb_get_single(mdb->pg_buf, start);
+			break;
+		case MDB_DOUBLE:
+			key->d = mdb_get_double(mdb->pg_buf, start);
+			break;
+		case MDB_DATETIME:
+			/* Before 1899-12-30 the integer part (the day) is negative,
+			 * but the fraction (the time) still counts forwards: -1.25
+			 * is 06:00 on 1899-12-29. Make the value linear */
+			key->d = mdb_get_double(mdb->pg_buf, start);
+			if (key->d < 0) {
+				double day = (double)(long long)key->d;
+				key->d = day + (day - key->d);
+			}
+			break;
+		case MDB_MONEY:
+		case MDB_NUMERIC:
+			if (col->col_type == MDB_MONEY)
+				str = mdb_money_to_string(mdb, start);
+			else
+				str = mdb_numeric_to_string(mdb, start, col->col_scale, col->col_prec);
+			key->d = g_ascii_strtod(str, NULL);
+			g_free(str);
+			break;
+		case MDB_BINARY:
+			key->type = MDB_SQL_SORT_BYTES;
+			key->len = col->cur_value_len;
+			key->s = g_memdup2(mdb->pg_buf + start, key->len);
+			break;
+		case MDB_TEXT:
+		case MDB_MEMO:
+			/* Access ignores case, and so do we, but it also uses the
+			 * collation of the database's sort order, which we don't */
+			key->type = MDB_SQL_SORT_STRING;
+			str = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, col->cur_value_len);
+			key->s = g_utf8_casefold(str, -1);
+			g_free(str);
+			break;
+		default:
+			key->type = MDB_SQL_SORT_STRING;
+			key->s = mdb_col_to_string(mdb, mdb->pg_buf, start, col->col_type, col->cur_value_len);
+			break;
+	}
+}
+
+static int
+mdb_sql_compare_sort_keys(const MdbSQLSortKey *a, const MdbSQLSortKey *b)
+{
+	int rc;
+
+	if (a->type == MDB_SQL_SORT_NULL || b->type == MDB_SQL_SORT_NULL)
+		return (a->type != MDB_SQL_SORT_NULL) - (b->type != MDB_SQL_SORT_NULL);
+	switch (a->type) {
+		case MDB_SQL_SORT_NUMBER:
+			return (a->d > b->d) - (a->d < b->d);
+		case MDB_SQL_SORT_STRING:
+			return strcmp(a->s, b->s);
+		case MDB_SQL_SORT_BYTES:
+			rc = memcmp(a->s, b->s, MIN(a->len, b->len));
+			return rc ? rc : (a->len > b->len) - (a->len < b->len);
+		default:
+			return 0;
+	}
+}
+
+static int
+mdb_sql_compare_sort_rows(gconstpointer pa, gconstpointer pb)
+{
+	const MdbSQLSortRow *a = *(MdbSQLSortRow * const *)pa;
+	const MdbSQLSortRow *b = *(MdbSQLSortRow * const *)pb;
+	GPtrArray *order_by = a->sql->order_by;
+	unsigned int i;
+	int rc;
+
+	for (i=0;i<order_by->len;i++) {
+		MdbSQLOrderCol *o = g_ptr_array_index(order_by, i);
+		rc = mdb_sql_compare_sort_keys(&a->keys[i], &b->keys[i]);
+		if (rc)
+			return o->desc ? -rc : rc;
+	}
+	return (a->seq > b->seq) - (a->seq < b->seq);
+}
+
+/* Read the matching rows, and make mdb_fetch_row() return them in the order
+ * of the ORDER BY clause */
+static void
+mdb_sql_sort_rows(MdbSQL *sql, MdbTableDef *table)
+{
+	GPtrArray *rows = g_ptr_array_new();
+	unsigned int i, j, num_keys = sql->order_by->len;
+	guint32 *pg_rows;
+
+	while (mdb_fetch_row(table)) {
+		MdbSQLSortRow *row = g_malloc0(sizeof(MdbSQLSortRow));
+		row->sql = sql;
+		row->pg_row = mdb_fetched_pg_row(table);
+		row->seq = rows->len;
+		row->keys = g_malloc0(num_keys * sizeof(MdbSQLSortKey));
+		for (i=0;i<num_keys;i++) {
+			MdbSQLOrderCol *o = g_ptr_array_index(sql->order_by, i);
+			mdb_sql_get_sort_key(sql->mdb, o->col, &row->keys[i]);
+		}
+		g_ptr_array_add(rows, row);
+	}
+	g_ptr_array_sort(rows, mdb_sql_compare_sort_rows);
+
+	pg_rows = g_malloc((rows->len ? rows->len : 1) * sizeof(guint32));
+	for (i=0;i<rows->len;i++) {
+		MdbSQLSortRow *row = g_ptr_array_index(rows, i);
+		pg_rows[i] = row->pg_row;
+		for (j=0;j<num_keys;j++)
+			g_free(row->keys[j].s);
+		g_free(row->keys);
+		g_free(row);
+	}
+	mdb_rowlist_scan_init(table, pg_rows, rows->len);
+	g_ptr_array_free(rows, TRUE);
+}
+
 void 
 mdb_sql_select(MdbSQL *sql)
 {
@@ -1460,6 +1703,11 @@ int found = 0;
 			return;
 		}
 	}
+	if (!sql->sel_count && mdb_sql_resolve_order(sql, table, sql_tab)) {
+		mdb_free_tabledef(table);
+		mdb_sql_reset(sql);
+		return;
+	}
 
 	/* 
 	 * resolve column names to MdbColumn structs
@@ -1497,6 +1745,8 @@ int found = 0;
 
 	sql->cur_table = table;
 	mdb_index_scan_init(mdb, table);
+	if (sql->order_by->len)
+		mdb_sql_sort_rows(sql, table);
 
 	/* We know how many rows there are, so convert limit percentage
 	 * to an row count */

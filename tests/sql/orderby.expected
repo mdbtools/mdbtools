@@ -1,0 +1,111 @@
+ShipperID	CompanyName
+3	Federal Shipping
+1	Speedy Express
+2	United Package
+3 Rows retrieved
+ShipperID	CompanyName
+2	United Package
+1	Speedy Express
+3	Federal Shipping
+3 Rows retrieved
+ShipperID	CompanyName
+2	United Package
+1	Speedy Express
+3	Federal Shipping
+3 Rows retrieved
+ProductName	UnitPrice
+Côte de Blaye	263.5000
+Thüringer Rostbratwurst	123.7900
+Mishi Kobe Niku	97.0000
+Sir Rodney's Marmalade	81.0000
+Carnarvon Tigers	62.5000
+5 Rows retrieved
+n	UnitPrice
+Aniseed Syrup	10.0000
+Chef Anton's Cajun Seasoning	22.0000
+Chef Anton's Gumbo Mix	21.3500
+Genen Shouyu	15.5000
+4 Rows retrieved
+LastName	BirthDate
+Dodsworth	1966-01-27 00:00:00
+Leverling	1963-08-30 00:00:00
+Suyama	1963-07-02 00:00:00
+King	1960-05-29 00:00:00
+Callahan	1958-01-09 00:00:00
+Buchanan	1955-03-04 00:00:00
+Fuller	1952-02-19 00:00:00
+Davolio	1948-12-08 00:00:00
+Peacock	1937-09-19 00:00:00
+9 Rows retrieved
+CustomerID	Region
+AROUT	
+BSBEV	
+CONSH	
+EASTC	
+NORTS	
+SEVES	
+ISLAT	Isle of Wight
+7 Rows retrieved
+CustomerID	Region
+ISLAT	Isle of Wight
+AROUT	
+BSBEV	
+CONSH	
+EASTC	
+NORTS	
+SEVES	
+7 Rows retrieved
+ProductID	Discontinued
+9	1
+5	1
+8	0
+7	0
+6	0
+4	0
+3	0
+2	0
+1	0
+9 Rows retrieved
+OrderID	EmployeeID
+10690	1
+10886	1
+10981	1
+10541	2
+10253	3
+10903	3
+10925	3
+11052	3
+10250	4
+10645	4
+10783	4
+10922	5
+10770	8
+11022	9
+14 Rows retrieved
+OrderID	Freight
+10249	11.6100
+10256	13.9700
+10254	22.9800
+10248	32.3800
+10251	41.3400
+10252	51.3000
+10253	58.1700
+10250	65.8300
+10257	81.9100
+10255	148.3300
+10 Rows retrieved
+LastName
+Fuller
+Dodsworth
+Davolio
+Leverling
+Callahan
+Peacock
+Suyama
+King
+Buchanan
+9 Rows retrieved
+Column Nope not found
+Table x is not in the FROM clause
+Can not sort by OLE column Picture
+Expected ASC or DESC after Phone in ORDER BY, not sideways

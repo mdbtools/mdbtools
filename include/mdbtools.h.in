@@ -147,7 +147,8 @@ enum {
 typedef enum {
 	MDB_TABLE_SCAN,
 	MDB_LEAF_SCAN,
-	MDB_INDEX_SCAN
+	MDB_INDEX_SCAN,
+	MDB_ROWLIST_SCAN	/* see mdb_rowlist_scan_init() */
 } MdbStrategy;
 
 typedef enum {
@@ -466,6 +467,9 @@ typedef struct S_MdbTableDef {
 	GPtrArray     *temp_table_pages;
 	/* page holding table->index_start, set by mdb_read_columns() */
 	guint32	index_start_pg;
+	/* rows read by MDB_ROWLIST_SCAN, as page << 8 | row */
+	guint32	*row_list;
+	unsigned int	num_row_list;
 } MdbTableDef;
 
 struct mdbindex {
@@ -559,6 +563,8 @@ char *mdb_uuid_to_string_fmt(const void *buf, int start, MdbUuidFormat format);
 int mdb_bind_column(MdbTableDef *table, int col_num, void *bind_ptr, int *len_ptr);
 int mdb_rewind_table(MdbTableDef *table);
 int mdb_fetch_row(MdbTableDef *table);
+guint32 mdb_fetched_pg_row(MdbTableDef *table);
+void mdb_rowlist_scan_init(MdbTableDef *table, guint32 *pg_rows, unsigned int num_rows);
 int mdb_is_fixed_col(MdbColumn *col);
 char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int size);
 int mdb_find_pg_row(MdbHandle *mdb, int pg_row, void **buf, int *off, size_t *len);

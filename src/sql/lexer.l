@@ -83,6 +83,8 @@ limit		{ return LIMIT; }
 top		{ return TOP; }
 percent		{ return PERCENT; }
 as		{ return AS; }
+order		{ return ORDER; }
+by		{ return BY; }
 count\(		{ return COUNT; }
 strptime\(	{ return STRPTIME; }
 [ \t\r]	;

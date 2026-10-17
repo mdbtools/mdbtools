@@ -49,6 +49,7 @@ typedef struct MdbSQL
 	/* Added in mdbtools 1.1 */
 	GPtrArray *params;		/* values of the ? parameters, see mdb_sql_set_param_null() */
 	unsigned int num_params;	/* number of ? parameters in the last statement parsed */
+	GPtrArray *order_by;		/* internal: the ORDER BY columns of the statement */
 } MdbSQL;
 
 typedef struct {

@@ -44,11 +44,13 @@ COMMANDS
   quit                   Will exit the tool.
 
 SQL LANGUAGE
-  The implemented SQL subset is small: it supports queries on a single table, with no joins, ordering, grouping or expressions other than the comparisons in the WHERE clause. Keywords are case-insensitive. Here is a synopsis of the supported language.
+  The implemented SQL subset is small: it supports queries on a single table, with no joins, grouping or expressions other than the comparisons in the WHERE clause. Keywords are case-insensitive. Here is a synopsis of the supported language.
 
-  select:	SELECT [<top clause>] <column list> FROM <table> [[AS] <alias>] [WHERE <condition>] [<limit clause>]
+  select:	SELECT [<top clause>] <column list> FROM <table> [[AS] <alias>] [WHERE <condition>] [<order clause>] [<limit clause>]
 
   top clause:	TOP <integer> [PERCENT]
+
+  order clause:	ORDER BY <column> [ASC | DESC] [, ...]  where a column may also be the alias of a column in the select list
 
   limit clause:	LIMIT <integer>  (TOP and LIMIT can't be combined)
 
@@ -67,6 +69,8 @@ SQL LANGUAGE
   literal:	an integer or decimal number (12, -1.5, 2e3), a string in single quotes (write '' for a quote inside the string), a date between # signs (see below), or strptime('date', 'format')
 
   An alias is a name as above; the alias of a column is the column name shown in the header (and reported to ODBC applications), but it can't be used in the WHERE clause.
+
+  ORDER BY sorts the rows on each of its columns in turn, ascending unless DESC is given; rows that are equal on all of them keep the order of the table. TOP and LIMIT apply to the sorted rows. NULL values sort first, and Yes before No. Text and Memo columns are sorted ignoring case, by character code, which differs from Access for accented letters and punctuation. OLE columns can't be sorted. ASC and DESC are not reserved words, but ORDER and BY are: write a column with one of these names in [brackets].
 
   Statements other than SELECT: CONNECT TO <database>, DISCONNECT, LIST TABLES and DESCRIBE TABLE <table>.
 
@@ -128,4 +132,4 @@ AUTHORS
   The mdb-sql utility was written by Brian Bruns.
 
 BUGS
-  The supported SQL syntax is a very limited subset and deficient in several ways: there are no joins, ORDER BY, GROUP BY, aggregates other than COUNT(*), or expressions in the select list.
+  The supported SQL syntax is a very limited subset and deficient in several ways: there are no joins, GROUP BY, aggregates other than COUNT(*), or expressions in the select list.

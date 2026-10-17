@@ -75,7 +75,7 @@ typedef struct sql_context
 %token <name> IDENT NAME PATH STRING NUMBER DATE_LITERAL
 %token OPENING CLOSING
 %token SELECT FROM WHERE CONNECT DISCONNECT TO LIST TABLES AND OR NOT LIMIT COUNT STRPTIME
-%token DESCRIBE TABLE TOP PERCENT AS
+%token DESCRIBE TABLE TOP PERCENT AS ORDER BY
 %token LTEQ GTEQ NEQ LIKE ILIKE IS NUL IN BETWEEN
 
 %type <name> database
@@ -107,7 +107,7 @@ stmt:
 	;
 
 query:
-	SELECT top_clause column_list FROM table where_clause limit_clause {
+	SELECT top_clause column_list FROM table where_clause order_clause limit_clause {
 	                mdb_sql_select(parser_ctx->mdb);
 		}
 	|	CONNECT TO database { 
@@ -138,6 +138,30 @@ top_clause:
 where_clause:
 	/* empty */
 	| WHERE sarg_list
+	;
+
+order_clause:
+	/* empty */
+	| ORDER BY order_list
+	;
+
+order_list:
+	order_column
+	| order_list ',' order_column
+	;
+
+/* ASC and DESC are not reserved words, so they can still name columns */
+order_column:
+	column_ref {
+			mdbsql_add_order(parser_ctx->mdb, $1->qualifier, $1->name, NULL);
+			mdbsql_colref_free($1);
+		}
+	| column_ref NAME {
+			int rc = mdbsql_add_order(parser_ctx->mdb, $1->qualifier, $1->name, $2);
+			mdbsql_colref_free($1);
+			free($2);
+			if (rc) YYERROR;
+		}
 	;
 
 limit_clause:
