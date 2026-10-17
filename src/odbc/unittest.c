@@ -333,6 +333,60 @@ static int test_aliases(HSTMT hstmt)
 	return 0;
 }
 
+/* Precision and scale of exact numeric (currency) columns (issue #311) */
+static int test_precision_scale(HSTMT hstmt)
+{
+	SQLCHAR name[128];
+	SQLSMALLINT len, type, scale, nullable;
+	SQLULEN size;
+	SQLLEN prec_attr = 0, scale_attr = 0, ind;
+	SQLINTEGER column_size = 0;
+	SQLSMALLINT decimal_digits = 0;
+	int found = 0;
+
+	printf("\nTesting precision and scale...\n");
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	SQLFreeStmt(hstmt, SQL_UNBIND);
+	if (SQLExecDirect(hstmt, (SQLCHAR *)"SELECT UnitPrice FROM Products", SQL_NTS) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLExecDirect");
+		return 1;
+	}
+	if (SQLDescribeCol(hstmt, 1, name, sizeof(name), &len, &type, &size, &scale, &nullable) != SQL_SUCCESS
+			|| type != SQL_DECIMAL || size != 19 || scale != 4) {
+		fprintf(stderr, "SQLDescribeCol(UnitPrice) = type %d, size %d, scale %d, expected %d, 19, 4\n",
+				type, (int)size, scale, SQL_DECIMAL);
+		return 1;
+	}
+	if (SQLColAttributes(hstmt, 1, SQL_DESC_PRECISION, NULL, 0, NULL, &prec_attr) != SQL_SUCCESS
+			|| SQLColAttributes(hstmt, 1, SQL_DESC_SCALE, NULL, 0, NULL, &scale_attr) != SQL_SUCCESS
+			|| prec_attr != 19 || scale_attr != 4) {
+		fprintf(stderr, "SQL_DESC_PRECISION/SCALE(UnitPrice) = %d, %d, expected 19, 4\n",
+				(int)prec_attr, (int)scale_attr);
+		return 1;
+	}
+
+	if (SQLColumns(hstmt, NULL, 0, NULL, 0, (SQLCHAR *)"Products", SQL_NTS, NULL, 0) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem with SQLColumns");
+		return 1;
+	}
+	while (SQLFetch(hstmt) == SQL_SUCCESS) {
+		SQLGetData(hstmt, 4, SQL_C_CHAR, name, sizeof(name), &ind);
+		if (strcmp((char *)name, "UnitPrice") != 0)
+			continue;
+		found = 1;
+		SQLGetData(hstmt, 7, SQL_C_SLONG, &column_size, sizeof(column_size), &ind);
+		SQLGetData(hstmt, 9, SQL_C_SSHORT, &decimal_digits, sizeof(decimal_digits), &ind);
+	}
+	if (!found || column_size != 19 || decimal_digits != 4) {
+		fprintf(stderr, "SQLColumns(UnitPrice) = COLUMN_SIZE %d, DECIMAL_DIGITS %d, expected 19, 4\n",
+				(int)column_size, decimal_digits);
+		return 1;
+	}
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	printf("Precision and scale test passed.\n");
+	return 0;
+}
+
 /* Execute the prepared statement, return the number of rows, or -1 */
 static int execute_count(HSTMT hstmt, const char *what)
 {
@@ -776,6 +830,9 @@ int i;
 		return 1;
 
 	if (test_aliases(hstmt))
+		return 1;
+
+	if (test_precision_scale(hstmt))
 		return 1;
 
 	if (test_params(hdbc, hstmt))

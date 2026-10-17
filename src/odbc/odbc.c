@@ -32,6 +32,9 @@
 
 static SQLSMALLINT _odbc_get_client_type(MdbColumn *col);
 static const char * _odbc_get_client_type_name(MdbColumn *col);
+static int _odbc_is_exact_numeric(MdbColumn *col);
+static int _odbc_get_col_precision(MdbColumn *col);
+static int _odbc_get_col_scale(MdbColumn *col);
 static int _odbc_fix_literals(struct _hstmt *stmt);
 //static int _odbc_get_server_type(int clt_type);
 static int _odbc_get_string_size(int size, SQLCHAR *str);
@@ -832,11 +835,10 @@ SQLRETURN SQL_API SQLDescribeCol(
 		*pfSqlType = _odbc_get_client_type(col);
 	}
 	if (pcbColDef) {
-		*pcbColDef = col->col_size;
+		*pcbColDef = _odbc_is_exact_numeric(col) ? _odbc_get_col_precision(col) : col->col_size;
 	}
 	if (pibScale) {
-		/* FIX ME */
-		*pibScale = 0;
+		*pibScale = _odbc_get_col_scale(col);
 	}
 	if (pfNullable) {
 		*pfNullable = !col->is_fixed;
@@ -911,6 +913,14 @@ SQLRETURN SQL_API SQLColAttributes(
 			break;
 		}
 		case SQL_COLUMN_LENGTH:
+			break;
+		case SQL_COLUMN_PRECISION:
+		case SQL_DESC_PRECISION:
+			*pfDesc = _odbc_get_col_precision(col);
+			break;
+		case SQL_COLUMN_SCALE:
+		case SQL_DESC_SCALE:
+			*pfDesc = _odbc_get_col_scale(col);
 			break;
 		case SQL_COLUMN_DISPLAY_SIZE: /* =SQL_DESC_DISPLAY_SIZE */
 			*pfDesc = mdb_col_disp_size(col);
@@ -1706,6 +1716,8 @@ SQLRETURN SQL_API SQLColumns(
 	SQLSMALLINT datatype;  /* For datetime, use concise data type */
 	SQLSMALLINT sqldatatype;  /* For datetime, use nonconcise data type */
 	SQLINTEGER ordinal;
+	SQLINTEGER column_size;
+	SQLSMALLINT decimal_digits, radix = 10;
 	gchar *table_name = NULL;
 
 	TRACE("SQLColumns");
@@ -1780,6 +1792,13 @@ SQLRETURN SQL_API SQLColumns(
 			FILL_FIELD(&fields[3], t3, ts3);
 			FILL_FIELD(&fields[4], &datatype, 0);
 			FILL_FIELD(&fields[5], t5, ts5);
+			if (_odbc_is_exact_numeric(col)) {
+				column_size = _odbc_get_col_precision(col);
+				decimal_digits = _odbc_get_col_scale(col);
+				FILL_FIELD(&fields[6], &column_size, 0);
+				FILL_FIELD(&fields[8], &decimal_digits, 0);
+				FILL_FIELD(&fields[9], &radix, 0);
+			}
 			FILL_FIELD(&fields[10], &nullable, 0);
 			FILL_FIELD(&fields[13], &sqldatatype, 0);
 			FILL_FIELD(&fields[16], &ordinal, 0);
@@ -1882,8 +1901,12 @@ SQLRETURN SQL_API SQLGetData(
 		return SQL_ERROR;
 	}
 	found_bound_type:
-	if (fCType==SQL_C_DEFAULT)
+	if (fCType==SQL_C_DEFAULT) {
 		fCType = _odbc_get_client_type(col);
+		/* the default C type of SQL_NUMERIC and SQL_DECIMAL is SQL_C_CHAR */
+		if (fCType == SQL_NUMERIC || fCType == SQL_DECIMAL)
+			fCType = SQL_C_CHAR;
+	}
 	if (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR)
 		goto to_c_char;
 	switch(col->col_type) {
@@ -2750,6 +2773,8 @@ static SQLSMALLINT _odbc_get_client_type(MdbColumn *col)
 			return SQL_INTEGER;
 		case MDB_MONEY:
 			return SQL_DECIMAL;
+		case MDB_NUMERIC:
+			return SQL_NUMERIC;
 		case MDB_FLOAT:
 			return SQL_REAL;
 		case MDB_DOUBLE:
@@ -2812,6 +2837,37 @@ static const char * _odbc_get_client_type_name(MdbColumn *col)
 			break;
 	}
 	return NULL;
+}
+
+static int _odbc_is_exact_numeric(MdbColumn *col)
+{
+	return col->col_type == MDB_NUMERIC || col->col_type == MDB_MONEY;
+}
+
+/* Note that for NUMERIC columns libmdb stores the precision in col_scale
+ * and the scale in col_prec (issue #311) */
+static int _odbc_get_col_precision(MdbColumn *col)
+{
+	switch (col->col_type) {
+		case MDB_NUMERIC:
+			return col->col_scale;
+		case MDB_MONEY:
+			return 19;
+		default:
+			return 0;
+	}
+}
+
+static int _odbc_get_col_scale(MdbColumn *col)
+{
+	switch (col->col_type) {
+		case MDB_NUMERIC:
+			return col->col_prec;
+		case MDB_MONEY:
+			return 4;
+		default:
+			return 0;
+	}
 }
 
 /** @}*/
