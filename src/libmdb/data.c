@@ -1259,6 +1259,10 @@ int mdb_col_disp_size(MdbColumn *col)
 		case MDB_MONEY:
 			return 21;
 		break;
+		case MDB_NUMERIC:
+			/* digits, sign and decimal point; col_scale holds the precision */
+			return col->col_scale + 2;
+		break;
 	}
 	return 0;
 }

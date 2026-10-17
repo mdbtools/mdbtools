@@ -35,6 +35,7 @@ static const char * _odbc_get_client_type_name(MdbColumn *col);
 static int _odbc_is_exact_numeric(MdbColumn *col);
 static int _odbc_get_col_precision(MdbColumn *col);
 static int _odbc_get_col_scale(MdbColumn *col);
+static int _odbc_get_exact_numeric(MdbHandle *mdb, MdbColumn *col, unsigned char val[16], int *neg);
 static int _odbc_fix_literals(struct _hstmt *stmt);
 //static int _odbc_get_server_type(int clt_type);
 static int _odbc_get_string_size(int size, SQLCHAR *str);
@@ -967,6 +968,37 @@ SQLRETURN SQL_API SQLDisconnect(
 	return SQL_SUCCESS;
 }
 
+static const char *_odbc_sqlstate_text(const char *state)
+{
+	static const struct {
+		const char *state;
+		const char *text;
+	} states[] = {
+		{ "01004", "String data, right truncated" },
+		{ "01S02", "Option value changed" },
+		{ "01S07", "Fractional truncation" },
+		{ "07002", "COUNT field incorrect" },
+		{ "07006", "Restricted data type attribute violation" },
+		{ "07009", "Invalid descriptor index" },
+		{ "22002", "Indicator variable required but not supplied" },
+		{ "22003", "Numeric value out of range" },
+		{ "24000", "Invalid cursor state" },
+		{ "42000", "Syntax error or access violation" },
+		{ "HY009", "Invalid use of null pointer" },
+		{ "HY010", "Function sequence error" },
+		{ "HY090", "Invalid string or buffer length" },
+		{ "HY092", "Invalid attribute/option identifier" },
+		{ "HYC00", "Optional feature not implemented" },
+	};
+	size_t i;
+
+	for (i=0; i<sizeof(states)/sizeof(states[0]); i++) {
+		if (strcmp(states[i].state, state) == 0)
+			return states[i].text;
+	}
+	return "General error";
+}
+
 SQLRETURN SQL_API SQLError(
     SQLHENV            henv,
     SQLHDBC            hdbc,
@@ -1005,6 +1037,18 @@ SQLRETURN SQL_API SQLError(
 
         result = SQL_SUCCESS;
         strcpy(src, "");
+        if (state)
+            strcpy(state, "");
+    } else if (state && state[0] && strcmp(state, "00000") != 0) {
+        /* Many calls only set the SQLSTATE: report it with its standard text */
+        int l = snprintf((char*)szErrorMsg, cbErrorMsgMax, "%s", _odbc_sqlstate_text(state));
+        if (pcbErrorMsg)
+            *pcbErrorMsg = l;
+        if (pfNativeError)
+            *pfNativeError = 1;
+
+        result = SQL_SUCCESS;
+        strcpy(state, "");
     }
 
 	return result;
@@ -1836,7 +1880,8 @@ SQLRETURN SQL_API SQLGetData(
 	MdbSQL *sql;
 	MdbHandle *mdb;
 	MdbColumn *col;
-	int intValue;
+	long long intValue;
+	int fraction_truncated = 0;
 
 	TRACE("SQLGetData");
 	stmt = (struct _hstmt *) hstmt;
@@ -1978,12 +2023,126 @@ SQLRETURN SQL_API SQLGetData(
 				if (pcbValue)
 					*pcbValue = sizeof(SQLINTEGER);
 				break;
+			case SQL_C_SBIGINT:
+				*(SQLBIGINT*)rgbValue = intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLBIGINT);
+				break;
+			case SQL_C_UBIGINT:
+				if (intValue<0) {
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				*(SQLUBIGINT*)rgbValue = intValue;
+				if (pcbValue)
+					*pcbValue = sizeof(SQLUBIGINT);
+				break;
 			default:
 				strcpy(stmt->sqlState, "HYC00"); // Not implemented
 				return SQL_ERROR;
 			}
 			break;
-		// case MDB_MONEY: TODO
+		case MDB_MONEY:
+		case MDB_NUMERIC:
+		{
+			unsigned char val[16];
+			int neg, scale = _odbc_get_col_scale(col);
+			if (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR)
+				goto to_c_char;
+			if (!_odbc_get_exact_numeric(mdb, col, val, &neg)) {
+				strcpy(stmt->sqlState, "HY000"); // General error
+				LogStatementError(stmt, "Invalid %s value in column %s",
+						col->col_type == MDB_MONEY ? "currency" : "numeric", col->name);
+				return SQL_ERROR;
+			}
+			switch (fCType) {
+			case SQL_C_NUMERIC:
+			{
+				SQL_NUMERIC_STRUCT *ns = rgbValue;
+				ns->precision = _odbc_get_col_precision(col);
+				ns->scale = scale;
+				ns->sign = neg ? 0 : 1;
+				memcpy(ns->val, val, sizeof(ns->val));
+				if (pcbValue)
+					*pcbValue = sizeof(SQL_NUMERIC_STRUCT);
+				break;
+			}
+			case SQL_C_DOUBLE:
+			case SQL_C_FLOAT:
+			{
+				double d = 0;
+				int i;
+				for (i=15; i>=0; i--)
+					d = d * 256 + val[i];
+				for (i=0; i<scale; i++)
+					d /= 10;
+				if (neg)
+					d = -d;
+				if (fCType == SQL_C_DOUBLE) {
+					*(double*)rgbValue = d;
+					if (pcbValue)
+						*pcbValue = sizeof(double);
+				} else {
+					*(float*)rgbValue = d;
+					if (pcbValue)
+						*pcbValue = sizeof(float);
+				}
+				break;
+			}
+			case SQL_C_UTINYINT:
+			case SQL_C_TINYINT:
+			case SQL_C_STINYINT:
+			case SQL_C_USHORT:
+			case SQL_C_SHORT:
+			case SQL_C_SSHORT:
+			case SQL_C_ULONG:
+			case SQL_C_LONG:
+			case SQL_C_SLONG:
+			case SQL_C_SBIGINT:
+			case SQL_C_UBIGINT:
+			{
+				/* drop the fractional digits */
+				unsigned long long mag = 0;
+				int i, j, rem;
+				for (i=0; i<scale; i++) {
+					rem = 0;
+					for (j=15; j>=0; j--) {
+						rem = rem * 256 + val[j];
+						val[j] = rem / 10;
+						rem %= 10;
+					}
+					if (rem)
+						fraction_truncated = 1;
+				}
+				for (i=15; i>=8; i--) {
+					if (val[i]) {
+						strcpy(stmt->sqlState, "22003"); // Numeric value out of range
+						return SQL_ERROR;
+					}
+				}
+				for (i=7; i>=0; i--)
+					mag = mag << 8 | val[i];
+				if (mag > (unsigned long long)LLONG_MAX + neg) {
+					strcpy(stmt->sqlState, "22003"); // Numeric value out of range
+					return SQL_ERROR;
+				}
+				intValue = neg ? (long long)(0 - mag) : (long long)mag;
+				goto to_integer_type;
+			}
+			case SQL_C_BIT:
+			case SQL_C_BINARY:
+				strcpy(stmt->sqlState, "HYC00"); // Not implemented
+				LogStatementError(stmt, "Conversion of column %s to C type %d is not supported",
+						col->name, fCType);
+				return SQL_ERROR;
+			default:
+				strcpy(stmt->sqlState, "07006"); // Not allowed
+				LogStatementError(stmt, "Column %s cannot be converted to C type %d",
+						col->name, fCType);
+				return SQL_ERROR;
+			}
+			break;
+		}
 		case MDB_FLOAT:
 			switch (fCType) {
 			case SQL_C_FLOAT:
@@ -2198,6 +2357,10 @@ SQLRETURN SQL_API SQLGetData(
 			stmt->pos = len;
 			break;
 		}
+	}
+	if (fraction_truncated) {
+		strcpy(stmt->sqlState, "01S07"); // Fractional truncation
+		return SQL_SUCCESS_WITH_INFO;
 	}
 	return SQL_SUCCESS;
 }
@@ -2868,6 +3031,39 @@ static int _odbc_get_col_scale(MdbColumn *col)
 		default:
 			return 0;
 	}
+}
+
+/* Read the current value of a currency or NUMERIC column as an unsigned
+ * little endian 128 bit integer and a sign; the value is that integer
+ * divided by 10^scale. Returns 0 if the value extends past the page. */
+static int _odbc_get_exact_numeric(MdbHandle *mdb, MdbColumn *col, unsigned char val[16], int *neg)
+{
+	int start = col->cur_value_start;
+	int i;
+
+	memset(val, 0, 16);
+	if (col->col_type == MDB_MONEY) {
+		guint64 u = 0;
+		if (start < 0 || start + 8 > (int)mdb->fmt->pg_size)
+			return 0;
+		/* a two's complement 64 bit integer */
+		for (i=0; i<8; i++)
+			u |= (guint64)mdb->pg_buf[start + i] << (8 * i);
+		*neg = (u >> 63) != 0;
+		if (*neg)
+			u = 0 - u;
+		for (i=0; i<8; i++)
+			val[i] = u >> (8 * i);
+	} else {
+		if (start < 0 || start + 17 > (int)mdb->fmt->pg_size)
+			return 0;
+		/* a sign byte followed by four little endian 32 bit words, most
+		 * significant word first */
+		*neg = (mdb->pg_buf[start] & 0x80) != 0;
+		for (i=0; i<16; i++)
+			val[i] = mdb->pg_buf[start + 1 + 12 - 4*(i/4) + i%4];
+	}
+	return 1;
 }
 
 /** @}*/

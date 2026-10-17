@@ -387,6 +387,118 @@ static int test_precision_scale(HSTMT hstmt)
 	return 0;
 }
 
+/* Fetch Products.UnitPrice (21.35) of product 5 */
+static int fetch_price(HSTMT hstmt)
+{
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	if (SQLExecDirect(hstmt, (SQLCHAR *)"SELECT UnitPrice FROM Products WHERE ProductID = 5", SQL_NTS) != SQL_SUCCESS
+			|| SQLFetch(hstmt) != SQL_SUCCESS) {
+		printStatementError(hstmt, "problem fetching UnitPrice");
+		return 1;
+	}
+	return 0;
+}
+
+static int check_sqlstate(HSTMT hstmt, const char *what, const char *expected)
+{
+	SQLCHAR state[6] = "", msg[256] = "";
+	SQLINTEGER native;
+	SQLSMALLINT len;
+
+	if (SQLError(SQL_NULL_HENV, SQL_NULL_HDBC, hstmt, state, &native, msg, sizeof(msg), &len) != SQL_SUCCESS
+			|| strcmp((char *)state, expected) != 0) {
+		fprintf(stderr, "%s: SQLSTATE '%s', expected %s\n", what, state, expected);
+		return 1;
+	}
+	printf("  %s: %s %s\n", what, state, msg);
+	return 0;
+}
+
+/* Converting currency values to numeric C types */
+static int test_exact_numeric_conversions(HSTMT hstmt)
+{
+	SQLCHAR buf[4];
+	SQL_NUMERIC_STRUCT ns;
+	SQLLEN ind, disp = 0;
+	double d = 0;
+	SQLINTEGER l = 0;
+	SQLBIGINT big = 0;
+	SQLRETURN ret;
+
+	printf("\nTesting currency conversions...\n");
+	SQLFreeStmt(hstmt, SQL_UNBIND);
+
+	if (fetch_price(hstmt))
+		return 1;
+	if (SQLColAttributes(hstmt, 1, SQL_DESC_DISPLAY_SIZE, NULL, 0, NULL, &disp) != SQL_SUCCESS || disp != 21) {
+		fprintf(stderr, "SQL_DESC_DISPLAY_SIZE(UnitPrice) = %d, expected 21\n", (int)disp);
+		return 1;
+	}
+	if (SQLGetData(hstmt, 1, SQL_C_DOUBLE, &d, 0, &ind) != SQL_SUCCESS || d != 21.35 || ind != sizeof(double)) {
+		fprintf(stderr, "SQL_C_DOUBLE: %g (%d), expected 21.35\n", d, (int)ind);
+		return 1;
+	}
+
+	if (fetch_price(hstmt))
+		return 1;
+	ret = SQLGetData(hstmt, 1, SQL_C_SLONG, &l, sizeof(l), &ind);
+	if (ret != SQL_SUCCESS_WITH_INFO || l != 21 || ind != sizeof(SQLINTEGER)) {
+		fprintf(stderr, "SQL_C_SLONG: %d (%d), returned %d, expected 21\n", (int)l, (int)ind, ret);
+		return 1;
+	}
+	if (check_sqlstate(hstmt, "SQL_C_SLONG", "01S07"))
+		return 1;
+
+	if (fetch_price(hstmt))
+		return 1;
+	if (SQLGetData(hstmt, 1, SQL_C_SBIGINT, &big, sizeof(big), &ind) != SQL_SUCCESS_WITH_INFO || big != 21) {
+		fprintf(stderr, "SQL_C_SBIGINT: %d, expected 21\n", (int)big);
+		return 1;
+	}
+	SQLError(SQL_NULL_HENV, SQL_NULL_HDBC, hstmt, buf, NULL, NULL, 0, NULL);
+
+	if (fetch_price(hstmt))
+		return 1;
+	memset(&ns, 0, sizeof(ns));
+	if (SQLGetData(hstmt, 1, SQL_C_NUMERIC, &ns, sizeof(ns), &ind) != SQL_SUCCESS
+			|| ns.precision != 19 || ns.scale != 4 || ns.sign != 1
+			|| ns.val[0] != (213500 & 0xFF) || ns.val[1] != ((213500 >> 8) & 0xFF)
+			|| ns.val[2] != (213500 >> 16) || ns.val[3] != 0) {
+		fprintf(stderr, "SQL_C_NUMERIC: precision %d, scale %d, sign %d, val %02x%02x%02x%02x\n",
+				ns.precision, ns.scale, ns.sign, ns.val[0], ns.val[1], ns.val[2], ns.val[3]);
+		return 1;
+	}
+
+	/* Conversions to other types are refused rather than writing text */
+	if (fetch_price(hstmt))
+		return 1;
+	if (SQLGetData(hstmt, 1, SQL_C_TYPE_DATE, &d, sizeof(d), &ind) != SQL_ERROR) {
+		fprintf(stderr, "SQL_C_TYPE_DATE did not fail\n");
+		return 1;
+	}
+	if (check_sqlstate(hstmt, "SQL_C_TYPE_DATE", "07006"))
+		return 1;
+
+	/* Truncation is reported by SQLError */
+	if (fetch_price(hstmt))
+		return 1;
+	if (SQLGetData(hstmt, 1, SQL_C_CHAR, buf, sizeof(buf), &ind) != SQL_SUCCESS_WITH_INFO
+			|| strcmp((char *)buf, "21.") != 0) {
+		fprintf(stderr, "SQL_C_CHAR into 4 bytes: '%s'\n", buf);
+		return 1;
+	}
+	if (check_sqlstate(hstmt, "SQL_C_CHAR into 4 bytes", "01004"))
+		return 1;
+	if (SQLError(SQL_NULL_HENV, SQL_NULL_HDBC, hstmt, buf, NULL, NULL, 0, NULL) != SQL_NO_DATA_FOUND) {
+		fprintf(stderr, "SQLError reported the same diagnostic twice\n");
+		return 1;
+	}
+
+	SQLFreeStmt(hstmt, SQL_CLOSE);
+	printf("Currency conversion test passed.\n");
+	return 0;
+}
+
 /* Execute the prepared statement, return the number of rows, or -1 */
 static int execute_count(HSTMT hstmt, const char *what)
 {
@@ -833,6 +945,9 @@ int i;
 		return 1;
 
 	if (test_precision_scale(hstmt))
+		return 1;
+
+	if (test_exact_numeric_conversions(hstmt))
 		return 1;
 
 	if (test_params(hdbc, hstmt))
