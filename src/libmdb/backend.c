@@ -411,7 +411,7 @@ void mdb_init_backends(MdbHandle *mdb)
 		"COMMENT %s",
 		quote_schema_name_rquotes_merge);
 	mdb_register_backend(mdb, "sqlite",
-		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT|MDB_SHEXP_INDEXES|MDB_SHEXP_CST_NOTNULL,
+		MDB_SHEXP_DROPTABLE|MDB_SHEXP_DEFVALUES|MDB_SHEXP_BULK_INSERT|MDB_SHEXP_INDEXES|MDB_SHEXP_CST_NOTNULL|MDB_SHEXP_RELATIONS,
 		mdb_sqlite_types, NULL, NULL,
 		"date('now')", "date('now')",
 		"%Y-%m-%d %H:%M:%S",
@@ -774,6 +774,153 @@ is_system_table_name(MdbHandle *mdb, const char *name)
 	return 0;
 }
 
+typedef struct {
+	gchar *relationship;
+	gchar *column;
+	gchar *referenced_table;
+	gchar *referenced_column;
+	int icolumn;
+	long grbit;
+} MdbSQLiteForeignKey;
+
+static int
+compare_sqlite_fks(const void *a, const void *b)
+{
+	const MdbSQLiteForeignKey *fk1 = *(const MdbSQLiteForeignKey **)a;
+	const MdbSQLiteForeignKey *fk2 = *(const MdbSQLiteForeignKey **)b;
+	int rc = strcmp(fk1->relationship, fk2->relationship);
+	return rc ? rc : fk1->icolumn - fk2->icolumn;
+}
+
+static void
+free_sqlite_fk(gpointer data, gpointer user_data)
+{
+	MdbSQLiteForeignKey *fk = data;
+	g_free(fk->relationship);
+	g_free(fk->column);
+	g_free(fk->referenced_table);
+	g_free(fk->referenced_column);
+	g_free(fk);
+}
+
+static void
+print_sqlite_fk_columns(FILE *outfile, MdbHandle *mdb, GPtrArray *fks,
+		unsigned int start, unsigned int end, int referenced)
+{
+	unsigned int i;
+	char *quoted_name;
+
+	for (i = start; i < end; i++) {
+		MdbSQLiteForeignKey *fk = g_ptr_array_index(fks, i);
+		if (i > start)
+			fputs(", ", outfile);
+		quoted_name = mdb->default_backend->quote_schema_name(NULL,
+				referenced ? fk->referenced_column : fk->column);
+		quoted_name = mdb_normalise_and_replace(mdb, &quoted_name);
+		fputs(quoted_name, outfile);
+		g_free(quoted_name);
+	}
+}
+
+/**
+ * mdb_print_fks_if_sqlite - print foreign key constraints
+ * @output: Where to print the sql
+ * @table: Table to process
+ *
+ * SQLite can't add a foreign key with ALTER TABLE, so the relationships
+ * of a table go in its CREATE TABLE. MSysRelationships has a row for
+ * each column of a relationship, numbered by icolumn.
+ */
+static void
+mdb_print_fks_if_sqlite(FILE *outfile, MdbTableDef *table)
+{
+	MdbHandle *mdb = table->entry->mdb;
+	MdbCatalogEntry *entry;
+	MdbTableDef *rels = NULL;
+	GPtrArray *fks;
+	char *bound[7];
+	unsigned int i, j;
+
+	if (strcmp(mdb->backend_name, "sqlite") != 0)
+		return;
+
+	/* Not mdb_read_table_by_name(), which rereads the catalog and so
+	 * frees the entry of the table being printed */
+	for (i = 0; i < mdb->num_catalog; i++) {
+		entry = g_ptr_array_index(mdb->catalog, i);
+		if (entry->object_type == MDB_TABLE && !strcmp(entry->object_name, "MSysRelationships")) {
+			rels = mdb_read_table(entry);
+			break;
+		}
+	}
+	if (!rels)
+		return;
+	if (!rels->num_rows || !mdb_read_columns(rels)) {
+		mdb_free_tabledef(rels);
+		return;
+	}
+	for (i = 0; i < 7; i++)
+		bound[i] = g_malloc0(mdb->bind_size);
+	mdb_bind_column_by_name(rels, "szRelationship", bound[0], NULL);
+	mdb_bind_column_by_name(rels, "szObject", bound[1], NULL);
+	mdb_bind_column_by_name(rels, "szColumn", bound[2], NULL);
+	mdb_bind_column_by_name(rels, "szReferencedObject", bound[3], NULL);
+	mdb_bind_column_by_name(rels, "szReferencedColumn", bound[4], NULL);
+	mdb_bind_column_by_name(rels, "icolumn", bound[5], NULL);
+	mdb_bind_column_by_name(rels, "grbit", bound[6], NULL);
+	mdb_rewind_table(rels);
+
+	fks = g_ptr_array_new();
+	while (mdb_fetch_row(rels)) {
+		MdbSQLiteForeignKey *fk;
+		long grbit = atol(bound[6]);
+
+		/* 0x02: the relationship doesn't enforce integrity */
+		if (strcmp(bound[1], table->entry->object_name)
+		 || is_system_table_name(mdb, bound[3]) || (grbit & 0x00000002))
+			continue;
+		fk = g_malloc0(sizeof(MdbSQLiteForeignKey));
+		fk->relationship = g_strdup(bound[0]);
+		fk->column = g_strdup(bound[2]);
+		fk->referenced_table = g_strdup(bound[3]);
+		fk->referenced_column = g_strdup(bound[4]);
+		fk->icolumn = atoi(bound[5]);
+		fk->grbit = grbit;
+		g_ptr_array_add(fks, fk);
+	}
+	g_ptr_array_sort(fks, compare_sqlite_fks);
+
+	for (i = 0; i < fks->len; i = j) {
+		MdbSQLiteForeignKey *fk = g_ptr_array_index(fks, i);
+		char *quoted_table;
+
+		for (j = i + 1; j < fks->len; j++) {
+			MdbSQLiteForeignKey *next = g_ptr_array_index(fks, j);
+			if (strcmp(next->relationship, fk->relationship))
+				break;
+		}
+		/* SQLite resolves the parent table in the child's schema,
+		 * so it can't take a namespace */
+		quoted_table = mdb->default_backend->quote_schema_name(NULL, fk->referenced_table);
+		quoted_table = mdb_normalise_and_replace(mdb, &quoted_table);
+
+		fputs("\t, FOREIGN KEY (", outfile);
+		print_sqlite_fk_columns(outfile, mdb, fks, i, j, 0);
+		fprintf(outfile, ") REFERENCES %s (", quoted_table);
+		print_sqlite_fk_columns(outfile, mdb, fks, i, j, 1);
+		fprintf(outfile, ")%s%s\n",
+				(fk->grbit & 0x00000100) ? " ON UPDATE CASCADE" : "",
+				(fk->grbit & 0x00001000) ? " ON DELETE CASCADE" : "");
+		g_free(quoted_table);
+	}
+
+	g_ptr_array_foreach(fks, free_sqlite_fk, NULL);
+	g_ptr_array_free(fks, TRUE);
+	for (i = 0; i < 7; i++)
+		g_free(bound[i]);
+	mdb_free_tabledef(rels);
+}
+
 static char *
 mdb_get_relationships(MdbHandle *mdb, const gchar *dbnamespace, const char* tablename)
 {
@@ -1060,6 +1207,10 @@ generate_table_schema(FILE *outfile, MdbCatalogEntry *entry, char *dbnamespace, 
 		// sqlite does not support ALTER TABLE PRIMARY KEY, so we need to place it directly into CREATE TABLE
 		mdb_print_pk_if_sqlite(outfile, table);
 	}
+	if (export_options & MDB_SHEXP_RELATIONS) {
+		// likewise ALTER TABLE ADD CONSTRAINT
+		mdb_print_fks_if_sqlite(outfile, table);
+	}
 
 	fputs(")", outfile);
 	if (mdb->default_backend->per_table_comment_statement && export_options & MDB_SHEXP_COMMENTS) {
@@ -1170,7 +1321,8 @@ mdb_print_schema(MdbHandle *mdb, FILE *outfile, char *tabname, char *dbnamespace
 	}
 	fprintf (outfile, "\n");
 
-	if (export_options & MDB_SHEXP_RELATIONS) {
+	/* sqlite's relationships are in CREATE TABLE */
+	if (export_options & MDB_SHEXP_RELATIONS && strcmp(mdb->backend_name, "sqlite")) {
 		fputs ("-- CREATE Relationships ...\n", outfile);
 		the_relation=mdb_get_relationships(mdb, dbnamespace, tabname);
 		if (!the_relation) {

@@ -1,0 +1,25 @@
+-- ----------------------------------------------------------
+-- MDB Tools - A library for reading MS Access database files
+-- Copyright (C) 2000-2011 Brian Bruns and others.
+-- Files in libmdb are licensed under LGPL and the utilities under
+-- the GPL, see COPYING.LIB and COPYING files respectively.
+-- Check out http://mdbtools.sourceforge.net
+-- ----------------------------------------------------------
+
+CREATE TABLE `Order Details`
+ (
+	`OrderID`			INTEGER, 
+	`ProductID`			INTEGER NOT NULL, 
+	`UnitPrice`			REAL NOT NULL, 
+	`Quantity`			INTEGER NOT NULL, 
+	`Discount`			REAL NOT NULL
+	, PRIMARY KEY (`OrderID`, `ProductID`)
+	, FOREIGN KEY (`OrderID`) REFERENCES `Orders` (`OrderID`) ON DELETE CASCADE
+	, FOREIGN KEY (`ProductID`) REFERENCES `Products` (`ProductID`)
+);
+
+-- CREATE INDEXES ...
+CREATE INDEX `Order Details_OrderID_idx` ON `Order Details` (`OrderID`);
+CREATE INDEX `Order Details_ProductID_idx` ON `Order Details` (`ProductID`);
+
+
