@@ -508,14 +508,23 @@ gchar *g_option_context_get_help (GOptionContext *context,
 #elif HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
     const char * appname = program_invocation_short_name;
 #else
-    const char * appname = "mdb-util";
+    /* argv[0] may be a full path, with either separator on Windows */
+    const char * appname = context->argv0 ? context->argv0 : "mdb-util";
+    const char * sep;
+    if ((sep = strrchr(appname, '/')))
+        appname = sep + 1;
+    if ((sep = strrchr(appname, '\\')))
+        appname = sep + 1;
 #endif
+    int appname_len = strlen(appname);
+    if (appname_len > 4 && strcasecmp(appname + appname_len - 4, ".exe") == 0)
+        appname_len -= 4;
 
     char *help = malloc(4096);
     char *end = help + 4096;
     char *p = help;
     p += snprintf(p, end - p,
-            "Usage:\n  %s [OPTION\xE2\x80\xA6] %s\n\n", appname, context->desc);
+            "Usage:\n  %.*s [OPTION\xE2\x80\xA6] %s\n\n", appname_len, appname, context->desc);
     p += snprintf(p, end - p,
             "Help Options:\n  -h, --%-20s%s\n\n", "help", "Show help options");
     p += snprintf(p, end - p,
@@ -556,6 +565,8 @@ gboolean g_option_context_parse(GOptionContext *context,
     int i;
     int count = 0;
     int len = 0;
+    if (*argc > 0)
+        context->argv0 = (*argv)[0];
     if (*argc == 2 &&
             (strcmp((*argv)[1], "-h") == 0 || strcmp((*argv)[1], "--help") == 0)) {
         fprintf(stderr, "%s", g_option_context_get_help(context, TRUE, NULL));

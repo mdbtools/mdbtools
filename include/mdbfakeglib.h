@@ -105,6 +105,7 @@ typedef struct GOptionEntry {
 typedef struct GOptionContext {
     const char *desc;
     const GOptionEntry *entries;
+    const char *argv0;
 } GOptionContext;
 
 #define g_str_hash NULL
