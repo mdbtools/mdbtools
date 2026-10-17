@@ -29,6 +29,7 @@
 typedef uint16_t guint16;
 typedef uint32_t guint32;
 typedef uint64_t guint64;
+typedef int16_t gint16;
 typedef int32_t gint32;
 typedef char gchar;
 typedef int gboolean;
@@ -129,6 +130,13 @@ typedef struct GOptionContext {
 
 #define GUINT32_SWAP_LE_BE(l) __builtin_bswap32((uint32_t)(l))
 
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 /* string functions */
 void *g_memdup(const void *src, size_t len);
 int g_str_equal(const void *str1, const void *str2);
@@ -140,6 +148,7 @@ char *g_strndup(const char *src, size_t len);
 char *g_strdup_printf(const char *format, ...);
 gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter);
 void g_printerr(const gchar *format, ...);
+double g_ascii_strtod(const gchar *nptr, gchar **endptr);
 
 /* conversion */
 gint g_unichar_to_utf8(gunichar c, gchar *dst);

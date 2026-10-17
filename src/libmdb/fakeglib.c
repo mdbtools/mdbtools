@@ -177,6 +177,32 @@ gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter)
     return orig;
 }
 
+/* strtod() honors LC_NUMERIC, so swap the '.' for the locale's decimal point */
+double g_ascii_strtod(const gchar *nptr, gchar **endptr) {
+    const char *point = localeconv()->decimal_point;
+    const char *dot = strchr(nptr, '.');
+    if (!dot || strcmp(point, ".") == 0)
+        return strtod(nptr, endptr);
+
+    size_t prefix = dot - nptr;
+    size_t point_len = strlen(point);
+    char *copy = malloc(strlen(nptr) + point_len);
+    memcpy(copy, nptr, prefix);
+    memcpy(copy + prefix, point, point_len);
+    strcpy(copy + prefix + point_len, dot + 1);
+
+    char *end;
+    double result = strtod(copy, &end);
+    if (endptr) {
+        size_t consumed = end - copy;
+        if (consumed > prefix)
+            consumed -= point_len - 1;
+        *endptr = (gchar *)nptr + consumed;
+    }
+    free(copy);
+    return result;
+}
+
 void g_printerr(const gchar *format, ...) {
     va_list argp;
     va_start(argp, format);
