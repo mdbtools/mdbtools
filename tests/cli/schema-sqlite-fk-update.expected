@@ -1,11 +1,3 @@
--- ----------------------------------------------------------
--- MDB Tools - A library for reading MS Access database files
--- Copyright (C) 2000-2011 Brian Bruns and others.
--- Files in libmdb are licensed under LGPL and the utilities under
--- the GPL, see COPYING.LIB and COPYING files respectively.
--- Check out http://mdbtools.sourceforge.net
--- ----------------------------------------------------------
-
 CREATE TABLE `Orders`
  (
 	`OrderID`			INTEGER, 
@@ -27,12 +19,3 @@ CREATE TABLE `Orders`
 	, FOREIGN KEY (`EmployeeID`) REFERENCES `Employees` (`EmployeeID`)
 	, FOREIGN KEY (`ShipVia`) REFERENCES `Shippers` (`ShipperID`)
 );
-
--- CREATE INDEXES ...
-CREATE INDEX `Orders_CustomerID_idx` ON `Orders` (`CustomerID`);
-CREATE INDEX `Orders_EmployeeID_idx` ON `Orders` (`EmployeeID`);
-CREATE INDEX `Orders_OrderDate_idx` ON `Orders` (`OrderDate`);
-CREATE INDEX `Orders_ShippedDate_idx` ON `Orders` (`ShippedDate`);
-CREATE INDEX `Orders_ShipPostalCode_idx` ON `Orders` (`ShipPostalCode`);
-
-
