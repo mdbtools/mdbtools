@@ -1510,14 +1510,10 @@ mdb_sql_get_sort_key(MdbHandle *mdb, MdbColumn *col, MdbSQLSortKey *key)
 			key->d = mdb_get_double(mdb->pg_buf, start);
 			break;
 		case MDB_DATETIME:
-			/* Before 1899-12-30 the integer part (the day) is negative,
-			 * but the fraction (the time) still counts forwards: -1.25
-			 * is 06:00 on 1899-12-29. Make the value linear */
+			/* Sort on the raw double, as Access does, even though that
+			 * puts times before 1899-12-30 in reverse order within a
+			 * day: 06:00 on 1899-12-29 is -1.25, after 18:00's -1.75 */
 			key->d = mdb_get_double(mdb->pg_buf, start);
-			if (key->d < 0) {
-				double day = (double)(long long)key->d;
-				key->d = day + (day - key->d);
-			}
 			break;
 		case MDB_MONEY:
 		case MDB_NUMERIC:
