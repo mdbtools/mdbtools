@@ -139,6 +139,20 @@ static double poor_mans_trunc(double x)
 	return x;
 }
 
+/* Before 1899-12-30 the integer part (the day) of a date is negative, but
+ * the fraction (the time) still counts forwards: -1.25 is 06:00 on
+ * 1899-12-29, after -1.0. Make the value linear so it compares in time
+ * order, which also makes -0.25 and 0.25 the same time */
+static double mdb_linear_date(double d)
+{
+	double day;
+
+	if (d >= 0)
+		return d;
+	day = (double)(long long)d;
+	return day + (day - d);
+}
+
 int mdb_test_double(int op, double vd, double d)
 {
     int ret = 0;
@@ -314,7 +328,8 @@ mdb_test_sarg(MdbHandle *mdb, MdbColumn *col, MdbSargNode *node, MdbField *field
 			g_free(val);
 			break;
 		case MDB_DATETIME:
-			ret = mdb_test_double(node->op, poor_mans_trunc(node->value.d), poor_mans_trunc(mdb_get_double(field->value, 0)));
+			ret = mdb_test_double(node->op, poor_mans_trunc(mdb_linear_date(node->value.d)),
+					poor_mans_trunc(mdb_linear_date(mdb_get_double(field->value, 0))));
 			break;
 		default:
 			fprintf(stderr, "Calling mdb_test_sarg on unknown type.  Add code to mdb_test_sarg() for type %d\n",col->col_type);
