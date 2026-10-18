@@ -72,20 +72,37 @@ static size_t decompressed_to_utf8_with_iconv(MdbHandle *mdb, const char *in_ptr
 	return dlen;
 }
 #else
-static size_t latin1_to_utf8_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
-	char *out = dest;
-	size_t i;
-	for(i=0; i<len_in && out < dest + dlen - 1 - ((unsigned char)in_ptr[i] >> 7); i++) {
-		unsigned char c = in_ptr[i];
-		if(c & 0x80) {
-			*out++ = 0xC0 | (c >> 6);
-			*out++ = 0x80 | (c & 0x3F);
+/* Windows-1252 is Latin-1 but for 0x80 to 0x9F. The five bytes it leaves
+ * undefined become the C1 controls, as on Windows, so they round trip */
+static const unsigned short cp1252_80_9f[32] = {
+	0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
+	0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F,
+	0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+	0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178
+};
+
+static size_t cp1252_to_utf8_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+	size_t i, j = 0;
+	for (i=0; i<len_in; i++) {
+		unsigned int c = (unsigned char)in_ptr[i];
+		if (c >= 0x80 && c < 0xA0)
+			c = cp1252_80_9f[c - 0x80];
+		if (c < 0x80) {
+			if (j + 1 >= dlen) break;
+			dest[j++] = c;
+		} else if (c < 0x800) {
+			if (j + 2 >= dlen) break;
+			dest[j++] = 0xC0 | (c >> 6);
+			dest[j++] = 0x80 | (c & 0x3F);
 		} else {
-			*out++ = c;
+			if (j + 3 >= dlen) break;
+			dest[j++] = 0xE0 | (c >> 12);
+			dest[j++] = 0x80 | ((c >> 6) & 0x3F);
+			dest[j++] = 0x80 | (c & 0x3F);
 		}
 	}
-	*out = '\0';
-	return out - dest;
+	dest[j] = '\0';
+	return j;
 }
 
 static size_t unicode2ascii_locale(mdb_locale_t locale, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
@@ -117,22 +134,32 @@ static size_t unicode2ascii_locale(mdb_locale_t locale, const char *in_ptr, size
 	return count;
 }
 
-/* The reverse of latin1_to_utf8_without_iconv(): characters that are not
- * in Latin-1 become '?' */
-static size_t utf8_to_latin1_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
+/* The reverse of cp1252_to_utf8_without_iconv(): characters that are not
+ * in Windows-1252 become '?' */
+static size_t utf8_to_cp1252_without_iconv(const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	size_t i = 0, j = 0;
+	unsigned int k;
 	while (i < len_in && j < dlen) {
-		unsigned char c = in_ptr[i++];
-		if (c < 0x80) {
-			dest[j++] = c;
-		} else if ((c == 0xC2 || c == 0xC3) && i < len_in && ((unsigned char)in_ptr[i] & 0xC0) == 0x80) {
-			dest[j++] = ((c & 0x1F) << 6) | ((unsigned char)in_ptr[i++] & 0x3F);
-		} else {
-			/* skip the continuation bytes of a longer sequence */
-			while (i < len_in && ((unsigned char)in_ptr[i] & 0xC0) == 0x80)
-				i++;
-			dest[j++] = '?';
+		unsigned int c = (unsigned char)in_ptr[i++];
+		if (c >= 0xC0) {
+			int extra = c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : 1;
+			c &= 0x3F >> extra;
+			while (extra && i < len_in && ((unsigned char)in_ptr[i] & 0xC0) == 0x80) {
+				c = (c << 6) | ((unsigned char)in_ptr[i++] & 0x3F);
+				extra--;
+			}
+			if (extra)
+				c = '?';
+		} else if (c >= 0x80) {
+			/* a continuation byte without a lead byte */
+			c = '?';
 		}
+		if ((c >= 0x80 && c < 0xA0) || c > 0xFF) {
+			for (k=0; k<32 && cp1252_80_9f[k] != c; k++)
+				;
+			c = k < 32 ? 0x80 + k : '?';
+		}
+		dest[j++] = c;
 	}
 	return j;
 }
@@ -171,7 +198,7 @@ static size_t ascii2unicode_locale(mdb_locale_t locale, const char *in_ptr, size
 static size_t decompressed_to_utf8_without_iconv(MdbHandle *mdb, const char *in_ptr, size_t len_in, char *dest, size_t dlen) {
 	if (IS_JET3(mdb)) {
 		if (mdb->f->code_page == 1252) {
-			return latin1_to_utf8_without_iconv(in_ptr, len_in, dest, dlen);
+			return cp1252_to_utf8_without_iconv(in_ptr, len_in, dest, dlen);
 		}
 		int count = 0;
 		snprintf(dest, dlen, "%.*s%n", (int)len_in, in_ptr, &count);
@@ -245,7 +272,7 @@ mdb_ascii2unicode(MdbHandle *mdb, const char *src, size_t slen, char *dest, size
 	/* the inverse of decompressed_to_utf8_without_iconv() */
 	if (IS_JET3(mdb)) {
 		if (mdb->f->code_page == 1252) {
-			dlen = utf8_to_latin1_without_iconv(in_ptr, len_in, out_ptr, len_out);
+			dlen = utf8_to_cp1252_without_iconv(in_ptr, len_in, out_ptr, len_out);
 		} else {
 			int count;
 			snprintf(out_ptr, len_out, "%.*s%n", (int)len_in, in_ptr, &count);
