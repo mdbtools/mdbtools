@@ -332,13 +332,31 @@ mdb_find_field(int col_num, MdbField *fields, int num_fields)
 	}
 	return -1;
 }
+/* mdb_crack_row() sets fields[].colnum to the column's position in
+ * table->columns, which is not its col_num once a column has been
+ * deleted, so match the column itself. Without a table, fall back to
+ * col_num */
+static int
+mdb_find_sarg_field(MdbTableDef *table, MdbColumn *col, MdbField *fields, int num_fields)
+{
+	int i;
+
+	if (table) {
+		for (i=0;i<num_fields;i++) {
+			if (fields[i].colnum >= 0 && (unsigned int)fields[i].colnum < table->num_cols &&
+					g_ptr_array_index(table->columns, fields[i].colnum) == col)
+				return i;
+		}
+	}
+	return mdb_find_field(col->col_num, fields, num_fields);
+}
 /* SQL three-valued logic: a comparison involving NULL is unknown, and
  * NOT unknown is still unknown, so the row is not selected either way */
 #define SARG_FALSE 0
 #define SARG_TRUE 1
 #define SARG_UNKNOWN -1
 static int
-mdb_test_sarg_node_3vl(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int num_fields)
+mdb_test_sarg_node_3vl(MdbHandle *mdb, MdbTableDef *table, MdbSargNode *node, MdbField *fields, int num_fields)
 {
 	int elem;
 	MdbColumn *col;
@@ -352,7 +370,7 @@ mdb_test_sarg_node_3vl(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int 
 				return SARG_UNKNOWN;
 			return node->value.i ? SARG_TRUE : SARG_FALSE;
 		}
-		elem = mdb_find_field(col->col_num, fields, num_fields);
+		elem = mdb_find_sarg_field(table, col, fields, num_fields);
 		if (elem < 0)
 			return SARG_FALSE;
 		if (col->col_type != MDB_BOOL && fields[elem].is_null &&
@@ -363,21 +381,21 @@ mdb_test_sarg_node_3vl(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int 
 	/* logical op */
 	switch (node->op) {
 	case MDB_NOT:
-		l = mdb_test_sarg_node_3vl(mdb, node->left, fields, num_fields);
+		l = mdb_test_sarg_node_3vl(mdb, table, node->left, fields, num_fields);
 		return l == SARG_UNKNOWN ? SARG_UNKNOWN : !l;
 	case MDB_AND:
-		l = mdb_test_sarg_node_3vl(mdb, node->left, fields, num_fields);
+		l = mdb_test_sarg_node_3vl(mdb, table, node->left, fields, num_fields);
 		if (l == SARG_FALSE)
 			return SARG_FALSE;
-		r = mdb_test_sarg_node_3vl(mdb, node->right, fields, num_fields);
+		r = mdb_test_sarg_node_3vl(mdb, table, node->right, fields, num_fields);
 		if (r == SARG_FALSE)
 			return SARG_FALSE;
 		return (l == SARG_UNKNOWN || r == SARG_UNKNOWN) ? SARG_UNKNOWN : SARG_TRUE;
 	case MDB_OR:
-		l = mdb_test_sarg_node_3vl(mdb, node->left, fields, num_fields);
+		l = mdb_test_sarg_node_3vl(mdb, table, node->left, fields, num_fields);
 		if (l == SARG_TRUE)
 			return SARG_TRUE;
-		r = mdb_test_sarg_node_3vl(mdb, node->right, fields, num_fields);
+		r = mdb_test_sarg_node_3vl(mdb, table, node->right, fields, num_fields);
 		if (r == SARG_TRUE)
 			return SARG_TRUE;
 		return (l == SARG_UNKNOWN || r == SARG_UNKNOWN) ? SARG_UNKNOWN : SARG_FALSE;
@@ -387,7 +405,7 @@ mdb_test_sarg_node_3vl(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int 
 int
 mdb_test_sarg_node(MdbHandle *mdb, MdbSargNode *node, MdbField *fields, int num_fields)
 {
-	return mdb_test_sarg_node_3vl(mdb, node, fields, num_fields) == SARG_TRUE;
+	return mdb_test_sarg_node_3vl(mdb, NULL, node, fields, num_fields) == SARG_TRUE;
 }
 int 
 mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields)
@@ -401,7 +419,7 @@ mdb_test_sargs(MdbTableDef *table, MdbField *fields, int num_fields)
 	/* there may not be a sarg tree */
 	if (!node) return 1;
 
-	return mdb_test_sarg_node(mdb, node, fields, num_fields);
+	return mdb_test_sarg_node_3vl(mdb, table, node, fields, num_fields) == SARG_TRUE;
 }
 #if 0
 int mdb_test_sargs(MdbHandle *mdb, MdbColumn *col, int offset, int len)
