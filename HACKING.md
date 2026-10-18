@@ -134,10 +134,68 @@ later instead use Office (RC4 CryptoAPI or AES) encryption keyed by the
 password, described by a structure whose 2 byte length is at 0x299; mdbtools
 does not support it.
 
-The 2 bytes at 0x3C are the default database code page (useless in Jet4?).
+The 2 bytes at 0x3C are the default database code page.  It names the charset
+of all text in a Jet3 file.  Jet4 stores text as unicode, so the code page
+describes nothing there, though it still reads 1252.
 
 The 2 bytes at 0x3A (Jet3) or 4 bytes at 0x6E (Jet4) are the default text
 collating sort order.
+
+The 4 bytes at 0x6A (Jet4 and later) are the build number of the engine which
+created the database.  A Jet3 file holds 0 there.
+
+Over 1337 databases gathered from the open web the field takes only 20 values,
+and every one is a released build:
+
+| 0x6A | engine |
+|---|---|
+| 2927, 3714, 4431, 6218, 8015, 8618 | Jet 4.0 SP3 through SP8 |
+| 9025, 9511, 9635, 9704, 9756, 9765, 9801 | the Jet 4.0 updates after SP8 |
+| 4214 | a pre-release Access 2007 |
+| 4518 | Access 2007, and every later ace release |
+
+These are the build part of the `msjet40.dll` version, so 9801 means the file
+was made by `msjet40.dll` 4.0.9801.  It is the commonest value, because it is
+the last Jet 4.0 build and every later windows has shipped it.
+
+The ace engine is different.  It writes 4518, which is the Access 2007 release
+build, and it has never changed the value, so an Access 2010, 2016 or 2019 file
+reads 4518 as well.  159 of the Jet4 files carry 4518 too, which are the ones an
+ace engine wrote in the older format.
+
+So the field names the engine exactly for a Jet 4 file, and only says "ace" for
+anything newer.  The value is informational and nothing else in the file
+depends on it.
+
+The byte at 0x38 (Jet3), after the header mask is removed, is 0 or 1.  A hex
+dump shows it as 0x63 for 0 and 0x62 for 1.  Every column descriptor in the file
+carries the same value in its own 2 byte `file_flag`.
+
+The byte records which writer created the structure it sits in.  Over 83 Jet 3
+databases, 54 hold 0 everywhere and 21 hold 1 everywhere, 7 hold 0 in the header
+with 1 on some columns, and none holds 1 in the header with 0 on any column.  In
+every mixed file the 1s are on the tables and columns made last: the last column
+of a table, the last three columns of another, or whole tables at higher table
+definition page numbers than the 0 tables beside them.  So a file where
+everything is 1 was created by the later writer, and a file where only the last
+few columns are 1 was created by the earlier one and added to afterwards.
+
+A larger corpus of 228 Jet 3 files supports that reading.  Grouped by the site
+which published them, 49 sites hold only 0, 18 hold only 1, and one holds both,
+so the value agrees across the files of one publisher nearly always.  Grouping
+is necessary rather than tidy, because 108 of the 228 files come from a single
+site and the ungrouped tally is mostly that one.
+
+Which two writers is not established.  It is not the Access version, which reads
+07.53 in both groups, and it does not follow the sort order or the code page.
+
+What is known about the two is their order in time.  `MSysObjects.DateCreate`
+dates the objects a file holds, and no file with the byte set to 1 holds an
+object made before October 2000, while the files holding 0 run from August 1997
+onward.  Access 2000 is the first release on Jet 4.0, and it writes a Jet 3 file
+when told to keep the older format, so 0 for Jet 3.5 and 1 for Jet 4.0 or later
+fits what is measured.  It is not proved: only about seven files in that corpus
+are older than Access 2000, which is too few to make the absence conclusive.
 
 Data Pages
 ----------
@@ -408,10 +466,10 @@ next_pg field.
 | ???? | 2 bytes | offset_V    | Offset for variable length columns       |
 | ???? | 2 bytes | col_id      | Id given to the column when it was       |
 |      |         |             | created.  Access never renumbers it      |
-| ???? | 2 bytes | ???         | seen only as 0 or 1, and the same value  |
-|      |         |             | on every column of a file, so it seems   |
-|      |         |             | to record something about the file       |
-|      |         |             | rather than the column                   |
+| ???? | 2 bytes | file_flag   | a copy of the byte at 0x38 of the        |
+|      |         |             | Database Definition Page, 0 or 1, the    |
+|      |         |             | same on every column of the file.  What  |
+|      |         |             | it records is unknown                    |
 | ???? | 2 bytes | sort_order  | textual column sort order(0x409=General) |
 | ???? | 2 bytes | misc        | prec/scale (1 byte each), or code page   |
 |      |         |             | for textual columns (0x4E4=cp1252)       |
@@ -600,6 +658,11 @@ The Jet4 misc_flags byte, which the Jet3 column block has no room for, holds a
 second set:
 
 - 0x01: the text of the column is stored in the compressed unicode form
+- 0x02: a column added to make the database replicable.  These are the row
+      tracking columns `s_GUID`, `s_Lineage`, `s_Generation` and
+      `s_ColLineage`, and a `Gen_<column>` or `Aen_<column>`, which tracks one
+      column for conflict resolution.  The types vary, because the types of the
+      columns they track vary
 - 0x08: the column is the complex value foreign key of a complex column's flat
       table.  Access refuses to open a table whose flat table does not carry
       it
@@ -674,6 +737,16 @@ table, so it cannot appear in an accdb.
 
 BIGINT arrived in Access 2016 at build 16.0.7812, so an earlier ace engine
 rejects it.
+
+DATETIME is a 64 bit double counting days from 1899-12-30.  The fractional
+part is the time, and it is **always a positive fraction of the day, whatever
+the sign of the double**, rather than a distance from zero.  So a date before
+the epoch has a negative whole day part and a positive time, and a value whose
+whole day part is zero reads the same whether the double is positive or
+negative, which makes the sign of such a value unrecoverable.  Access records a
+time to second precision, but a file can hold a double carrying far more.  One
+observed value is `-0x1.70681cf4d859ap-12`, which is 30.355776 seconds into
+1899-12-30, and values have been seen which resolve finer than a nanosecond.
 
 EXTDATETIME is the "Date/Time Extended" type of Access 2019, which keeps a
 date from year 1 with 7 digits of fractional seconds.  It is stored as 42
@@ -812,14 +885,19 @@ Indices are not completely understood but here is what we know.
 | ???? | 4 bytes | prev_page   | Previous page at this index level        |
 | ???? | 4 bytes | next_page   | Next page at this index level            |
 | ???? | 4 bytes | tail_page   | Pointer to tail leaf page                |
-| ???? | 2 bytes | pref_len    | Length of the shared entry prefix        |
+| ???? | 1 byte  | pref_len    | Length of the shared entry prefix        |
+| ???? | 1 byte  | level       | Depth of this page above the leaves      |
 +-------------------------------------------------------------------------+
 ```
 
 The layout above is the Jet3 one.  Jet4 adds a 4 byte write stamp after
-parent_page, the same field a data page carries, and a 1 byte level after
-pref_len.  The level is the depth of the page below the leaves of the index
-tree: 0 on a leaf page and one more than its children on a node page.
+parent_page, the same field a data page carries, and widens pref_len to 2
+bytes, which puts its level at offset 26.
+
+The level is the depth of the page above the leaves of the index tree: 0 on a
+leaf page and one more than its children on a node page.  Over 5904 Jet 3 index
+pages it is 0 on all 5683 leaf pages, 1 on 212 node pages and 2 on 9 more, so
+reading pref_len as 2 bytes on Jet 3 returns 256 or 512 on every node page.
 
 Index pages come in two flavors.
 
@@ -921,11 +999,17 @@ That is, the shared prefix is [7f 00 00 00], so the actual next entry is:
 
 so the key value is 2 (the last octet changes to 02) page 261 row 4.
 
-An index entry is limited to 510 bytes of key.  A longer key keeps its first
-508 bytes and ends with a 2 byte digest of the bytes the truncation discards,
-which makes two long keys with the same start compare unequal.  The digest is
-a CRC-16/ARC, polynomial 0x8005, with the register held in on-disk byte order,
-and every discarded byte except the last one feeds it.
+An index entry is limited to 255 characters of key, which is 255 bytes in a
+jet 3 file and 510 in a jet 4 one, since a text field is measured in single
+bytes in the first and in 2 byte units in the second.  A longer key keeps all
+but the last 2 bytes of that and ends with a 2 byte digest of the bytes the
+truncation discards, which makes two long keys with the same start compare
+unequal.  The digest is a CRC-16/ARC, polynomial 0x8005, with the register
+held in on-disk byte order.  Every discarded byte feeds it, but the last is
+xored into the register instead of being clocked through it.  This holds
+whatever the last byte is: the terminator of a text key, a weight an odd nibble
+left behind, or the low byte of a number in the last column of a multi column
+index.
 
 A text column is indexed up to 255 characters, memo columns included, and
 trailing spaces are dropped before the value is encoded.
@@ -966,14 +1050,361 @@ czech `ch`, which takes one weight of its own between h and i.  Three things
 about a sequence have been measured:
 
 - it counts as one character in everything which follows it, so the diacritic
-  list, the unprintable offsets and the crazy flags all see one unit fewer
-  than the value has characters
+  list, the unprintable offsets and the flag codes all see one unit fewer than
+  the value has characters
 - it is weighed as a unit only when it is written all in lower case, all in
   upper case, or in title case.  `cha`, `Cha` and `CHa` contract, `cHa` does
   not, and a sequence barred by its case falls back to the longest sequence
   left, so the hungarian `DZsa` is the sequence `DZ` and then an `s`
 - a character which writes no inline bytes, such as an apostrophe or a hyphen,
   stops a sequence, so `c'ha` is a `c` and an `h`
+
+A few characters go the other way and are weighed as more than one, writing
+the weights of the characters they stand for.  **These count as that many in
+everything which follows**, the same offsets a sequence counts as one in, so a
+diacritic after one of them sits that many places later than the character
+count suggests:
+
+| weight table family | weighed as two | as three | as four |
+|---|---|---|---|
+| general legacy | 32, among them `Æ æ` (ae), `Þ þ` (th), `ß` (ss), `Ĳ ĳ Œ œ`, the croatian and serbian digraphs `Ǆ` to `ǌ` and `Ǳ ǲ ǳ`, the hebrew yiddish digraphs, and the latin ligatures `ﬀ ﬁ ﬂ ﬆ` | 2, the ligatures `ﬃ ﬄ` | none |
+| general | 579, the same ones, `Ü ü` (ue), the arabic ligature presentation forms, and the seven named below | 56, more arabic ligatures and the square symbols U+3378, U+33A0 and their kin | 4, U+06D6, U+06D7, U+FD24 and U+FD6F |
+
+The two families disagree about `ü`.  It writes "ue" in the general family and
+is an ordinary character with a diacritic weight in the general legacy one.
+
+They can be told apart in a weight table without knowing the list: such a
+character holds the whole weight of each character it stands for, where a
+character which simply has a long weight, such as `^`, `¼` or `©`, starts with
+a prefix byte which is never a weight on its own.  The weight is split at every
+width which divides it, widest first, and the widest split whose every part is
+some character's whole weight gives the count.
+
+A weight entry is one character, in both families, and the cjk ideographs are
+the one exception: their weight is the lead entry `fdff` and then the
+ideograph's own, two entries standing for one character.  A repeat mark after
+one writes `05` and the first byte of the last entry rather than the whole
+weight.  Every other weight of two entries stands for two characters, the
+japanese digraphs U+309F, U+30FF and U+FC28 among them, and a mark after one of
+those writes the marker.
+
+A run of three or more of the four characters whose weight is four entries,
+U+06D6, U+06D7, U+FD24 and U+FD6F, makes ms access write the end of the weights
+over the start of the diacritic weights.  The length is
+`2 * (entries - 3 * characters)` bytes, nothing where that is not positive, and
+every character counts, including one which writes no weight at all.  A weight
+shorter than its entries is padded out with zeroes in the weights ms access
+holds, and the overrun copies the padding.  What lands in the diacritic weights
+is the weight of whichever character ends the value, so this is ms access
+reading past the end of its own weights, but an entry has to match what it
+wrote.
+
+A flag code is a two bit code which some characters carry and most do not.
+What it means is not known.  A second run of two bit codes follows them and
+says what each character which took a flag code is: 1 for a character of its
+own, 2 for a repeat mark standing for the one before it, and 3 for a prolonged
+sound mark.  A prolonged sound mark carries 3 even after the moraic nasal,
+where the weight it writes is the whole of the kana before it, so the code
+does not depend on writing a vowel.  The flag codes sit in the same memory as
+the tertiary weights, straight after a run of three tertiary weights for each
+character of the value, and the tertiary run takes one weight for each
+character unit.  So a value of more units than `3 * characters` writes its last
+tertiary weights over the head of the flag codes: the weight of unit
+`(3 * characters) + j` lands on the flag code of the jth character which took
+one.  Whichever of the two is written last is the one which stays, and a
+character writes its flag code before its own tertiary weight, so one which
+lands on its own code loses it.
+
+The unit count here is the same one the diacritic weights carry, which is why a
+character with no weight at all takes no part: it writes no tertiary weight
+either, and a repeat mark writes one only when it has a weight to copy.
+
+A tertiary weight is 0, 1, 2 or 3.  Almost every character weighs 1, and 482
+characters do not: the superscripts weigh 3, the subscripts and the hangul jamo
+weigh 2, and the lao tone marks and some modifier letters weigh 0.  They were
+measured one character at a time, by putting each unit of each character on the
+index in turn and reading the code which came back.  A trailing flag code of 3
+is trimmed away, but a trailing tertiary weight of 3 is not, since ms access
+trims a flag rather than a weight.
+
+Only the general family can reach any of this.  The general legacy table gives
+no character more than three units, so a value there can never pass `3 *
+characters` and never writes past any of the three runs.
+
+The diacritic weights give a second count, because a character carries at most
+one of them for each character it stands for.  Seven characters of the general
+family need it, U+0385, U+1B3B, U+FC25, U+FC33, U+FCC2, U+FD3C and U+FD3D.
+The dialytika tonos U+0385 is the clear one: its weight `07 53 01` does not
+split, and it carries the two diacritic weights `02 0c` of the diaeresis and
+the tonos, so it is weighed as two.  Taking the larger of the two counts names
+every character measured and nothing else.
+
+The unprintable offset uses the same count, measured with the hyphen U+2010,
+whose unprintable weight is `84` in both families:
+
+| value | entry | offset |
+|---|---|---|
+| `k` `a` `‐` | `7f 5c 4a 01 01 01 01 800f 06 84 00` | 2 |
+| `k` `ß` `‐` | `7f 5c 6b6b 01 01 01 01 8013 06 84 00` | 3 |
+| `k` `ﬃ` `‐` | `7f 5c 535359 01 01 01 01 8017 06 84 00` | 4 |
+
+The arabic ligature presentation forms carry the weights of the letters they
+join.  The entry below is `k` and then U+FBEA twice, where the second
+ligature's secondary weight `d6` lands at offset 3 rather than 2:
+
+| value | entry |
+|---|---|
+| `k` + U+FBEA | `7f 0e36 29d7 290b 01 02 d6 00` |
+| `k` + U+FBEA + U+FBEA | `7f 0e36 29d7 290b 29d7 290b 01 02 d6 02 d6 00` |
+| `k` + U+06D7 + U+06D7 | `7f 0e36 298c 2920 0e48 0e35 298c 2920 0e48 0e35 01 02 14 02 02 02 14 00` |
+
+A character weighed as more than one can carry a secondary weight for each of
+the characters it stands for rather than one for the pair, and then the extra
+weights fill those places themselves instead of taking the placeholder:
+
+| value | entry |
+|---|---|
+| `k` + U+01C4 + U+01C4 | `7f 5c 4f78 4f78 01 02 02 14 02 14 00` |
+| `k` + U+01E2 + U+01E2 | `7f 5c 4a51 4a51 01 02 17 17 17 17 00` |
+
+The diacritic weights are written into a run of one byte per character, and
+what a character writes there moves that run on by what it wrote rather than by
+the number of characters it is weighed as.  A weight after the character shows
+how far, in the general family:
+
+| value | entry |
+|---|---|
+| `k` + `a` + `m` + `ä` | `7f 0e36 0e02 0e51 0e02 01 02 02 02 13 00` |
+| `k` + U+FBEA + `m` + `ä` | `7f 0e36 29d7 290b 0e51 0e02 01 02 d6 02 02 13 00` |
+| `k` + U+01E2 + `m` + `ä` | `7f 0e36 0e02 0e21 0e51 0e02 01 02 17 17 02 13 00` |
+| `k` + U+06D7 + `m` + `ä` | `7f 0e36 298c 2920 0e48 0e35 0e51 0e02 01 02 14 02 02 02 02 13 00` |
+| `k` + U+0385 + `m` + `ä` | `7f 0e36 0753 01 0e51 0e02 01 02 02 0c 02 13 00` |
+
+U+FBEA is weighed as two and writes one weight, which leaves the second place
+to be filled.  U+01E2 is weighed as two and writes a weight for each, which
+fills both.  U+06D7 is weighed as four and writes one weight, which leaves
+three places.  In every one of them the a-umlaut's weight `13` lands at the
+character count of the a-umlaut.
+
+A collation which moves characters has its own list.  The german phone book
+collation moves `Ä`, `Ö` and `Ü` to the weights of "ae", "oe" and "ue", so
+those three are weighed as two in it and as one in the table it tailors.  The
+same test names them, read against the weights of that table.
+
+A third kind of character stands for the one before it and is weighed as a
+copy of it.  These are the repeat marks:
+
+| family | repeat marks |
+|---|---|
+| general legacy | U+0651 arabic shadda and its two presentation forms U+FE7C and U+FE7D, U+3005, U+3031, U+3032, U+309D, U+309E, U+30FD, U+30FE |
+| general | U+3005, U+3031, U+3032, U+3033, U+3034, U+3035, U+303B, U+309D, U+309E, U+30A0, U+30FD, U+30FE, U+A015 |
+
+The shadda is a repeat mark in the general legacy family only.  In the general
+family all three of its code points write an unprintable weight instead.
+
+The shadda doubles the consonant it follows and the japanese marks mean the
+character before them again, so a copy of the weight before is what each one
+writes:
+
+| value | entry |
+|---|---|
+| `k` + shadda | `7f 5c 5c 01 00` |
+| `k` + shadda + shadda | `7f 5c 5c 5c 01 00` |
+| shadda + `k` | `7f ff ff 5c 01 00` |
+| `ب` + `ت` + shadda | `7f 79ac 79ae 79ae 01 08 08 00` |
+
+Two marks give two copies, and where there is no weight to copy the mark writes
+`ff ff`.  That marker **stands for no character at all**: it takes no place in
+the offsets the diacritic weights carry, it carries no diacritic weight of its
+own, and a mark after it has nothing to copy either, so it writes the marker
+again.
+
+| value | entry |
+|---|---|
+| U+309E + `k` + `ä` | `7f ffff 5c 4a 01 02 13 00` |
+| shadda + shadda + `k` | `7f ffff ffff 5c 01 00` |
+| U+309D + U+309D + U+309D + `k` | `7f ffff ffff ffff 5c 01 00` |
+
+The a-umlaut's weight `13` sits at place 1 in the first row, where the `k` is,
+because the mark took no place.
+
+A character weighed as more than one leaves nothing to copy either, so a mark
+after one of those writes the marker as well.  The weights after it do not
+move, which the control row shows:
+
+| value | entry |
+|---|---|
+| `k` + `ß` + `m` + `ä` | `7f 5c 6b6b 60 4a 01 02 02 02 02 13 00` |
+| `k` + `ß` + shadda + `m` + `ä` | `7f 5c 6b6b ffff 60 4a 01 02 02 02 02 13 00` |
+
+What gets copied is the last weight of a character weighed as one, inline or
+unprintable.  After a character which writes no inline weight but an
+unprintable one, such as an arabic vowel mark, the copy is the unprintable
+midfix `06` and that mark's weight:
+
+| value | entry |
+|---|---|
+| `ب` + fatha + shadda | `7f 79ac 06a3 01 08 01 01 01 80 0b 06a3 00` |
+| `ب` + damma + shadda | `7f 79ac 06a4 01 08 01 01 01 80 0b 06a4 00` |
+
+A diacritic weight is not copied, so `a` with a combining acute and then a
+shadda copies the `a`, and an ignored character is passed over, so a shadda
+after a tatweel copies the letter before the tatweel.
+
+Some repeat marks carry a secondary weight of their own as well.  The voiced
+iteration marks U+3032, U+309E and U+30FE and the ideographic marks U+3005,
+U+303B and U+A015 copy the weight before them and add one diacritic weight:
+
+| value | entry |
+|---|---|
+| `k` + U+309E | `7f 5c 5c 01 02 03 00` |
+| `k` + U+309E + U+309E | `7f 5c 5c 5c 01 02 03 03 00` |
+| U+309E + `k` | `7f ff ff 5c 01 00` |
+
+A mark with no weight to copy gives no secondary weight either, which the third
+row shows.
+
+The prolonged sound marks U+30FC and its halfwidth form U+FF70 take the place
+of the kana before them the same way, but write the weight of the vowel that
+kana ends on rather than a copy of the whole kana.  The halfwidth and the
+fullwidth mark behave alike in both families, and so do the halfwidth and the
+fullwidth kana:
+
+| value | entry |
+|---|---|
+| `コ` | `7f 7f0e 01 01 01 ff 02 80 ff 80 00` |
+| `コ` + U+30FC | `7f 7f0e 7f06 01 01 01 ff 9c 02 80 ff 80 00` |
+| `コ` + U+30FD | `7f 7f0e 7f0e 01 01 01 ff 98 02 80 ff 80 00` |
+| `ピ` + U+30FC | `7f 7f2b 7f03 01 04 01 01 ff 9c 02 80 ff 80 00` |
+| `ン` + U+30FC | `7f 7f80 7f80 01 01 01 ff 9c 02 80 ff 80 00` |
+
+`コ` is an o row kana and the mark takes `06`, the weight of `オ`.  `ピ` is an i
+row kana and it takes `03`, the weight of `イ`.  The moraic nasal `ン` ends on
+no vowel and the mark copies its weight whole.  The iteration mark U+30FD in
+the third row copies `0e` whole, which is what tells the two kinds of mark
+apart.  The entries for `コ` + U+30FC and `コ` + U+30FD also differ in the byte
+`9c` against `98`, which is in the copy run described with the flag codes.
+The `ン` row, where the weights cannot differ from a copy, carries `9c` all the
+same.
+
+The prolonged sound mark is the only mark which needs a weight of its own this
+way.  Everything the other marks add lives in the diacritic weights, which a
+copy carries along: `か` and `が` share the inline weight `7f0a` and differ only
+in `が`'s diacritic weight `03`, so `か` + U+309E, which reads `かが`, is a copy
+of `7f0a` plus the mark's own diacritic weight.  A vowel is not reachable that
+way, because `コ` is `0e` and `オ` is `06` and no copy turns one into the
+other.
+
+The vowel cannot be read off the character.  The rows of the syllabary are not
+contiguous, and a voiced kana, a small kana, a circled kana and a halfwidth
+kana all carry the weight of the plain kana they sort as, so each weight has
+to be measured.  The vowel follows the weight and not the character.  The
+circled katakana show the difference: `㋕` weighs as `ヘ` in the general legacy
+family and as `カ` in the general one, and the mark writes the `e` of `ヘ` in
+the first and the `a` of `カ` in the second.
+
+The sixteen katakana phonetic extensions U+31F0 to U+31FF, which write the
+closing consonant of an ainu syllable, give the mark the vowel their full size
+kana gives.  They differ from it only in the tertiary weight `a8` they carry
+as small kana:
+
+| value | entry |
+|---|---|
+| `ㇰ` + U+30FC | `7f 7f0c 7f04 01 03 01 01 a8 ff 9c 02 80 ff 80 00` |
+| `ク` + U+30FC | `7f 7f0c 7f04 01 01 01 ff 9c 02 80 ff 80 00` |
+| `ㇿ` + U+30FC | `7f 7f46 7f06 01 01 01 a8 ff 9c 02 80 ff 80 00` |
+| `ロ` + U+30FC | `7f 7f46 7f06 01 01 01 ff 9c 02 80 ff 80 00` |
+
+The general legacy family ignores all sixteen, so the mark after one of them
+has no weight to lengthen and writes `7f ffff 01 00`, the bytes it writes at
+the start of a value.
+
+A weight outside the range the kana use gives no vowel, and the mark copies
+it.  The squared katakana words U+3300 to U+3357 are that case, which the
+general legacy family weighs `7fa0` upward:
+
+| value | entry |
+|---|---|
+| `㌀` | `7f 7fa8 01 00` |
+| `㌀` + U+30FC | `7f 7fa8 7fa8 01 00` |
+
+The general family weighs the two kana digraphs `ゟ` and `ヿ` as two characters
+each, which a mark cannot stand for, so the mark after one writes `ffff`, the
+weight which stands for no character:
+
+| value | entry |
+|---|---|
+| `ゟ` | `7f 033e 0343 01 00` |
+| `ゟ` + U+30FC | `7f 033e 0343 ffff 01 00` |
+| `ヿ` | `7f 030e 031e 01 00` |
+| `ヿ` + U+30FC | `7f 030e 031e ffff 01 00` |
+
+With no kana before it the mark acts as a repeat mark.  Alone and at the start
+of a value it writes the two bytes which stand for no character, and after a
+letter, a digit, a space or an ideograph it writes a copy:
+
+| value | entry |
+|---|---|
+| U+30FC | `7f ffff 01 00` |
+| `k` + U+30FC | `7f 0e36 0e36 01 00` |
+
+The mark leaves the weight of the kana it lengthens for the next mark, and not
+the vowel it wrote.  So a mark after a prolonged sound mark or after an
+iteration mark reads through to the kana:
+
+| value | entry |
+|---|---|
+| `コ` + U+30FC + U+30FC | `7f 7f0e 7f06 7f06 01 01 01 ff 9f 02 80 ff 80 00` |
+| `コ` + U+30FD + U+30FC | `7f 7f0e 7f0e 7f06 01 01 01 ff 9b 02 80 ff 80 00` |
+| `ハ` + U+30FC + U+30FD | `7f 7f2a 7f02 7f2a 01 01 01 ff 9e 02 80 ff 80 00` |
+| `ハ` + U+30FC + U+30FD + U+30FC | `7f 7f2a 7f02 7f2a 7f02 01 01 01 ff 9e b0 02 80 ff 80 00` |
+
+A character which writes no weight of its own between the kana and the mark is
+read through as well.  A voiced mark written as a separate character only adds
+a diacritic weight, so halfwidth and decomposed text give the same key as the
+composed word:
+
+| value | entry |
+|---|---|
+| `ﾃﾞｰﾀ` | `7f 7f1d 7f05 7f1a 01 03 01 01 ff 9c 02 80 ff 80 00` |
+| `テ` + U+3099 + `ータ` | `7f 7f1d 7f05 7f1a 01 03 01 01 ff 9c 02 80 ff 80 00` |
+| `データ` | `7f 7f1d 7f05 7f1a 01 03 01 01 ff 9c 02 80 ff 80 00` |
+
+An unprintable character is not read through, because it leaves an unprintable
+weight for the mark to copy.  The general legacy family weighs the soft hyphen
+that way, so `テ` + U+00AD + U+30FC copies `06 83` where the general family,
+which ignores the soft hyphen, writes the `e`.
+
+The two families differ over the shadda.  It is a repeat mark in the general
+legacy family and an ordinary unprintable character in the general one, which
+carries a diacritic weight and no inline weight at all.  The japanese marks are
+repeat marks in both, except U+3033, U+3034, U+3035, U+303B, U+30A0 and
+U+A015, which the general legacy family ignores entirely.
+
+No other combining mark measured behaves like this: hebrew, thai, greek,
+cyrillic and the combining diacritical marks all write no inline weight in
+either family.
+
+A combining mark can still carry a weight modifier, which is added to the last
+secondary weight written rather than written on its own.  When nothing has been
+written yet the modifier is written by itself, and the modifiers close to `00`
+are invisible after a character which has no secondary weight, because the sum
+falls in the `00` to `02` range the tail is trimmed of.  U+1DCA is `ff` and
+U+1DFF is `fe` in the general family:
+
+| value | entry |
+|---|---|
+| U+1DCA + `k` | `7f 0e36 01 ff 00` |
+| `k` + U+1DCA | `7f 0e36 01 00` |
+| `k` + U+1DFF + U+1DFF | `7f 0e36 01 fe 00` |
+| U+1DCA + `k` + `ä` | `7f 0e36 0e02 01 ff 02 13 00` |
+| U+1DCA + U+1DCA + `k` + `ä` | `7f 0e36 0e02 01 fe 02 13 00` |
+
+A modifier written by itself takes a place of the secondary weight list, which
+the a-umlaut's `13` shows: it lands after the modifier and the placeholder for
+the `k`.  The character offset does not count it, so a following unprintable
+weight carries the same offset as it would without the modifier.  A second
+modifier adds to the first one's byte rather than taking a place of its own.
 
 The hungarian doubled digraphs behave differently again.  `ccs` is the
 repeated first letter and then the digraph `cs`, it writes the weight of `cs`
@@ -1193,7 +1624,7 @@ in the default property block of the MSysObjects row of the object:
   each table or query the query reads and a column record for each column it
   uses.  A query which tracks no names (union, pass-through, data definition)
   has the magic value alone
-- a linked table also has one, which Jackcess ignores
+- a linked table also has one
 
 The database properties `Track Name AutoCorrect Info` and `Perform Name
 AutoCorrect` (LONG) turn the option on and off.  If a property is missing,
@@ -1242,12 +1673,13 @@ wrote.  It is more reliable to find a column record by name than by guid.
 Text Data Type
 --------------
 
-In Jet3, the encoding of text depends on the machine on which it was created.
-So for databases created on U.S. English systems, it can be expected that text
-is encoded in CP1252.  This is the default used by mdbtools.  If you know that
-another encoding has been used, you can override the default by setting the
-environment variable MDB_JET3_CHARSET.  To find out what encodings will work on
-your system, run 'iconv -l'.
+In Jet3, text is encoded in the code page of the machine on which the database
+was created, and the file records which one: the 2 bytes at 0x3C of the
+Database Definition Page.  It reads 1252 in every Jet 3 file examined so far,
+which is what a U.S. English system gives.  Mdbtools defaults to CP1252 and
+takes an override from the environment variable MDB_JET3_CHARSET.  Note that
+windows-1252 leaves 0x81, 0x8D, 0x8F, 0x90 and 0x9D undefined, so a file which
+stores one of those bytes has text no unicode charset round trips.
 
 In Jet4, the encoding can be either little-endian UCS-2, or a special
 compressed form of it.  This compressed format begins with 0xff 0xfe.
