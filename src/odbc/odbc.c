@@ -797,6 +797,33 @@ _odbc_copy_string_attr(struct _hstmt *stmt, const char *value, SQLPOINTER buf, S
 	return SQL_SUCCESS;
 }
 
+/* Answers the nullability ODBC reports for a column.
+ *
+ * This used to be `!col->is_fixed`, i.e. whether the column is stored in the
+ * row's fixed-width region. That is the storage layout, not a constraint: a
+ * fixed-width column holds NULLs through the row's null mask just like any
+ * other column, so reporting it as SQL_NO_NULLS made every client reject a row
+ * set that contains one ("column is declared as non-nullable but contains null
+ * values"). Variable-width columns were reported nullable even when the column
+ * is Required, which loses the constraint in the opposite direction.
+ *
+ * Use the same source of truth as mdb-schema: the column's `Required`
+ * property. When the property cannot be read we answer SQL_NULLABLE, because
+ * wrongly claiming SQL_NO_NULLS is the answer that breaks clients.
+ *
+ * Note: mdb-schema additionally hardcodes bools as NOT NULL. This does not:
+ * a Yes/No column can hold Null unless it is Required. */
+static SQLSMALLINT _odbc_column_nullability(const MdbColumn *col)
+{
+	const char *required;
+
+	required = mdb_col_get_prop(col, "Required");
+	if (required && required[0] == 'y')
+		return SQL_NO_NULLS;
+
+	return SQL_NULLABLE;
+}
+
 SQLRETURN SQL_API SQLDescribeCol(
     SQLHSTMT           hstmt,
     SQLUSMALLINT       icol,
@@ -842,7 +869,7 @@ SQLRETURN SQL_API SQLDescribeCol(
 		*pibScale = _odbc_get_col_scale(col);
 	}
 	if (pfNullable) {
-		*pfNullable = !col->is_fixed;
+		*pfNullable = _odbc_column_nullability(col);
 	}
 
 	return ret;
@@ -1752,10 +1779,11 @@ SQLRETURN SQL_API SQLColumns(
 	MdbCatalogEntry *entry;
 	MdbTableDef *table;
 	MdbColumn *col;
-	unsigned int ts2, ts3, ts5;
+	unsigned int ts2, ts3, ts5, ts17;
 	unsigned char t2[MDB_BIND_SIZE],
 	              t3[MDB_BIND_SIZE],
-	              t5[MDB_BIND_SIZE];
+	              t5[MDB_BIND_SIZE],
+	              t17[4];  /* "YES" or "NO" for IS_NULLABLE */
 	SQLSMALLINT nullable;  /* SQL_NULLABLE or SQL_NO_NULLS */
 	SQLSMALLINT datatype;  /* For datetime, use concise data type */
 	SQLSMALLINT sqldatatype;  /* For datetime, use nonconcise data type */
@@ -1822,7 +1850,7 @@ SQLRETURN SQL_API SQLColumns(
 			ts3 = mdb_ascii2unicode(mdb, col->name, 0, (char*)t3, sizeof(t3));
 			ts5 = mdb_ascii2unicode(mdb, _odbc_get_client_type_name(col), 0,  (char*)t5, sizeof(t5));
 
-			nullable = SQL_NO_NULLS;
+			nullable = _odbc_column_nullability(col);
 			datatype = _odbc_get_client_type(col);
 			sqldatatype = _odbc_get_client_type(col);
 			ordinal = j+1;
@@ -1843,7 +1871,11 @@ SQLRETURN SQL_API SQLColumns(
 				FILL_FIELD(&fields[8], &decimal_digits, 0);
 				FILL_FIELD(&fields[9], &radix, 0);
 			}
+			ts17 = mdb_ascii2unicode(mdb,
+				nullable == SQL_NULLABLE ? "YES" : "NO", 0,
+				(char*)t17, sizeof(t17));
 			FILL_FIELD(&fields[10], &nullable, 0);
+			FILL_FIELD(&fields[17], t17, ts17);
 			FILL_FIELD(&fields[13], &sqldatatype, 0);
 			FILL_FIELD(&fields[16], &ordinal, 0);
 
