@@ -506,9 +506,16 @@ main(int argc, char **argv)
 		} else {
 			char *p;
 
-			while (strlen(mybuf) + strlen(s) > bufsz) {
+			/* room for s, the "\n" appended below, and the NUL */
+			while (strlen(mybuf) + strlen(s) + 2 > bufsz) {
+				char *grown;
 				bufsz *= 2;
-				mybuf = realloc(mybuf, bufsz);
+				grown = realloc(mybuf, bufsz);
+				if (!grown) {
+					fprintf(stderr, "Out of memory\n");
+					exit(1);
+				}
+				mybuf = grown;
 			}
 #ifdef HAVE_READLINE_HISTORY
 			/* don't record blank lines, or lines read from files
