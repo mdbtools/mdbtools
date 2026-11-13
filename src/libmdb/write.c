@@ -488,7 +488,7 @@ mdb_pg_get_freespace(MdbHandle *mdb)
 
 	rows = mdb_get_int16(mdb->pg_buf, row_count_offset);
 	free_start = row_count_offset + 2 + (rows * 2);
-	free_end = mdb_get_int16(mdb->pg_buf, row_count_offset + (rows * 2));
+	free_end = mdb_get_int16(mdb->pg_buf, row_count_offset + (rows * 2)) & OFFSET_MASK;
 	mdb_debug(MDB_DEBUG_WRITE,"free space left on page = %d", free_end - free_start);
 	return (free_end - free_start);
 }
@@ -618,6 +618,8 @@ mdb_insert_row(MdbTableDef *table, int num_fields, MdbField *fields)
 	}
 
 	rownum = mdb_add_row_to_pg(table, row_buffer, new_row_size);
+	if (!rownum)
+		return 0;
 
 	if (mdb_get_option(MDB_DEBUG_WRITE)) {
 		mdb_buffer_dump(mdb->pg_buf, 0, 40);
@@ -669,12 +671,16 @@ mdb_add_row_to_pg(MdbTableDef *table, unsigned char *row_buffer, int new_row_siz
 		num_rows = mdb_get_int16(mdb->pg_buf, fmt->row_count_offset);
 		pos = fmt->pg_size;
 
-		/* copy existing rows */
+		/* copy existing rows, keeping their deleted/lookup flags */
 		for (i=0;i<num_rows;i++) {
-			mdb_find_row(mdb, i, &row_start, &row_size);
+			if (mdb_find_row(mdb, i, &row_start, &row_size)) {
+				fprintf(stderr, "mdb_add_row_to_pg: invalid row %d on page\n", i);
+				g_free(new_pg);
+				return 0;
+			}
 			pos -= row_size;
-			memcpy((char*)new_pg + pos, mdb->pg_buf + row_start, row_size);
-			mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos);
+			memcpy((char*)new_pg + pos, mdb->pg_buf + (row_start & OFFSET_MASK), row_size);
+			mdb_put_int16(new_pg, (fmt->row_count_offset + 2) + (i*2), pos | (row_start & ~OFFSET_MASK));
 		}
 	}
 
@@ -804,10 +810,14 @@ int i, pos;
 
 	/* rows before */
 	for (i=0;i<row;i++) {
-		mdb_find_row(mdb, i, &row_start, &row_size);
+		if (mdb_find_row(mdb, i, &row_start, &row_size)) {
+			fprintf(stderr, "mdb_replace_row: invalid row %d on page\n", i);
+			g_free(new_pg);
+			return 1;
+		}
 		pos -= row_size;
-		memcpy((char*)new_pg + pos, mdb->pg_buf + row_start, row_size);
-		mdb_put_int16(new_pg, rco + 2 + i*2, pos);
+		memcpy((char*)new_pg + pos, mdb->pg_buf + (row_start & OFFSET_MASK), row_size);
+		mdb_put_int16(new_pg, rco + 2 + i*2, pos | (row_start & ~OFFSET_MASK));
 	}
 	
 	/* our row */
@@ -817,10 +827,14 @@ int i, pos;
 	
 	/* rows after */
 	for (i=row+1;i<num_rows;i++) {
-		mdb_find_row(mdb, i, &row_start, &row_size);
+		if (mdb_find_row(mdb, i, &row_start, &row_size)) {
+			fprintf(stderr, "mdb_replace_row: invalid row %d on page\n", i);
+			g_free(new_pg);
+			return 1;
+		}
 		pos -= row_size;
-		memcpy((char*)new_pg + pos, mdb->pg_buf + row_start, row_size);
-		mdb_put_int16(new_pg, rco + 2 + i*2, pos);
+		memcpy((char*)new_pg + pos, mdb->pg_buf + (row_start & OFFSET_MASK), row_size);
+		mdb_put_int16(new_pg, rco + 2 + i*2, pos | (row_start & ~OFFSET_MASK));
 	}
 
 	/* almost done, copy page over current */

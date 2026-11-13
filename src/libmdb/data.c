@@ -17,10 +17,10 @@
  */
 
 #include "mdbtools.h"
+#include "mdbprivate.h"
 
 #include <time.h>
 
-#define OFFSET_MASK 0x1fff
 #define OLE_BUFFER_SIZE (MDB_BIND_SIZE*64)
 
 static int _mdb_attempt_bind(MdbHandle *mdb, 

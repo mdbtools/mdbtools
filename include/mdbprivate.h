@@ -26,6 +26,9 @@
  * used within mdbtools so they won't be exported to calling programs.
  */
 
+/* row offsets carry the deleted (0x8000) and lookup (0x4000) flags above this */
+#define OFFSET_MASK 0x1fff
+
 #ifdef __cplusplus
   extern "C" {
 #endif
