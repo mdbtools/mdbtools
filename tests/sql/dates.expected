@@ -1,0 +1,27 @@
+OrderDate
+1994-08-04 00:00:00
+1 Row retrieved
+count
+84
+1 Row retrieved
+OrderID	OrderDate
+10994	1996-05-02 00:00:00
+10995	1996-05-02 00:00:00
+10996	1996-05-02 00:00:00
+3 Rows retrieved
+OrderID	OrderDate
+10994	1996-05-02 00:00:00
+10995	1996-05-02 00:00:00
+10996	1996-05-02 00:00:00
+3 Rows retrieved
+OrderID
+10994
+10995
+10996
+3 Rows retrieved
+count
+85
+1 Row retrieved
+count
+203
+1 Row retrieved

@@ -34,6 +34,10 @@ unsigned char *map_buf;
 	}
 	
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
+	if (!mdb) {
+		fprintf(stderr, "Unable to open database.\n");
+		exit(1);
+	}
 
 	mdb_read_pg (mdb, 1);
 	mdb_find_row(mdb, 0, &row_start, &map_sz);

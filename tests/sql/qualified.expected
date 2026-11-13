@@ -1,0 +1,34 @@
+ShipperID	CompanyName
+1	Speedy Express
+2	United Package
+3	Federal Shipping
+3 Rows retrieved
+ShipperID	CompanyName
+2	United Package
+1 Row retrieved
+ShipperID
+2
+1 Row retrieved
+ShipperID
+1
+2
+2 Rows retrieved
+ShipperID
+1
+1 Row retrieved
+ShipperID	CompanyName	Phone
+3	Federal Shipping	(503) 555-9931
+1 Row retrieved
+count
+13
+1 Row retrieved
+OrderID
+10540
+1 Row retrieved
+Column Bogus not found
+Table x is not in the FROM clause
+Table t is not in the FROM clause
+Table t is not in the FROM clause
+count
+13
+1 Row retrieved

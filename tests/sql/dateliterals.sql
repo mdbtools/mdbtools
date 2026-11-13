@@ -1,0 +1,17 @@
+select OrderID, OrderDate from Orders where OrderDate = #05/02/1996#;
+select OrderID from Orders where OrderDate = #1996-05-02#;
+select OrderID from Orders where OrderDate = #1996/5/2#;
+select OrderID from Orders where OrderDate = #5/2/96 00:00#;
+select OrderID from Orders where OrderDate = #1996-05-02 12:00:00 AM#;
+select count(*) from Orders where OrderDate >= #1/1/1996# AND OrderDate < #2/1/1996#;
+select count(*) from Orders where #1/1/1996# <= OrderDate;
+select count(*) from Orders where OrderDate > #1996-02-29#;
+select count(*) from Orders where OrderDate > #1996-05-01T23:59:59#;
+select count(*) from Orders where OrderDate > '1996-02-30';
+select count(*) from Shippers where #1/2/2000# > #1/1/2000#;
+select count(*) from Shippers where #12:00 PM# = #12:00:00#;
+select count(*) from Orders where OrderDate > #13/1/1996#;
+select count(*) from Orders where OrderDate > #yesterday#;
+select count(*) from Orders where Freight > #1/1/1996#;
+select count(*) from Orders where ShipName = #1/1/1996#;
+select count(*) from Orders where OrderDate = '1996-05-02 00:00:00.000' OR OrderDate = #1996-05-02 00:00:00.5#;

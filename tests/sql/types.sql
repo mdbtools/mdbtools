@@ -1,0 +1,17 @@
+select count(*) from Orders where Freight > 100;
+select OrderID, Freight from Orders where Freight > 800;
+select OrderID, Freight from Orders where Freight = 32.38;
+select count(*) from Orders where Freight <= 1 OR Freight >= 500;
+select count(*) from [Order Details] where Discount = 0.05;
+select count(*) from [Order Details] where Discount > 0.2;
+select count(*) from [Order Details] where Quantity = 2;
+select count(*) from [Order Details] where Quantity >= 2.5;
+select count(*) from [Order Details] where Quantity > 2;
+select count(*) from [Order Details] where UnitPrice < 5;
+select count(*) from Products where UnitsInStock = 0;
+select count(*) from Products where Discontinued = 1;
+select count(*) from Employees where Notes like '%University%';
+select count(*) from Employees where Photo is not null;
+select count(*) from Employees where Photo = 1;
+select count(*) from Orders where ShipVia like 2;
+select count(*) from Orders where OrderDate like '1996%';

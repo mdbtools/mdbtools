@@ -150,6 +150,13 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 		return NULL;
 	}
 	if (mdb->pg_buf[0] != 0) {
+		/* Jet 3 and later files start with 00 01 00 00 "Standard Jet DB"
+		 * (or "Standard ACE DB"); the Access 1.x/2.0 files we have seen
+		 * start with 01 00 00 00 instead. */
+		if (mdb->pg_buf[0] == 0x01 && mdb->pg_buf[1] == 0 &&
+				mdb->pg_buf[2] == 0 && mdb->pg_buf[3] == 0)
+			fprintf(stderr, "File may be an Access 1.x/2.0 (Jet 1.x/2.x) database, "
+					"which is not supported; convert it with Access 97 or later\n");
 		mdb_close(mdb);
 		return NULL; 
 	}
@@ -185,6 +192,17 @@ static MdbHandle *mdb_handle_from_stream(FILE *stream, MdbFileFlags flags) {
 	}
 	mdb->f->code_page = mdb_get_int16(mdb->pg_buf, 0x3c);
 	mdb->f->db_key = mdb_get_int32(mdb->pg_buf, 0x3e);
+	/* A non-zero database key means the pages are encrypted. Jet 3 and
+	 * Jet 4 use an RC4 key derived from it, which mdb_read_pg handles.
+	 * Access 2007 and later instead use Office (RC4 CryptoAPI or AES)
+	 * encryption, keyed by the password, which is not supported. */
+	if (mdb->f->db_key != 0 && mdb->f->jet_version != MDB_VER_JET3 &&
+			mdb->f->jet_version != MDB_VER_JET4) {
+		fprintf(stderr, "Encrypted databases in Access 2007 or later format are not supported "
+				"(remove the database password in Access to read this file)\n");
+		mdb_close(mdb);
+		return NULL;
+	}
     if (mdb->f->jet_version == MDB_VER_JET3) {
         /* JET4 needs additional masking with the DB creation date, currently unsupported */
         /* Bug - JET3 supports 20 byte passwords, this is currently just 14 bytes */

@@ -52,7 +52,8 @@ char *bound_values[256];
 MdbColumn *col;
 MdbSarg sarg;
 
-	mdb_read_columns(table);
+	if (!mdb_read_columns(table))
+		return;
 
 	sarg.op = MDB_EQUAL;
 	// sarg.value.i = 11070;

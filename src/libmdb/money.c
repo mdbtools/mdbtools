@@ -21,6 +21,8 @@
 
 #define MAX_MONEY_PRECISION   20
 #define MAX_NUMERIC_PRECISION 40
+#define MONEY_BYTES   8
+#define NUMERIC_BYTES 16 /* not counting the sign byte */
 /* 
 ** these routines are copied from the freetds project which does something
 ** very similiar
@@ -39,15 +41,17 @@ static char *array_to_string(unsigned char *array, size_t len, int unsigned scal
  */
 char *mdb_money_to_string(MdbHandle *mdb, int start)
 {
-	const int num_bytes=8, scale=4;
+	const int num_bytes=MONEY_BYTES, scale=4;
 	int i;
 	int neg=0;
 	unsigned char multiplier[MAX_MONEY_PRECISION] = { 1 };
 	unsigned char temp[MAX_MONEY_PRECISION];
 	unsigned char product[MAX_MONEY_PRECISION] = { 0 };
-	unsigned char bytes[num_bytes];
+	unsigned char bytes[MONEY_BYTES];
 
-	memcpy(bytes, mdb->pg_buf + start, num_bytes);
+	if (start < 0 || start + MONEY_BYTES > (int)mdb->fmt->pg_size)
+		return g_strdup("");
+	memcpy(bytes, mdb->pg_buf + start, MONEY_BYTES);
 
 	/* Perform two's complement for negative numbers */
 	if (bytes[num_bytes-1] & 0x80) {
@@ -75,15 +79,17 @@ char *mdb_money_to_string(MdbHandle *mdb, int start)
 }
 
 char *mdb_numeric_to_string(MdbHandle *mdb, int start, int scale, int prec) {
-       const int num_bytes = 16;
+       const int num_bytes = NUMERIC_BYTES;
        int i;
        int neg=0;
        unsigned char multiplier[MAX_NUMERIC_PRECISION] = { 1 };
        unsigned char temp[MAX_NUMERIC_PRECISION];
        unsigned char product[MAX_NUMERIC_PRECISION] = { 0 };
-       unsigned char bytes[num_bytes];
+       unsigned char bytes[NUMERIC_BYTES];
 
-       memcpy(bytes, mdb->pg_buf + start + 1, num_bytes);
+       if (start < 0 || start + 1 + NUMERIC_BYTES > (int)mdb->fmt->pg_size)
+               return g_strdup("");
+       memcpy(bytes, mdb->pg_buf + start + 1, NUMERIC_BYTES);
 
        /* Negative bit is stored in first byte */
        if (mdb->pg_buf[start] & 0x80) neg = 1;

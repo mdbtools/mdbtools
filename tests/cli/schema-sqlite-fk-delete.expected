@@ -1,0 +1,11 @@
+CREATE TABLE `Order Details`
+ (
+	`OrderID`			INTEGER, 
+	`ProductID`			INTEGER NOT NULL, 
+	`UnitPrice`			REAL NOT NULL, 
+	`Quantity`			INTEGER NOT NULL, 
+	`Discount`			REAL NOT NULL
+	, PRIMARY KEY (`OrderID`, `ProductID`)
+	, FOREIGN KEY (`OrderID`) REFERENCES `Orders` (`OrderID`) ON DELETE CASCADE
+	, FOREIGN KEY (`ProductID`) REFERENCES `Products` (`ProductID`)
+);

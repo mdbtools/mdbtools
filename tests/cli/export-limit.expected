@@ -1,0 +1,3 @@
+OrderID,CustomerID,EmployeeID,OrderDate,RequiredDate,ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode,ShipCountry
+10330,"LILAS",3,"1994-11-16 00:00","1994-12-14 00:00","1994-11-28 00:00",1,12.7500,"LILA-Supermercado","Carrera 52 con Ave. Bolívar #65-98 Llano Largo","Barquisimeto","Lara","3508","Venezuela"
+10331,"BONAP",9,"1994-11-16 00:00","1994-12-28 00:00","1994-11-21 00:00",1,10.1900,"Bon app'","12, rue des Bouchers","Marseille",,"13008","France"

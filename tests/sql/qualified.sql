@@ -1,0 +1,13 @@
+select Shippers.ShipperID, Shippers.CompanyName from Shippers;
+select [Shippers].[ShipperID], "Shippers"."CompanyName" from Shippers where Shippers.ShipperID = 2;
+select s.ShipperID from Shippers s where s.CompanyName like '%Pack%';
+select S.ShipperID from Shippers AS s where S.ShipperID < 3;
+select shippers.ShipperID from Shippers as s where ShipperID = 1;
+select s.* from Shippers s where s.ShipperID = 3;
+select count(*) from [Order Details] od where od.Quantity > 100;
+select o.OrderID from Orders o where o.Freight > 1000 AND o.ShipVia = 3;
+select Shippers.Bogus from Shippers;
+select x.ShipperID from Shippers;
+select ShipperID from Shippers s where t.ShipperID = 1;
+select t.* from Shippers;
+select count(*) from Orders where Freight > .5e3;

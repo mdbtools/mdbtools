@@ -25,7 +25,7 @@
 #    include <readline.h>
 #  else
 /* no readline.h */
-extern char *readline ();
+extern char *readline (const char *);
 #  endif
 char *cmdline = NULL;
 #endif /* HAVE_LIBREADLINE */
@@ -37,10 +37,10 @@ char *cmdline = NULL;
 #    include <history.h>
 #  else
 /* no history.h */
-extern void add_history ();
-extern int write_history ();
-extern int read_history ();
-extern void clear_history ();
+extern void add_history (const char *);
+extern int write_history (const char *);
+extern int read_history (const char *);
+extern void clear_history (void);
 #  endif
 #endif /* HAVE_READLINE_HISTORY */
 
@@ -56,6 +56,8 @@ int footers = 1;
 int pretty_print = 1;
 int showplan = 0;
 int noexec = 0;
+char *date_fmt = NULL;
+char *shortdate_fmt = NULL;
 
 #ifdef HAVE_READLINE_HISTORY
 #define HISTFILE ".mdbhistory"
@@ -149,20 +151,39 @@ do_set_cmd(MdbSQL *sql, char *s)
 	}
 }
 
+static void
+set_date_fmts(MdbSQL *sql)
+{
+	if (!sql->mdb)
+		return;
+	if (date_fmt)
+		mdb_set_date_fmt(sql->mdb, date_fmt);
+	if (shortdate_fmt)
+		mdb_set_shortdate_fmt(sql->mdb, shortdate_fmt);
+}
+
 void 
 run_query(FILE *out, MdbSQL *sql, char *mybuf, char *delimiter)
 {
 	MdbTableDef *table;
 
 	mdb_sql_run_query(sql, mybuf);
-	if (!mdb_sql_has_error(sql)) {
+	/* The query may have been "connect to", which opens a new handle */
+	set_date_fmts(sql);
+	if (!mdb_sql_has_error(sql) && !sql->cur_table) {
+		/* Successful statement without a result set (connect/disconnect) */
+		mdb_sql_reset(sql);
+	} else if (!mdb_sql_has_error(sql)) {
 		if (showplan) {
 			table = sql->cur_table;
 			if (table->sarg_tree) mdb_sql_dump_node(table->sarg_tree, 0);
-			if (sql->cur_table->strategy == MDB_TABLE_SCAN)
+			/* scan_idx is still set after an index scan is sorted */
+			if (table->strategy == MDB_TABLE_SCAN || !table->scan_idx)
 				printf("Table scanning %s\n", table->name);
-			else 
+			else
 				printf("Index scanning %s using %s\n", table->name, table->scan_idx->name);
+			if (table->strategy == MDB_ROWLIST_SCAN)
+				printf("Sorting %u rows\n", table->num_row_list);
 		}
 		/* If noexec != on, dump results */
 		if (!noexec) {
@@ -342,6 +363,8 @@ main(int argc, char **argv)
 		{ "no-footer", 'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE, &footers, "Don't print footer", NULL},
 		{ "input", 'i', 0, G_OPTION_ARG_FILENAME, &filename_in, "Read SQL from specified file", "file"},
 		{ "output", 'o', 0, G_OPTION_ARG_FILENAME, &filename_out, "Write result to specified file", "file"},
+		{ "date-format", 'D', 0, G_OPTION_ARG_STRING, &shortdate_fmt, "Set the date format (see strftime(3) for details)", "format"},
+		{ "datetime-format", 'T', 0, G_OPTION_ARG_STRING, &date_fmt, "Set the date/time format (see strftime(3) for details)", "format"},
 		{"version", 0, 0, G_OPTION_ARG_NONE, &print_mdbver, "Show mdbtools version and exit", NULL},
 		{ NULL },
 	};
@@ -404,6 +427,7 @@ main(int argc, char **argv)
 	sql = mdb_sql_init();
 	if (argc == 2) {
 		mdb_sql_open(sql, argv[1]);
+		set_date_fmts(sql);
 	}
 
 	/* give the buffer an initial size */
@@ -443,6 +467,12 @@ main(int argc, char **argv)
 			if (!l)
 				break;
 			s=g_locale_to_utf8(l, -1, NULL, NULL, NULL);
+			/* Conversion fails when the line contains bytes that are
+			 * not valid in the current locale (e.g. a UTF-8 "ß" typed
+			 * under the C locale).  Fall back to the raw input rather
+			 * than dereferencing NULL below. */
+			if (!s)
+				s=g_strdup(l);
 			free(l);
 		}
 
@@ -476,9 +506,16 @@ main(int argc, char **argv)
 		} else {
 			char *p;
 
-			while (strlen(mybuf) + strlen(s) > bufsz) {
+			/* room for s, the "\n" appended below, and the NUL */
+			while (strlen(mybuf) + strlen(s) + 2 > bufsz) {
+				char *grown;
 				bufsz *= 2;
-				mybuf = realloc(mybuf, bufsz);
+				grown = realloc(mybuf, bufsz);
+				if (!grown) {
+					fprintf(stderr, "Out of memory\n");
+					exit(1);
+				}
+				mybuf = grown;
 			}
 #ifdef HAVE_READLINE_HISTORY
 			/* don't record blank lines, or lines read from files

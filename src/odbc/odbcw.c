@@ -138,12 +138,16 @@ SQLRETURN SQL_API SQLDescribeColW(
     SQLSMALLINT       *pfNullable)
 {
 	TRACE("SQLDescribeColW");
-	if(cbColNameMax==SQL_NTS)cbColNameMax=sqlwlen(szColName);
 	{
-		size_t l=cbColNameMax*4+1;
-		SQLCHAR *tmp=calloc(l,1);
-		SQLRETURN ret = SQLDescribeCol(hstmt, icol, tmp, l, (SQLSMALLINT*)&l, pfSqlType, pcbColDef, pibScale, pfNullable);
-		*pcbColName = _mdb_odbc_ascii2unicode(((struct _hstmt*)hstmt)->hdbc, (char*)tmp, l, szColName, cbColNameMax);
+		/* cbColNameMax and *pcbColName are in characters for SQLDescribeCol(W) */
+		SQLSMALLINT l = 0;
+		SQLSMALLINT count = cbColNameMax > 0 ? cbColNameMax : 0;
+		SQLSMALLINT tmplen = (size_t)count*4+1 > SHRT_MAX ? SHRT_MAX : count*4+1; /* UTF-8: up to 4 bytes/char */
+		SQLCHAR *tmp=calloc(tmplen,1);
+		SQLRETURN ret = SQLDescribeCol(hstmt, icol, tmp, tmplen, &l, pfSqlType, pcbColDef, pibScale, pfNullable);
+		l = _mdb_odbc_ascii2unicode(((struct _hstmt*)hstmt)->hdbc, (char*)tmp, l, szColName, count);
+		if (pcbColName)
+			*pcbColName = l;
 		free(tmp);
 		return ret;
 	}
@@ -159,13 +163,23 @@ SQLRETURN SQL_API SQLColAttributesW(
     SQLLEN            *pfDesc)
 {
 	TRACE("SQLColAttributesW");
-	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL)
+	if (fDescType!=SQL_COLUMN_NAME && fDescType!=SQL_COLUMN_LABEL
+			&& fDescType!=SQL_DESC_NAME && fDescType!=SQL_COLUMN_TYPE_NAME
+			&& fDescType!=SQL_DESC_BASE_COLUMN_NAME && fDescType!=SQL_DESC_BASE_TABLE_NAME
+			&& fDescType!=SQL_DESC_TABLE_NAME)
 		return SQLColAttributes(hstmt,icol,fDescType,rgbDesc,cbDescMax,pcbDesc,pfDesc);
 	else{
-		size_t l=cbDescMax*4+1;
-		SQLCHAR *tmp=calloc(l,1);
-		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,l,(SQLSMALLINT*)&l,pfDesc);
-		*pcbDesc = _mdb_odbc_ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, l, (SQLWCHAR*)rgbDesc, cbDescMax);
+		/* Unlike SQLDescribeCol, cbDescMax and *pcbDesc are in BYTES, not
+		 * characters, for SQLColAttribute(s)(W). Clients such as .NET's
+		 * System.Data.Odbc divide *pcbDesc by sizeof(SQLWCHAR). */
+		SQLSMALLINT l = 0;
+		SQLSMALLINT count = cbDescMax > 0 ? cbDescMax / sizeof(SQLWCHAR) : 0;
+		SQLSMALLINT tmplen = (size_t)count*4+1 > SHRT_MAX ? SHRT_MAX : count*4+1; /* UTF-8: up to 4 bytes/char */
+		SQLCHAR *tmp=calloc(tmplen,1);
+		SQLRETURN ret=SQLColAttributes(hstmt,icol,fDescType,tmp,tmplen,&l,pfDesc);
+		l = _mdb_odbc_ascii2unicode(((struct _hstmt *)hstmt)->hdbc, (char*)tmp, l, (SQLWCHAR*)rgbDesc, count);
+		if (pcbDesc)
+			*pcbDesc = l * sizeof(SQLWCHAR);
 		free(tmp);
 		return ret;
 	}
@@ -218,6 +232,24 @@ SQLRETURN SQL_API SQLExecDirectW(
 	}
 }
 
+SQLRETURN SQL_API SQLPrepareW(
+    SQLHSTMT           hstmt,
+    SQLWCHAR           *szSqlStr,
+    SQLINTEGER         cbSqlStr)
+{
+	TRACE("SQLPrepareW");
+	if(cbSqlStr==SQL_NTS)cbSqlStr=sqlwlen(szSqlStr);
+	{
+		size_t l=cbSqlStr*4;
+		SQLCHAR *tmp=calloc(l+1,1);
+		SQLRETURN ret;
+		l = unicode2ascii(((struct _hstmt *)hstmt)->hdbc, szSqlStr, cbSqlStr, tmp, l);
+		ret = SQLPrepare(hstmt, tmp, l);
+		free(tmp);
+		return ret;
+	}
+}
+
 SQLRETURN SQL_API SQLColumnsW(
     SQLHSTMT           hstmt,
     SQLWCHAR           *szCatalogName,
@@ -229,13 +261,40 @@ SQLRETURN SQL_API SQLColumnsW(
     SQLWCHAR           *szColumnName,
     SQLSMALLINT        cbColumnName)
 {
+	TRACE("SQLColumnsW");
+	if (!szTableName)
+		return SQLColumns(hstmt, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
 	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
 	{
 		size_t l=cbTableName*4;
-		SQLCHAR *tmp=calloc(l,1);
+		SQLCHAR *tmp=calloc(l+1,1);
 		SQLRETURN ret;
 		l = unicode2ascii(((struct _hstmt* )hstmt)->hdbc, szTableName, cbTableName, tmp, l);
 		ret = SQLColumns(hstmt, NULL, 0, NULL, 0, tmp, l, NULL, 0);
+		free(tmp);
+		return ret;
+	}
+}
+
+SQLRETURN SQL_API SQLPrimaryKeysW(
+    SQLHSTMT           hstmt,
+    SQLWCHAR           *szCatalogName,
+    SQLSMALLINT        cbCatalogName,
+    SQLWCHAR           *szSchemaName,
+    SQLSMALLINT        cbSchemaName,
+    SQLWCHAR           *szTableName,
+    SQLSMALLINT        cbTableName)
+{
+	TRACE("SQLPrimaryKeysW");
+	if (!szTableName)
+		return SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, NULL, 0);
+	if(cbTableName==SQL_NTS)cbTableName=sqlwlen(szTableName);
+	{
+		size_t l=cbTableName*4;
+		SQLCHAR *tmp=calloc(l+1,1);
+		SQLRETURN ret;
+		l = unicode2ascii(((struct _hstmt* )hstmt)->hdbc, szTableName, cbTableName, tmp, l);
+		ret = SQLPrimaryKeys(hstmt, NULL, 0, NULL, 0, tmp, l);
 		free(tmp);
 		return ret;
 	}
@@ -253,11 +312,14 @@ SQLRETURN SQL_API SQLGetInfoW(
 	if(fInfoType==SQL_MAX_STATEMENT_LEN||fInfoType==SQL_SCHEMA_USAGE||fInfoType==SQL_CATALOG_LOCATION)
 		return SQLGetInfo(hdbc,fInfoType,rgbInfoValue,cbInfoValueMax,pcbInfoValue);
 
-	size_t l=cbInfoValueMax*4+1;
-	SQLCHAR *tmp=calloc(l,1);
-	SQLRETURN ret = SQLGetInfo(hdbc, fInfoType, tmp, l, (SQLSMALLINT*)&l);
-	size_t pcb = _mdb_odbc_ascii2unicode((struct _hdbc *)hdbc, (char*)tmp, l, (SQLWCHAR*)rgbInfoValue, cbInfoValueMax);
-	if(pcbInfoValue)*pcbInfoValue=pcb;
+	/* cbInfoValueMax and *pcbInfoValue are in bytes for SQLGetInfo(W) */
+	SQLSMALLINT l = 0;
+	SQLSMALLINT count = cbInfoValueMax > 0 ? cbInfoValueMax / sizeof(SQLWCHAR) : 0;
+	SQLSMALLINT tmplen = (size_t)count*4+1 > SHRT_MAX ? SHRT_MAX : count*4+1; /* UTF-8: up to 4 bytes/char */
+	SQLCHAR *tmp=calloc(tmplen,1);
+	SQLRETURN ret = SQLGetInfo(hdbc, fInfoType, tmp, tmplen, &l);
+	l = _mdb_odbc_ascii2unicode((struct _hdbc *)hdbc, (char*)tmp, l, (SQLWCHAR*)rgbInfoValue, count);
+	if(pcbInfoValue)*pcbInfoValue=l * sizeof(SQLWCHAR);
 	free(tmp);
 	return ret;
 }

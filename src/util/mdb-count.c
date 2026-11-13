@@ -76,6 +76,8 @@ int main(int argc, char **argv) {
 		entry = g_ptr_array_index(mdb->catalog, i);
 		if (entry->object_type == MDB_TABLE && !g_ascii_strcasecmp(entry->object_name, table_name)) {
             table = mdb_read_table(entry);
+            if (!table)
+                return 1;
             fprintf(stdout, "%d\n", table->num_rows);
             found = 1;
             break;

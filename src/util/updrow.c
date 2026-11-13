@@ -40,6 +40,10 @@ int len;
 	}
 	
 	mdb = mdb_open(argv[1], MDB_WRITABLE);
+	if (!mdb) {
+		fprintf(stderr, "Unable to open database.\n");
+		exit(1);
+	}
 	tabname = argv[2];
 	sargname = argv[3];
 	updstr = g_strdup(argv[4]);
@@ -47,7 +51,8 @@ int len;
 	table = mdb_read_table_by_name(mdb, tabname, MDB_TABLE);
 
 	if (table) {
-		mdb_read_columns(table);
+		if (!mdb_read_columns(table))
+			exit(1);
 		mdb_read_indices(table);
 		printf("updstr %s\n",updstr);
 		colname = strtok(updstr,"=");

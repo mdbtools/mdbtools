@@ -4,7 +4,7 @@ _mdb_sql()
 	local cur prev words cword split
 	_init_completion -s || return
 
-	if [[ "$prev" == -@(P|-no-pretty-print|H|-no-header|F|-no-footer) ]] ; then
+	if [[ "$prev" == -@(P|-no-pretty-print|H|-no-header|F|-no-footer|D|-date-format|T|-datetime-format) ]] ; then
 		return 0
 	fi
 

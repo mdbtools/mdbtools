@@ -35,6 +35,10 @@ main(int argc, char **argv)
 	}
 	
 	mdb = mdb_open(argv[1], MDB_NOFLAGS);
+	if (!mdb) {
+		fprintf(stderr, "Unable to open database.\n");
+		exit(1);
+	}
 	dot = strchr(argv[2],'.');
 	if (argc>3) sargname = argv[3];
 
@@ -49,7 +53,8 @@ main(int argc, char **argv)
 	table = mdb_read_table_by_name(mdb, tabname, MDB_TABLE);
 
 	if (table) {
-		mdb_read_columns(table);
+		if (!mdb_read_columns(table))
+			exit(1);
 		dump_ole(table, colname, sargname);
 		mdb_free_tabledef(table);
 	}

@@ -1,0 +1,21 @@
+CREATE TABLE `Orders`
+ (
+	`OrderID`			INTEGER, 
+	`CustomerID`			varchar, 
+	`EmployeeID`			INTEGER, 
+	`OrderDate`			DateTime, 
+	`RequiredDate`			DateTime, 
+	`ShippedDate`			DateTime, 
+	`ShipVia`			INTEGER, 
+	`Freight`			REAL, 
+	`ShipName`			varchar, 
+	`ShipAddress`			varchar, 
+	`ShipCity`			varchar, 
+	`ShipRegion`			varchar, 
+	`ShipPostalCode`			varchar, 
+	`ShipCountry`			varchar
+	, PRIMARY KEY (`OrderID`)
+	, FOREIGN KEY (`CustomerID`) REFERENCES `Customers` (`CustomerID`) ON UPDATE CASCADE
+	, FOREIGN KEY (`EmployeeID`) REFERENCES `Employees` (`EmployeeID`)
+	, FOREIGN KEY (`ShipVia`) REFERENCES `Shippers` (`ShipperID`)
+);

@@ -206,7 +206,7 @@ mdb_find_end_of_row(MdbHandle *mdb, int row)
 	/* if lookupflag is not set, it's good (deleteflag is ok) */
 	for (i = row; i > 0; i--) {
 		row_start = mdb_get_int16(mdb->pg_buf, (rco + i*2));
-		if (!(row_start & 0x8000)) {
+		if (!(row_start & 0x4000)) {
 			break;
 		}
 	}
@@ -268,10 +268,47 @@ mdb_xfer_bound_ole(MdbHandle *mdb, int start, MdbColumn *col, int len)
 	}
 	return ret;
 }
+/* Number of bytes a value of a fixed width type occupies, or 0 */
+static int mdb_fixed_value_size(int col_type)
+{
+	switch (col_type) {
+		case MDB_BYTE: return 1;
+		case MDB_INT: return 2;
+		case MDB_LONGINT:
+		case MDB_COMPLEX:
+		case MDB_FLOAT: return 4;
+		case MDB_MONEY:
+		case MDB_DOUBLE:
+		case MDB_DATETIME: return 8;
+		case MDB_REPID: return 16;
+		case MDB_NUMERIC: return 17;
+	}
+	return 0;
+}
+/* Check that a value of a fixed width type is long enough to decode, and
+ * warn once per type and handle if it is not */
+static int mdb_fixed_value_ok(MdbHandle *mdb, int col_type, int len)
+{
+	int size = mdb_fixed_value_size(col_type);
+
+	if (size == 0 || len >= size)
+		return 1;
+	if (!(mdb->warned_short_types[col_type/8] & (1 << (col_type%8)))) {
+		mdb->warned_short_types[col_type/8] |= 1 << (col_type%8);
+		fprintf(stderr, "Warning: %d byte value of data type %d is shorter than %d bytes; "
+				"treating it as NULL (the database may be corrupt)\n", len, col_type, size);
+	}
+	return 0;
+}
 static size_t
 mdb_xfer_bound_data(MdbHandle *mdb, int start, MdbColumn *col, int len)
 {
 int ret;
+	/* a truncated fixed width value would be decoded from past its end */
+	if (len && !mdb_fixed_value_ok(mdb, col->col_type, len)) {
+		col->cur_value_is_null = 1;
+		len = 0;
+	}
 	//if (!strcmp("Name",col->name)) {
 		//printf("start %d %d\n",start, len);
 	//}
@@ -310,16 +347,13 @@ int ret;
 	}
 	return 0;
 }
+static int mdb_read_row_at(MdbTableDef *table, int row_start, size_t row_size);
 int mdb_read_row(MdbTableDef *table, unsigned int row)
 {
 	MdbHandle *mdb = table->entry->mdb;
-	MdbColumn *col;
-	unsigned int i;
 	int row_start;
 	size_t row_size = 0;
 	int delflag, lookupflag;
-	MdbField *fields;
-	int num_fields;
 
 	if (table->num_cols == 0 || !table->columns)
 		return 0;
@@ -333,20 +367,57 @@ int mdb_read_row(MdbTableDef *table, unsigned int row)
 		return 0;
 	}
 
+	/* See HACKING.md: 0x8000 marks a deleted row and 0x4000 marks a
+	 * "lookup" slot holding a 4-byte pointer to the row's actual location
+	 * on an overflow page. The row on the overflow page is itself flagged
+	 * as deleted so that it is only reached through the pointer. */
 	delflag = lookupflag = 0;
-	if (row_start & 0x8000) lookupflag++;
-	if (row_start & 0x4000) delflag++;
+	if (row_start & 0x8000) delflag++;
+	if (row_start & 0x4000) lookupflag++;
 	row_start &= OFFSET_MASK; /* remove flags */
 #if MDB_DEBUG
-	fprintf(stdout,"Row %d bytes %d to %d %s %s\n", 
+	fprintf(stdout,"Row %d bytes %d to %d %s %s\n",
 		row, row_start, row_start + row_size - 1,
 		lookupflag ? "[lookup]" : "",
 		delflag ? "[delflag]" : "");
-#endif	
+#endif
 
-	if (!table->noskip_del && delflag) {
+	if (table->noskip_del) {
+		/* Every slot is read in place, including the relocated rows on
+		 * the overflow pages, so the pointers themselves are skipped. */
+		if (lookupflag)
+			return 0;
+	} else if (delflag) {
 		return 0;
+	} else if (lookupflag) {
+		void *buf;
+		int off;
+		size_t len;
+		guint32 pg_row;
+
+		if (row_size < 4)
+			return 0;
+		pg_row = mdb_get_int32(mdb->pg_buf, row_start);
+		if (mdb_find_pg_row(mdb, pg_row, &buf, &off, &len) == -1 || len == 0)
+			return 0;
+		/* Make the overflow page the current page: bound values refer
+		 * to offsets within it, and memo/OLE data is read from it after
+		 * this call returns. The table's own data page is read again
+		 * by mdb_fetch_row() before the next row is fetched. */
+		mdb_swap_pgbuf(mdb);
+		mdb->cur_pg = pg_row >> 8;
+		return mdb_read_row_at(table, off, len);
 	}
+
+	return mdb_read_row_at(table, row_start, row_size);
+}
+static int mdb_read_row_at(MdbTableDef *table, int row_start, size_t row_size)
+{
+	MdbHandle *mdb = table->entry->mdb;
+	MdbColumn *col;
+	unsigned int i;
+	MdbField *fields;
+	int num_fields;
 
 	fields = malloc(sizeof(MdbField) * table->num_cols);
 
@@ -382,6 +453,8 @@ static int _mdb_attempt_bind(MdbHandle *mdb,
 	int offset, 
 	int len)
 {
+	/* booleans use the null bit to store their value and are never NULL */
+	col->cur_value_is_null = (col->col_type != MDB_BOOL && isnull);
 	if (col->col_type == MDB_BOOL) {
 		mdb_xfer_bound_bool(mdb, col, isnull);
 	} else if (isnull) {
@@ -434,7 +507,9 @@ int mdb_read_next_dpg(MdbTableDef *table)
 #endif 
 	/* can't do a fast read, go back to the old way */
 	do {
-		if (!mdb_read_pg(mdb, table->cur_phys_pg++))
+		/* page 0 is the database header so it is never a data page;
+		 * cur_phys_pg must end up as the page now in the buffer */
+		if (!mdb_read_pg(mdb, ++table->cur_phys_pg))
 			return 0;
 	} while (mdb->pg_buf[0]!=MDB_PAGE_DATA || mdb_get_int32(mdb->pg_buf, 4)!=(long)entry->table_pg);
 	/* fprintf(stderr,"returning new page %ld\n", table->cur_phys_pg); */
@@ -461,7 +536,8 @@ mdb_fetch_row(MdbTableDef *table)
 	if (!table->cur_pg_num) {
 		table->cur_pg_num=1;
 		table->cur_row=0;
-		if ((!table->is_temp_table)&&(table->strategy!=MDB_INDEX_SCAN))
+		if (!table->is_temp_table && table->strategy != MDB_INDEX_SCAN &&
+				table->strategy != MDB_ROWLIST_SCAN)
 			if (!mdb_read_next_dpg(table)) return 0;
 	}
 
@@ -488,7 +564,22 @@ mdb_fetch_row(MdbTableDef *table)
 				return 0;
 			}
 			mdb_read_pg(mdb, pg);
+			table->cur_phys_pg = pg;
+		} else if (table->strategy==MDB_ROWLIST_SCAN) {
+			/* cur_pg_num is the 1 based position of the next row */
+			guint32 pg_row;
+			if (table->cur_pg_num > table->num_row_list)
+				return 0;
+			pg_row = table->row_list[table->cur_pg_num++ - 1];
+			table->cur_phys_pg = pg_row >> 8;
+			table->cur_row = pg_row & 0xff;
+			if (!mdb_read_pg(mdb, table->cur_phys_pg))
+				return 0;
 		} else {
+			/* the previous row may have left an overflow page in the
+			 * page buffer (no-op if the data page is still loaded) */
+			if (table->cur_phys_pg && !mdb_read_pg(mdb, table->cur_phys_pg))
+				return 0;
 			rows = mdb_get_int16(mdb->pg_buf,fmt->row_count_offset);
 
 			/* if at end of page, find a new data page */
@@ -507,6 +598,31 @@ mdb_fetch_row(MdbTableDef *table)
 	} while (!rc);
 
 	return 1;
+}
+/*
+ * The location (page << 8 | row) of the row last returned by
+ * mdb_fetch_row(), for mdb_rowlist_scan_init()
+ */
+guint32
+mdb_fetched_pg_row(MdbTableDef *table)
+{
+	return table->cur_phys_pg << 8 | ((table->cur_row - 1) & 0xff);
+}
+/*
+ * Make mdb_fetch_row() return the rows at the given locations, in that
+ * order, e.g. rows fetched earlier (see mdb_fetched_pg_row()) and then
+ * sorted. The rows are still tested against the table's sargs. The table
+ * takes ownership of pg_rows, which must have been allocated with g_malloc().
+ */
+void
+mdb_rowlist_scan_init(MdbTableDef *table, guint32 *pg_rows, unsigned int num_rows)
+{
+	mdb_index_scan_free(table);
+	g_free(table->row_list);
+	table->row_list = pg_rows;
+	table->num_row_list = num_rows;
+	table->strategy = MDB_ROWLIST_SCAN;
+	mdb_rewind_table(table);
 }
 void mdb_data_dump(MdbTableDef *table)
 {
@@ -587,6 +703,10 @@ mdb_ole_read_next(MdbHandle *mdb, MdbColumn *col, void *ole_ptr)
 	}
 	if (len < 4)
 		return 0;
+	if (len - 4 > (size_t)col->chunk_size) {
+		fprintf(stderr, "OLE chunk of %zu bytes exceeds the bind size\n", len - 4);
+		return 0;
+	}
 	mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 	if (col->bind_ptr)
@@ -628,6 +748,10 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 			&buf, &row_start, &len)) {
 			return 0;
 		}
+		if (len > chunk_size) {
+			fprintf(stderr, "OLE chunk of %zu bytes exceeds the bind size\n", len);
+			return 0;
+		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
 
 		if (col->bind_ptr) {
@@ -644,6 +768,10 @@ mdb_ole_read(MdbHandle *mdb, MdbColumn *col, void *ole_ptr, size_t chunk_size)
 
 		if (mdb_find_pg_row(mdb, col->cur_blob_pg_row,
 			&buf, &row_start, &len) || len < 4) {
+			return 0;
+		}
+		if (len - 4 > chunk_size) {
+			fprintf(stderr, "OLE chunk of %zu bytes exceeds the bind size\n", len - 4);
 			return 0;
 		}
 		mdb_debug(MDB_DEBUG_OLE,"start %d len %d", row_start, len);
@@ -671,14 +799,18 @@ mdb_ole_read_full(MdbHandle *mdb, MdbColumn *col, size_t *size)
 	char ole_ptr[MDB_MEMO_OVERHEAD];
 	char *result = malloc(OLE_BUFFER_SIZE);
 	size_t result_buffer_size = OLE_BUFFER_SIZE;
-	size_t len, pos;
+	size_t len, pos, ole_len;
 
 	memcpy(ole_ptr, col->bind_ptr, MDB_MEMO_OVERHEAD);
+	/* Stop at the declared length so that an LVAL chain pointing
+	 * back to itself can't grow the buffer forever */
+	ole_len = mdb_get_int32(ole_ptr, 0) & 0x3fffffff;
 
-	len = mdb_ole_read(mdb, col, ole_ptr, OLE_BUFFER_SIZE);
+	/* col->bind_ptr is, by convention, mdb->bind_size bytes long */
+	len = mdb_ole_read(mdb, col, ole_ptr, mdb->bind_size);
 	memcpy(result, col->bind_ptr, len);
 	pos = len;
-	while ((len = mdb_ole_read_next(mdb, col, ole_ptr))) {
+	while (pos < ole_len && (len = mdb_ole_read_next(mdb, col, ole_ptr))) {
 		if (pos+len >= result_buffer_size) {
 			result_buffer_size += OLE_BUFFER_SIZE;
 			if ((result = reallocf(result, result_buffer_size)) == NULL) {
@@ -827,8 +959,10 @@ static char *mdb_memo_to_string(MdbHandle *mdb, int start, int size)
 			if (tmpoff + len - 4 > memo_len)
 				break;
 
-			/* Stop processing on zero length multiple page memo fields */
-			if (len < 4)
+			/* Stop processing on zero length multiple page memo fields.
+			 * An empty chunk would not advance tmpoff, so a chain
+			 * pointing back to itself would never terminate. */
+			if (len <= 4)
 				break;
 
 			memcpy(tmp + tmpoff, (char*)buf + row_start + 4, len - 4);
@@ -881,7 +1015,10 @@ mdb_tm_to_date(struct tm *t, double *td)
 	short yr = t->tm_year + 1900;
 	char leap = ((yr & 3) == 0) && ((yr % 100) != 0 || (yr % 400) == 0);
 	const int *cal = leap ? leap_cal : noleap_cal;
-	long int time = (yr*365+(yr/4)-(yr/100)+(yr/400)+cal[t->tm_mon]+t->tm_mday)-693959;
+	/* days since 1/1/0001 (proleptic Gregorian), minus those up to 12/30/1899;
+	 * leap days are counted for the years before yr only, as cal
+	 * already accounts for a leap day in yr itself */
+	long int time = ((yr-1)*365L+((yr-1)/4)-((yr-1)/100)+((yr-1)/400)+cal[t->tm_mon]+t->tm_mday)-693594;
 
 	*td = (((long)t->tm_hour * 3600)+((long)t->tm_min * 60)+((long)t->tm_sec)) / 86400.0;
 	if (time>=0) *td+=time; else *td=time-*td;
@@ -892,14 +1029,26 @@ mdb_date_to_tm(double td, struct tm *t)
 {
 	long day, time;
 	long yr, q;
+	double frac;
 	const int *cal;
 
-	if (td < 0.0 || td > 1e6) // About 2700 AD
+	/* Dates before 12/30/1899 are negative. As in VB/COM DATE values,
+	 * the integer part is the (signed) day offset and the fractional
+	 * part is the (unsigned) time of day, so -1.5 is 12/29/1899 12:00. */
+	if (td < -693593.0 || td >= 2958466.0) // Between 1/1/0001 and 12/31/9999
 		return;
 
 	yr = 1;
 	day = (long)(td);
-	time = (long)((td - day) * 86400.0 + 0.5);
+	frac = td - day;
+	if (frac < 0)
+		frac = -frac;
+	time = (long)(frac * 86400.0 + 0.5);
+	if (time >= 86400) {
+		/* rounding carried into the next day */
+		time -= 86400;
+		day += (td < 0) ? -1 : 1;
+	}
 	t->tm_hour = time / 3600;
 	t->tm_min = (time / 60) % 60;
 	t->tm_sec = time % 60;
@@ -945,7 +1094,7 @@ mdb_date_to_string(MdbHandle *mdb, const char *fmt, void *buf, int start)
 
 	mdb_date_to_tm(td, &t);
 
-	strftime(text, mdb->bind_size, mdb->date_fmt, &t);
+	strftime(text, mdb->bind_size, fmt, &t);
 
 	return text;
 }
@@ -1007,6 +1156,9 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 	float tf;
 	double td;
 
+	if (!mdb_fixed_value_ok(mdb, datatype, size))
+		return g_strdup("");
+
 	switch (datatype) {
 		case MDB_BYTE:
 			text = g_strdup_printf("%hhu", mdb_get_byte(buf, start));
@@ -1061,7 +1213,13 @@ char *mdb_col_to_string(MdbHandle *mdb, void *buf, int start, int datatype, int 
 		default:
 			/* shouldn't happen.  bools are handled specially
 			** by mdb_xfer_bound_bool() */
-			fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
+			/* warn once per type and handle, not once per value */
+			if (datatype < 0 || datatype > 255 ||
+					!(mdb->warned_types[datatype/8] & (1 << (datatype%8)))) {
+				if (datatype >= 0 && datatype <= 255)
+					mdb->warned_types[datatype/8] |= 1 << (datatype%8);
+				fprintf(stderr, "Warning: mdb_col_to_string called on unsupported data type %d.\n", datatype);
+			}
 			text = g_strdup("");
 		break;
 	}
@@ -1100,6 +1258,10 @@ int mdb_col_disp_size(MdbColumn *col)
 		break;
 		case MDB_MONEY:
 			return 21;
+		break;
+		case MDB_NUMERIC:
+			/* digits, sign and decimal point; col_scale holds the precision */
+			return col->col_scale + 2;
 		break;
 	}
 	return 0;

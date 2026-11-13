@@ -177,6 +177,32 @@ gchar *g_strdelimit(gchar *string, const gchar *delimiters, gchar new_delimiter)
     return orig;
 }
 
+/* strtod() honors LC_NUMERIC, so swap the '.' for the locale's decimal point */
+double g_ascii_strtod(const gchar *nptr, gchar **endptr) {
+    const char *point = localeconv()->decimal_point;
+    const char *dot = strchr(nptr, '.');
+    if (!dot || strcmp(point, ".") == 0)
+        return strtod(nptr, endptr);
+
+    size_t prefix = dot - nptr;
+    size_t point_len = strlen(point);
+    char *copy = malloc(strlen(nptr) + point_len);
+    memcpy(copy, nptr, prefix);
+    memcpy(copy + prefix, point, point_len);
+    strcpy(copy + prefix + point_len, dot + 1);
+
+    char *end;
+    double result = strtod(copy, &end);
+    if (endptr) {
+        size_t consumed = end - copy;
+        if (consumed > prefix)
+            consumed -= point_len - 1;
+        *endptr = (gchar *)nptr + consumed;
+    }
+    free(copy);
+    return result;
+}
+
 void g_printerr(const gchar *format, ...) {
     va_list argp;
     va_start(argp, format);
@@ -423,11 +449,13 @@ void g_ptr_array_free(GPtrArray *array, gboolean something) {
 
 GList *g_list_append(GList *list, void *data) {
     GList *new_list = calloc(1, sizeof(GList));
+    GList *last = g_list_last(list);
     new_list->data = data;
-    new_list->next = list;
-    if (list)
-        list->prev = new_list;
-    return new_list;
+    new_list->prev = last;
+    if (!last)
+        return new_list;
+    last->next = new_list;
+    return list;
 }
 
 GList *g_list_last(GList *list) {
@@ -480,14 +508,23 @@ gchar *g_option_context_get_help (GOptionContext *context,
 #elif HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
     const char * appname = program_invocation_short_name;
 #else
-    const char * appname = "mdb-util";
+    /* argv[0] may be a full path, with either separator on Windows */
+    const char * appname = context->argv0 ? context->argv0 : "mdb-util";
+    const char * sep;
+    if ((sep = strrchr(appname, '/')))
+        appname = sep + 1;
+    if ((sep = strrchr(appname, '\\')))
+        appname = sep + 1;
 #endif
+    int appname_len = strlen(appname);
+    if (appname_len > 4 && strcasecmp(appname + appname_len - 4, ".exe") == 0)
+        appname_len -= 4;
 
     char *help = malloc(4096);
     char *end = help + 4096;
     char *p = help;
     p += snprintf(p, end - p,
-            "Usage:\n  %s [OPTION\xE2\x80\xA6] %s\n\n", appname, context->desc);
+            "Usage:\n  %.*s [OPTION\xE2\x80\xA6] %s\n\n", appname_len, appname, context->desc);
     p += snprintf(p, end - p,
             "Help Options:\n  -h, --%-20s%s\n\n", "help", "Show help options");
     p += snprintf(p, end - p,
@@ -528,6 +565,8 @@ gboolean g_option_context_parse(GOptionContext *context,
     int i;
     int count = 0;
     int len = 0;
+    if (*argc > 0)
+        context->argv0 = (*argv)[0];
     if (*argc == 2 &&
             (strcmp((*argv)[1], "-h") == 0 || strcmp((*argv)[1], "--help") == 0)) {
         fprintf(stderr, "%s", g_option_context_get_help(context, TRUE, NULL));

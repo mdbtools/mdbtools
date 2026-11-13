@@ -1,0 +1,14 @@
+select ShipperID from Shippers where ShipperID in (1, 3);
+select ShipperID from Shippers where ShipperID not in (1, 3);
+select ShipperID from Shippers where CompanyName in ('United Package', 'Nobody');
+select count(*) from Orders where ShipCountry IN ('Germany', 'France', 'UK');
+select count(*) from Orders where ShipCountry NOT IN ('Germany', 'France', 'UK');
+select count(*) from Orders where ShipRegion IN ('RJ', 'SP');
+select count(*) from Orders where ShipRegion NOT IN ('RJ', 'SP');
+select count(*) from Orders where OrderID between 10248 and 10257;
+select count(*) from Orders where OrderID not between 10249 and 11077;
+select count(*) from Orders where OrderDate between #1/1/1996# and #1/31/1996#;
+select count(*) from Orders where Freight between 10 and 20.5 and ShipVia in (1, 2) or OrderID = 10248;
+select count(*) from Orders where NOT ShipVia IN (2, 3);
+select count(*) from Orders where ShipVia in (1, 'x');
+select count(*) from Orders where ShipVia in ();

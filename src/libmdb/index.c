@@ -214,8 +214,19 @@ mdb_read_indices(MdbTableDef *table)
 	unsigned int i, j, k;
 	int key_num, col_num, cleaned_col_num;
 	int cur_pos, name_sz, idx2_sz, type_offset;
-	int index_start_pg = mdb->cur_pg;
+	int index_start_pg;
 	gchar *tmpbuf;
+
+	/* Already read: re-reading would leak the existing array */
+	if (table->indices)
+		return table->indices;
+	/* The index definitions follow the column definitions */
+	if (!table->columns && !mdb_read_columns(table))
+		return NULL;
+	/* The page buffer may have changed since mdb_read_columns */
+	index_start_pg = table->index_start_pg;
+	if (!mdb_read_pg(mdb, index_start_pg))
+		return NULL;
 
 	table->indices = g_ptr_array_new();
 
@@ -379,7 +390,7 @@ mdb_read_indices(MdbTableDef *table)
 		//fprintf(stderr, "pidx->first_pg:%d pidx->flags:0x%02x\n",	pidx->first_pg, pidx->flags);
 		if (!IS_JET3(mdb)) cur_pos += 5;
 	}
-	return NULL;
+	return table->indices;
 }
 void
 mdb_index_hash_text(MdbHandle *mdb, char *text, char *hash)

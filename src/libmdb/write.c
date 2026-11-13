@@ -293,7 +293,8 @@ mdb_crack_row(MdbTableDef *table, int row_start, size_t row_size, MdbField *fiel
 			fields[i].siz = 0;
 			fields[i].is_null = 1;
 		}
-		if ((size_t)(fields[i].start + fields[i].siz) > row_start + row_size) {
+		if (fields[i].siz < 0 ||
+		    (size_t)(fields[i].start + fields[i].siz) > row_start + row_size) {
 			fprintf(stderr, "warning: Invalid data location detected in mdb_crack_row. Table:%s Column:%i\n",table->name, i);
 			g_free(var_col_offsets);
 			return -1;
@@ -713,6 +714,12 @@ mdb_update_row(MdbTableDef *table)
 
 	if (!mdb->f->writable) {
 		fprintf(stderr, "File is not open for writing\n");
+		return 0;
+	}
+	if (table->cur_phys_pg && mdb->cur_pg != table->cur_phys_pg) {
+		/* the row was reached through an overflow pointer, so the page
+		 * buffer does not hold the table's data page */
+		fprintf(stderr, "Updating a row stored on an overflow page is not supported\n");
 		return 0;
 	}
 	mdb_find_row(mdb, table->cur_row-1, &row_start, &old_row_size);
