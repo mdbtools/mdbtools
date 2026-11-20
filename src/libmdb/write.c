@@ -558,6 +558,7 @@ mdb_update_index(MdbTableDef *table, MdbIndex *idx, unsigned int num_fields, Mdb
 	MdbIndexChain *chain;
 	MdbField idx_fields[10];
 
+	memset(idx_fields, 0, sizeof(idx_fields));
 	for (i = 0; i < idx->num_keys; i++) {
 		for (j = 0; j < num_fields; j++) {
 			// key_col_num is 1 based, can't remember why though
@@ -873,12 +874,25 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 		fprintf(stderr,"variable length key columns not yet supported, aborting\n");
 		return 0;
 	}
+	/* the key, both from the page and from the new row, is copied into
+	 * key_hash with the column size from the table definition */
+	if (col->col_size < 1 || col->col_size > (int)sizeof(key_hash) ||
+			!idx_fields[0].value || idx_fields[0].siz < col->col_size) {
+		fprintf(stderr,"invalid index key size %d, aborting\n", col->col_size);
+		g_free(new_pg);
+		return 0;
+	}
 
 	while (mdb_index_find_next_on_page(mdb, ipg)) {
 
 		/* check for compressed indexes.  */
 		if (ipg->len < col->col_size + 1) {
 			fprintf(stderr,"compressed indexes not yet supported, aborting\n");
+			return 0;
+		}
+		if (ipg->offset + ipg->len > mdb->fmt->pg_size) {
+			fprintf(stderr,"index entry extends past the end of the page, aborting\n");
+			g_free(new_pg);
 			return 0;
 		}
 
@@ -906,6 +920,14 @@ mdb_copy_index_pg(MdbTableDef *table, MdbIndex *idx, MdbIndexPage *ipg)
 
 	if (!row) {
 		fprintf(stderr,"missing indexes not yet supported, aborting\n");
+		return 0;
+	}
+	/* the new entry is a flag byte, the key and the 4 byte page/row
+	 * written at offset + 5 */
+	if (ipg->offset + 1 + col->col_size > mdb->fmt->pg_size ||
+			ipg->offset + 9 > mdb->fmt->pg_size) {
+		fprintf(stderr,"no room for the new entry on the index page, aborting\n");
+		g_free(new_pg);
 		return 0;
 	}
 	//mdb_put_int16(new_pg, mdb->fmt->row_count_offset, row);
