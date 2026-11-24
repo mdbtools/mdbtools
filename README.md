@@ -12,7 +12,7 @@ The major pieces of MDB Tools are:
 
 ### libmdb
 
-The core library that allows access to MDB files programatically. See [mdbtools.h](./include/mdbtools.h.in) for the complete API.
+The core library that allows access to MDB files programmatically. See [mdbtools.h](./include/mdbtools.h.in) for the complete API.
 
 ### libmdbsql
 
@@ -159,7 +159,7 @@ OR for a complete install (requires bison, flex, and unixODBC):
 By default, MDB Tools is linked against the copy of
 [GLib](https://developer.gnome.org/glib/) returned by pkg-config. You can
 point to a different GLib installation using the `GLIB_CFLAGS` and `GLIB_LIBS`
-enivornment variables. Or, you can disable GLib entirely with the
+environment variables. Or, you can disable GLib entirely with the
 `--disable-glib` flag, in which case MDB Tools will use an internal
 implementation of GLib's functions.
 

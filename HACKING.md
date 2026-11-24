@@ -6,7 +6,7 @@ General Notes
 -------------
 
 Access (Jet) does not in general initialize pages to zero before writing them,
-so the file will contains a lot of unititialized data.  This makes the task of
+so the file will contains a lot of uninitialized data.  This makes the task of
 figuring out the format a bit more difficult than it otherwise would be.
 
 This document will, generally speaking, provide all offsets and constants in 
